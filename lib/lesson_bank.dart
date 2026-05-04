@@ -219,6 +219,25 @@ class LessonBank {
     return q;
   }
 
+  static List<LessonTerm> termsForLevel(int level) {
+    final start = ((level - 1) * 3) % (terms.length - 12);
+    return terms.sublist(start, start + 12);
+  }
+
+  static int unitForLevel(int level) {
+    return ((level - 1) % 3) + 1;
+  }
+
+  static List<LessonQuestion> questionsForTest(int test) {
+    final pool = <LessonQuestion>[
+      ...questionsForLevel(1),
+      ...questionsForLevel(2),
+      ...questionsForLevel(3),
+    ];
+    if (test <= 1) return pool.take(30).toList();
+    return [...pool.skip((test - 1) * 5), ...pool].take(30).toList();
+  }
+
   static List<String> _shuffledWords(String phrase, int seed) {
     final words = phrase.split(' ');
     if (words.length == 1) return [words.first, 'ko', 'na', 'ang'];

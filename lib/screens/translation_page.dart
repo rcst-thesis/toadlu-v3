@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../app_data.dart';
 import '../app_theme.dart';
 
@@ -207,27 +208,20 @@ class _TranslationPageState extends State<TranslationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFA9D8FA),
+      backgroundColor: TudloColors.cloud,
       body: Stack(
         children: [
-          const Positioned(left: -20, top: 130, child: _Blob(size: 56)),
-          const Positioned(right: 36, top: 96, child: _OutlineBlob(size: 62)),
-          const Positioned(left: 22, bottom: 270, child: _Dot(size: 20)),
-          const Positioned(right: 34, bottom: 120, child: _WhiteBlob(size: 70)),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(22, 20, 22, 112),
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 360),
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .94),
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: .75),
-                      width: 7,
-                    ),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: TudloColors.line, width: 1),
                     boxShadow: [
                       BoxShadow(
                         color: TudloColors.ink.withValues(alpha: .12),
@@ -253,21 +247,15 @@ class _TranslationPageState extends State<TranslationPage> {
                             ? 'Type Hiligaynon here...'
                             : 'Type English here...',
                         readOnly: false,
+                        minLines: 5,
                       ),
                       const SizedBox(height: 14),
                       _TranslationCard(
                         controller: bottomController,
                         hint: 'Translation appears here...',
                         readOnly: true,
-                        actions: const [
-                          Icons.favorite_rounded,
-                          Icons.copy_rounded,
-                          Icons.volume_up_rounded,
-                          Icons.delete_outline_rounded,
-                        ],
+                        minLines: 5,
                       ),
-                      const SizedBox(height: 16),
-                      const _RatingRow(),
                     ],
                   ),
                 ),
@@ -327,7 +315,7 @@ class _TranslateHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.drag_indicator_rounded, color: TudloColors.coral),
+        const Icon(Icons.translate_rounded, color: TudloColors.sky),
         const Expanded(
           child: Text(
             'Quick Translate',
@@ -339,14 +327,10 @@ class _TranslateHeader extends StatelessWidget {
             ),
           ),
         ),
-        Icon(Icons.more_vert_rounded, color: TudloColors.coral.shadeLike),
+        const SizedBox(width: 24),
       ],
     );
   }
-}
-
-extension _SoftColor on Color {
-  Color get shadeLike => withValues(alpha: .72);
 }
 
 class _LanguageBar extends StatelessWidget {
@@ -365,7 +349,7 @@ class _LanguageBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF7978F2),
+        color: TudloColors.navy,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -378,7 +362,7 @@ class _LanguageBar extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .16),
+                color: TudloColors.blue.withValues(alpha: .22),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
@@ -422,7 +406,7 @@ class _LanguageChoice extends StatelessWidget {
             child: Text(
               short,
               style: const TextStyle(
-                color: Color(0xFF7978F2),
+                color: TudloColors.navy,
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
               ),
@@ -456,13 +440,13 @@ class _TranslationCard extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final bool readOnly;
-  final List<IconData> actions;
+  final int minLines;
 
   const _TranslationCard({
     required this.controller,
     required this.hint,
     required this.readOnly,
-    this.actions = const [Icons.copy_rounded, Icons.volume_up_rounded],
+    required this.minLines,
   });
 
   @override
@@ -470,8 +454,9 @@ class _TranslationCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: readOnly ? TudloColors.cloud : Colors.white,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: TudloColors.line, width: 2),
         boxShadow: [
           BoxShadow(
             color: TudloColors.ink.withValues(alpha: .06),
@@ -485,11 +470,12 @@ class _TranslationCard extends StatelessWidget {
           TextField(
             controller: controller,
             readOnly: readOnly,
-            maxLines: 4,
-            minLines: 4,
+            enableInteractiveSelection: true,
+            maxLines: minLines,
+            minLines: minLines,
             style: const TextStyle(
-              color: Color(0xFF171C2A),
-              fontSize: 14,
+              color: TudloColors.ink,
+              fontSize: 20,
               height: 1.35,
               fontWeight: FontWeight.w600,
             ),
@@ -503,118 +489,37 @@ class _TranslationCard extends StatelessWidget {
           const Divider(color: TudloColors.line),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: actions.map((icon) {
-              final color = icon == Icons.favorite_rounded
-                  ? const Color(0xFFFF3D64)
-                  : const Color(0xFF8C96A3);
-              return Padding(
-                padding: const EdgeInsets.only(left: 13),
-                child: Icon(icon, color: color, size: 18),
-              );
-            }).toList(),
+            children: [
+              IconButton(
+                tooltip: 'Copy',
+                onPressed: controller.text.trim().isEmpty
+                    ? null
+                    : () {
+                        Clipboard.setData(ClipboardData(text: controller.text));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Copied translation')),
+                        );
+                      },
+                icon: const Icon(Icons.copy_rounded),
+                color: const Color(0xFF8C96A3),
+              ),
+              IconButton(
+                tooltip: 'Listen',
+                onPressed: controller.text.trim().isEmpty
+                    ? null
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Audio playback coming soon'),
+                          ),
+                        );
+                      },
+                icon: const Icon(Icons.volume_up_rounded),
+                color: const Color(0xFF8C96A3),
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RatingRow extends StatelessWidget {
-  const _RatingRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Text(
-          'Rate the translation',
-          style: TextStyle(
-            color: Color(0xFF171C2A),
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Spacer(),
-        ...List.generate(
-          5,
-          (index) => Icon(
-            Icons.star_rounded,
-            color: index < 4 ? TudloColors.gold : TudloColors.line,
-            size: 18,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Blob extends StatelessWidget {
-  final double size;
-
-  const _Blob({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Color(0xFF7D72F2),
-        borderRadius: BorderRadius.all(Radius.circular(18)),
-      ),
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  final double size;
-
-  const _Dot({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Color(0xFF7D72F2),
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-class _OutlineBlob extends StatelessWidget {
-  final double size;
-
-  const _OutlineBlob({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.white, width: 1.2),
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-      ),
-    );
-  }
-}
-
-class _WhiteBlob extends StatelessWidget {
-  final double size;
-
-  const _WhiteBlob({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(24)),
       ),
     );
   }

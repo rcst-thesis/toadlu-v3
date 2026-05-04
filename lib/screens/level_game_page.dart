@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../app_data.dart';
 import '../app_shell.dart';
@@ -17,10 +20,18 @@ class _LevelGamePageState extends State<LevelGamePage> {
   late final List<LessonQuestion> questions;
   int score = 0;
   int questionIndex = 0;
+  late final DateTime _levelStartedAt;
   String? selectedAnswer;
   String? selectedMatchLeft;
   String? wrongMatchLeft;
   String? wrongMatchRight;
+  Timer? _wrongMatchClearTimer;
+  Timer? _matchedPulseTimer;
+  int wrongMatchAttempt = 0;
+  String? newMatchLeft;
+  String? newMatchRight;
+  int matchPulseAttempt = 0;
+  int answerFeedbackAttempt = 0;
   bool checked = false;
   bool lastCorrect = false;
   final Map<String, String> matches = {};
@@ -30,6 +41,14 @@ class _LevelGamePageState extends State<LevelGamePage> {
   void initState() {
     super.initState();
     questions = LessonBank.questionsForLevel(widget.level);
+    _levelStartedAt = DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    _wrongMatchClearTimer?.cancel();
+    _matchedPulseTimer?.cancel();
+    super.dispose();
   }
 
   LessonQuestion get currentQuestion => questions[questionIndex];
@@ -66,6 +85,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       setState(() {
         lastCorrect = isCorrect;
         checked = true;
+        answerFeedbackAttempt++;
         if (lastCorrect) score++;
       });
       return;
@@ -76,10 +96,11 @@ class _LevelGamePageState extends State<LevelGamePage> {
         questionIndex++;
         selectedAnswer = null;
         selectedMatchLeft = null;
-        wrongMatchLeft = null;
-        wrongMatchRight = null;
+        _clearWrongMatch();
+        _clearMatchedPulse();
         checked = false;
         lastCorrect = false;
+        answerFeedbackAttempt = 0;
         matches.clear();
         builtWords.clear();
       });
@@ -99,6 +120,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
     final accuracy = questions.isEmpty
         ? 0
         : ((score / questions.length) * 100).round();
+    final duration = DateTime.now().difference(_levelStartedAt);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -108,7 +130,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
           'Seriously???',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color(0xFFFFC928),
+            color: TudloColors.meadow,
             fontSize: 30,
             fontWeight: FontWeight.w900,
           ),
@@ -128,7 +150,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                   child: _ResultStat(
                     label: 'TOTAL XP',
                     value: '${score * 10}',
-                    color: Color(0xFFFFC928),
+                    color: TudloColors.meadow,
                     icon: Icons.bolt_rounded,
                   ),
                 ),
@@ -137,8 +159,17 @@ class _LevelGamePageState extends State<LevelGamePage> {
                   child: _ResultStat(
                     label: 'AMAZING',
                     value: '$accuracy%',
-                    color: Color(0xFF98E526),
+                    color: TudloColors.forest,
                     icon: Icons.track_changes_rounded,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ResultStat(
+                    label: 'TIME',
+                    value: _formatDuration(duration),
+                    color: TudloColors.sky,
+                    icon: Icons.timer_rounded,
                   ),
                 ),
               ],
@@ -206,17 +237,6 @@ class _LevelGamePageState extends State<LevelGamePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.bolt_rounded, color: TudloColors.coral),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${25 - questionIndex}',
-                    style: const TextStyle(
-                      color: TudloColors.coral,
-                      fontSize: 23,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 26),
@@ -257,6 +277,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         lastCorrect
@@ -269,7 +290,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        lastCorrect ? 'Amazing!' : 'Try the next one',
+                        lastCorrect ? 'Great job!' : 'Try again',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: lastCorrect
                               ? TudloColors.green
@@ -333,7 +355,13 @@ class _LevelGamePageState extends State<LevelGamePage> {
       QuestionType.choice || QuestionType.completeSentence => _ChoiceList(
         choices: q.choices,
         selected: selectedAnswer,
-        onSelected: (value) => setState(() => selectedAnswer = value),
+        checked: checked,
+        answer: q.answer,
+        feedbackAttempt: answerFeedbackAttempt,
+        onSelected: (value) {
+          if (checked) return;
+          setState(() => selectedAnswer = value);
+        },
       ),
       QuestionType.matching => _MatchingExercise(
         question: q,
@@ -341,12 +369,15 @@ class _LevelGamePageState extends State<LevelGamePage> {
         selectedLeft: selectedMatchLeft,
         wrongLeft: wrongMatchLeft,
         wrongRight: wrongMatchRight,
+        wrongAttempt: wrongMatchAttempt,
+        newMatchLeft: newMatchLeft,
+        newMatchRight: newMatchRight,
+        matchPulseAttempt: matchPulseAttempt,
         onSelectLeft: (left) {
           if (matches.containsKey(left)) return;
           setState(() {
             selectedMatchLeft = selectedMatchLeft == left ? null : left;
-            wrongMatchLeft = null;
-            wrongMatchRight = null;
+            _clearWrongMatch();
           });
         },
         onSelectRight: (right) {
@@ -358,11 +389,21 @@ class _LevelGamePageState extends State<LevelGamePage> {
           setState(() {
             if (expected == right) {
               matches[left] = right;
-              wrongMatchLeft = null;
-              wrongMatchRight = null;
+              _clearWrongMatch();
+              newMatchLeft = left;
+              newMatchRight = right;
+              matchPulseAttempt++;
+              _scheduleMatchedPulseClear(matchPulseAttempt);
+              if (matches.length == q.leftItems.length && !checked) {
+                lastCorrect = true;
+                checked = true;
+                score++;
+              }
             } else {
               wrongMatchLeft = left;
               wrongMatchRight = right;
+              wrongMatchAttempt++;
+              _scheduleWrongMatchClear(wrongMatchAttempt);
             }
             selectedMatchLeft = null;
           });
@@ -371,6 +412,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
       QuestionType.buildSentence => _BuildSentenceExercise(
         question: q,
         builtWords: builtWords,
+        checked: checked,
+        correct: checked && lastCorrect,
+        feedbackAttempt: answerFeedbackAttempt,
         onAdd: (word) => setState(() => builtWords.add(word)),
         onRemove: (index) => setState(() => builtWords.removeAt(index)),
       ),
@@ -379,6 +423,42 @@ class _LevelGamePageState extends State<LevelGamePage> {
 
   String _expectedMatch(String left) {
     return LessonBank.terms.firstWhere((term) => term.hil == left).eng;
+  }
+
+  void _clearWrongMatch() {
+    _wrongMatchClearTimer?.cancel();
+    _wrongMatchClearTimer = null;
+    wrongMatchLeft = null;
+    wrongMatchRight = null;
+  }
+
+  void _scheduleWrongMatchClear(int attempt) {
+    _wrongMatchClearTimer?.cancel();
+    _wrongMatchClearTimer = Timer(const Duration(seconds: 1), () {
+      if (!mounted || attempt != wrongMatchAttempt) return;
+      setState(_clearWrongMatch);
+    });
+  }
+
+  void _clearMatchedPulse() {
+    _matchedPulseTimer?.cancel();
+    _matchedPulseTimer = null;
+    newMatchLeft = null;
+    newMatchRight = null;
+  }
+
+  void _scheduleMatchedPulseClear(int attempt) {
+    _matchedPulseTimer?.cancel();
+    _matchedPulseTimer = Timer(const Duration(milliseconds: 650), () {
+      if (!mounted || attempt != matchPulseAttempt) return;
+      setState(_clearMatchedPulse);
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }
 
@@ -496,11 +576,17 @@ class _PromptCard extends StatelessWidget {
 class _ChoiceList extends StatelessWidget {
   final List<String> choices;
   final String? selected;
+  final bool checked;
+  final String answer;
+  final int feedbackAttempt;
   final ValueChanged<String> onSelected;
 
   const _ChoiceList({
     required this.choices,
     required this.selected,
+    required this.checked,
+    required this.answer,
+    required this.feedbackAttempt,
     required this.onSelected,
   });
 
@@ -509,11 +595,16 @@ class _ChoiceList extends StatelessWidget {
     return Column(
       children: choices.map((choice) {
         final active = selected == choice;
+        final correct = checked && active && choice == answer;
+        final wrong = checked && active && choice != answer;
         return _AnswerTile(
           label: choice,
           active: active,
+          correct: correct,
+          wrong: wrong,
+          feedbackKey: active ? feedbackAttempt : 0,
           icon: active ? Icons.check_circle_rounded : Icons.circle_outlined,
-          onTap: () => onSelected(choice),
+          onTap: checked ? null : () => onSelected(choice),
         );
       }).toList(),
     );
@@ -526,6 +617,10 @@ class _MatchingExercise extends StatelessWidget {
   final String? selectedLeft;
   final String? wrongLeft;
   final String? wrongRight;
+  final int wrongAttempt;
+  final String? newMatchLeft;
+  final String? newMatchRight;
+  final int matchPulseAttempt;
   final ValueChanged<String> onSelectLeft;
   final ValueChanged<String> onSelectRight;
 
@@ -535,6 +630,10 @@ class _MatchingExercise extends StatelessWidget {
     required this.selectedLeft,
     required this.wrongLeft,
     required this.wrongRight,
+    required this.wrongAttempt,
+    required this.newMatchLeft,
+    required this.newMatchRight,
+    required this.matchPulseAttempt,
     required this.onSelectLeft,
     required this.onSelectRight,
   });
@@ -567,6 +666,9 @@ class _MatchingExercise extends StatelessWidget {
                         selected: selectedLeft == left,
                         matched: matches.containsKey(left),
                         wrong: wrongLeft == left,
+                        justMatched: newMatchLeft == left,
+                        shakeKey: wrongLeft == left ? wrongAttempt : 0,
+                        jumpKey: newMatchLeft == left ? matchPulseAttempt : 0,
                         onTap: () => onSelectLeft(left),
                       ),
               ),
@@ -579,6 +681,9 @@ class _MatchingExercise extends StatelessWidget {
                         selected: false,
                         matched: usedRight.contains(right),
                         wrong: wrongRight == right,
+                        justMatched: newMatchRight == right,
+                        shakeKey: wrongRight == right ? wrongAttempt : 0,
+                        jumpKey: newMatchRight == right ? matchPulseAttempt : 0,
                         onTap: () => onSelectRight(right),
                         dimWhenIdle: selectedLeft == null,
                         compact: true,
@@ -597,6 +702,9 @@ class _MatchTile extends StatelessWidget {
   final bool selected;
   final bool matched;
   final bool wrong;
+  final bool justMatched;
+  final int shakeKey;
+  final int jumpKey;
   final bool dimWhenIdle;
   final bool compact;
   final VoidCallback onTap;
@@ -606,6 +714,9 @@ class _MatchTile extends StatelessWidget {
     required this.selected,
     required this.matched,
     required this.wrong,
+    required this.justMatched,
+    required this.shakeKey,
+    required this.jumpKey,
     required this.onTap,
     this.dimWhenIdle = false,
     this.compact = false,
@@ -613,14 +724,20 @@ class _MatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = selected || matched || wrong;
+    final active = selected || matched || wrong || justMatched;
     final borderColor = wrong
         ? TudloColors.coral
+        : justMatched
+        ? TudloColors.green
+        : matched
+        ? const Color(0xFFD4DEE7)
         : active
         ? TudloColors.green
         : TudloColors.line;
-    final textColor = matched
+    final textColor = justMatched
         ? TudloColors.green
+        : matched
+        ? TudloColors.muted
         : wrong
         ? TudloColors.coral
         : dimWhenIdle
@@ -628,42 +745,65 @@ class _MatchTile extends StatelessWidget {
         : TudloColors.ink;
     final backgroundColor = wrong
         ? TudloColors.coral.withValues(alpha: .08)
+        : justMatched
+        ? TudloColors.green.withValues(alpha: .10)
+        : matched
+        ? const Color(0xFFF0F4F7)
         : active
         ? TudloColors.green.withValues(alpha: .08)
         : Colors.white;
     final shadowColor = wrong ? TudloColors.coral : TudloColors.green;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: matched ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        height: 76,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor, width: active ? 4 : 3),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: shadowColor.withValues(alpha: .16),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: compact ? 2 : 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: textColor,
-              fontSize: compact ? 17 : 20,
-              fontWeight: FontWeight.w900,
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('$label-$shakeKey-$jumpKey'),
+      tween: Tween(begin: 0, end: (wrong || justMatched) ? 1 : 0),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        final shakeOffset = wrong
+            ? math.sin(value * math.pi * 6) * (1 - value) * 9
+            : 0.0;
+        final jumpOffset = justMatched
+            ? -math.sin(value * math.pi) * (1 - value * .25) * 10
+            : 0.0;
+
+        return Transform.translate(
+          offset: Offset(shakeOffset, jumpOffset),
+          child: child,
+        );
+      },
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: matched ? null : onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 76,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor, width: active ? 4 : 3),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: shadowColor.withValues(alpha: .16),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: compact ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: textColor,
+                fontSize: compact ? 17 : 20,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ),
@@ -675,12 +815,18 @@ class _MatchTile extends StatelessWidget {
 class _BuildSentenceExercise extends StatelessWidget {
   final LessonQuestion question;
   final List<String> builtWords;
+  final bool checked;
+  final bool correct;
+  final int feedbackAttempt;
   final ValueChanged<String> onAdd;
   final ValueChanged<int> onRemove;
 
   const _BuildSentenceExercise({
     required this.question,
     required this.builtWords,
+    required this.checked,
+    required this.correct,
+    required this.feedbackAttempt,
     required this.onAdd,
     required this.onRemove,
   });
@@ -695,26 +841,42 @@ class _BuildSentenceExercise extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 72),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: TudloColors.line, width: 4),
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: builtWords.asMap().entries.map((entry) {
-              return InputChip(
-                label: Text(entry.value),
-                backgroundColor: TudloColors.sky.withValues(alpha: .12),
-                labelStyle: const TextStyle(color: TudloColors.ink),
-                onDeleted: () => onRemove(entry.key),
-              );
-            }).toList(),
+        _FeedbackMotion(
+          key: ValueKey('build-$feedbackAttempt'),
+          correct: checked && correct,
+          wrong: checked && !correct,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 72),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: checked
+                  ? correct
+                        ? TudloColors.green.withValues(alpha: .10)
+                        : TudloColors.coral.withValues(alpha: .08)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: checked
+                    ? correct
+                          ? TudloColors.green
+                          : TudloColors.coral
+                    : TudloColors.line,
+                width: 4,
+              ),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: builtWords.asMap().entries.map((entry) {
+                return InputChip(
+                  label: Text(entry.value),
+                  backgroundColor: TudloColors.sky.withValues(alpha: .12),
+                  labelStyle: const TextStyle(color: TudloColors.ink),
+                  onDeleted: checked ? null : () => onRemove(entry.key),
+                );
+              }).toList(),
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -731,7 +893,7 @@ class _BuildSentenceExercise extends StatelessWidget {
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
-              onPressed: () => onAdd(word),
+              onPressed: checked ? null : () => onAdd(word),
             );
           }).toList(),
         ),
@@ -743,50 +905,117 @@ class _BuildSentenceExercise extends StatelessWidget {
 class _AnswerTile extends StatelessWidget {
   final String label;
   final bool active;
+  final bool correct;
+  final bool wrong;
+  final int feedbackKey;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _AnswerTile({
     required this.label,
     required this.active,
+    required this.correct,
+    required this.wrong,
+    required this.feedbackKey,
     required this.icon,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: active ? TudloColors.sky.withValues(alpha: .12) : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: active ? TudloColors.sky : TudloColors.line,
-            width: 4,
+    final borderColor = correct
+        ? TudloColors.green
+        : wrong
+        ? TudloColors.coral
+        : active
+        ? TudloColors.sky
+        : TudloColors.line;
+    final backgroundColor = correct
+        ? TudloColors.green.withValues(alpha: .10)
+        : wrong
+        ? TudloColors.coral.withValues(alpha: .08)
+        : active
+        ? TudloColors.sky.withValues(alpha: .12)
+        : Colors.white;
+    final iconColor = correct
+        ? TudloColors.green
+        : wrong
+        ? TudloColors.coral
+        : active
+        ? TudloColors.sky
+        : TudloColors.muted;
+
+    return _FeedbackMotion(
+      key: ValueKey('$label-$feedbackKey'),
+      correct: correct,
+      wrong: wrong,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor, width: 4),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: active ? TudloColors.sky : TudloColors.muted),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: active ? TudloColors.ink : TudloColors.muted,
-                  fontSize: 22,
-                  fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+          child: Row(
+            children: [
+              Icon(wrong ? Icons.cancel_rounded : icon, color: iconColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: active ? TudloColors.ink : TudloColors.muted,
+                    fontSize: 22,
+                    fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _FeedbackMotion extends StatelessWidget {
+  final bool correct;
+  final bool wrong;
+  final Widget child;
+
+  const _FeedbackMotion({
+    super.key,
+    required this.correct,
+    required this.wrong,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: (correct || wrong) ? 1 : 0),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        final shakeOffset = wrong
+            ? math.sin(value * math.pi * 6) * (1 - value) * 9
+            : 0.0;
+        final jumpOffset = correct
+            ? -math.sin(value * math.pi) * (1 - value * .25) * 10
+            : 0.0;
+
+        return Transform.translate(
+          offset: Offset(shakeOffset, jumpOffset),
+          child: child,
+        );
+      },
+      child: child,
     );
   }
 }

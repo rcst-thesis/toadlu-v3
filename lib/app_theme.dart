@@ -1,22 +1,28 @@
 import 'package:flutter/material.dart';
 
 class TudloColors {
-  static const sky = Color(0xFF44BDEB);
-  static const mint = Color(0xFFA8E6CF);
-  static const ink = Color(0xFF17324D);
-  static const muted = Color(0xFF617589);
-  static const paper = Color(0xFFF9FBFC);
-  static const line = Color(0xFFE2EBF2);
-  static const coral = Color(0xFFFF7F6E);
-  static const gold = Color(0xFFFFC857);
-  static const green = Color(0xFF35B779);
+  static const navy = Color(0xFF1D2A62);
+  static const blue = Color(0xFF87AECE);
+  static const cloud = Color(0xFFEDEDED);
+  static const meadow = Color(0xFFAFD06E);
+  static const forest = Color(0xFF437118);
+
+  static const sky = blue;
+  static const mint = meadow;
+  static const ink = navy;
+  static const muted = Color(0xFF5F6F86);
+  static const paper = cloud;
+  static const line = Color(0xFFD8DFE3);
+  static const coral = Color(0xFFE05A47);
+  static const gold = meadow;
+  static const green = forest;
 }
 
 class TudloTheme {
   static const gradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [TudloColors.sky, TudloColors.mint],
+    colors: [TudloColors.blue, TudloColors.meadow],
   );
 
   static final theme = ThemeData(
@@ -24,7 +30,7 @@ class TudloTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: TudloColors.sky,
       primary: TudloColors.sky,
-      secondary: TudloColors.coral,
+      secondary: TudloColors.forest,
       surface: TudloColors.paper,
     ),
     scaffoldBackgroundColor: TudloColors.paper,

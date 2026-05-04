@@ -97,7 +97,7 @@ class _MascotScreenState extends State<MascotScreen>
                     const Text(
                       'Tudlo',
                       style: TextStyle(
-                        color: Color(0xFF111827),
+                        color: TudloColors.ink,
                         fontSize: 50,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
@@ -108,7 +108,7 @@ class _MascotScreenState extends State<MascotScreen>
                       'Language Learning App',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFF111827),
+                        color: TudloColors.ink,
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                       ),
@@ -164,7 +164,7 @@ class _SplashMetric extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            color: Color(0xFF111827),
+            color: TudloColors.ink,
             fontSize: 34,
             fontWeight: FontWeight.w900,
           ),
@@ -172,7 +172,7 @@ class _SplashMetric extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Color(0xFF111827),
+            color: TudloColors.ink,
             fontSize: 14,
             fontWeight: FontWeight.w700,
           ),

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import '../forest_art.dart';
 
 class OnboardingColors {
-  static const bg = Color(0xFFEAF9FF);
+  static const bg = Color(0xFFEDEDED);
   static const panel = Colors.white;
-  static const panel2 = Color(0xFFF6FBFE);
-  static const border = Color(0xFFD7E8F1);
-  static const text = Color(0xFF17324D);
-  static const muted = Color(0xFF617589);
-  static const green = Color(0xFF35B779);
-  static const blue = Color(0xFF44BDEB);
+  static const panel2 = Color(0xFFF8F8F8);
+  static const border = Color(0xFFD8DFE3);
+  static const text = Color(0xFF1D2A62);
+  static const muted = Color(0xFF5F6F86);
+  static const green = Color(0xFF437118);
+  static const blue = Color(0xFF87AECE);
 }
 
 class ScaffoldCard extends StatelessWidget {
@@ -31,7 +32,7 @@ class ScaffoldCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFC9F3FF), Color(0xFFF8FEFF)],
+            colors: [Color(0xFF87AECE), Color(0xFFEDEDED)],
           ),
         ),
         child: SafeArea(
@@ -52,24 +53,13 @@ class ScaffoldCard extends StatelessWidget {
                         size: 34,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 34,
-                      height: 34,
-                      child: CircularProgressIndicator(
-                        value: .72,
-                        strokeWidth: 6,
-                        backgroundColor: Colors.white,
-                        color: OnboardingColors.green,
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 72),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const _BlueHelper(size: 126),
+                    const TudloMascot(size: 126),
                     const SizedBox(width: 18),
                     Expanded(child: _SpeechBubble(text: title)),
                   ],
@@ -146,122 +136,6 @@ class _BubbleTailPainter extends CustomPainter {
       ..lineTo(-20, size.height * .58)
       ..lineTo(3, size.height * .70);
     canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _BlueHelper extends StatelessWidget {
-  final double size;
-
-  const _BlueHelper({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size * .78),
-      painter: _BlueHelperPainter(),
-    );
-  }
-}
-
-class _BlueHelperPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final blue = Paint()..color = const Color(0xFF4B85F2);
-    final darkBlue = Paint()..color = const Color(0xFF2E67D9);
-    final light = Paint()..color = const Color(0xFF8FC8FF);
-    final white = Paint()..color = Colors.white;
-    final ink = Paint()..color = const Color(0xFF172033);
-
-    final body = Rect.fromLTWH(
-      size.width * .10,
-      size.height * .32,
-      size.width * .62,
-      size.height * .42,
-    );
-    canvas.drawOval(body, blue);
-    canvas.drawCircle(
-      Offset(size.width * .33, size.height * .28),
-      size.width * .17,
-      blue,
-    );
-    canvas.drawCircle(
-      Offset(size.width * .20, size.height * .34),
-      size.width * .09,
-      light,
-    );
-    canvas.drawOval(
-      Rect.fromLTWH(
-        size.width * .02,
-        size.height * .55,
-        size.width * .20,
-        size.height * .09,
-      ),
-      darkBlue,
-    );
-    canvas.drawOval(
-      Rect.fromLTWH(
-        size.width * .62,
-        size.height * .54,
-        size.width * .18,
-        size.height * .08,
-      ),
-      darkBlue,
-    );
-
-    final laptop = Path()
-      ..moveTo(size.width * .52, size.height * .42)
-      ..lineTo(size.width * .98, size.height * .45)
-      ..lineTo(size.width * .86, size.height * .72)
-      ..lineTo(size.width * .45, size.height * .69)
-      ..close();
-    canvas.drawPath(laptop, Paint()..color = const Color(0xFFBFEFFF));
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          size.width * .18,
-          size.height * .72,
-          size.width * .84,
-          size.height * .07,
-        ),
-        const Radius.circular(10),
-      ),
-      Paint()..color = const Color(0xFF4B5660),
-    );
-
-    for (final dx in [.30, .54]) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            size.width * dx,
-            size.height * .30,
-            size.width * .21,
-            size.height * .22,
-          ),
-          const Radius.circular(7),
-        ),
-        white,
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            size.width * (dx + .03),
-            size.height * .33,
-            size.width * .12,
-            size.height * .13,
-          ),
-          const Radius.circular(5),
-        ),
-        ink,
-      );
-      canvas.drawCircle(
-        Offset(size.width * (dx + .07), size.height * .34),
-        size.width * .035,
-        white,
-      );
-    }
   }
 
   @override
