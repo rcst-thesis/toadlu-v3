@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 
 class TudloColors {
-  static const navy = Color(0xFF1D2A62);
-  static const blue = Color(0xFF87AECE);
-  static const cloud = Color(0xFFEDEDED);
+  static const navy = Color(0xFF253F0C);
+  static const blue = Color(0xFF08C66B);
+  static const cloud = Color(0xFFF5FAF5);
   static const meadow = Color(0xFFAFD06E);
   static const forest = Color(0xFF437118);
+  static const brightGreen = Color(0xFF08C66B);
+  static const softGreen = Color(0xFFDFF7EA);
 
-  static const sky = blue;
-  static const mint = meadow;
+  static const sky = brightGreen;
+  static const mint = softGreen;
   static const ink = navy;
-  static const muted = Color(0xFF5F6F86);
+  static const muted = Color(0xFF7D8A7D);
   static const paper = cloud;
-  static const line = Color(0xFFD8DFE3);
+  static const line = Color(0xFFD8E6D8);
   static const coral = Color(0xFFE05A47);
-  static const gold = meadow;
-  static const green = forest;
+  static const gold = Color(0xFFFFD700);
+  static const green = brightGreen;
 }
 
 class TudloTheme {
   static const gradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [TudloColors.blue, TudloColors.meadow],
+    colors: [TudloColors.softGreen, TudloColors.paper],
   );
 
   static final theme = ThemeData(
@@ -54,8 +56,10 @@ class TudloTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: TudloColors.ink,
+        backgroundColor: TudloColors.brightGreen,
         foregroundColor: Colors.white,
+        disabledBackgroundColor: TudloColors.line,
+        disabledForegroundColor: TudloColors.muted,
         elevation: 0,
         minimumSize: const Size(48, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

@@ -11,9 +11,14 @@ class KnowledgeLevelScreen extends StatefulWidget {
 }
 
 class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
-  int selected = 1;
+  int? selected;
 
-  final labels = const ['Beginner', 'Basic', 'Intermediate', 'Advanced'];
+  final labels = const [
+    "I'm still learning",
+    'I know a bit',
+    'I can understand most',
+    "I'm fluent",
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -34,56 +39,91 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
                     selected = level;
                   });
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? OnboardingColors.panel2
-                        : OnboardingColors.bg,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeOut,
+                  scale: active ? 1.02 : 1,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
                       color: active
                           ? OnboardingColors.green
-                          : OnboardingColors.border,
-                      width: 4,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: List.generate(4, (barIndex) {
-                            final filled = barIndex < level;
-                            return Expanded(
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                ),
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: filled
-                                      ? (active
-                                            ? OnboardingColors.green
-                                            : OnboardingColors.green)
-                                      : OnboardingColors.border,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
+                          : OnboardingColors.panel2,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: active
+                            ? OnboardingColors.green
+                            : OnboardingColors.green.withValues(alpha: .82),
+                        width: active ? 3 : 2,
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        labels[index],
-                        style: TextStyle(
+                      boxShadow: [
+                        BoxShadow(
                           color: active
-                              ? OnboardingColors.green
-                              : OnboardingColors.text,
-                          fontWeight: FontWeight.bold,
+                              ? OnboardingColors.shadow
+                              : OnboardingColors.green.withValues(alpha: .14),
+                          blurRadius: active ? 20 : 0,
+                          offset: active
+                              ? const Offset(0, 10)
+                              : const Offset(8, 8),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            labels[index],
+                            style: TextStyle(
+                              color: active
+                                  ? Colors.white
+                                  : OnboardingColors.text,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          width: active ? 54 : 24,
+                          height: 22,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              ...List.generate(4, (barIndex) {
+                                final filled = barIndex < level;
+                                return Container(
+                                  width: 3,
+                                  height: 5.0 + barIndex * 3,
+                                  margin: const EdgeInsets.only(left: 2),
+                                  decoration: BoxDecoration(
+                                    color: active
+                                        ? Colors.white.withValues(
+                                            alpha: filled ? 1 : .42,
+                                          )
+                                        : filled
+                                        ? OnboardingColors.green
+                                        : OnboardingColors.muted,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                );
+                              }),
+                              if (active)
+                                const Padding(
+                                  padding: EdgeInsets.only(left: 8),
+                                  child: Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -91,15 +131,20 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
           }),
           const SizedBox(height: 8),
           SizedBox(
-            width: double.infinity,
+            width: 138,
+            height: 36,
             child: ElevatedButton(
-              onPressed: () {
-                AppStateScope.of(context).setKnowledgeLevel(selected);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                );
-              },
+              onPressed: selected == null
+                  ? null
+                  : () {
+                      AppStateScope.of(context).setKnowledgeLevel(selected!);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const OnboardingScreen(),
+                        ),
+                      );
+                    },
               child: const Text('Continue'),
             ),
           ),

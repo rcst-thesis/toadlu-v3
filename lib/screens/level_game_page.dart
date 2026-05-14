@@ -730,7 +730,7 @@ class _MatchTile extends StatelessWidget {
         : justMatched
         ? TudloColors.green
         : matched
-        ? const Color(0xFFD4DEE7)
+        ? TudloColors.line
         : active
         ? TudloColors.green
         : TudloColors.line;
@@ -748,7 +748,7 @@ class _MatchTile extends StatelessWidget {
         : justMatched
         ? TudloColors.green.withValues(alpha: .10)
         : matched
-        ? const Color(0xFFF0F4F7)
+        ? TudloColors.paper
         : active
         ? TudloColors.green.withValues(alpha: .08)
         : Colors.white;

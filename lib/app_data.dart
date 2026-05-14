@@ -6,7 +6,7 @@ class AppData {
   static const int maxLevel = 50;
 
   static int energyPoints = 0;
-  static int streakDays = 7;
+  static int streakDays = 0;
   static int unlockedLevel = 1;
   static final Map<int, int> levelStars = {};
 

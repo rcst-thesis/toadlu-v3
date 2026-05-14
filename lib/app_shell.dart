@@ -54,21 +54,26 @@ class AppShellState extends State<AppShell> {
         children: [
           pages[_selectedIndex],
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
+            left: 18,
+            right: 18,
+            bottom: 18,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              height: 74,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+              height: 78,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: TudloColors.line),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: Colors.white.withValues(alpha: .92)),
                 boxShadow: [
                   BoxShadow(
-                    color: TudloColors.ink.withValues(alpha: 0.12),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
+                    color: TudloColors.forest.withValues(alpha: 0.12),
+                    blurRadius: 34,
+                    offset: const Offset(0, 16),
+                  ),
+                  BoxShadow(
+                    color: TudloColors.brightGreen.withValues(alpha: 0.07),
+                    blurRadius: 18,
+                    offset: const Offset(0, 7),
                   ),
                 ],
               ),
@@ -77,45 +82,61 @@ class AppShellState extends State<AppShell> {
                   final isSelected = _selectedIndex == index;
 
                   return Expanded(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () => switchTo(index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOut,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? TudloColors.sky.withValues(alpha: 0.14)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              icons[index],
-                              size: 23,
-                              color: isSelected
-                                  ? TudloColors.ink
-                                  : TudloColors.muted,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              labels[index],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                    child: AnimatedScale(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      scale: isSelected ? 1.03 : 1,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => switchTo(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? TudloColors.softGreen
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: TudloColors.brightGreen.withValues(
+                                        alpha: .10,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 7),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                icons[index],
+                                size: isSelected ? 24 : 23,
                                 color: isSelected
-                                    ? TudloColors.ink
+                                    ? TudloColors.forest
                                     : TudloColors.muted,
-                                fontSize: 11,
-                                fontWeight: isSelected
-                                    ? FontWeight.w800
-                                    : FontWeight.w600,
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                labels[index],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? TudloColors.forest
+                                      : TudloColors.muted,
+                                  fontSize: 11,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w900
+                                      : FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
