@@ -56,19 +56,8 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
                         color: active
                             ? OnboardingColors.green
                             : OnboardingColors.green.withValues(alpha: .82),
-                        width: active ? 3 : 2,
+                        width: 2.5,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: active
-                              ? OnboardingColors.shadow
-                              : OnboardingColors.green.withValues(alpha: .14),
-                          blurRadius: active ? 20 : 0,
-                          offset: active
-                              ? const Offset(0, 10)
-                              : const Offset(8, 8),
-                        ),
-                      ],
                     ),
                     child: Row(
                       children: [
@@ -86,7 +75,7 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
                         ),
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 160),
-                          width: active ? 54 : 24,
+                          width: 24,
                           height: 22,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -110,15 +99,6 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
                                   ),
                                 );
                               }),
-                              if (active)
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 8),
-                                  child: Icon(
-                                    Icons.check_circle_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
                             ],
                           ),
                         ),
@@ -129,10 +109,10 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
               ),
             );
           }),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
           SizedBox(
-            width: 138,
-            height: 36,
+            width: MediaQuery.sizeOf(context).width * .74,
+            height: 58,
             child: ElevatedButton(
               onPressed: selected == null
                   ? null

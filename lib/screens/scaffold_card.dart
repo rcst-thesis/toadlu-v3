@@ -76,14 +76,14 @@ class _ScaffoldCardState extends State<ScaffoldCard>
               disabledForegroundColor: OnboardingColors.muted.withValues(
                 alpha: .75,
               ),
-              elevation: 7,
-              shadowColor: OnboardingColors.green.withValues(alpha: .24),
-              minimumSize: const Size(48, 36),
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              minimumSize: const Size(240, 58),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(30),
               ),
               textStyle: const TextStyle(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
               ),

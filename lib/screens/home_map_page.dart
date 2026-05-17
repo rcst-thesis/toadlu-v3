@@ -70,7 +70,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
                 children: [
                   _MapHeader(
                     currentLevel: currentLevel,
-                    username: username.isEmpty ? 'nicole' : username,
+                    username: username.isEmpty ? 'user' : username,
                   ),
                   SizedBox(
                     height: mapHeight,
@@ -182,10 +182,10 @@ class _MapHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Align(
-                    alignment: Alignment.centerRight,
+                    alignment: Alignment.centerLeft,
                     child: _HeaderCounter(
-                      icon: Icons.local_fire_department_rounded,
-                      value: '${AppData.streakDays}',
+                      icon: Icons.bolt_rounded,
+                      value: '${AppData.energyPoints}',
                     ),
                   ),
                   const Spacer(),

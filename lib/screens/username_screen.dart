@@ -99,8 +99,8 @@ class _UsernameScreenState extends State<UsernameScreen> {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            width: 138,
-            height: 36,
+            width: MediaQuery.sizeOf(context).width * .74,
+            height: 58,
             child: ElevatedButton(
               onPressed: () {
                 if (controller.text.trim().isEmpty) return;

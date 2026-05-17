@@ -3,6 +3,7 @@ import '../app_data.dart';
 import '../app_theme.dart';
 import '../forest_art.dart';
 import '../lesson_bank.dart';
+import '../tap_word_meaning.dart';
 
 enum _TestQuestionKind { multipleChoice, identification }
 
@@ -237,13 +238,47 @@ class _TestPageState extends State<TestPage> {
       for (final term in terms) term.hil: term,
     }.values.toList();
 
+    final missingQuestions = _missingWordQuestions(test);
+    final translationQuestions = _translationSentenceQuestions(test);
+
     return List.generate(30, (index) {
       final term = unique[index % unique.length];
-      final isIdentification = index % 5 == 4 || index % 5 == 2;
-      if (isIdentification) {
+      final typeIndex = index % 5;
+
+      if (typeIndex == 0) {
+        return missingQuestions[index % missingQuestions.length];
+      }
+
+      if (typeIndex == 1) {
+        return translationQuestions[index % translationQuestions.length];
+      }
+
+      if (typeIndex == 2) {
+        final choices = <String>{term.hil};
+        var i = index + test;
+        while (choices.length < 4) {
+          choices.add(unique[i % unique.length].hil);
+          i += 3;
+        }
+        return _TestQuestion.multipleChoice(
+          instruction: 'Complete the sentence',
+          prompt: term.eng,
+          answer: term.hil,
+          choices: choices.toList()..sort(),
+          targetPhrase: term.eng,
+          targetMeaning: term.hil,
+          directionLabel: 'English to Hiligaynon',
+        );
+      }
+
+      if (typeIndex == 4) {
         return _TestQuestion.identification(
+          instruction: 'Identification',
           prompt: 'Type the English meaning of "${term.hil}".',
           answer: term.eng,
+          targetPhrase: term.hil,
+          targetMeaning: term.eng,
+          directionLabel: 'Hiligaynon to English',
         );
       }
 
@@ -254,11 +289,149 @@ class _TestPageState extends State<TestPage> {
         i += 3;
       }
       return _TestQuestion.multipleChoice(
-        prompt: 'What is the English meaning of "${term.hil}"?',
+        instruction: 'Complete the sentence',
+        prompt: term.hil,
         answer: term.eng,
         choices: choices.toList()..sort(),
+        targetPhrase: term.hil,
+        targetMeaning: term.eng,
+        directionLabel: 'Hiligaynon to English',
       );
     });
+  }
+
+  List<_TestQuestion> _missingWordQuestions(int test) {
+    const bank = [
+      _MissingWordSeed(
+        prompt: 'Complete the sentence "Maayong ___".',
+        answer: 'aga',
+        choices: ['aga', 'puno', 'tubig', 'libro'],
+        targetPhrase: 'Maayong',
+        targetMeaning: 'Good',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _MissingWordSeed(
+        prompt: 'Complete the sentence "Maayong ___".',
+        answer: 'hapon',
+        choices: ['balay', 'hapon', 'kaon', 'iro'],
+        targetPhrase: 'Maayong',
+        targetMeaning: 'Good',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _MissingWordSeed(
+        prompt: 'Complete the sentence "Maayong ___".',
+        answer: 'gab-i',
+        choices: ['gab-i', 'puno', 'libro', 'tubig'],
+        targetPhrase: 'Maayong',
+        targetMeaning: 'Good',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _MissingWordSeed(
+        prompt: 'Complete the sentence "Nagkaon ako sang ___".',
+        answer: 'kan-on',
+        choices: ['tubig', 'kan-on', 'libro', 'balay'],
+        targetPhrase: 'Nagkaon',
+        targetMeaning: 'Ate or is eating',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _MissingWordSeed(
+        prompt: 'Complete the sentence "Palihog hatag sang ___".',
+        answer: 'tubig',
+        choices: ['tubig', 'gab-i', 'daku', 'kumusta'],
+        targetPhrase: 'Palihog',
+        targetMeaning: 'please',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _MissingWordSeed(
+        prompt: 'Complete the sentence "Nagabasa ako sang ___".',
+        answer: 'libro',
+        choices: ['libro', 'tubig', 'iro', 'dalan'],
+        targetPhrase: 'Nagabasa',
+        targetMeaning: 'reading',
+        directionLabel: 'Hiligaynon to English',
+      ),
+    ];
+
+    return [
+      for (var i = 0; i < bank.length; i++)
+        _TestQuestion.multipleChoice(
+          instruction: 'Select the missing word',
+          prompt: bank[(i + test - 1) % bank.length].prompt,
+          answer: bank[(i + test - 1) % bank.length].answer,
+          choices: bank[(i + test - 1) % bank.length].choices,
+          targetPhrase: bank[(i + test - 1) % bank.length].targetPhrase,
+          targetMeaning: bank[(i + test - 1) % bank.length].targetMeaning,
+          directionLabel: bank[(i + test - 1) % bank.length].directionLabel,
+        ),
+    ];
+  }
+
+  List<_TestQuestion> _translationSentenceQuestions(int test) {
+    const bank = [
+      _TranslationSentenceSeed(
+        prompt: 'Translate: "Maayong aga."',
+        answer: 'Good morning',
+        choices: ['Good morning', 'Good evening', 'Thank you', 'Please'],
+        targetPhrase: 'Maayong aga',
+        targetMeaning: 'Good morning',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _TranslationSentenceSeed(
+        prompt: 'Translate: "Nagakaon ako."',
+        answer: 'I am eating',
+        choices: [
+          'I am eating',
+          'I am sleeping',
+          'I am reading',
+          'I am walking',
+        ],
+        targetPhrase: 'Nagakaon ako',
+        targetMeaning: 'I am eating',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _TranslationSentenceSeed(
+        prompt: 'Translate: "Salamat gid."',
+        answer: 'Thank you very much',
+        choices: [
+          'Thank you very much',
+          'Good afternoon',
+          'I am eating',
+          'Where are you',
+        ],
+        targetPhrase: 'Salamat gid',
+        targetMeaning: 'Thank you very much',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      _TranslationSentenceSeed(
+        prompt: 'Translate: "Good evening."',
+        answer: 'Maayong gab-i',
+        choices: ['Maayong gab-i', 'Maayong aga', 'Palihog', 'Indi'],
+        targetPhrase: 'Good evening',
+        targetMeaning: 'Maayong gab-i',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      _TranslationSentenceSeed(
+        prompt: 'Translate: "I am reading."',
+        answer: 'Nagabasa ako',
+        choices: ['Nagabasa ako', 'Nagakaon ako', 'Nagainom ako', 'Dagan ako'],
+        targetPhrase: 'I am reading',
+        targetMeaning: 'Nagabasa ako',
+        directionLabel: 'English to Hiligaynon',
+      ),
+    ];
+
+    return [
+      for (var i = 0; i < bank.length; i++)
+        _TestQuestion.multipleChoice(
+          instruction: 'Translate the sentence',
+          prompt: bank[(i + test - 1) % bank.length].prompt,
+          answer: bank[(i + test - 1) % bank.length].answer,
+          choices: bank[(i + test - 1) % bank.length].choices,
+          targetPhrase: bank[(i + test - 1) % bank.length].targetPhrase,
+          targetMeaning: bank[(i + test - 1) % bank.length].targetMeaning,
+          directionLabel: bank[(i + test - 1) % bank.length].directionLabel,
+        ),
+    ];
   }
 }
 
@@ -575,6 +748,13 @@ class _QuestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIdentification = question.kind == _TestQuestionKind.identification;
+    final icon = switch (question.instruction) {
+      'Select the missing word' => Icons.extension_rounded,
+      'Translate the sentence' => Icons.translate_rounded,
+      'Complete the sentence' => Icons.text_fields_rounded,
+      'Identification' => Icons.edit_note_rounded,
+      _ => Icons.checklist_rounded,
+    };
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -602,13 +782,7 @@ class _QuestionCard extends StatelessWidget {
                   color: TudloColors.softGreen,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  isIdentification
-                      ? Icons.edit_note_rounded
-                      : Icons.checklist_rounded,
-                  color: TudloColors.forest,
-                  size: 21,
-                ),
+                child: Icon(icon, color: TudloColors.forest, size: 21),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -621,14 +795,15 @@ class _QuestionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _SoftBadge(
-                label: isIdentification ? 'Identification' : 'Multiple Choice',
-              ),
+              _SoftBadge(label: question.instruction),
             ],
           ),
           const SizedBox(height: 14),
-          Text(
-            question.prompt,
+          TapWordMeaningText(
+            fullQuestionText: question.prompt,
+            targetPhrase: question.targetPhrase,
+            targetMeaning: question.targetMeaning,
+            directionLabel: question.directionLabel,
             style: const TextStyle(
               color: TudloColors.ink,
               fontSize: 21,
@@ -893,7 +1068,7 @@ class _QuizFooter extends StatelessWidget {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: canSubmit ? onSubmit : null,
-                  child: Text('SUBMIT (${current + 1}/$total)'),
+                  child: Text('CHECK (${current + 1}/$total)'),
                 ),
               ),
             ),
@@ -1158,19 +1333,67 @@ class _TestMeta {
 
 class _TestQuestion {
   final _TestQuestionKind kind;
+  final String instruction;
   final String prompt;
   final String answer;
   final List<String> choices;
+  final String targetPhrase;
+  final String targetMeaning;
+  final String directionLabel;
 
   const _TestQuestion.multipleChoice({
+    required this.instruction,
     required this.prompt,
     required this.answer,
     required this.choices,
+    required this.targetPhrase,
+    required this.targetMeaning,
+    required this.directionLabel,
   }) : kind = _TestQuestionKind.multipleChoice;
 
   const _TestQuestion.identification({
+    required this.instruction,
     required this.prompt,
     required this.answer,
+    required this.targetPhrase,
+    required this.targetMeaning,
+    required this.directionLabel,
   }) : kind = _TestQuestionKind.identification,
        choices = const [];
+}
+
+class _MissingWordSeed {
+  final String prompt;
+  final String answer;
+  final List<String> choices;
+  final String targetPhrase;
+  final String targetMeaning;
+  final String directionLabel;
+
+  const _MissingWordSeed({
+    required this.prompt,
+    required this.answer,
+    required this.choices,
+    required this.targetPhrase,
+    required this.targetMeaning,
+    required this.directionLabel,
+  });
+}
+
+class _TranslationSentenceSeed {
+  final String prompt;
+  final String answer;
+  final List<String> choices;
+  final String targetPhrase;
+  final String targetMeaning;
+  final String directionLabel;
+
+  const _TranslationSentenceSeed({
+    required this.prompt,
+    required this.answer,
+    required this.choices,
+    required this.targetPhrase,
+    required this.targetMeaning,
+    required this.directionLabel,
+  });
 }

@@ -6,6 +6,7 @@ import '../app_data.dart';
 import '../app_shell.dart';
 import '../app_theme.dart';
 import '../lesson_bank.dart';
+import '../tap_word_meaning.dart';
 
 class LevelGamePage extends StatefulWidget {
   final int level;
@@ -57,7 +58,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
     final q = currentQuestion;
     return switch (q.type) {
       QuestionType.matching => matches.length == q.leftItems.length,
-      QuestionType.buildSentence => builtWords.isNotEmpty,
+      QuestionType.buildSentence =>
+        builtWords.length >= q.answer.split(' ').length,
       _ => selectedAnswer != null,
     };
   }
@@ -123,84 +125,20 @@ class _LevelGamePageState extends State<LevelGamePage> {
     final duration = DateTime.now().difference(_levelStartedAt);
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Seriously???',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: TudloColors.meadow,
-            fontSize: 30,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'You made ${questions.length - score} mistakes.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: TudloColors.ink, fontSize: 18),
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: _ResultStat(
-                    label: 'TOTAL XP',
-                    value: '${score * 10}',
-                    color: TudloColors.meadow,
-                    icon: Icons.bolt_rounded,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ResultStat(
-                    label: 'AMAZING',
-                    value: '$accuracy%',
-                    color: TudloColors.forest,
-                    icon: Icons.track_changes_rounded,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ResultStat(
-                    label: 'TIME',
-                    value: _formatDuration(duration),
-                    color: TudloColors.sky,
-                    icon: Icons.timer_rounded,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: TudloColors.sky,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AppShell(initialIndex: 0),
-                  ),
-                  (route) => false,
-                );
-              },
-              child: const Text('CLAIM XP'),
-            ),
-          ),
-        ],
+      barrierColor: TudloColors.ink.withValues(alpha: .62),
+      builder: (_) => _LessonCompleteDialog(
+        xp: score * 10,
+        accuracy: accuracy,
+        mistakes: questions.length - score,
+        durationLabel: _formatDuration(duration),
+        onClaim: () {
+          Navigator.pop(context);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 0)),
+            (route) => false,
+          );
+        },
       ),
     );
   }
@@ -240,10 +178,10 @@ class _LevelGamePageState extends State<LevelGamePage> {
                 ],
               ),
               const SizedBox(height: 26),
-              Align(
-                alignment: Alignment.centerLeft,
+              Center(
                 child: Text(
                   _titleFor(currentQuestion.type),
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: TudloColors.ink,
                     fontSize: 31,
@@ -254,16 +192,25 @@ class _LevelGamePageState extends State<LevelGamePage> {
               ),
               const SizedBox(height: 22),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _PromptCard(question: currentQuestion),
-                      const SizedBox(height: 26),
-                      _buildQuestionBody(currentQuestion),
-                    ],
-                  ),
-                ),
+                child: currentQuestion.type == QuestionType.buildSentence
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _PromptCard(question: currentQuestion),
+                          const SizedBox(height: 26),
+                          Expanded(child: _buildQuestionBody(currentQuestion)),
+                        ],
+                      )
+                    : SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _PromptCard(question: currentQuestion),
+                            const SizedBox(height: 26),
+                            _buildQuestionBody(currentQuestion),
+                          ],
+                        ),
+                      ),
               ),
               if (checked) ...[
                 const SizedBox(height: 12),
@@ -312,7 +259,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: checked
                         ? TudloColors.green
-                        : TudloColors.ink,
+                        : const Color.fromARGB(255, 46, 96, 0),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: TudloColors.line,
                     disabledForegroundColor: TudloColors.muted,
@@ -344,9 +291,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
   String _titleFor(QuestionType type) {
     return switch (type) {
       QuestionType.choice => 'Select the missing word',
-      QuestionType.matching => 'Tap the matching pairs',
-      QuestionType.completeSentence => 'Complete the sentence',
-      QuestionType.buildSentence => 'Translate this sentence',
+      QuestionType.matching => 'Matching pair',
+      QuestionType.completeSentence => 'What is the word?',
+      QuestionType.buildSentence => 'Translate the sentence',
     };
   }
 
@@ -462,55 +409,396 @@ class _LevelGamePageState extends State<LevelGamePage> {
   }
 }
 
-class _ResultStat extends StatelessWidget {
+class _LessonCompleteDialog extends StatelessWidget {
+  final int xp;
+  final int accuracy;
+  final int mistakes;
+  final String durationLabel;
+  final VoidCallback onClaim;
+
+  const _LessonCompleteDialog({
+    required this.xp,
+    required this.accuracy,
+    required this.mistakes,
+    required this.durationLabel,
+    required this.onClaim,
+  });
+
+  int get starCount {
+    if (accuracy >= 90) return 3;
+    if (accuracy >= 70) return 2;
+    if (accuracy > 0) return 1;
+    return 0;
+  }
+
+  String get message {
+    if (mistakes == 0) return 'Perfect lesson! You made 0 mistakes.';
+    if (accuracy >= 80) return 'Amazing work! You made $mistakes mistakes.';
+    return 'Great effort! Keep practicing and try again.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      backgroundColor: Colors.transparent,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: .92, end: 1),
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutBack,
+        builder: (context, value, child) {
+          return Opacity(
+            opacity: ((value - .92) / .08).clamp(0, 1),
+            child: Transform.scale(scale: value, child: child),
+          );
+        },
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topCenter,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 118),
+              padding: const EdgeInsets.fromLTRB(24, 82, 24, 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFCF2),
+                borderRadius: BorderRadius.circular(36),
+                border: Border.all(
+                  color: TudloColors.green.withValues(alpha: .24),
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: .18),
+                    blurRadius: 34,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 8,
+                    right: 6,
+                    child: _Sparkle(color: TudloColors.green, size: 14),
+                  ),
+                  Positioned(
+                    top: 104,
+                    left: 4,
+                    child: _Sparkle(color: TudloColors.meadow, size: 10),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: TudloColors.muted,
+                          fontSize: 15,
+                          height: 1.25,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .70),
+                          borderRadius: BorderRadius.circular(26),
+                          border: Border.all(
+                            color: TudloColors.green.withValues(alpha: .12),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            _RewardStatRow(
+                              label: 'TOTAL XP',
+                              value: '$xp',
+                              icon: Icons.bolt_rounded,
+                            ),
+                            const _RewardDivider(),
+                            _RewardStatRow(
+                              label: 'ACCURACY',
+                              value: '$accuracy%',
+                              icon: Icons.track_changes_rounded,
+                            ),
+                            const _RewardDivider(),
+                            _RewardStatRow(
+                              label: 'TIME',
+                              value: durationLabel,
+                              icon: Icons.timer_rounded,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 60,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: TudloColors.green,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: .3,
+                            ),
+                          ),
+                          onPressed: onClaim,
+                          child: const Text('CLAIM XP'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Positioned(top: 0, child: _RewardStars(count: starCount)),
+            const Positioned(top: 74, child: _RewardBanner()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RewardBanner extends StatelessWidget {
+  const _RewardBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 320,
+      height: 98,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/banner.png',
+              fit: BoxFit.contain,
+              color: TudloColors.green,
+              colorBlendMode: BlendMode.modulate,
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 4),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'LESSON',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'LEVEL COMPLETE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 27,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardStars extends StatelessWidget {
+  final int count;
+
+  const _RewardStars({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 178,
+      height: 92,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            left: 6,
+            top: 28,
+            child: Transform.rotate(
+              angle: -.18,
+              child: _RewardStar(active: count >= 2, size: 56),
+            ),
+          ),
+          Positioned(
+            right: 6,
+            top: 28,
+            child: Transform.rotate(
+              angle: .18,
+              child: _RewardStar(active: count >= 3, size: 56),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            child: Transform.rotate(
+              angle: .05,
+              child: _RewardStar(active: count >= 1, size: 78),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardStar extends StatelessWidget {
+  final bool active;
+  final double size;
+
+  const _RewardStar({required this.active, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? const Color(0xFFFFD84D) : TudloColors.line;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFFD84D).withValues(alpha: .42),
+                  blurRadius: 18,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.star_rounded, color: color, size: size),
+          if (active)
+            Positioned(
+              top: size * .23,
+              right: size * .27,
+              child: Icon(
+                Icons.circle,
+                color: Colors.white.withValues(alpha: .72),
+                size: size * .12,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardStatRow extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
   final IconData icon;
 
-  const _ResultStat({
+  const _RewardStatRow({
     required this.label,
     required this.value,
-    required this.color,
     required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color, width: 4),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: TudloColors.green.withValues(alpha: .14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: TudloColors.green, size: 25),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: TudloColors.muted,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .5,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(width: 4),
-              Text(
+          const SizedBox(width: 12),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
                 value,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 20,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: TudloColors.forest,
+                  fontSize: 30,
+                  height: 1,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RewardDivider extends StatelessWidget {
+  const _RewardDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 1,
+      thickness: 1.2,
+      color: TudloColors.green.withValues(alpha: .16),
+    );
+  }
+}
+
+class _Sparkle extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _Sparkle({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(
+      Icons.auto_awesome_rounded,
+      color: color.withValues(alpha: .28),
+      size: size,
     );
   }
 }
@@ -522,13 +810,6 @@ class _PromptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (question.type) {
-      QuestionType.choice => Icons.auto_awesome_rounded,
-      QuestionType.matching => Icons.link_rounded,
-      QuestionType.completeSentence => Icons.edit_note_rounded,
-      QuestionType.buildSentence => Icons.volume_up_rounded,
-    };
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -550,25 +831,53 @@ class _PromptCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: TudloColors.sky,
+              color: TudloColors.green,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: Colors.white, size: 32),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              question.prompt,
-              style: const TextStyle(
-                color: TudloColors.ink,
-                fontSize: 24,
-                height: 1.2,
-                fontWeight: FontWeight.w800,
-              ),
+            child: Icon(
+              switch (question.type) {
+                QuestionType.choice => Icons.auto_awesome_rounded,
+                QuestionType.matching => Icons.link_rounded,
+                QuestionType.completeSentence => Icons.text_fields_rounded,
+                QuestionType.buildSentence => Icons.translate_rounded,
+              },
+              color: Colors.white,
+              size: 32,
             ),
           ),
+          const SizedBox(width: 16),
+          Expanded(child: _PromptText(question: question)),
         ],
       ),
+    );
+  }
+}
+
+class _PromptText extends StatelessWidget {
+  final LessonQuestion question;
+
+  const _PromptText({required this.question});
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(
+      color: TudloColors.ink,
+      fontSize: 24,
+      height: 1.2,
+      fontWeight: FontWeight.w800,
+    );
+
+    if (question.targetPhrase.trim().isEmpty ||
+        question.targetMeaning.trim().isEmpty) {
+      return Text(question.prompt, style: style);
+    }
+
+    return TapWordMeaningText(
+      fullQuestionText: question.prompt,
+      targetPhrase: question.targetPhrase,
+      targetMeaning: question.targetMeaning,
+      directionLabel: question.directionLabel,
+      style: style,
     );
   }
 }
@@ -685,7 +994,6 @@ class _MatchingExercise extends StatelessWidget {
                         shakeKey: wrongRight == right ? wrongAttempt : 0,
                         jumpKey: newMatchRight == right ? matchPulseAttempt : 0,
                         onTap: () => onSelectRight(right),
-                        dimWhenIdle: selectedLeft == null,
                         compact: true,
                       ),
               ),
@@ -705,7 +1013,6 @@ class _MatchTile extends StatelessWidget {
   final bool justMatched;
   final int shakeKey;
   final int jumpKey;
-  final bool dimWhenIdle;
   final bool compact;
   final VoidCallback onTap;
 
@@ -718,7 +1025,6 @@ class _MatchTile extends StatelessWidget {
     required this.shakeKey,
     required this.jumpKey,
     required this.onTap,
-    this.dimWhenIdle = false,
     this.compact = false,
   });
 
@@ -740,8 +1046,6 @@ class _MatchTile extends StatelessWidget {
         ? TudloColors.muted
         : wrong
         ? TudloColors.coral
-        : dimWhenIdle
-        ? TudloColors.muted
         : TudloColors.ink;
     final backgroundColor = wrong
         ? TudloColors.coral.withValues(alpha: .08)
@@ -872,30 +1176,60 @@ class _BuildSentenceExercise extends StatelessWidget {
                 return InputChip(
                   label: Text(entry.value),
                   backgroundColor: TudloColors.sky.withValues(alpha: .12),
-                  labelStyle: const TextStyle(color: TudloColors.ink),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(
+                      color: TudloColors.green.withValues(alpha: .22),
+                      width: 2,
+                    ),
+                  ),
+                  labelStyle: const TextStyle(
+                    color: TudloColors.ink,
+                    fontWeight: FontWeight.w900,
+                  ),
                   onDeleted: checked ? null : () => onRemove(entry.key),
                 );
               }).toList(),
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: remaining.map((word) {
-            return ActionChip(
-              label: Text(word),
-              backgroundColor: Colors.white,
-              side: const BorderSide(color: TudloColors.line, width: 3),
-              labelStyle: const TextStyle(
-                color: TudloColors.ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+        Expanded(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  runAlignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: remaining.map((word) {
+                    return ActionChip(
+                      label: Text(word),
+                      labelPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        side: const BorderSide(
+                          color: TudloColors.line,
+                          width: 3,
+                        ),
+                      ),
+                      labelStyle: const TextStyle(
+                        color: TudloColors.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      onPressed: checked ? null : () => onAdd(word),
+                    );
+                  }).toList(),
+                ),
               ),
-              onPressed: checked ? null : () => onAdd(word),
-            );
-          }).toList(),
+            ),
+          ),
         ),
       ],
     );
@@ -950,7 +1284,7 @@ class _AnswerTile extends StatelessWidget {
       correct: correct,
       wrong: wrong,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(22),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
@@ -959,7 +1293,7 @@ class _AnswerTile extends StatelessWidget {
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(color: borderColor, width: 4),
           ),
           child: Row(

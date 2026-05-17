@@ -47,7 +47,7 @@ class AppShellState extends State<AppShell> {
       Icons.fact_check,
       Icons.person,
     ];
-    final labels = const ['Map', 'Words', 'Streak', 'Test', 'Me'];
+    final labels = const ['Map', 'Translate', 'Streak', 'Test', 'Profile'];
 
     return Scaffold(
       body: Stack(

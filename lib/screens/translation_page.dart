@@ -8,7 +8,6 @@ import '../translation_dictionary.dart';
 class _TranslateStyle {
   static const green = TudloColors.brightGreen;
   static const darkGreen = TudloColors.forest;
-  static const titledarkGreen = TudloColors.forest;
   static const softBg = TudloColors.paper;
   static const softGreen = TudloColors.softGreen;
   static const cardShadow = Color(0x2608C66B);
@@ -164,7 +163,7 @@ class _TranslationPageState extends State<TranslationPage> {
                         'QUICK TRANSLATE',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.archivoBlack(
-                          color: _TranslateStyle.titledarkGreen,
+                          color: const Color.fromARGB(255, 63, 126, 4),
                           fontSize: 26,
                           letterSpacing: 0,
                         ),

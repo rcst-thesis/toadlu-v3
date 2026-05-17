@@ -8,11 +8,17 @@ class LessonQuestion {
   final List<String> leftItems;
   final List<String> rightItems;
   final List<String> sentenceWords;
+  final String targetPhrase;
+  final String targetMeaning;
+  final String directionLabel;
 
   const LessonQuestion.choice({
     required this.prompt,
     required this.answer,
     required this.choices,
+    this.targetPhrase = '',
+    this.targetMeaning = '',
+    this.directionLabel = '',
   }) : type = QuestionType.choice,
        leftItems = const [],
        rightItems = const [],
@@ -22,6 +28,9 @@ class LessonQuestion {
     required this.prompt,
     required this.leftItems,
     required this.rightItems,
+    this.targetPhrase = '',
+    this.targetMeaning = '',
+    this.directionLabel = '',
   }) : type = QuestionType.matching,
        answer = '',
        choices = const [],
@@ -31,6 +40,9 @@ class LessonQuestion {
     required this.prompt,
     required this.answer,
     required this.choices,
+    this.targetPhrase = '',
+    this.targetMeaning = '',
+    this.directionLabel = '',
   }) : type = QuestionType.completeSentence,
        leftItems = const [],
        rightItems = const [],
@@ -40,6 +52,9 @@ class LessonQuestion {
     required this.prompt,
     required this.answer,
     required this.sentenceWords,
+    this.targetPhrase = '',
+    this.targetMeaning = '',
+    this.directionLabel = '',
   }) : type = QuestionType.buildSentence,
        choices = const [],
        leftItems = const [],
@@ -119,12 +134,11 @@ class LessonBank {
   ];
 
   static List<LessonQuestion> questionsForLevel(int level) {
-    final difficulty = ((level - 1) ~/ 10).clamp(0, 4);
     final start = ((level - 1) * 3) % (terms.length - 12);
     final active = terms.sublist(start, start + 12);
     final distractors = terms.where((term) => !active.contains(term)).toList();
 
-    List<String> options(String answer, int seed) {
+    List<String> englishOptions(String answer, int seed) {
       final values = <String>{answer};
       var i = seed;
       while (values.length < 4) {
@@ -134,17 +148,22 @@ class LessonBank {
       return values.toList()..sort();
     }
 
+    List<String> hiligaynonOptions(String answer, int seed) {
+      final values = <String>{answer};
+      var i = seed;
+      while (values.length < 4) {
+        values.add(distractors[i % distractors.length].hil);
+        i += 5;
+      }
+      return values.toList()..sort();
+    }
+
     final q = <LessonQuestion>[
-      LessonQuestion.choice(
-        prompt: 'What is the English of "${active[0].hil}"?',
-        answer: active[0].eng,
-        choices: options(active[0].eng, level),
-      ),
-      LessonQuestion.choice(
-        prompt: 'Choose the Hiligaynon for "${active[1].eng}".',
-        answer: active[1].hil,
-        choices: [active[1].hil, active[2].hil, active[3].hil, active[4].hil]
-          ..sort(),
+      _missingWordQuestion(level),
+      _wordQuestion(
+        term: active[1],
+        englishToHiligaynon: true,
+        choices: hiligaynonOptions(active[1].hil, level),
       ),
       LessonQuestion.matching(
         prompt: 'Match each Hiligaynon word to English.',
@@ -163,23 +182,20 @@ class LessonBank {
           active[3].eng,
         ],
       ),
-      LessonQuestion.completeSentence(
-        prompt: 'Complete: "${active[5].hil}" means ___.',
-        answer: active[5].eng,
-        choices: options(active[5].eng, level + 4),
+      _translateSentenceQuestion(level),
+      _wordQuestion(
+        term: active[5],
+        englishToHiligaynon: false,
+        choices: englishOptions(active[5].eng, level + 4),
       ),
-      LessonQuestion.buildSentence(
-        prompt: 'Build this sentence: ${active[6].eng}',
-        answer: active[6].hil,
-        sentenceWords: _shuffledWords(active[6].hil, level),
-      ),
-      LessonQuestion.choice(
-        prompt: 'What is the English of "${active[7].hil}"?',
-        answer: active[7].eng,
-        choices: options(active[7].eng, level + 8),
+      _missingWordQuestion(level + 1),
+      _wordQuestion(
+        term: active[7],
+        englishToHiligaynon: true,
+        choices: hiligaynonOptions(active[7].hil, level + 8),
       ),
       LessonQuestion.matching(
-        prompt: 'Match the harder set.',
+        prompt: 'Match each Hiligaynon word to English.',
         leftItems: [
           active[7].hil,
           active[8].hil,
@@ -195,25 +211,13 @@ class LessonBank {
           active[9].eng,
         ],
       ),
-      LessonQuestion.completeSentence(
-        prompt: difficulty < 2
-            ? 'Pick the meaning: "${active[11].hil}" = ___.'
-            : 'In a sentence, "${active[11].hil}" is closest to ___.',
-        answer: active[11].eng,
-        choices: options(active[11].eng, level + 12),
+      _translateSentenceQuestion(level + 1),
+      _wordQuestion(
+        term: active[10],
+        englishToHiligaynon: false,
+        choices: englishOptions(active[10].eng, level + 12),
       ),
-      LessonQuestion.buildSentence(
-        prompt: 'Create the Hiligaynon phrase: ${active[0].eng}',
-        answer: active[0].hil,
-        sentenceWords: _shuffledWords(active[0].hil, level + 3),
-      ),
-      LessonQuestion.choice(
-        prompt: difficulty < 3
-            ? 'Review: "${active[3].hil}" means what?'
-            : 'Final challenge: translate "${active[3].hil}" quickly.',
-        answer: active[3].eng,
-        choices: options(active[3].eng, level + 18),
-      ),
+      _translateSentenceQuestion(level + 2),
     ];
 
     return q;
@@ -228,6 +232,134 @@ class LessonBank {
     return ((level - 1) % 3) + 1;
   }
 
+  static LessonQuestion _missingWordQuestion(int level) {
+    final questions = [
+      const LessonQuestion.choice(
+        prompt: 'Complete the sentence "Maayong ___".',
+        answer: 'aga',
+        choices: ['aga', 'puno', 'tubig', 'libro'],
+        targetPhrase: 'Maayong',
+        targetMeaning: 'Good',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.choice(
+        prompt: 'Complete the sentence "Maayong ___".',
+        answer: 'hapon',
+        choices: ['balay', 'hapon', 'kaon', 'iro'],
+        targetPhrase: 'Maayong',
+        targetMeaning: 'Good',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.choice(
+        prompt: 'Complete the sentence "Maayong ___".',
+        answer: 'gab-i',
+        choices: ['gab-i', 'puno', 'libro', 'tubig'],
+        targetPhrase: 'Maayong',
+        targetMeaning: 'Good',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.choice(
+        prompt: 'Complete the sentence "Nagkaon ako sang ___".',
+        answer: 'kan-on',
+        choices: ['tubig', 'kan-on', 'libro', 'balay'],
+        targetPhrase: 'Nagkaon',
+        targetMeaning: 'Ate or is eating',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.choice(
+        prompt: 'Complete the sentence "Palihog hatag sang ___".',
+        answer: 'tubig',
+        choices: ['tubig', 'gab-i', 'daku', 'kumusta'],
+        targetPhrase: 'Palihog',
+        targetMeaning: 'please',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.choice(
+        prompt: 'Complete the sentence "Nagabasa ako sang ___".',
+        answer: 'libro',
+        choices: ['libro', 'tubig', 'iro', 'dalan'],
+        targetPhrase: 'Nagabasa',
+        targetMeaning: 'reading',
+        directionLabel: 'Hiligaynon to English',
+      ),
+    ];
+
+    return questions[(level - 1) % questions.length];
+  }
+
+  static LessonQuestion _wordQuestion({
+    required LessonTerm term,
+    required bool englishToHiligaynon,
+    required List<String> choices,
+  }) {
+    if (englishToHiligaynon) {
+      return LessonQuestion.completeSentence(
+        prompt: term.eng,
+        answer: term.hil,
+        choices: choices,
+        targetPhrase: term.eng,
+        targetMeaning: term.hil,
+        directionLabel: 'English to Hiligaynon',
+      );
+    }
+
+    return LessonQuestion.completeSentence(
+      prompt: term.hil,
+      answer: term.eng,
+      choices: choices,
+      targetPhrase: term.hil,
+      targetMeaning: term.eng,
+      directionLabel: 'Hiligaynon to English',
+    );
+  }
+
+  static LessonQuestion _translateSentenceQuestion(int level) {
+    final questions = [
+      const LessonQuestion.buildSentence(
+        prompt: 'Translate: "Maayong aga."',
+        answer: 'Good morning',
+        sentenceWords: ['Good', 'morning', 'evening', 'thank', 'you'],
+        targetPhrase: 'Maayong aga',
+        targetMeaning: 'Good morning',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.buildSentence(
+        prompt: 'Translate: "Nagakaon ako."',
+        answer: 'I am eating',
+        sentenceWords: ['I', 'am', 'eating', 'sleeping', 'you'],
+        targetPhrase: 'Nagakaon ako',
+        targetMeaning: 'I am eating',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.buildSentence(
+        prompt: 'Translate: "Nagabasa ako."',
+        answer: 'I am reading',
+        sentenceWords: ['I', 'am', 'reading', 'walking', 'you'],
+        targetPhrase: 'Nagabasa ako',
+        targetMeaning: 'I am reading',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.buildSentence(
+        prompt: 'Translate: "Salamat gid."',
+        answer: 'Thank you',
+        sentenceWords: ['Thank', 'you', 'please', 'good', 'morning'],
+        targetPhrase: 'Salamat gid',
+        targetMeaning: 'Thank you',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      const LessonQuestion.buildSentence(
+        prompt: 'Translate: "Palihog hatag sang tubig."',
+        answer: 'Please give water',
+        sentenceWords: ['Please', 'give', 'water', 'book', 'house'],
+        targetPhrase: 'Palihog hatag sang tubig',
+        targetMeaning: 'Please give water',
+        directionLabel: 'Hiligaynon to English',
+      ),
+    ];
+
+    return questions[(level - 1) % questions.length];
+  }
+
   static List<LessonQuestion> questionsForTest(int test) {
     final pool = <LessonQuestion>[
       ...questionsForLevel(1),
@@ -236,11 +368,5 @@ class LessonBank {
     ];
     if (test <= 1) return pool.take(30).toList();
     return [...pool.skip((test - 1) * 5), ...pool].take(30).toList();
-  }
-
-  static List<String> _shuffledWords(String phrase, int seed) {
-    final words = phrase.split(' ');
-    if (words.length == 1) return [words.first, 'ko', 'na', 'ang'];
-    return [...words.reversed];
   }
 }

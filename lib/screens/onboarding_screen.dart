@@ -114,19 +114,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(30, 0, 30, 22),
               child: SizedBox(
-                width: double.infinity,
-                height: 32,
+                width: MediaQuery.sizeOf(context).width * .76,
+                height: 58,
                 child: ElevatedButton(
                   onPressed: _next,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: _green,
                     elevation: 0,
+                    shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(30),
                     ),
                     textStyle: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0,
                     ),

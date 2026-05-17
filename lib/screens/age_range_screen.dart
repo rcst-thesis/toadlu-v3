@@ -25,10 +25,10 @@ class _AgeRangeScreenState extends State<AgeRangeScreen> {
           _option('10 - 13 years old'),
           const SizedBox(height: 12),
           _option('14+ years old'),
-          const SizedBox(height: 26),
+          const SizedBox(height: 30),
           SizedBox(
-            width: 138,
-            height: 36,
+            width: MediaQuery.sizeOf(context).width * .74,
+            height: 58,
             child: ElevatedButton(
               onPressed: selected.isEmpty
                   ? null
@@ -74,42 +74,18 @@ class _AgeRangeScreenState extends State<AgeRangeScreen> {
               color: active
                   ? OnboardingColors.green
                   : OnboardingColors.green.withValues(alpha: .82),
-              width: active ? 3 : 2,
+              width: 2.5,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: active
-                    ? OnboardingColors.shadow
-                    : OnboardingColors.green.withValues(alpha: .14),
-                blurRadius: active ? 20 : 0,
-                offset: active ? const Offset(0, 10) : const Offset(8, 8),
-              ),
-            ],
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Center(
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                      color: active ? Colors.white : OnboardingColors.text,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: active ? Colors.white : OnboardingColors.text,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
               ),
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 160),
-                opacity: active ? 1 : 0,
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
