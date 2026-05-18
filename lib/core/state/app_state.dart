@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// App-wide onboarding/profile state.
+///
+/// This is intentionally small and simple: screens update it through setters,
+/// and any widget that reads `AppStateScope.of(context)` rebuilds when it
+/// changes because this class extends [ChangeNotifier].
 class AppState extends ChangeNotifier {
   String username = '';
   String ageRange = '';
@@ -21,6 +26,10 @@ class AppState extends ChangeNotifier {
   }
 }
 
+/// Makes [AppState] available below `MaterialApp` without passing it manually.
+///
+/// This is the app's lightweight alternative to Provider/Riverpod. Put values
+/// that many screens need here; keep screen-only state inside that screen.
 class AppStateScope extends InheritedNotifier<AppState> {
   const AppStateScope({
     super.key,

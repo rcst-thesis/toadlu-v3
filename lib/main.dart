@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'app_state.dart';
-import 'app_theme.dart';
-import 'screens/mascot_screen.dart';
+import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/features/onboarding/mascot_screen.dart';
 
 void main() {
   runApp(const TudloApp());
 }
 
+/// Root widget for the app.
+///
+/// `AppStateScope` wraps the whole app so onboarding choices and profile data
+/// can be read from any screen without passing values through constructors.
 class TudloApp extends StatelessWidget {
   const TudloApp({super.key});
 

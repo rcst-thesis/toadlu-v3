@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../app_state.dart';
-import 'onboarding_screen.dart';
-import 'scaffold_card.dart';
+import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/features/navigation/scaffold_card.dart';
+import 'package:tudloapp/features/onboarding/onboarding_screen.dart';
 
 class KnowledgeLevelScreen extends StatefulWidget {
   const KnowledgeLevelScreen({super.key});
@@ -25,6 +25,23 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
     return ScaffoldCard(
       title: 'How much Hiligaynon do you know?',
       subtitle: '',
+      bottomAction: SizedBox(
+        //continue button
+        width: MediaQuery.sizeOf(context).width * .74,
+        height: 58,
+        child: ElevatedButton(
+          onPressed: selected == null
+              ? null
+              : () {
+                  AppStateScope.of(context).setKnowledgeLevel(selected!);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                  );
+                },
+          child: const Text('Continue'),
+        ),
+      ),
       child: Column(
         children: [
           ...List.generate(4, (index) {
@@ -109,25 +126,6 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
               ),
             );
           }),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: MediaQuery.sizeOf(context).width * .74,
-            height: 58,
-            child: ElevatedButton(
-              onPressed: selected == null
-                  ? null
-                  : () {
-                      AppStateScope.of(context).setKnowledgeLevel(selected!);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const OnboardingScreen(),
-                        ),
-                      );
-                    },
-              child: const Text('Continue'),
-            ),
-          ),
         ],
       ),
     );

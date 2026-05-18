@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'username_screen.dart';
+import 'package:tudloapp/features/onboarding/username_screen.dart';
 
 class MascotScreen extends StatefulWidget {
   const MascotScreen({super.key});

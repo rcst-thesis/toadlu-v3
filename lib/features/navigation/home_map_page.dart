@@ -2,11 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../app_data.dart';
-import '../app_state.dart';
-import '../app_theme.dart';
-import '../forest_art.dart';
-import 'level_game_page.dart';
+import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/core/style/forest_art.dart';
+import 'package:tudloapp/features/lessons/level_game_page.dart';
 
 class HomeMapPage extends StatefulWidget {
   const HomeMapPage({super.key});
@@ -16,6 +16,10 @@ class HomeMapPage extends StatefulWidget {
 }
 
 class _HomeMapPageState extends State<HomeMapPage> {
+  /// Vertical spacing used by both the road painter and the level nodes.
+  ///
+  /// Keeping these constants shared prevents the buttons from drifting away
+  /// from the path when the map height changes.
   static const double _levelGap = 148;
   static const double _topPad = 115;
   static const double _bottomPad = 330;
@@ -54,6 +58,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
   Widget build(BuildContext context) {
     final showTutorial = !AppData.mapTutorialDone;
     final currentLevel = AppData.unlockedLevel.clamp(1, AppData.maxLevel);
+    // The scrollable map needs a fixed content height so decorations, road,
+    // stars, and level nodes can all be positioned in the same coordinate space.
     final mapHeight = _topPad + (AppData.maxLevel - 1) * _levelGap + _bottomPad;
     final username = AppStateScope.of(context).username;
 
@@ -101,6 +107,9 @@ class _HomeMapPageState extends State<HomeMapPage> {
                               level <= AppData.maxLevel;
                               level++
                             )
+                              // Each button uses the same road coordinates as
+                              // the painter, which keeps nodes centered on the
+                              // trail instead of manually guessing positions.
                               _LevelPositionedButton(
                                 level: level,
                                 point: road.pointForLevel(level),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../app_data.dart';
-import '../app_theme.dart';
-import '../translation_dictionary.dart';
+import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/features/lessons/translation_dictionary.dart';
 
 class _TranslateStyle {
   static const green = TudloColors.brightGreen;

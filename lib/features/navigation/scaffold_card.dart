@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../forest_art.dart';
+import 'package:tudloapp/core/style/forest_art.dart';
 
 class OnboardingColors {
   static const bg = Colors.white;
@@ -18,12 +18,14 @@ class ScaffoldCard extends StatefulWidget {
   final String title;
   final String subtitle;
   final Widget child;
+  final Widget? bottomAction;
 
   const ScaffoldCard({
     super.key,
     required this.title,
     required this.subtitle,
     required this.child,
+    this.bottomAction,
   });
 
   @override
@@ -96,57 +98,72 @@ class _ScaffoldCardState extends State<ScaffoldCard>
             child: Stack(
               children: [
                 const Positioned.fill(child: _OnboardingBackground()),
-                SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(28, 34, 28, 36),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _StepProgress(step: _step),
-                      const SizedBox(height: 42),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          AnimatedBuilder(
-                            animation: _floatAnimation,
-                            builder: (context, child) {
-                              final lift = -4 * _floatAnimation.value;
-                              final scale = 1 + (_floatAnimation.value * .018);
-                              return Transform.translate(
-                                offset: Offset(6, lift),
-                                child: Transform.scale(
-                                  scale: scale,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: const SizedBox(
-                              width: 70,
-                              height: 70,
-                              child: Center(child: TudloMascot(size: 76)),
+                Positioned.fill(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      28,
+                      34,
+                      28,
+                      widget.bottomAction == null ? 36 : 126,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _StepProgress(step: _step),
+                        const SizedBox(height: 42),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _floatAnimation,
+                              builder: (context, child) {
+                                final lift = -4 * _floatAnimation.value;
+                                final scale =
+                                    1 + (_floatAnimation.value * .018);
+                                return Transform.translate(
+                                  offset: Offset(6, lift),
+                                  child: Transform.scale(
+                                    scale: scale,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: const SizedBox(
+                                width: 70,
+                                height: 70,
+                                child: Center(child: TudloMascot(size: 76)),
+                              ),
+                            ),
+                            Expanded(child: _SpeechBubble(text: widget.title)),
+                          ],
+                        ),
+                        if (widget.subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            widget.subtitle,
+                            style: const TextStyle(
+                              color: OnboardingColors.muted,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          Expanded(child: _SpeechBubble(text: widget.title)),
                         ],
-                      ),
-                      if (widget.subtitle.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          widget.subtitle,
-                          style: const TextStyle(
-                            color: OnboardingColors.muted,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        const SizedBox(height: 32),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 260),
+                          child: widget.child,
                         ),
                       ],
-                      const SizedBox(height: 32),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 260),
-                        child: widget.child,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
+                if (widget.bottomAction != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 34,
+                    child: Center(child: widget.bottomAction!),
+                  ),
               ],
             ),
           ),

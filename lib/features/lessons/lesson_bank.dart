@@ -1,5 +1,11 @@
 enum QuestionType { choice, matching, completeSentence, buildSentence }
 
+/// Data model used by both map lessons and tests.
+///
+/// The named constructors keep each question type explicit while still letting
+/// the UI render all questions through one model.
+/// 
+/// might change the whole code since it should be randomized based on the difficulty
 class LessonQuestion {
   final QuestionType type;
   final String prompt;
@@ -61,6 +67,7 @@ class LessonQuestion {
        rightItems = const [];
 }
 
+/// One vocabulary pair used to generate level questions and dictionary content.
 class LessonTerm {
   final String hil;
   final String eng;
@@ -68,6 +75,11 @@ class LessonTerm {
   const LessonTerm(this.hil, this.eng);
 }
 
+/// Central lesson content source.
+///
+/// `questionsForLevel` creates a mixed set of question types from a sliding
+/// window of vocabulary terms, so later levels reuse the same formats with
+/// different words.
 class LessonBank {
   static const terms = [
     LessonTerm('Maayong aga', 'Good morning'),
@@ -134,10 +146,14 @@ class LessonBank {
   ];
 
   static List<LessonQuestion> questionsForLevel(int level) {
+    // Move through the vocabulary list in groups. The modulo keeps generation
+    // valid even when the requested level is higher than the term list length.
     final start = ((level - 1) * 3) % (terms.length - 12);
     final active = terms.sublist(start, start + 12);
     final distractors = terms.where((term) => !active.contains(term)).toList();
 
+    // Option helpers always include the correct answer, then add distractors.
+    // Sorting keeps the order stable so the app behaves predictably.
     List<String> englishOptions(String answer, int seed) {
       final values = <String>{answer};
       var i = seed;
@@ -233,6 +249,8 @@ class LessonBank {
   }
 
   static LessonQuestion _missingWordQuestion(int level) {
+    // Missing-word questions must not reveal the blank answer in the tooltip.
+    // The target phrase is a clue word from the sentence, not the missing word.
     final questions = [
       const LessonQuestion.choice(
         prompt: 'Complete the sentence "Maayong ___".',
@@ -292,6 +310,7 @@ class LessonBank {
     required bool englishToHiligaynon,
     required List<String> choices,
   }) {
+    // One-word translation questions can go in either direction.
     if (englishToHiligaynon) {
       return LessonQuestion.completeSentence(
         prompt: term.eng,
@@ -314,6 +333,7 @@ class LessonBank {
   }
 
   static LessonQuestion _translateSentenceQuestion(int level) {
+    // Build-sentence questions ask the user to arrange blocks into the answer.
     final questions = [
       const LessonQuestion.buildSentence(
         prompt: 'Translate: "Maayong aga."',

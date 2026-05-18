@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import '../app_data.dart';
-import '../app_shell.dart';
-import '../app_theme.dart';
-import '../lesson_bank.dart';
-import '../tap_word_meaning.dart';
+import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/features/lessons/lesson_bank.dart';
+import 'package:tudloapp/features/lessons/tap_word_meaning.dart';
+import 'package:tudloapp/features/navigation/app_shell.dart';
 
 class LevelGamePage extends StatefulWidget {
   final int level;
@@ -22,6 +22,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
   int score = 0;
   int questionIndex = 0;
   late final DateTime _levelStartedAt;
+
+  // Shared answer state. Only one of these groups is active at a time,
+  // depending on the current question type.
   String? selectedAnswer;
   String? selectedMatchLeft;
   String? wrongMatchLeft;
@@ -56,6 +59,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
 
   bool get canContinue {
     final q = currentQuestion;
+    // CHECK stays disabled until the user has done the required interaction
+    // for the active question type.
     return switch (q.type) {
       QuestionType.matching => matches.length == q.leftItems.length,
       QuestionType.buildSentence =>
@@ -66,6 +71,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
 
   bool get isCorrect {
     final q = currentQuestion;
+    // Each question type stores its answer differently, so correctness is
+    // centralized here instead of spread across the UI widgets.
     return switch (q.type) {
       QuestionType.matching => _matchingCorrect(q),
       QuestionType.buildSentence =>
@@ -84,6 +91,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
 
   void nextQuestion() {
     if (!checked) {
+      // First press validates the answer and shows feedback.
       setState(() {
         lastCorrect = isCorrect;
         checked = true;
@@ -94,6 +102,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
     }
 
     if (questionIndex < questions.length - 1) {
+      // Second press advances to the next question and resets type-specific UI
+      // state so selections do not leak between questions.
       setState(() {
         questionIndex++;
         selectedAnswer = null;
@@ -109,6 +119,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
       return;
     }
 
+    // Finishing a level updates the shared progress model before showing the
+    // reward modal. Unlocking happens one level at a time.
     AppData.energyPoints += score * 10;
     AppData.saveLevelScore(widget.level, score, questions.length);
     if (AppData.unlockedLevel <= widget.level &&
@@ -127,6 +139,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       context: context,
       barrierColor: TudloColors.ink.withValues(alpha: .62),
       builder: (_) => _LessonCompleteDialog(
+        level: widget.level,
         xp: score * 10,
         accuracy: accuracy,
         mistakes: questions.length - score,
@@ -259,7 +272,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: checked
                         ? TudloColors.green
-                        : const Color.fromARGB(255, 46, 96, 0),
+                        : const Color.fromARGB(255, 81, 167, 0),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: TudloColors.line,
                     disabledForegroundColor: TudloColors.muted,
@@ -298,6 +311,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
   }
 
   Widget _buildQuestionBody(LessonQuestion q) {
+    // Pick the exercise widget from the data model. This keeps the main page
+    // layout stable while allowing very different interactions inside the body.
     return switch (q.type) {
       QuestionType.choice || QuestionType.completeSentence => _ChoiceList(
         choices: q.choices,
@@ -335,6 +350,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
           final expected = _expectedMatch(left);
           setState(() {
             if (expected == right) {
+              // Correct pairs are stored permanently and briefly pulse green.
               matches[left] = right;
               _clearWrongMatch();
               newMatchLeft = left;
@@ -347,6 +363,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                 score++;
               }
             } else {
+              // Wrong pairs shake red, then return to normal after one second.
               wrongMatchLeft = left;
               wrongMatchRight = right;
               wrongMatchAttempt++;
@@ -382,6 +399,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
   void _scheduleWrongMatchClear(int attempt) {
     _wrongMatchClearTimer?.cancel();
     _wrongMatchClearTimer = Timer(const Duration(seconds: 1), () {
+      // Ignore old timers if the user has already made another attempt.
       if (!mounted || attempt != wrongMatchAttempt) return;
       setState(_clearWrongMatch);
     });
@@ -397,6 +415,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
   void _scheduleMatchedPulseClear(int attempt) {
     _matchedPulseTimer?.cancel();
     _matchedPulseTimer = Timer(const Duration(milliseconds: 650), () {
+      // Ignore old timers if a newer matched-pair animation started.
       if (!mounted || attempt != matchPulseAttempt) return;
       setState(_clearMatchedPulse);
     });
@@ -409,7 +428,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
   }
 }
 
+//scoreboard pop-up
 class _LessonCompleteDialog extends StatelessWidget {
+  final int level;
   final int xp;
   final int accuracy;
   final int mistakes;
@@ -417,6 +438,7 @@ class _LessonCompleteDialog extends StatelessWidget {
   final VoidCallback onClaim;
 
   const _LessonCompleteDialog({
+    required this.level,
     required this.xp,
     required this.accuracy,
     required this.mistakes,
@@ -424,6 +446,7 @@ class _LessonCompleteDialog extends StatelessWidget {
     required this.onClaim,
   });
 
+  /// Star count is based on accuracy so the reward screen reflects performance.
   int get starCount {
     if (accuracy >= 90) return 3;
     if (accuracy >= 70) return 2;
@@ -439,6 +462,11 @@ class _LessonCompleteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final modalWidth = (MediaQuery.sizeOf(context).width * .84)
+        .clamp(300.0, 390.0)
+        .toDouble();
+    final bannerWidth = modalWidth * 1.18;
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
       backgroundColor: Colors.transparent,
@@ -452,120 +480,126 @@ class _LessonCompleteDialog extends StatelessWidget {
             child: Transform.scale(scale: value, child: child),
           );
         },
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.topCenter,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 118),
-              padding: const EdgeInsets.fromLTRB(24, 82, 24, 22),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFCF2),
-                borderRadius: BorderRadius.circular(36),
-                border: Border.all(
-                  color: TudloColors.green.withValues(alpha: .24),
-                  width: 3,
+        child: SizedBox(
+          width: modalWidth,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 116),
+                padding: const EdgeInsets.fromLTRB(18, 66, 18, 18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFCF2),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: TudloColors.green.withValues(alpha: .24),
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: .18),
+                      blurRadius: 28,
+                      offset: const Offset(0, 15),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: .18),
-                    blurRadius: 34,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 8,
-                    right: 6,
-                    child: _Sparkle(color: TudloColors.green, size: 14),
-                  ),
-                  Positioned(
-                    top: 104,
-                    left: 4,
-                    child: _Sparkle(color: TudloColors.meadow, size: 10),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        message,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: TudloColors.muted,
-                          fontSize: 15,
-                          height: 1.25,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .70),
-                          borderRadius: BorderRadius.circular(26),
-                          border: Border.all(
-                            color: TudloColors.green.withValues(alpha: .12),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: _Sparkle(color: TudloColors.green, size: 12),
+                    ),
+                    Positioned(
+                      top: 90,
+                      left: 2,
+                      child: _Sparkle(color: TudloColors.meadow, size: 9),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          message,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: TudloColors.muted,
+                            fontSize: 14,
+                            height: 1.2,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            _RewardStatRow(
-                              label: 'TOTAL XP',
-                              value: '$xp',
-                              icon: Icons.bolt_rounded,
-                            ),
-                            const _RewardDivider(),
-                            _RewardStatRow(
-                              label: 'ACCURACY',
-                              value: '$accuracy%',
-                              icon: Icons.track_changes_rounded,
-                            ),
-                            const _RewardDivider(),
-                            _RewardStatRow(
-                              label: 'TIME',
-                              value: durationLabel,
-                              icon: Icons.timer_rounded,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: TudloColors.green,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            textStyle: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: .3,
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: .70),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: TudloColors.green.withValues(alpha: .12),
                             ),
                           ),
-                          onPressed: onClaim,
-                          child: const Text('CLAIM XP'),
+                          child: Column(
+                            children: [
+                              _RewardStatRow(
+                                label: 'TOTAL XP',
+                                value: '$xp',
+                                icon: Icons.bolt_rounded,
+                              ),
+                              const _RewardDivider(),
+                              _RewardStatRow(
+                                label: 'ACCURACY',
+                                value: '$accuracy%',
+                                icon: Icons.track_changes_rounded,
+                              ),
+                              const _RewardDivider(),
+                              _RewardStatRow(
+                                label: 'TIME',
+                                value: durationLabel,
+                                icon: Icons.timer_rounded,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: TudloColors.green,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: .3,
+                              ),
+                            ),
+                            onPressed: onClaim,
+                            child: const Text('CLAIM XP'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Positioned(top: 0, child: _RewardStars(count: starCount)),
-            const Positioned(top: 74, child: _RewardBanner()),
-          ],
+              Positioned(
+                top: 62,
+                child: _RewardBanner(width: bannerWidth, level: level),
+              ),
+              Positioned(top: 0, child: _RewardStars(count: starCount)),
+            ],
+          ),
         ),
       ),
     );
@@ -573,53 +607,56 @@ class _LessonCompleteDialog extends StatelessWidget {
 }
 
 class _RewardBanner extends StatelessWidget {
-  const _RewardBanner();
+  final double width;
+  final int level;
+
+  const _RewardBanner({required this.width, required this.level});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 320,
-      height: 98,
+      width: width,
+      height: width * .34,
       child: Stack(
         alignment: Alignment.center,
         children: [
           Positioned.fill(
             child: Image.asset(
               'assets/images/banner.png',
-              fit: BoxFit.contain,
-              color: TudloColors.green,
-              colorBlendMode: BlendMode.modulate,
+              fit: BoxFit.cover,
+              alignment: const Alignment(0, .40),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 4),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'LESSON',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'LEVEL COMPLETE',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 27,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .4,
-                  ),
-                ),
-              ],
+          Positioned(
+            top: width * .065,
+            left: 0,
+            right: 0,
+            child: Text(
+              'LEVEL $level',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: (width * .045).clamp(16.0, 20.0),
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .7,
+              ),
+            ),
+          ),
+          Positioned(
+            top: width * .155,
+            left: 0,
+            right: 0,
+            child: Text(
+              'LEVEL COMPLETE',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: TudloColors.forest,
+                fontSize: (width * .083).clamp(26.0, 34.0),
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .1,
+              ),
             ),
           ),
         ],
@@ -636,32 +673,32 @@ class _RewardStars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 178,
-      height: 92,
+      width: 162,
+      height: 84,
       child: Stack(
         alignment: Alignment.center,
         children: [
           Positioned(
             left: 6,
-            top: 28,
+            top: 27,
             child: Transform.rotate(
               angle: -.18,
-              child: _RewardStar(active: count >= 2, size: 56),
+              child: _RewardStar(active: count >= 2, size: 50),
             ),
           ),
           Positioned(
             right: 6,
-            top: 28,
+            top: 27,
             child: Transform.rotate(
               angle: .18,
-              child: _RewardStar(active: count >= 3, size: 56),
+              child: _RewardStar(active: count >= 3, size: 50),
             ),
           ),
           Positioned(
             top: 0,
             child: Transform.rotate(
               angle: .05,
-              child: _RewardStar(active: count >= 1, size: 78),
+              child: _RewardStar(active: count >= 1, size: 70),
             ),
           ),
         ],
@@ -728,25 +765,25 @@ class _RewardStatRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: TudloColors.green.withValues(alpha: .14),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: TudloColors.green, size: 25),
+            child: Icon(icon, color: TudloColors.green, size: 22),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
               style: const TextStyle(
                 color: TudloColors.muted,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w900,
                 letterSpacing: .5,
               ),
@@ -761,7 +798,7 @@ class _RewardStatRow extends StatelessWidget {
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   color: TudloColors.forest,
-                  fontSize: 30,
+                  fontSize: 26,
                   height: 1,
                   fontWeight: FontWeight.w900,
                 ),
@@ -867,6 +904,8 @@ class _PromptText extends StatelessWidget {
       fontWeight: FontWeight.w800,
     );
 
+    // Only render the tap-to-translate behavior when the question defines a
+    // target phrase. Otherwise this is plain text.
     if (question.targetPhrase.trim().isEmpty ||
         question.targetMeaning.trim().isEmpty) {
       return Text(question.prompt, style: style);
@@ -949,6 +988,8 @@ class _MatchingExercise extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Matched right-side answers are tracked by value so each English meaning
+    // can only be used once.
     final usedRight = matches.values.toSet();
     final maxRows = question.leftItems.length > question.rightItems.length
         ? question.leftItems.length
@@ -1030,6 +1071,8 @@ class _MatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Matching tiles have four visual states: default, selected, wrong, and
+    // completed. Right-column tiles intentionally stay active until matched.
     final active = selected || matched || wrong || justMatched;
     final borderColor = wrong
         ? TudloColors.coral
@@ -1137,6 +1180,9 @@ class _BuildSentenceExercise extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Start with all word blocks, then remove the ones already placed in the
+    // answer box. This supports repeated words because remove() only removes
+    // one matching value at a time.
     final remaining = [...question.sentenceWords];
     for (final word in builtWords) {
       remaining.remove(word);

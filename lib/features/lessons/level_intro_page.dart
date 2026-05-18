@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../app_theme.dart';
-import '../lesson_bank.dart';
-import 'level_game_page.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/features/lessons/lesson_bank.dart';
+import 'package:tudloapp/features/lessons/level_game_page.dart';
 
 class LevelIntroPage extends StatelessWidget {
   final int level;

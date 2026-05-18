@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import 'app_theme.dart';
-import 'screens/home_map_page.dart';
-import 'screens/streak_page.dart';
-import 'screens/test_page.dart';
-import 'screens/translation_page.dart';
-import 'screens/user_page.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/features/lessons/test_page.dart';
+import 'package:tudloapp/features/lessons/translation_page.dart';
+import 'package:tudloapp/features/navigation/home_map_page.dart';
+import 'package:tudloapp/features/streak/streak_page.dart';
+import 'package:tudloapp/features/user/user_page.dart';
 
+/// Main app container after onboarding.
+///
+/// It keeps the currently selected tab and overlays the floating navigation bar
+/// above each feature page. Child screens can open this with `initialIndex` to
+/// land on a specific tab.
 class AppShell extends StatefulWidget {
   final int initialIndex;
 
@@ -32,6 +37,7 @@ class AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep page order, icons, and labels aligned by index.
     final pages = [
       const HomeMapPage(),
       const TranslationPage(),
@@ -53,6 +59,8 @@ class AppShellState extends State<AppShell> {
       body: Stack(
         children: [
           pages[_selectedIndex],
+          // Floating navbar stays above the current page instead of being part
+          // of each screen, so tab styling is consistent everywhere.
           Positioned(
             left: 18,
             right: 18,

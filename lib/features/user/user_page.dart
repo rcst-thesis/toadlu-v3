@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../app_data.dart';
-import '../app_state.dart';
-import '../forest_art.dart';
+import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/core/style/forest_art.dart';
 
 class UserPage extends StatelessWidget {
   const UserPage({super.key});
@@ -23,10 +23,9 @@ class UserPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _TopActions(),
-                  const SizedBox(height: 38),
+                  const SizedBox(height: 52),
                   _ProfileHero(username: username),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 32),
                   _OverviewCard(
                     ageRange: appState.ageRange,
                     knowledgeLevel: appState.knowledgeLevel,
@@ -41,43 +40,6 @@ class UserPage extends StatelessWidget {
   }
 }
 
-class _TopActions extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        _GlassIconButton(icon: Icons.favorite_rounded),
-        SizedBox(width: 14),
-        _GlassIconButton(icon: Icons.settings_rounded),
-      ],
-    );
-  }
-}
-
-class _GlassIconButton extends StatelessWidget {
-  final IconData icon;
-
-  const _GlassIconButton({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: .22),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () {},
-        child: SizedBox(
-          width: 58,
-          height: 58,
-          child: Icon(icon, color: Colors.white, size: 32),
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileHero extends StatelessWidget {
   final String username;
 
@@ -85,65 +47,33 @@ class _ProfileHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Expanded(
-          flex: 5,
+        const SizedBox(
+          width: 220,
+          height: 190,
           child: Stack(
             alignment: Alignment.bottomCenter,
             children: [
               Positioned(bottom: 0, child: _MascotShadow()),
               TudloMascot(size: 178),
-              Positioned(left: 30, top: 56, child: _FloatDot(size: 7)),
-              Positioned(left: 48, top: 69, child: _FloatDot(size: 6)),
+              Positioned(left: 24, top: 68, child: _FloatDot(size: 7)),
+              Positioned(left: 42, top: 82, child: _FloatDot(size: 6)),
             ],
           ),
         ),
-        const SizedBox(width: 18),
-        Expanded(
-          flex: 6,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                username,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.nunito(
-                  color: Colors.white,
-                  fontSize: 35,
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Text(
-                    'Guest mode',
-                    style: GoogleFonts.nunito(
-                      color: Colors.white,
-                      fontSize: 25,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(width: 7),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ],
-              ),
-              Text(
-                'Log in first!',
-                style: GoogleFonts.nunito(
-                  color: Colors.white.withValues(alpha: .88),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+        const SizedBox(height: 10),
+        Text(
+          username,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            color: Colors.white,
+            fontSize: 35,
+            height: 1,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ],

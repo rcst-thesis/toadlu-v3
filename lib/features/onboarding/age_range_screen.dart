@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../app_state.dart';
-import 'knowledge_level_screen.dart';
-import 'scaffold_card.dart';
+import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/features/navigation/scaffold_card.dart';
+import 'package:tudloapp/features/onboarding/knowledge_level_screen.dart';
 
 class AgeRangeScreen extends StatefulWidget {
   const AgeRangeScreen({super.key});
@@ -18,6 +18,25 @@ class _AgeRangeScreenState extends State<AgeRangeScreen> {
     return ScaffoldCard(
       title: 'How old are you?',
       subtitle: '',
+      bottomAction: SizedBox(
+        //continue button
+        width: MediaQuery.sizeOf(context).width * .74,
+        height: 58,
+        child: ElevatedButton(
+          onPressed: selected.isEmpty
+              ? null
+              : () {
+                  AppStateScope.of(context).setAgeRange(selected);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const KnowledgeLevelScreen(),
+                    ),
+                  );
+                },
+          child: const Text('Continue'),
+        ),
+      ),
       child: Column(
         children: [
           _option('6 - 9 years old'),
@@ -25,25 +44,6 @@ class _AgeRangeScreenState extends State<AgeRangeScreen> {
           _option('10 - 13 years old'),
           const SizedBox(height: 12),
           _option('14+ years old'),
-          const SizedBox(height: 30),
-          SizedBox(
-            width: MediaQuery.sizeOf(context).width * .74,
-            height: 58,
-            child: ElevatedButton(
-              onPressed: selected.isEmpty
-                  ? null
-                  : () {
-                      AppStateScope.of(context).setAgeRange(selected);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const KnowledgeLevelScreen(),
-                        ),
-                      );
-                    },
-              child: const Text('Continue'),
-            ),
-          ),
         ],
       ),
     );

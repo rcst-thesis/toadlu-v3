@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../app_data.dart';
-import '../app_theme.dart';
+import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
 
 class StreakPage extends StatelessWidget {
   const StreakPage({super.key});

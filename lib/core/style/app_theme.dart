@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+/// Central color tokens for Tudlo.
+///
+/// Prefer using these constants instead of hard-coded colors so the app stays
+/// visually consistent across onboarding, map, lessons, translation, and tests.
 class TudloColors {
   static const navy = Color(0xFF253F0C);
   static const blue = Color(0xFF08C66B);
@@ -20,6 +24,10 @@ class TudloColors {
   static const green = brightGreen;
 }
 
+/// Global Flutter theme shared by the whole app.
+///
+/// Screen-specific designs can still customize layout, but base colors,
+/// typography, and button defaults should start here.
 class TudloTheme {
   static const gradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -69,6 +77,10 @@ class TudloTheme {
   );
 }
 
+/// Reusable white card with Tudlo's border, radius, and soft shadow.
+///
+/// Use this for general content panels when a screen does not need a custom
+/// card design.
 class TudloCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -101,6 +113,7 @@ class TudloCard extends StatelessWidget {
   }
 }
 
+/// Shared soft green page background used by simple form-like screens.
 class TudloPageBackground extends StatelessWidget {
   final Widget child;
 

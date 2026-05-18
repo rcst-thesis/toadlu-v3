@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../app_data.dart';
-import '../app_theme.dart';
-import '../forest_art.dart';
-import '../lesson_bank.dart';
-import '../tap_word_meaning.dart';
+import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/core/style/forest_art.dart';
+import 'package:tudloapp/features/lessons/lesson_bank.dart';
+import 'package:tudloapp/features/lessons/tap_word_meaning.dart';
 
 enum _TestQuestionKind { multipleChoice, identification }
 

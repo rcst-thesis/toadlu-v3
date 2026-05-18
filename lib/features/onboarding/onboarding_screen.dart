@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../app_shell.dart';
+import 'package:tudloapp/features/navigation/app_shell.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

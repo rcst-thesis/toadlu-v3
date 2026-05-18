@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'app_theme.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
 
+/// Text shown inside the tap-to-translate tooltip.
 class WordMeaning {
   final String word;
   final String meaning;
@@ -13,6 +14,11 @@ class WordMeaning {
   });
 }
 
+/// Renders a question sentence while making only one target phrase tappable.
+///
+/// This avoids turning normal instruction words into hints. The widget splits
+/// `fullQuestionText` into before/target/after spans, underlines the target,
+/// and shows a small overlay tooltip when that target is tapped.
 class TapWordMeaningText extends StatefulWidget {
   final String fullQuestionText;
   final String targetPhrase;
@@ -52,6 +58,8 @@ class _TapWordMeaningTextState extends State<TapWordMeaningText> {
   void _showTooltip(BuildContext wordContext) {
     _hideTooltip();
 
+    // The tooltip is placed in the root overlay so it can float above cards,
+    // choices, and scrollable content without changing the page layout.
     final overlay = Overlay.of(context);
     final wordBox = wordContext.findRenderObject() as RenderBox?;
     final overlayBox = overlay.context.findRenderObject() as RenderBox?;
@@ -71,6 +79,8 @@ class _TapWordMeaningTextState extends State<TapWordMeaningText> {
     const tooltipWidth = 226.0;
     const gap = 12.0;
     const tooltipHeight = 116.0;
+    // If the word is near the top of the screen, show the tooltip below it;
+    // otherwise show it above to avoid covering answer choices.
     final showBelow = wordTopLeft.dy < tooltipHeight + 40;
     final left = (wordTopLeft.dx + wordSize.width / 2 - tooltipWidth / 2)
         .clamp(14.0, screenSize.width - tooltipWidth - 14)
@@ -198,6 +208,7 @@ class _TapWordMeaningTextState extends State<TapWordMeaningText> {
   }
 }
 
+/// Duolingo-style tooltip card with a small arrow pointing back to the word.
 class _WordMeaningTooltip extends StatelessWidget {
   final WordMeaning meaning;
   final double width;
