@@ -23,12 +23,43 @@ class _HomeMapPageState extends State<HomeMapPage> {
   static const double _levelGap = 148;
   static const double _topPad = 115;
   static const double _bottomPad = 330;
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollTopButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    final shouldShow = _scrollController.offset > 360;
+    if (shouldShow == _showScrollTopButton) return;
+    setState(() => _showScrollTopButton = shouldShow);
+  }
 
   void _dismissTutorial() {
     setState(() => AppData.mapTutorialDone = true);
   }
 
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 520),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   void _openLevel(int level, Offset nodeCenter) {
+    final dataset = AppStateScope.of(context).homeMapDataset;
     AppData.mapTutorialDone = true;
     showGeneralDialog(
       context: context,
@@ -44,7 +75,12 @@ class _HomeMapPageState extends State<HomeMapPage> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => LevelGamePage(level: level)),
+                MaterialPageRoute(
+                  builder: (_) => LevelGamePage(
+                    level: level,
+                    dataset: dataset,
+                  ),
+                ),
               );
             },
           ),
@@ -61,7 +97,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
     // The scrollable map needs a fixed content height so decorations, road,
     // stars, and level nodes can all be positioned in the same coordinate space.
     final mapHeight = _topPad + (AppData.maxLevel - 1) * _levelGap + _bottomPad;
-    final username = AppStateScope.of(context).username;
+    final username = AppStateScope.of(context).displayUsername;
 
     return Scaffold(
       body: Stack(
@@ -71,12 +107,13 @@ class _HomeMapPageState extends State<HomeMapPage> {
             height: double.infinity,
             color: TudloColors.meadow,
             child: SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.only(bottom: 110),
               child: Column(
                 children: [
                   _MapHeader(
                     currentLevel: currentLevel,
-                    username: username.isEmpty ? 'user' : username,
+                    username: username,
                   ),
                   SizedBox(
                     height: mapHeight,
@@ -129,6 +166,23 @@ class _HomeMapPageState extends State<HomeMapPage> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+          Positioned(
+            right: 24,
+            bottom: 112,
+            child: AnimatedScale(
+              scale: _showScrollTopButton ? 1 : .72,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              child: AnimatedOpacity(
+                opacity: _showScrollTopButton ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: !_showScrollTopButton,
+                  child: _ScrollTopButton(onTap: _scrollToTop),
+                ),
               ),
             ),
           ),
@@ -191,7 +245,7 @@ class _MapHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.centerRight,
                     child: _HeaderCounter(
                       icon: Icons.bolt_rounded,
                       value: '${AppData.energyPoints}',
@@ -357,6 +411,45 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ScrollTopButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ScrollTopButton({required this.onTap});
+
+//back to the top button
+  @override
+  Widget build(BuildContext context) {
+    const borderRadius = BorderRadius.all(Radius.circular(15));
+
+    return Material(
+      color: TudloColors.green,
+      borderRadius: borderRadius,
+      elevation: 8,
+      shadowColor: TudloColors.forest.withValues(alpha: .18),
+      child: InkWell(
+        borderRadius: borderRadius,
+        onTap: onTap,
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: .36),
+              width: 2,
+            ),
+          ),
+          child: const Icon(
+            Icons.keyboard_arrow_up_rounded,
+            color: Colors.white,
+            size: 42,
+          ),
+        ),
       ),
     );
   }
@@ -585,8 +678,9 @@ class _HeaderCounter extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: TudloColors.meadow, size: 28),
+          Icon(icon, color: TudloColors.meadow, size: 30),
           const SizedBox(width: 8),
           Text(
             value,
@@ -946,38 +1040,29 @@ class _CenterMascotShowcaseState extends State<_CenterMascotShowcase>
                   AnimatedBuilder(
                     animation: _idle,
                     builder: (context, child) {
-                      final pulse = .20 + (_idle.value * .10);
                       return Container(
-                        width: 188 + (_idle.value * 18),
-                        height: 188 + (_idle.value * 18),
+                        width: 178 + (_idle.value * 14),
+                        height: 178 + (_idle.value * 14),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              Colors.white.withValues(alpha: .58),
-                              TudloColors.softGreen.withValues(alpha: pulse),
+                              Colors.white.withValues(alpha: .62),
+                              Colors.white.withValues(alpha: .22),
                               Colors.white.withValues(alpha: 0),
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withValues(alpha: .45),
-                              blurRadius: 44,
+                              color: Colors.white.withValues(alpha: .42),
+                              blurRadius: 42,
                               spreadRadius: 8,
-                            ),
-                            BoxShadow(
-                              color: TudloColors.brightGreen.withValues(
-                                alpha: .14,
-                              ),
-                              blurRadius: 56,
-                              spreadRadius: 10,
                             ),
                           ],
                         ),
                       );
                     },
                   ),
-                  const Positioned(bottom: 18, child: _MascotGroundShadow()),
                   const _CenterSparkle(left: 24, top: 48, size: 18, delay: .1),
                   const _CenterSparkle(left: 58, top: 28, size: 8, delay: .5),
                   const _CenterSparkle(left: 190, top: 50, size: 15, delay: .8),
@@ -995,29 +1080,6 @@ class _CenterMascotShowcaseState extends State<_CenterMascotShowcase>
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MascotGroundShadow extends StatelessWidget {
-  const _MascotGroundShadow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 112,
-      height: 18,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: .14),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .11),
-            blurRadius: 16,
-            spreadRadius: 1,
-          ),
-        ],
       ),
     );
   }
@@ -1138,7 +1200,7 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
 
   @override
   Widget build(BuildContext context) {
-    final size = widget.current ? 86.0 : 74.0;
+    final size = widget.current ? 104.0 : 92.0;
     const starClusterHeight = 50.0;
     const starNodeGap = 1.0;
     final nodeColor = widget.unlocked
@@ -1268,8 +1330,8 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
                                             style: GoogleFonts.nunito(
                                               color: Colors.white,
                                               fontSize: widget.current
-                                                  ? 30
-                                                  : 25,
+                                                  ? 36
+                                                  : 31,
                                               height: 1,
                                               fontWeight: FontWeight.w900,
                                             ),
@@ -1277,7 +1339,7 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
                                         : Icon(
                                             Icons.lock_rounded,
                                             color: lockedIconColor,
-                                            size: widget.current ? 34 : 30,
+                                            size: widget.current ? 42 : 37,
                                           ),
                                   ),
                                 ],
@@ -1541,17 +1603,6 @@ class _ScrollableMapPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
-
-    final linePaint = Paint()
-      ..color = const Color(0xFFD8C990).withValues(alpha: .78)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    for (var y = road.topPad - 8; y < size.height; y += 86) {
-      final level = ((y - road.topPad) / road.levelGap) + 1;
-      final x = road.xForLevel(level);
-      canvas.drawLine(Offset(x - 10, y - 22), Offset(x + 10, y - 4), linePaint);
-    }
   }
 
   Path _smoothPath(List<Offset> points) {

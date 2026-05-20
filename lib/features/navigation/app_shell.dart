@@ -123,7 +123,7 @@ class AppShellState extends State<AppShell> {
                             children: [
                               Icon(
                                 icons[index],
-                                size: isSelected ? 24 : 23,
+                                size: isSelected ? 31 : 29,
                                 color: isSelected
                                     ? TudloColors.forest
                                     : TudloColors.muted,

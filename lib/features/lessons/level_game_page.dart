@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/models/proficiency.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/style/app_theme.dart';
 import 'package:tudloapp/features/lessons/lesson_bank.dart';
@@ -10,8 +11,13 @@ import 'package:tudloapp/features/navigation/app_shell.dart';
 
 class LevelGamePage extends StatefulWidget {
   final int level;
+  final HomeMapDataset dataset;
 
-  const LevelGamePage({super.key, required this.level});
+  const LevelGamePage({
+    super.key,
+    required this.level,
+    this.dataset = HomeMapDataset.easy,
+  });
 
   @override
   State<LevelGamePage> createState() => _LevelGamePageState();
@@ -44,7 +50,10 @@ class _LevelGamePageState extends State<LevelGamePage> {
   @override
   void initState() {
     super.initState();
-    questions = LessonBank.questionsForLevel(widget.level);
+    questions = LessonBank.questionsForLevel(
+      widget.level,
+      dataset: widget.dataset,
+    );
     _levelStartedAt = DateTime.now();
   }
 
@@ -277,7 +286,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                     disabledBackgroundColor: TudloColors.line,
                     disabledForegroundColor: TudloColors.muted,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
                   onPressed: canContinue ? nextQuestion : null,
@@ -320,6 +329,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
         checked: checked,
         answer: q.answer,
         feedbackAttempt: answerFeedbackAttempt,
+        choiceMeanings: {
+          for (final choice in q.choices) choice: translatedMeaningFor(choice),
+        },
         onSelected: (value) {
           if (checked) return;
           setState(() => selectedAnswer = value);
@@ -670,6 +682,7 @@ class _RewardStars extends StatelessWidget {
 
   const _RewardStars({required this.count});
 
+//star size
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -683,7 +696,7 @@ class _RewardStars extends StatelessWidget {
             top: 27,
             child: Transform.rotate(
               angle: -.18,
-              child: _RewardStar(active: count >= 2, size: 50),
+              child: _RewardStar(active: count >= 1, size: 70),
             ),
           ),
           Positioned(
@@ -691,14 +704,14 @@ class _RewardStars extends StatelessWidget {
             top: 27,
             child: Transform.rotate(
               angle: .18,
-              child: _RewardStar(active: count >= 3, size: 50),
+              child: _RewardStar(active: count >= 3, size: 70),
             ),
           ),
           Positioned(
             top: 0,
             child: Transform.rotate(
               angle: .05,
-              child: _RewardStar(active: count >= 1, size: 70),
+              child: _RewardStar(active: count >= 2, size: 90),
             ),
           ),
         ],
@@ -927,6 +940,7 @@ class _ChoiceList extends StatelessWidget {
   final bool checked;
   final String answer;
   final int feedbackAttempt;
+  final Map<String, String> choiceMeanings;
   final ValueChanged<String> onSelected;
 
   const _ChoiceList({
@@ -935,6 +949,7 @@ class _ChoiceList extends StatelessWidget {
     required this.checked,
     required this.answer,
     required this.feedbackAttempt,
+    required this.choiceMeanings,
     required this.onSelected,
   });
 
@@ -952,6 +967,7 @@ class _ChoiceList extends StatelessWidget {
           wrong: wrong,
           feedbackKey: active ? feedbackAttempt : 0,
           icon: active ? Icons.check_circle_rounded : Icons.circle_outlined,
+          longPressMeaning: choiceMeanings[choice] ?? choice,
           onTap: checked ? null : () => onSelected(choice),
         );
       }).toList(),
@@ -1101,55 +1117,58 @@ class _MatchTile extends StatelessWidget {
         : Colors.white;
     final shadowColor = wrong ? TudloColors.coral : TudloColors.green;
 
-    return TweenAnimationBuilder<double>(
-      key: ValueKey('$label-$shakeKey-$jumpKey'),
-      tween: Tween(begin: 0, end: (wrong || justMatched) ? 1 : 0),
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        final shakeOffset = wrong
-            ? math.sin(value * math.pi * 6) * (1 - value) * 9
-            : 0.0;
-        final jumpOffset = justMatched
-            ? -math.sin(value * math.pi) * (1 - value * .25) * 10
-            : 0.0;
+    return WordMeaningTooltipTarget(
+      meaning: translatedMeaningFor(label),
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey('$label-$shakeKey-$jumpKey'),
+        tween: Tween(begin: 0, end: (wrong || justMatched) ? 1 : 0),
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOut,
+        builder: (context, value, child) {
+          final shakeOffset = wrong
+              ? math.sin(value * math.pi * 6) * (1 - value) * 9
+              : 0.0;
+          final jumpOffset = justMatched
+              ? -math.sin(value * math.pi) * (1 - value * .25) * 10
+              : 0.0;
 
-        return Transform.translate(
-          offset: Offset(shakeOffset, jumpOffset),
-          child: child,
-        );
-      },
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: matched ? null : onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          height: 76,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: borderColor, width: active ? 4 : 3),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: shadowColor.withValues(alpha: .16),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Center(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: compact ? 2 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: textColor,
-                fontSize: compact ? 17 : 20,
-                fontWeight: FontWeight.w900,
+          return Transform.translate(
+            offset: Offset(shakeOffset, jumpOffset),
+            child: child,
+          );
+        },
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: matched ? null : onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            height: 76,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: borderColor, width: active ? 4 : 3),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: shadowColor.withValues(alpha: .16),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Center(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: compact ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: compact ? 17 : 20,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
@@ -1250,26 +1269,29 @@ class _BuildSentenceExercise extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 10,
                   children: remaining.map((word) {
-                    return ActionChip(
-                      label: Text(word),
-                      labelPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        side: const BorderSide(
-                          color: TudloColors.line,
-                          width: 3,
+                    return WordMeaningTooltipTarget(
+                      meaning: translatedMeaningFor(word),
+                      child: ActionChip(
+                        label: Text(word),
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          side: const BorderSide(
+                            color: TudloColors.line,
+                            width: 3,
+                          ),
+                        ),
+                        labelStyle: const TextStyle(
+                          color: TudloColors.ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        onPressed: checked ? null : () => onAdd(word),
                       ),
-                      labelStyle: const TextStyle(
-                        color: TudloColors.ink,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      onPressed: checked ? null : () => onAdd(word),
                     );
                   }).toList(),
                 ),
@@ -1289,6 +1311,7 @@ class _AnswerTile extends StatelessWidget {
   final bool wrong;
   final int feedbackKey;
   final IconData icon;
+  final String longPressMeaning;
   final VoidCallback? onTap;
 
   const _AnswerTile({
@@ -1298,6 +1321,7 @@ class _AnswerTile extends StatelessWidget {
     required this.wrong,
     required this.feedbackKey,
     required this.icon,
+    required this.longPressMeaning,
     required this.onTap,
   });
 
@@ -1325,38 +1349,41 @@ class _AnswerTile extends StatelessWidget {
         ? TudloColors.sky
         : TudloColors.muted;
 
-    return _FeedbackMotion(
-      key: ValueKey('$label-$feedbackKey'),
-      correct: correct,
-      wrong: wrong,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: borderColor, width: 4),
-          ),
-          child: Row(
-            children: [
-              Icon(wrong ? Icons.cancel_rounded : icon, color: iconColor),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: active ? TudloColors.ink : TudloColors.muted,
-                    fontSize: 22,
-                    fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+    return WordMeaningTooltipTarget(
+      meaning: longPressMeaning,
+      child: _FeedbackMotion(
+        key: ValueKey('$label-$feedbackKey'),
+        correct: correct,
+        wrong: wrong,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(32),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: borderColor, width: 4),
+            ),
+            child: Row(
+              children: [
+                Icon(wrong ? Icons.cancel_rounded : icon, color: iconColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: active ? TudloColors.ink : TudloColors.muted,
+                      fontSize: 22,
+                      fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

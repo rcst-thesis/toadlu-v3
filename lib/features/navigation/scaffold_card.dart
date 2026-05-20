@@ -85,7 +85,7 @@ class _ScaffoldCardState extends State<ScaffoldCard>
                 borderRadius: BorderRadius.circular(30),
               ),
               textStyle: const TextStyle(
-                fontSize: 16,
+                fontSize: 23,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
               ),
@@ -143,7 +143,7 @@ class _ScaffoldCardState extends State<ScaffoldCard>
                             widget.subtitle,
                             style: const TextStyle(
                               color: OnboardingColors.muted,
-                              fontSize: 15,
+                              fontSize: 17,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -186,7 +186,7 @@ class _StepProgress extends StatelessWidget {
           'Step $step of 3',
           style: const TextStyle(
             color: OnboardingColors.muted,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -242,7 +242,7 @@ class _SpeechBubble extends StatelessWidget {
             text,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 20,
               height: 1.15,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
@@ -284,14 +284,6 @@ class _OnboardingBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
-
-    paint.color = OnboardingColors.selected.withValues(alpha: .42);
-    canvas.drawCircle(Offset(size.width * .08, size.height * .16), 86, paint);
-    canvas.drawCircle(Offset(size.width * .96, size.height * .10), 120, paint);
-
-    paint.color = OnboardingColors.green.withValues(alpha: .06);
-    canvas.drawCircle(Offset(size.width * .20, size.height * .82), 150, paint);
-    canvas.drawCircle(Offset(size.width * .86, size.height * .72), 96, paint);
 
     paint.color = OnboardingColors.green.withValues(alpha: .08);
     final path = Path()

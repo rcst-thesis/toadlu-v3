@@ -1,3 +1,7 @@
+import 'dart:math' as math;
+
+import 'package:tudloapp/core/models/proficiency.dart';
+
 enum QuestionType { choice, matching, completeSentence, buildSentence }
 
 /// Data model used by both map lessons and tests.
@@ -75,6 +79,56 @@ class LessonTerm {
   const LessonTerm(this.hil, this.eng);
 }
 
+class EvaluationQuestion {
+  final EvaluationQuestionType type;
+  final String prompt;
+  final String answer;
+  final List<String> choices;
+  final Map<String, String> pairs;
+  final List<String> rightItems;
+  final String targetPhrase;
+  final String targetMeaning;
+  final String directionLabel;
+
+  const EvaluationQuestion.choice({
+    required this.type,
+    required this.prompt,
+    required this.answer,
+    required this.choices,
+    this.targetPhrase = '',
+    this.targetMeaning = '',
+    this.directionLabel = '',
+  }) : pairs = const {},
+       rightItems = const [];
+
+  const EvaluationQuestion.matching({
+    required this.prompt,
+    required this.pairs,
+    required this.rightItems,
+  }) : type = EvaluationQuestionType.matchingPair,
+       answer = '',
+       choices = const [],
+       targetPhrase = '',
+       targetMeaning = '',
+       directionLabel = '';
+}
+
+class _MissingWordTemplate {
+  final String prompt;
+  final String answer;
+  final List<String> choices;
+  final String targetPhrase;
+  final String targetMeaning;
+
+  const _MissingWordTemplate({
+    required this.prompt,
+    required this.answer,
+    required this.choices,
+    required this.targetPhrase,
+    required this.targetMeaning,
+  });
+}
+
 /// Central lesson content source.
 ///
 /// `questionsForLevel` creates a mixed set of question types from a sliding
@@ -145,10 +199,320 @@ class LessonBank {
     LessonTerm('Sirado', 'Closed'),
   ];
 
-  static List<LessonQuestion> questionsForLevel(int level) {
+  static const _missingWordTemplates = [
+    _MissingWordTemplate(
+      prompt: 'Complete the sentence "Maayong ___".',
+      answer: 'aga',
+      choices: ['aga', 'hapon', 'gab-i', 'adlaw'],
+      targetPhrase: 'Maayong',
+      targetMeaning: 'Good',
+    ),
+    _MissingWordTemplate(
+      prompt: 'Complete the sentence "Maayong ___".',
+      answer: 'hapon',
+      choices: ['hapon', 'aga', 'gab-i', 'adlaw'],
+      targetPhrase: 'Maayong',
+      targetMeaning: 'Good',
+    ),
+    _MissingWordTemplate(
+      prompt: 'Complete the sentence "Maayong ___".',
+      answer: 'gab-i',
+      choices: ['gab-i', 'aga', 'hapon', 'adlaw'],
+      targetPhrase: 'Maayong',
+      targetMeaning: 'Good',
+    ),
+    _MissingWordTemplate(
+      prompt: 'Complete the sentence "Nagkaon ako sang ___".',
+      answer: 'kan-on',
+      choices: ['kan-on', 'pagkaon', 'tubig', 'libro'],
+      targetPhrase: 'Nagkaon',
+      targetMeaning: 'Ate or is eating',
+    ),
+    _MissingWordTemplate(
+      prompt: 'Complete the sentence "Palihog hatag sang ___".',
+      answer: 'tubig',
+      choices: ['tubig', 'libro', 'pagkaon', 'balay'],
+      targetPhrase: 'Palihog',
+      targetMeaning: 'please',
+    ),
+    _MissingWordTemplate(
+      prompt: 'Complete the sentence "Nagabasa ako sang ___".',
+      answer: 'libro',
+      choices: ['libro', 'dalan', 'ngalan', 'sulat'],
+      targetPhrase: 'Nagabasa',
+      targetMeaning: 'reading',
+    ),
+  ];
+
+  static List<EvaluationQuestion> randomEvaluationQuestions({
+    math.Random? random,
+  }) {
+    final rng = random ?? math.Random();
+    final usedConcepts = <String>{};
+    final easy = _evaluationQuestionsForRange(0, 20, rng, usedConcepts);
+    final mid = _evaluationQuestionsForRange(20, 40, rng, usedConcepts);
+    final hard = _evaluationQuestionsForRange(40, terms.length, rng, usedConcepts);
+    return [...easy, ...mid, ...hard];
+  }
+
+  static List<EvaluationQuestion> _evaluationQuestionsForRange(
+    int start,
+    int end,
+    math.Random rng,
+    Set<String> usedConcepts,
+  ) {
+    final pool = terms.sublist(start, end).toList()..shuffle(rng);
+    final questions = <EvaluationQuestion>[];
+    final availableTypes = [
+      EvaluationQuestionType.whatIsTheWord,
+      EvaluationQuestionType.selectMissingWord,
+      EvaluationQuestionType.translateSentence,
+      EvaluationQuestionType.matchingPair,
+    ]..shuffle(rng);
+
+    var cursor = 0;
+    while (questions.length < 5) {
+      final type = availableTypes[questions.length % availableTypes.length];
+      final question = _buildEvaluationQuestion(
+        type: type,
+        termsPool: pool,
+        rng: rng,
+        usedConcepts: usedConcepts,
+        cursor: cursor,
+      );
+      cursor += 3;
+      if (question != null) {
+        questions.add(question);
+      } else {
+        questions.add(
+          _buildEvaluationQuestion(
+            type: EvaluationQuestionType.whatIsTheWord,
+            termsPool: pool,
+            rng: rng,
+            usedConcepts: usedConcepts,
+            cursor: cursor,
+          )!,
+        );
+      }
+    }
+
+    questions.shuffle(rng);
+    return questions;
+  }
+
+  static EvaluationQuestion? _buildEvaluationQuestion({
+    required EvaluationQuestionType type,
+    required List<LessonTerm> termsPool,
+    required math.Random rng,
+    required Set<String> usedConcepts,
+    required int cursor,
+  }) {
+    return switch (type) {
+      EvaluationQuestionType.whatIsTheWord => _randomEvaluationWordQuestion(
+        termsPool,
+        rng,
+        usedConcepts,
+        cursor,
+      ),
+      EvaluationQuestionType.selectMissingWord =>
+        _randomEvaluationMissingWordQuestion(rng, usedConcepts),
+      EvaluationQuestionType.translateSentence =>
+        _randomEvaluationTranslateQuestion(termsPool, rng, usedConcepts, cursor),
+      EvaluationQuestionType.matchingPair =>
+        _randomEvaluationMatchingQuestion(termsPool, rng, usedConcepts, cursor),
+    };
+  }
+
+  static EvaluationQuestion _randomEvaluationWordQuestion(
+    List<LessonTerm> termsPool,
+    math.Random rng,
+    Set<String> usedConcepts,
+    int cursor,
+  ) {
+    final term = _nextUnusedTerm(termsPool, usedConcepts, cursor);
+    final englishToHiligaynon = rng.nextBool();
+    usedConcepts.add(_conceptKey(term));
+    if (englishToHiligaynon) {
+      return EvaluationQuestion.choice(
+        type: EvaluationQuestionType.whatIsTheWord,
+        prompt: 'What is "${term.eng}" in Hiligaynon?',
+        answer: term.hil,
+        choices: _optionsFor(
+          answer: term.hil,
+          values: terms.map((term) => term.hil).toList(),
+          rng: rng,
+        ),
+        targetPhrase: term.eng,
+        targetMeaning: term.hil,
+        directionLabel: 'English to Hiligaynon',
+      );
+    }
+
+    return EvaluationQuestion.choice(
+      type: EvaluationQuestionType.whatIsTheWord,
+      prompt: 'What is "${term.hil}" in English?',
+      answer: term.eng,
+      choices: _optionsFor(
+        answer: term.eng,
+        values: terms.map((term) => term.eng).toList(),
+        rng: rng,
+      ),
+      targetPhrase: term.hil,
+      targetMeaning: term.eng,
+      directionLabel: 'Hiligaynon to English',
+    );
+  }
+
+  static EvaluationQuestion? _randomEvaluationMissingWordQuestion(
+    math.Random rng,
+    Set<String> usedConcepts,
+  ) {
+    final templates = _missingWordTemplates.toList()..shuffle(rng);
+    for (final template in templates) {
+      final key = template.answer.toLowerCase();
+      if (usedConcepts.contains(key)) continue;
+      usedConcepts.add(key);
+      return EvaluationQuestion.choice(
+        type: EvaluationQuestionType.selectMissingWord,
+        prompt: template.prompt,
+        answer: template.answer,
+        choices: _missingWordChoices(template, rng),
+        targetPhrase: template.targetPhrase,
+        targetMeaning: template.targetMeaning,
+        directionLabel: 'Hiligaynon to English',
+      );
+    }
+    return null;
+  }
+
+  static List<String> _missingWordChoices(
+    _MissingWordTemplate template,
+    math.Random rng,
+  ) {
+    final choices = <String>{template.answer};
+    for (final choice in template.choices) {
+      if (!choice.trim().contains(' ')) choices.add(choice);
+    }
+    final shuffled = choices.toList()..shuffle(rng);
+    return shuffled.take(4).toList();
+  }
+
+  static EvaluationQuestion _randomEvaluationTranslateQuestion(
+    List<LessonTerm> termsPool,
+    math.Random rng,
+    Set<String> usedConcepts,
+    int cursor,
+  ) {
+    final sentenceTerms = termsPool
+        .where((term) => term.hil.contains(' ') || term.eng.contains(' '))
+        .toList();
+    final term = _nextUnusedTerm(
+      sentenceTerms.isEmpty ? termsPool : sentenceTerms,
+      usedConcepts,
+      cursor,
+    );
+    final englishToHiligaynon = rng.nextBool();
+    usedConcepts.add(_conceptKey(term));
+
+    if (englishToHiligaynon) {
+      return EvaluationQuestion.choice(
+        type: EvaluationQuestionType.translateSentence,
+        prompt: 'Translate: "${term.eng}."',
+        answer: term.hil,
+        choices: _optionsFor(
+          answer: term.hil,
+          values: terms.map((term) => term.hil).toList(),
+          rng: rng,
+        ),
+        targetPhrase: term.eng,
+        targetMeaning: term.hil,
+        directionLabel: 'English to Hiligaynon',
+      );
+    }
+
+    return EvaluationQuestion.choice(
+      type: EvaluationQuestionType.translateSentence,
+      prompt: 'Translate: "${term.hil}."',
+      answer: term.eng,
+      choices: _optionsFor(
+        answer: term.eng,
+        values: terms.map((term) => term.eng).toList(),
+        rng: rng,
+      ),
+      targetPhrase: term.hil,
+      targetMeaning: term.eng,
+      directionLabel: 'Hiligaynon to English',
+    );
+  }
+
+  static EvaluationQuestion? _randomEvaluationMatchingQuestion(
+    List<LessonTerm> termsPool,
+    math.Random rng,
+    Set<String> usedConcepts,
+    int cursor,
+  ) {
+    final selected = <LessonTerm>[];
+    var index = cursor;
+    while (selected.length < 3 && index < cursor + termsPool.length * 2) {
+      final term = termsPool[index % termsPool.length];
+      if (!usedConcepts.contains(_conceptKey(term)) && !selected.contains(term)) {
+        selected.add(term);
+      }
+      index++;
+    }
+    if (selected.length < 3) return null;
+
+    for (final term in selected) {
+      usedConcepts.add(_conceptKey(term));
+    }
+    final rightItems = selected.map((term) => term.eng).toList()..shuffle(rng);
+    return EvaluationQuestion.matching(
+      prompt: 'Match each Hiligaynon word to English.',
+      pairs: {for (final term in selected) term.hil: term.eng},
+      rightItems: rightItems,
+    );
+  }
+
+  static LessonTerm _nextUnusedTerm(
+    List<LessonTerm> termsPool,
+    Set<String> usedConcepts,
+    int cursor,
+  ) {
+    for (var offset = 0; offset < termsPool.length; offset++) {
+      final term = termsPool[(cursor + offset) % termsPool.length];
+      if (!usedConcepts.contains(_conceptKey(term))) return term;
+    }
+    return termsPool[cursor % termsPool.length];
+  }
+
+  static String _conceptKey(LessonTerm term) {
+    return '${term.hil.toLowerCase()}|${term.eng.toLowerCase()}';
+  }
+
+  static List<String> _optionsFor({
+    required String answer,
+    required List<String> values,
+    required math.Random rng,
+  }) {
+    final options = <String>{answer};
+    final shuffled = values.where((value) => value != answer).toList()
+      ..shuffle(rng);
+    for (final value in shuffled) {
+      if (options.length >= 4) break;
+      options.add(value);
+    }
+    return options.toList()..shuffle(rng);
+  }
+
+  static List<LessonQuestion> questionsForLevel(
+    int level, {
+    HomeMapDataset dataset = HomeMapDataset.easy,
+  }) {
+    final rng = math.Random();
     // Move through the vocabulary list in groups. The modulo keeps generation
     // valid even when the requested level is higher than the term list length.
-    final start = ((level - 1) * 3) % (terms.length - 12);
+    final start =
+        (((level - 1) * 3) + _datasetOffset(dataset)) % (terms.length - 12);
     final active = terms.sublist(start, start + 12);
     final distractors = terms.where((term) => !active.contains(term)).toList();
 
@@ -161,7 +525,7 @@ class LessonBank {
         values.add(distractors[i % distractors.length].eng);
         i += 7;
       }
-      return values.toList()..sort();
+      return values.toList()..shuffle(rng);
     }
 
     List<String> hiligaynonOptions(String answer, int seed) {
@@ -171,7 +535,7 @@ class LessonBank {
         values.add(distractors[i % distractors.length].hil);
         i += 5;
       }
-      return values.toList()..sort();
+      return values.toList()..shuffle(rng);
     }
 
     final q = <LessonQuestion>[
@@ -190,13 +554,13 @@ class LessonBank {
           active[5].hil,
           active[6].hil,
         ],
-        rightItems: [
+        rightItems: ([
           active[4].eng,
           active[6].eng,
           active[2].eng,
           active[5].eng,
           active[3].eng,
-        ],
+        ]..shuffle(rng)),
       ),
       _translateSentenceQuestion(level),
       _wordQuestion(
@@ -219,13 +583,13 @@ class LessonBank {
           active[10].hil,
           active[11].hil,
         ],
-        rightItems: [
+        rightItems: ([
           active[10].eng,
           active[8].eng,
           active[11].eng,
           active[7].eng,
           active[9].eng,
-        ],
+        ]..shuffle(rng)),
       ),
       _translateSentenceQuestion(level + 1),
       _wordQuestion(
@@ -239,9 +603,21 @@ class LessonBank {
     return q;
   }
 
-  static List<LessonTerm> termsForLevel(int level) {
-    final start = ((level - 1) * 3) % (terms.length - 12);
+  static List<LessonTerm> termsForLevel(
+    int level, {
+    HomeMapDataset dataset = HomeMapDataset.easy,
+  }) {
+    final start =
+        (((level - 1) * 3) + _datasetOffset(dataset)) % (terms.length - 12);
     return terms.sublist(start, start + 12);
+  }
+
+  static int _datasetOffset(HomeMapDataset dataset) {
+    return switch (dataset) {
+      HomeMapDataset.easy => 0,
+      HomeMapDataset.medium => 18,
+      HomeMapDataset.hard => 36,
+    };
   }
 
   static int unitForLevel(int level) {
@@ -378,15 +754,5 @@ class LessonBank {
     ];
 
     return questions[(level - 1) % questions.length];
-  }
-
-  static List<LessonQuestion> questionsForTest(int test) {
-    final pool = <LessonQuestion>[
-      ...questionsForLevel(1),
-      ...questionsForLevel(2),
-      ...questionsForLevel(3),
-    ];
-    if (test <= 1) return pool.take(30).toList();
-    return [...pool.skip((test - 1) * 5), ...pool].take(30).toList();
   }
 }

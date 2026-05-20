@@ -73,14 +73,14 @@ class _UsernameScreenState extends State<UsernameScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: OnboardingColors.text,
-                fontSize: 15,
+                fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
               decoration: InputDecoration(
                 hintText: 'Type your name here...',
                 hintStyle: const TextStyle(
                   color: OnboardingColors.muted,
-                  fontSize: 13,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
                 filled: true,

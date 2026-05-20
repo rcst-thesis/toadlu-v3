@@ -10,7 +10,7 @@ class UserPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
-    final username = appState.username.isEmpty ? 'nicole' : appState.username;
+    final username = appState.displayUsername;
 
     return Scaffold(
       backgroundColor: const Color(0xFF4EAA6D),
@@ -28,7 +28,7 @@ class UserPage extends StatelessWidget {
                   const SizedBox(height: 32),
                   _OverviewCard(
                     ageRange: appState.ageRange,
-                    knowledgeLevel: appState.knowledgeLevel,
+                    knowledgeLabel: appState.knowledgeLabel,
                   ),
                 ],
               ),
@@ -83,9 +83,12 @@ class _ProfileHero extends StatelessWidget {
 
 class _OverviewCard extends StatelessWidget {
   final String ageRange;
-  final int knowledgeLevel;
+  final String knowledgeLabel;
 
-  const _OverviewCard({required this.ageRange, required this.knowledgeLevel});
+  const _OverviewCard({
+    required this.ageRange,
+    required this.knowledgeLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +142,7 @@ class _OverviewCard extends StatelessWidget {
               Expanded(
                 child: _MetricTile(
                   icon: Icons.school_rounded,
-                  label: 'Level $knowledgeLevel',
+                  label: knowledgeLabel,
                 ),
               ),
             ],

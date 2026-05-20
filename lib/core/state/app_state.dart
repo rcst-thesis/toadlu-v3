@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/models/proficiency.dart';
 
 /// App-wide onboarding/profile state.
 ///
@@ -8,10 +9,14 @@ import 'package:flutter/material.dart';
 class AppState extends ChangeNotifier {
   String username = '';
   String ageRange = '';
+  String knowledgeLabel = knowledgeOptions.first.label;
   int knowledgeLevel = 1;
+  HomeMapDataset homeMapDataset = HomeMapDataset.easy;
+
+  String get displayUsername => username.trim().isEmpty ? 'friend' : username;
 
   void setUsername(String value) {
-    username = value;
+    username = value.trim();
     notifyListeners();
   }
 
@@ -20,8 +25,20 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setKnowledgeLevel(int value) {
-    knowledgeLevel = value;
+  void setKnowledgeOption(KnowledgeOption value) {
+    knowledgeLabel = value.label;
+    knowledgeLevel = value.level;
+    notifyListeners();
+  }
+
+  void saveEvaluationScore(int score) {
+    if (score <= 6) {
+      homeMapDataset = HomeMapDataset.easy;
+    } else if (score <= 11) {
+      homeMapDataset = HomeMapDataset.medium;
+    } else {
+      homeMapDataset = HomeMapDataset.hard;
+    }
     notifyListeners();
   }
 }

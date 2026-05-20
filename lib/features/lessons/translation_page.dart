@@ -649,7 +649,7 @@ class _TranslationCard extends StatelessWidget {
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: controller.text));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Copied translation')),
+                          const SnackBar(content: Text('Copied text')),
                         );
                       },
                     ),

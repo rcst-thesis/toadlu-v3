@@ -82,7 +82,7 @@ class _AgeRangeScreenState extends State<AgeRangeScreen> {
               text,
               style: TextStyle(
                 color: active ? Colors.white : OnboardingColors.text,
-                fontSize: 16,
+                fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
             ),
