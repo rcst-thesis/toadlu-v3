@@ -18,6 +18,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
   void initState() {
     super.initState();
     focusNode.addListener(() => setState(() {}));
+    controller.addListener(() => setState(() {}));
   }
 
   @override
@@ -29,22 +30,24 @@ class _UsernameScreenState extends State<UsernameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasName = controller.text.trim().isNotEmpty;
+
     return ScaffoldCard(
-      title: 'How would you like us to call you?',
-      subtitle: '',
+      title: 'What should we call you?',
+      subtitle: 'This helps personalize your experience.',
       bottomAction: SizedBox(
-        //continue button
-        width: MediaQuery.sizeOf(context).width * .74,
-        height: 58,
+        width: double.infinity,
+        height: 60,
         child: ElevatedButton(
-          onPressed: () {
-            if (controller.text.trim().isEmpty) return;
-            AppStateScope.of(context).setUsername(controller.text.trim());
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AgeRangeScreen()),
-            );
-          },
+          onPressed: hasName
+              ? () {
+                  AppStateScope.of(context).setUsername(controller.text.trim());
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AgeRangeScreen()),
+                  );
+                }
+              : null,
           child: const Text('Continue'),
         ),
       ),
@@ -73,41 +76,41 @@ class _UsernameScreenState extends State<UsernameScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: OnboardingColors.text,
-                fontSize: 20,
+                fontSize: 19,
                 fontWeight: FontWeight.w900,
               ),
               decoration: InputDecoration(
                 hintText: 'Type your name here...',
                 hintStyle: const TextStyle(
                   color: OnboardingColors.muted,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
                 filled: true,
-                fillColor: OnboardingColors.panel2,
+                fillColor: OnboardingColors.panel,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
-                  vertical: 13,
+                  vertical: 21,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(28),
                   borderSide: const BorderSide(
                     color: OnboardingColors.border,
-                    width: 3,
+                    width: 2.5,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(28),
                   borderSide: const BorderSide(
                     color: OnboardingColors.border,
-                    width: 3,
+                    width: 2.5,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(28),
                   borderSide: const BorderSide(
-                    color: OnboardingColors.border,
-                    width: 4,
+                    color: OnboardingColors.green,
+                    width: 3,
                   ),
                 ),
               ),

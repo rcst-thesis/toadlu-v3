@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/style/app_theme.dart';
 import 'package:tudloapp/core/style/forest_art.dart';
+import 'package:tudloapp/features/navigation/app_shell.dart';
 import 'package:tudloapp/features/onboarding/evaluation_test_screen.dart';
 
 class EvaluationIntroScreen extends StatefulWidget {
@@ -15,7 +17,6 @@ class EvaluationIntroScreen extends StatefulWidget {
 class _EvaluationIntroScreenState extends State<EvaluationIntroScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _pop;
   late final Animation<double> _float;
 
   @override
@@ -25,14 +26,7 @@ class _EvaluationIntroScreenState extends State<EvaluationIntroScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2200),
     )..repeat(reverse: true);
-    _pop = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0, .34, curve: Curves.easeOutBack),
-    );
-    _float = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
+    _float = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
 
   @override
@@ -83,28 +77,81 @@ class _EvaluationIntroScreenState extends State<EvaluationIntroScreen>
                     animation: _float,
                     builder: (context, child) {
                       final lift = -10 * _float.value;
-                      final scale = .86 + (_pop.value * .14);
+                      final scale = 1 + (_float.value * .026);
                       return Transform.translate(
                         offset: Offset(0, lift),
                         child: Transform.scale(scale: scale, child: child),
                       );
                     },
                     child: Center(
-                      child: Container(
-                        width: 190,
-                        height: 190,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: .36),
-                          boxShadow: [
-                            BoxShadow(
-                              color: TudloColors.forest.withValues(alpha: .14),
-                              blurRadius: 28,
-                              offset: const Offset(0, 16),
+                      child: SizedBox(
+                        width: 230,
+                        height: 220,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _float,
+                              builder: (context, child) {
+                                return Container(
+                                  width: 190 + (_float.value * 14),
+                                  height: 190 + (_float.value * 14),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: .66),
+                                        Colors.white.withValues(alpha: .24),
+                                        Colors.white.withValues(alpha: 0),
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withValues(
+                                          alpha: .42,
+                                        ),
+                                        blurRadius: 42,
+                                        spreadRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
+                            const _IntroSparkle(
+                              left: 26,
+                              top: 48,
+                              size: 18,
+                              delay: .1,
+                            ),
+                            const _IntroSparkle(
+                              left: 64,
+                              top: 30,
+                              size: 8,
+                              delay: .5,
+                            ),
+                            const _IntroSparkle(
+                              left: 186,
+                              top: 50,
+                              size: 15,
+                              delay: .8,
+                            ),
+                            const _IntroSparkle(
+                              left: 42,
+                              top: 156,
+                              size: 10,
+                              delay: .3,
+                            ),
+                            const _IntroSparkle(
+                              left: 180,
+                              top: 160,
+                              size: 11,
+                              delay: .6,
+                            ),
+                            const TudloMascot(size: 170),
                           ],
                         ),
-                        child: const Center(child: TudloMascot(size: 170)),
                       ),
                     ),
                   ),
@@ -113,7 +160,7 @@ class _EvaluationIntroScreenState extends State<EvaluationIntroScreen>
                     "Let's have a quick Tutorial",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: TudloColors.ink,
+                      color: TudloColors.cloud,
                       fontSize: 40,
                       height: 1,
                       fontWeight: FontWeight.w900,
@@ -124,13 +171,34 @@ class _EvaluationIntroScreenState extends State<EvaluationIntroScreen>
                     "We'll begin with a quick skill check.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: TudloColors.forest.withValues(alpha: .82),
+                      color: TudloColors.cloud,
                       fontSize: 16,
                       height: 1.25,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const Spacer(flex: 4),
+                  TextButton(
+                    onPressed: () {
+                      AppStateScope.of(context).skipEvaluation();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AppShell(initialIndex: 0),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      textStyle: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    child: const Text('Skip'),
+                  ),
+                  const SizedBox(height: 8),
                   SizedBox(
                     height: 70,
                     child: ElevatedButton(
@@ -177,6 +245,76 @@ class _EvaluationFallbackBackground extends StatelessWidget {
   }
 }
 
+class _IntroSparkle extends StatefulWidget {
+  final double left;
+  final double top;
+  final double size;
+  final double delay;
+
+  const _IntroSparkle({
+    required this.left,
+    required this.top,
+    required this.size,
+    required this.delay,
+  });
+
+  @override
+  State<_IntroSparkle> createState() => _IntroSparkleState();
+}
+
+class _IntroSparkleState extends State<_IntroSparkle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: widget.left,
+      top: widget.top,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final phase = (_controller.value + widget.delay) % 1;
+          final opacity = .28 + (math.sin(phase * math.pi) * .52);
+          final drift = math.sin(phase * math.pi * 2) * 2;
+          return Transform.translate(
+            offset: Offset(0, drift),
+            child: Transform.rotate(
+              angle: phase * math.pi * .18,
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                size: widget.size,
+                color: Colors.white.withValues(alpha: opacity.clamp(.18, .80)),
+                shadows: [
+                  Shadow(
+                    color: Colors.white.withValues(alpha: .70),
+                    blurRadius: 14,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _EvaluationFallbackPainter extends CustomPainter {
   const _EvaluationFallbackPainter();
 
@@ -186,11 +324,7 @@ class _EvaluationFallbackPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFFD8FFF2),
-          Color(0xFFEAFBF2),
-          Color(0xFFBFF1A0),
-        ],
+        colors: [Color(0xFFD8FFF2), Color(0xFFEAFBF2), Color(0xFFBFF1A0)],
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, sky);
 

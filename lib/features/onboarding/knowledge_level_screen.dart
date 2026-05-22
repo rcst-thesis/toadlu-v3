@@ -18,11 +18,10 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
   Widget build(BuildContext context) {
     return ScaffoldCard(
       title: 'How much Hiligaynon do you know?',
-      subtitle: '',
+      subtitle: "We'll use this to guide your learning experience.",
       bottomAction: SizedBox(
-        //continue button
-        width: MediaQuery.sizeOf(context).width * .74,
-        height: 58,
+        width: double.infinity,
+        height: 60,
         child: ElevatedButton(
           onPressed: selected == null
               ? null
@@ -59,62 +58,73 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOut,
-                    padding: const EdgeInsets.all(15),
+                    constraints: const BoxConstraints(minHeight: 72),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
                     decoration: BoxDecoration(
                       color: active
-                          ? OnboardingColors.green
-                          : OnboardingColors.panel2,
-                      borderRadius: BorderRadius.circular(24),
+                          ? OnboardingColors.selected
+                          : OnboardingColors.panel,
+                      borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: active
                             ? OnboardingColors.green
-                            : OnboardingColors.green.withValues(alpha: .82),
+                            : OnboardingColors.border,
                         width: 2.5,
                       ),
+                      boxShadow: active
+                          ? [
+                              BoxShadow(
+                                color: OnboardingColors.green.withValues(
+                                  alpha: .18,
+                                ),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Row(
                       children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: active
+                                ? OnboardingColors.green
+                                : Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: active
+                                  ? OnboardingColors.green
+                                  : OnboardingColors.border,
+                              width: 2,
+                            ),
+                          ),
+                          child: active
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Text(
                             option.label,
-                            style: TextStyle(
-                              color: active
-                                  ? Colors.white
-                                  : OnboardingColors.text,
-                              fontSize: 20,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: OnboardingColors.text,
+                              fontSize: 19,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 160),
-                          width: 38,
-                          height: 34,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              ...List.generate(4, (barIndex) {
-                                final filled = barIndex < option.level;
-                                return Container(
-                                  width: 5,
-                                  height: 9.0 + barIndex * 5,
-                                  margin: const EdgeInsets.only(left: 3),
-                                  decoration: BoxDecoration(
-                                    color: active
-                                        ? Colors.white.withValues(
-                                            alpha: filled ? 1 : .42,
-                                          )
-                                        : filled
-                                        ? OnboardingColors.green
-                                        : OnboardingColors.muted,
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(width: 38),
                       ],
                     ),
                   ),

@@ -130,7 +130,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
 
     // Finishing a level updates the shared progress model before showing the
     // reward modal. Unlocking happens one level at a time.
-    AppData.energyPoints += score * 10;
+    final earnedXp = score * 10;
+    AppData.energyPoints += earnedXp;
+    AppData.totalXpCollected += earnedXp;
     AppData.saveLevelScore(widget.level, score, questions.length);
     if (AppData.unlockedLevel <= widget.level &&
         widget.level < AppData.maxLevel) {
@@ -682,7 +684,7 @@ class _RewardStars extends StatelessWidget {
 
   const _RewardStars({required this.count});
 
-//star size
+  //star size
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -1332,7 +1334,7 @@ class _AnswerTile extends StatelessWidget {
         : wrong
         ? TudloColors.coral
         : active
-        ? TudloColors.sky
+        ? TudloColors.green
         : TudloColors.line;
     final backgroundColor = correct
         ? TudloColors.green.withValues(alpha: .10)
@@ -1346,7 +1348,7 @@ class _AnswerTile extends StatelessWidget {
         : wrong
         ? TudloColors.coral
         : active
-        ? TudloColors.sky
+        ? TudloColors.green
         : TudloColors.muted;
 
     return WordMeaningTooltipTarget(
@@ -1370,15 +1372,35 @@ class _AnswerTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(wrong ? Icons.cancel_rounded : icon, color: iconColor),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: (active || correct) && !wrong
+                        ? TudloColors.green
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: iconColor, width: 2),
+                  ),
+                  child: wrong || active || correct
+                      ? Icon(
+                          wrong ? Icons.close_rounded : Icons.check_rounded,
+                          color: (active || correct) && !wrong
+                              ? Colors.white
+                              : iconColor,
+                          size: 17,
+                        )
+                      : null,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     label,
                     style: TextStyle(
-                      color: active ? TudloColors.ink : TudloColors.muted,
+                      color: wrong ? TudloColors.coral : TudloColors.ink,
                       fontSize: 22,
-                      fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                      fontWeight: active ? FontWeight.w900 : FontWeight.w800,
                     ),
                   ),
                 ),

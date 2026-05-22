@@ -12,6 +12,7 @@ class AppState extends ChangeNotifier {
   String knowledgeLabel = knowledgeOptions.first.label;
   int knowledgeLevel = 1;
   HomeMapDataset homeMapDataset = HomeMapDataset.easy;
+  final DateTime joinedOn = DateTime.now();
 
   String get displayUsername => username.trim().isEmpty ? 'friend' : username;
 
@@ -39,6 +40,11 @@ class AppState extends ChangeNotifier {
     } else {
       homeMapDataset = HomeMapDataset.hard;
     }
+    notifyListeners();
+  }
+
+  void skipEvaluation() {
+    homeMapDataset = HomeMapDataset.easy;
     notifyListeners();
   }
 }

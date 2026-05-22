@@ -1,14 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/style/app_theme.dart';
-import 'package:tudloapp/core/style/forest_art.dart';
 import 'package:tudloapp/features/lessons/lesson_bank.dart';
 import 'package:tudloapp/features/lessons/tap_word_meaning.dart';
 
 enum _TestQuestionKind { multipleChoice, identification }
 
+const _testUnitColors = [
+  TudloColors.brightGreen,
+  Color(0xFF3D91E8),
+  Color(0xFF8B5CF6),
+  Color(0xFFE85D9E),
+  Color(0xFFE05A47),
+  Color(0xFFF59E0B),
+];
+
+Color _unitColorForTest(int test) {
+  final index = (test - 1).clamp(0, _testUnitColors.length - 1);
+  return _testUnitColors[index];
+}
+
 class TestPage extends StatefulWidget {
-  const TestPage({super.key});
+  final VoidCallback? onBack;
+
+  const TestPage({super.key, this.onBack});
 
   @override
   State<TestPage> createState() => _TestPageState();
@@ -96,32 +111,12 @@ class _TestPageState extends State<TestPage> {
   }
 
   _TestMeta _metaForTest(int test) {
-    return switch (test) {
-      1 => const _TestMeta(
-        range: 'Levels 1-3',
-        label: 'Beginner',
-        description: 'Start here and review your first lessons.',
-        progress: .12,
-        tag: 'Recommended',
-        icon: Icons.spa_rounded,
-      ),
-      2 => const _TestMeta(
-        range: 'Levels 4-6',
-        label: 'Basic',
-        description: 'Build confidence with familiar words.',
-        progress: 0,
-        tag: 'Next step',
-        icon: Icons.local_florist_rounded,
-      ),
-      _ => const _TestMeta(
-        range: 'Levels 7-9',
-        label: 'Intermediate',
-        description: 'Challenge yourself with stronger recall.',
-        progress: 0,
-        tag: 'Challenge',
-        icon: Icons.emoji_events_rounded,
-      ),
-    };
+    final unit = AppData.unitForNumber(test);
+    return _TestMeta(
+      unitTitle: unit.title,
+      unitLabel: 'Unit ${unit.number}',
+      range: 'Levels 1-5',
+    );
   }
 
   @override
@@ -140,15 +135,16 @@ class _TestPageState extends State<TestPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _PracticeHeader(),
-          const SizedBox(height: 18),
-          for (var test = 1; test <= 3; test++) ...[
+          _PracticeHeader(onBack: widget.onBack),
+          const SizedBox(height: 26),
+          for (final unit in AppData.units) ...[
             _TestCard(
-              test: test,
-              meta: _metaForTest(test),
-              onTap: () => _startTest(test),
+              test: unit.number,
+              meta: _metaForTest(unit.number),
+              unitColor: _unitColorForTest(unit.number),
+              onTap: () => _startTest(unit.number),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
           ],
         ],
       ),
@@ -229,9 +225,9 @@ class _TestPageState extends State<TestPage> {
   }
 
   List<_TestQuestion> _buildTestQuestions(int test) {
-    final startLevel = ((test - 1) * 3) + 1;
+    final startLevel = ((test - 1) * 5) + 1;
     final terms = <LessonTerm>[
-      for (var level = startLevel; level <= startLevel + 2; level++)
+      for (var level = startLevel; level <= startLevel + 4; level++)
         ...LessonBank.termsForLevel(level),
     ];
     final unique = <String, LessonTerm>{
@@ -436,75 +432,54 @@ class _TestPageState extends State<TestPage> {
 }
 
 class _PracticeHeader extends StatelessWidget {
-  const _PracticeHeader();
+  final VoidCallback? onBack;
+
+  const _PracticeHeader({this.onBack});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [TudloColors.softGreen, Colors.white],
+    return Row(
+      children: [
+        Material(
+          color: TudloColors.softGreen,
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onBack ?? () => Navigator.maybePop(context),
+            child: const SizedBox(
+              width: 50,
+              height: 50,
+              child: Icon(
+                Icons.arrow_back_rounded,
+                color: TudloColors.forest,
+                size: 30,
+              ),
+            ),
+          ),
         ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white),
-        boxShadow: [
-          BoxShadow(
-            color: TudloColors.forest.withValues(alpha: .08),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 74,
-            height: 74,
+        const SizedBox(width: 14),
+        Expanded(
+          child: Container(
+            height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .85),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: TudloColors.brightGreen.withValues(alpha: .13),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              color: TudloColors.softGreen,
+              borderRadius: BorderRadius.circular(999),
             ),
-            child: const Center(child: TudloMascot(size: 58)),
-          ),
-          const SizedBox(width: 15),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Practice Test',
-                  style: TextStyle(
-                    color: TudloColors.ink,
-                    fontSize: 28,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                  ),
+            child: const Center(
+              child: Text(
+                'Test',
+                style: TextStyle(
+                  color: TudloColors.forest,
+                  fontSize: 24,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
                 ),
-                SizedBox(height: 8),
-                Text(
-                  'Test your Hiligaynon skills by level.',
-                  style: TextStyle(
-                    color: TudloColors.muted,
-                    fontSize: 14,
-                    height: 1.25,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 64),
+      ],
     );
   }
 }
@@ -1123,11 +1098,13 @@ class _FooterButton extends StatelessWidget {
 class _TestCard extends StatelessWidget {
   final int test;
   final _TestMeta meta;
-  final VoidCallback onTap;
+  final Color unitColor;
+  final VoidCallback? onTap;
 
   const _TestCard({
     required this.test,
     required this.meta,
+    required this.unitColor,
     required this.onTap,
   });
 
@@ -1136,148 +1113,107 @@ class _TestCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(34),
         onTap: onTap,
         child: Ink(
-          padding: const EdgeInsets.all(18),
+          height: 118,
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: TudloColors.line),
+            color: unitColor,
+            borderRadius: BorderRadius.circular(34),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: .72),
+              width: 2,
+            ),
             boxShadow: [
               BoxShadow(
-                color: TudloColors.forest.withValues(alpha: .08),
+                color: unitColor.withValues(alpha: .20),
                 blurRadius: 22,
                 offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: test == 1
-                          ? TudloColors.brightGreen
-                          : TudloColors.softGreen,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Icon(
-                      meta.icon,
-                      color: test == 1 ? Colors.white : TudloColors.forest,
-                      size: 30,
+              Container(
+                width: 74,
+                height: 74,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: .72),
+                    width: 5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    '$test',
+                    style: TextStyle(
+                      color: unitColor,
+                      fontSize: 30,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'Test $test',
-                                style: const TextStyle(
-                                  color: TudloColors.ink,
-                                  fontSize: 23,
-                                  height: 1,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                            if (test == 1) ...[
-                              const SizedBox(width: 8),
-                              _SoftBadge(label: meta.tag),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 7),
-                        Text(
-                          '${meta.range} • 30 questions',
-                          style: const TextStyle(
-                            color: TudloColors.muted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  _SoftBadge(label: meta.label),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      meta.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: TudloColors.muted,
-                        fontSize: 13,
-                        height: 1.25,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  value: meta.progress,
-                  minHeight: 10,
-                  backgroundColor: TudloColors.line,
-                  color: TudloColors.brightGreen,
                 ),
               ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 11,
-                  ),
-                  decoration: BoxDecoration(
-                    color: TudloColors.brightGreen,
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: TudloColors.brightGreen.withValues(alpha: .22),
-                        blurRadius: 14,
-                        offset: const Offset(0, 7),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Start',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Icon(
-                        Icons.play_arrow_rounded,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      meta.unitTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
                         color: Colors.white,
-                        size: 20,
+                        fontSize: 25,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      meta.unitLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: .92),
+                        fontSize: 16,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      meta.range,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: .82),
+                        fontSize: 13,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  color: unitColor,
+                  size: 36,
                 ),
               ),
             ],
@@ -1314,20 +1250,14 @@ class _SoftBadge extends StatelessWidget {
 }
 
 class _TestMeta {
+  final String unitTitle;
+  final String unitLabel;
   final String range;
-  final String label;
-  final String description;
-  final double progress;
-  final String tag;
-  final IconData icon;
 
   const _TestMeta({
+    required this.unitTitle,
+    required this.unitLabel,
     required this.range,
-    required this.label,
-    required this.description,
-    required this.progress,
-    required this.tag,
-    required this.icon,
   });
 }
 

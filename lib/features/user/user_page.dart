@@ -2,10 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/core/style/app_theme.dart';
 import 'package:tudloapp/core/style/forest_art.dart';
 
-class UserPage extends StatelessWidget {
+enum _ProfileTab { about, streak }
+
+class UserPage extends StatefulWidget {
   const UserPage({super.key});
+
+  @override
+  State<UserPage> createState() => _UserPageState();
+}
+
+class _UserPageState extends State<UserPage> {
+  _ProfileTab _selectedTab = _ProfileTab.about;
 
   @override
   Widget build(BuildContext context) {
@@ -13,23 +23,48 @@ class UserPage extends StatelessWidget {
     final username = appState.displayUsername;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF4EAA6D),
+      backgroundColor: TudloColors.green,
       body: Stack(
         children: [
           const Positioned.fill(child: _ProfileBackground()),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 126),
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 126),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 52),
-                  _ProfileHero(username: username),
-                  const SizedBox(height: 32),
-                  _OverviewCard(
-                    ageRange: appState.ageRange,
-                    knowledgeLabel: appState.knowledgeLabel,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      tooltip: 'Edit profile',
+                      onPressed: () => _showEditProfileDialog(context),
+                      icon: const Icon(Icons.edit_rounded),
+                      color: TudloColors.green,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: .78),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  _MainProfileCard(
+                    username: username,
+                    ageRange: appState.ageRange,
+                    joinedOn: appState.joinedOn,
+                    selectedTab: _selectedTab,
+                    onTabSelected: (tab) => setState(() => _selectedTab = tab),
+                  ),
+                  const SizedBox(height: 18),
+                  if (_selectedTab == _ProfileTab.about)
+                    const _AboutCard()
+                  else
+                    const _WeeklyStreakCard(),
+                  const SizedBox(height: 18),
+                  const _StreakSummaryCard(),
+                  const SizedBox(height: 28),
+                  _ProgressSection(username: username),
                 ],
               ),
             ),
@@ -38,42 +73,318 @@ class UserPage extends StatelessWidget {
       ),
     );
   }
+
+  void _showEditProfileDialog(BuildContext context) {
+    final appState = AppStateScope.of(context);
+    final controller = TextEditingController(text: appState.username);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text('Edit username'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            cursorColor: TudloColors.green,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              hintText: 'Type your name',
+              filled: true,
+              fillColor: TudloColors.paper,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: const BorderSide(color: TudloColors.line),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: const BorderSide(
+                  color: TudloColors.green,
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (value.isEmpty) return;
+                appState.setUsername(value);
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(controller.dispose);
+  }
 }
 
-class _ProfileHero extends StatelessWidget {
+class _MainProfileCard extends StatelessWidget {
   final String username;
+  final String ageRange;
+  final DateTime joinedOn;
+  final _ProfileTab selectedTab;
+  final ValueChanged<_ProfileTab> onTabSelected;
 
-  const _ProfileHero({required this.username});
+  const _MainProfileCard({
+    required this.username,
+    required this.ageRange,
+    required this.joinedOn,
+    required this.selectedTab,
+    required this.onTabSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(
-          width: 220,
-          height: 190,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Positioned(bottom: 0, child: _MascotShadow()),
-              TudloMascot(size: 178),
-              Positioned(left: 24, top: 68, child: _FloatDot(size: 7)),
-              Positioned(left: 42, top: 82, child: _FloatDot(size: 6)),
-            ],
+    return Container(
+      decoration: _softCardDecoration(radius: 34),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+            child: Row(
+              children: [
+                Container(
+                  width: 116,
+                  height: 116,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF6F9EA),
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: const Center(child: TudloMascot(size: 112)),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        username,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.ink,
+                          fontSize: 31,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Age: ${ageRange.isEmpty ? 'Not set' : ageRange}',
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.forest,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Joined on ${_formatDate(joinedOn)}',
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.muted,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            color: const Color(0xFFF7FAEC),
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                _ProfileTabButton(
+                  label: 'ABOUT',
+                  selected: selectedTab == _ProfileTab.about,
+                  onTap: () => onTabSelected(_ProfileTab.about),
+                ),
+                const SizedBox(width: 10),
+                _ProfileTabButton(
+                  label: 'Streak',
+                  selected: selectedTab == _ProfileTab.streak,
+                  onTap: () => onTabSelected(_ProfileTab.streak),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileTabButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ProfileTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? TudloColors.softGreen : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: selected ? TudloColors.forest : TudloColors.ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          username,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.nunito(
-            color: Colors.white,
-            fontSize: 35,
-            height: 1,
-            fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+}
+
+class _AboutCard extends StatelessWidget {
+  const _AboutCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: _softCardDecoration(radius: 24),
+      child: Column(
+        children: [
+          _InfoRow(
+            icon: Icons.bolt_rounded,
+            label: 'Total XP collected',
+            value: '${AppData.totalXpCollected} XP',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeeklyStreakCard extends StatelessWidget {
+  const _WeeklyStreakCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final completedDays = (AppData.streakDays < 1 ? 1 : AppData.streakDays)
+        .clamp(1, 7);
+    final labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: _softCardDecoration(radius: 24),
+      child: Row(
+        children: List.generate(7, (index) {
+          final completed = index < completedDays;
+          return Expanded(
+            child: Column(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: completed ? TudloColors.green : TudloColors.paper,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: TudloColors.line),
+                  ),
+                  child: Icon(
+                    completed ? Icons.check_rounded : Icons.circle_outlined,
+                    color: completed ? Colors.white : TudloColors.muted,
+                    size: completed ? 22 : 17,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  labels[index],
+                  style: GoogleFonts.nunito(
+                    color: completed ? TudloColors.forest : TudloColors.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: TudloColors.softGreen,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Icon(icon, color: TudloColors.forest),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                value,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.ink,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -81,71 +392,54 @@ class _ProfileHero extends StatelessWidget {
   }
 }
 
-class _OverviewCard extends StatelessWidget {
-  final String ageRange;
-  final String knowledgeLabel;
-
-  const _OverviewCard({
-    required this.ageRange,
-    required this.knowledgeLabel,
-  });
+class _StreakSummaryCard extends StatelessWidget {
+  const _StreakSummaryCard();
 
   @override
   Widget build(BuildContext context) {
+    final streak = AppData.streakDays < 1 ? 1 : AppData.streakDays;
+
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .20),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withValues(alpha: .20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      decoration: _softCardDecoration(radius: 26),
+      child: Row(
         children: [
-          Text(
-            'OVERVIEW',
-            style: GoogleFonts.nunito(
-              color: Colors.white.withValues(alpha: .86),
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
+          Container(
+            width: 54,
+            height: 54,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFDE6B),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: Color(0xFF4E7D24),
+              size: 34,
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _MetricTile(
-                  icon: Icons.local_fire_department_rounded,
-                  label: '${AppData.streakDays} days',
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$streak day streak',
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.forest,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _MetricTile(
-                  icon: Icons.bolt_rounded,
-                  label: '${AppData.energyPoints} XP',
+                Text(
+                  'Longest learning streak ever!',
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.muted,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _MetricTile(
-                  icon: Icons.cake_rounded,
-                  label: ageRange.isEmpty ? 'Age not set' : ageRange,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _MetricTile(
-                  icon: Icons.school_rounded,
-                  label: knowledgeLabel,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -153,38 +447,182 @@ class _OverviewCard extends StatelessWidget {
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
+class _ProgressSection extends StatefulWidget {
+  final String username;
 
-  const _MetricTile({required this.icon, required this.label});
+  const _ProgressSection({required this.username});
+
+  @override
+  State<_ProgressSection> createState() => _ProgressSectionState();
+}
+
+class _ProgressSectionState extends State<_ProgressSection> {
+  bool expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .26),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white, size: 24),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.nunito(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-              ),
+    final units = List.generate(6, (index) => index + 1);
+    final visibleUnits = expanded ? units : units.take(3).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            "${widget.username}'s Progress",
+            style: GoogleFonts.nunito(
+              color: TudloColors.cloud,
+              fontSize: 27,
+              fontWeight: FontWeight.w900,
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 203, 253, 159),
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.forest.withValues(alpha: .16),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(32),
+                    bottom: Radius.circular(24),
+                  ),
+                ),
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  child: GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 18,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: .78,
+                    children: visibleUnits.map((unit) {
+                      return _UnitProgressTile(unit: unit);
+                    }).toList(),
+                  ),
+                ),
+              ),
+              InkWell(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(32),
+                ),
+                onTap: () => setState(() => expanded = !expanded),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 13,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'View all',
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.forest,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      AnimatedRotation(
+                        turns: expanded ? .5 : 0,
+                        duration: const Duration(milliseconds: 180),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: TudloColors.forest,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UnitProgressTile extends StatelessWidget {
+  final int unit;
+
+  const _UnitProgressTile({required this.unit});
+
+  @override
+  Widget build(BuildContext context) {
+    final start = (unit - 1) * 5 + 1;
+    final end = start + 4;
+    final count = AppData.completedLevels
+        .where((level) => level >= start && level <= end)
+        .length;
+
+    return Column(
+      children: [
+        Text(
+          'Unit $unit',
+          style: GoogleFonts.nunito(
+            color: TudloColors.ink,
+            fontSize: 21,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F6EC),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            children: [
+              Text(
+                '$count',
+                style: GoogleFonts.nunito(
+                  color: TudloColors.ink,
+                  fontSize: 58,
+                  height: .95,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                'Level',
+                style: GoogleFonts.nunito(
+                  color: TudloColors.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -194,69 +632,26 @@ class _ProfileBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: CustomPaint(painter: _ProfileBackgroundPainter()),
-    );
+    return CustomPaint(painter: _ProfileBackgroundPainter());
   }
 }
 
 class _ProfileBackgroundPainter extends CustomPainter {
+  const _ProfileBackgroundPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
-    final base = Paint()..color = const Color(0xFF4EAA6D);
-    canvas.drawRect(Offset.zero & size, base);
+    canvas.drawRect(Offset.zero & size, Paint()..color = TudloColors.green);
 
-    final shapes = [
-      _Shape(
-        Offset(size.width * .10, size.height * .10),
-        size.width * .48,
-        Colors.white.withValues(alpha: .05),
-      ),
-      _Shape(
-        Offset(size.width * .86, size.height * .05),
-        size.width * .54,
-        Colors.white.withValues(alpha: .08),
-      ),
-      _Shape(
-        Offset(size.width * .02, size.height * .34),
-        size.width * .32,
-        const Color(0xFF3F9860).withValues(alpha: .12),
-      ),
-      _Shape(
-        Offset(size.width * .75, size.height * .34),
-        size.width * .42,
-        Colors.white.withValues(alpha: .06),
-      ),
-    ];
-
-    for (final shape in shapes) {
-      canvas.drawCircle(
-        shape.center,
-        shape.radius,
-        Paint()..color = shape.color,
-      );
-    }
-
-    final wave = Path()
-      ..moveTo(0, size.height * .22)
-      ..quadraticBezierTo(
-        size.width * .34,
-        size.height * .17,
-        size.width * .58,
-        size.height * .27,
-      )
-      ..quadraticBezierTo(
-        size.width * .82,
-        size.height * .37,
-        size.width,
-        size.height * .28,
-      )
-      ..lineTo(size.width, 0)
-      ..lineTo(0, 0)
+    final lower = Path()
+      ..moveTo(0, size.height * .52)
+      ..lineTo(size.width, size.height * .46)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
       ..close();
     canvas.drawPath(
-      wave,
-      Paint()..color = const Color(0xFF3F9860).withValues(alpha: .36),
+      lower,
+      Paint()..color = TudloColors.green.withValues(alpha: .82),
     );
   }
 
@@ -264,47 +659,35 @@ class _ProfileBackgroundPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _Shape {
-  final Offset center;
-  final double radius;
-  final Color color;
-
-  const _Shape(this.center, this.radius, this.color);
+BoxDecoration _softCardDecoration({required double radius}) {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: TudloColors.line),
+    boxShadow: [
+      BoxShadow(
+        color: TudloColors.forest.withValues(alpha: .08),
+        blurRadius: 20,
+        offset: const Offset(0, 10),
+      ),
+    ],
+  );
 }
 
-class _MascotShadow extends StatelessWidget {
-  const _MascotShadow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 128,
-      height: 20,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
-  }
-}
-
-class _FloatDot extends StatelessWidget {
-  final double size;
-
-  const _FloatDot({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE0FFAA),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(color: Colors.white.withValues(alpha: .40), blurRadius: 8),
-        ],
-      ),
-    );
-  }
+String _formatDate(DateTime date) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

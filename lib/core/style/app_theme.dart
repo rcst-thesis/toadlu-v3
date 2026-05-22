@@ -13,7 +13,7 @@ class TudloColors {
   static const brightGreen = Color(0xFF08C66B);
   static const softGreen = Color(0xFFDFF7EA);
 
-  static const sky = brightGreen;
+  static const sky = Color.fromARGB(255, 8, 186, 100);
   static const mint = softGreen;
   static const ink = navy;
   static const muted = Color(0xFF7D8A7D);

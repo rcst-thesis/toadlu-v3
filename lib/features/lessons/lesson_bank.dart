@@ -8,7 +8,7 @@ enum QuestionType { choice, matching, completeSentence, buildSentence }
 ///
 /// The named constructors keep each question type explicit while still letting
 /// the UI render all questions through one model.
-/// 
+///
 /// might change the whole code since it should be randomized based on the difficulty
 class LessonQuestion {
   final QuestionType type;
@@ -75,8 +75,9 @@ class LessonQuestion {
 class LessonTerm {
   final String hil;
   final String eng;
+  final String? audioPath;
 
-  const LessonTerm(this.hil, this.eng);
+  const LessonTerm(this.hil, this.eng, {this.audioPath});
 }
 
 class EvaluationQuestion {
@@ -251,7 +252,12 @@ class LessonBank {
     final usedConcepts = <String>{};
     final easy = _evaluationQuestionsForRange(0, 20, rng, usedConcepts);
     final mid = _evaluationQuestionsForRange(20, 40, rng, usedConcepts);
-    final hard = _evaluationQuestionsForRange(40, terms.length, rng, usedConcepts);
+    final hard = _evaluationQuestionsForRange(
+      40,
+      terms.length,
+      rng,
+      usedConcepts,
+    );
     return [...easy, ...mid, ...hard];
   }
 
@@ -317,9 +323,18 @@ class LessonBank {
       EvaluationQuestionType.selectMissingWord =>
         _randomEvaluationMissingWordQuestion(rng, usedConcepts),
       EvaluationQuestionType.translateSentence =>
-        _randomEvaluationTranslateQuestion(termsPool, rng, usedConcepts, cursor),
-      EvaluationQuestionType.matchingPair =>
-        _randomEvaluationMatchingQuestion(termsPool, rng, usedConcepts, cursor),
+        _randomEvaluationTranslateQuestion(
+          termsPool,
+          rng,
+          usedConcepts,
+          cursor,
+        ),
+      EvaluationQuestionType.matchingPair => _randomEvaluationMatchingQuestion(
+        termsPool,
+        rng,
+        usedConcepts,
+        cursor,
+      ),
     };
   }
 
@@ -455,7 +470,8 @@ class LessonBank {
     var index = cursor;
     while (selected.length < 3 && index < cursor + termsPool.length * 2) {
       final term = termsPool[index % termsPool.length];
-      if (!usedConcepts.contains(_conceptKey(term)) && !selected.contains(term)) {
+      if (!usedConcepts.contains(_conceptKey(term)) &&
+          !selected.contains(term)) {
         selected.add(term);
       }
       index++;

@@ -17,11 +17,10 @@ class _AgeRangeScreenState extends State<AgeRangeScreen> {
   Widget build(BuildContext context) {
     return ScaffoldCard(
       title: 'How old are you?',
-      subtitle: '',
+      subtitle: 'This helps us personalize your experience.',
       bottomAction: SizedBox(
-        //continue button
-        width: MediaQuery.sizeOf(context).width * .74,
-        height: 58,
+        width: double.infinity,
+        height: 60,
         child: ElevatedButton(
           onPressed: selected.isEmpty
               ? null
@@ -66,26 +65,63 @@ class _AgeRangeScreenState extends State<AgeRangeScreen> {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           decoration: BoxDecoration(
-            color: active ? OnboardingColors.green : OnboardingColors.panel2,
-            borderRadius: BorderRadius.circular(24),
+            color: active ? OnboardingColors.selected : OnboardingColors.panel,
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: active
-                  ? OnboardingColors.green
-                  : OnboardingColors.green.withValues(alpha: .82),
+              color: active ? OnboardingColors.green : OnboardingColors.border,
               width: 2.5,
             ),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: OnboardingColors.green.withValues(alpha: .18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
           ),
-          child: Center(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: active ? Colors.white : OnboardingColors.text,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: active ? OnboardingColors.green : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: active
+                        ? OnboardingColors.green
+                        : OnboardingColors.border,
+                    width: 2,
+                  ),
+                ),
+                child: active
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      )
+                    : null,
               ),
-            ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: OnboardingColors.text,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 38),
+            ],
           ),
         ),
       ),

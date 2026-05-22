@@ -19,8 +19,4 @@ enum EvaluationQuestionType {
   matchingPair,
 }
 
-enum HomeMapDataset {
-  easy,
-  medium,
-  hard,
-}
+enum HomeMapDataset { easy, medium, hard }

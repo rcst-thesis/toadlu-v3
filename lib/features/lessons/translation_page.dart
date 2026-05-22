@@ -163,7 +163,7 @@ class _TranslationPageState extends State<TranslationPage> {
                         'QUICK TRANSLATE',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.archivoBlack(
-                          color: const Color.fromARGB(255, 63, 126, 4),
+                          color: TudloColors.green,
                           fontSize: 26,
                           letterSpacing: 0,
                         ),

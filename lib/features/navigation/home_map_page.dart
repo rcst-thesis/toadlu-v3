@@ -7,6 +7,7 @@ import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/style/app_theme.dart';
 import 'package:tudloapp/core/style/forest_art.dart';
 import 'package:tudloapp/features/lessons/level_game_page.dart';
+import 'package:tudloapp/features/lessons/lesson_bank.dart';
 
 class HomeMapPage extends StatefulWidget {
   const HomeMapPage({super.key});
@@ -21,7 +22,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
   /// Keeping these constants shared prevents the buttons from drifting away
   /// from the path when the map height changes.
   static const double _levelGap = 148;
-  static const double _topPad = 115;
+  static const double _unitMessageGap = 142;
+  static const double _topPad = 250;
   static const double _bottomPad = 330;
   final ScrollController _scrollController = ScrollController();
   bool _showScrollTopButton = false;
@@ -58,6 +60,16 @@ class _HomeMapPageState extends State<HomeMapPage> {
     );
   }
 
+  void _showUnitContentPreview(AppUnit unit) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _UnitContentPreviewSheet(unit: unit),
+    );
+  }
+
   void _openLevel(int level, Offset nodeCenter) {
     final dataset = AppStateScope.of(context).homeMapDataset;
     AppData.mapTutorialDone = true;
@@ -76,10 +88,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => LevelGamePage(
-                    level: level,
-                    dataset: dataset,
-                  ),
+                  builder: (_) => LevelGamePage(level: level, dataset: dataset),
                 ),
               );
             },
@@ -96,7 +105,12 @@ class _HomeMapPageState extends State<HomeMapPage> {
     final currentLevel = AppData.unlockedLevel.clamp(1, AppData.maxLevel);
     // The scrollable map needs a fixed content height so decorations, road,
     // stars, and level nodes can all be positioned in the same coordinate space.
-    final mapHeight = _topPad + (AppData.maxLevel - 1) * _levelGap + _bottomPad;
+    final mapHeight =
+        _topPad +
+        (AppData.maxLevel - 1) * _levelGap +
+        ((AppData.maxLevel - 1) ~/ 5) * _unitMessageGap +
+        40 +
+        _bottomPad;
     final username = AppStateScope.of(context).displayUsername;
 
     return Scaffold(
@@ -111,10 +125,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
               padding: const EdgeInsets.only(bottom: 110),
               child: Column(
                 children: [
-                  _MapHeader(
-                    currentLevel: currentLevel,
-                    username: username,
-                  ),
+                  _MapHeader(currentLevel: currentLevel, username: username),
                   SizedBox(
                     height: mapHeight,
                     child: LayoutBuilder(
@@ -123,6 +134,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
                           width: constraints.maxWidth,
                           topPad: _topPad,
                           levelGap: _levelGap,
+                          unitMessageGap: _unitMessageGap,
                         );
 
                         return Stack(
@@ -138,7 +150,12 @@ class _HomeMapPageState extends State<HomeMapPage> {
                               height: mapHeight,
                               road: road,
                             ),
-                            _AccountReminder(top: _topPad + 900),
+                            for (final unit in AppData.units)
+                              _UnitMessageCard(
+                                unit: unit,
+                                point: road.pointForUnitStart(unit.startLevel),
+                                onPreview: () => _showUnitContentPreview(unit),
+                              ),
                             for (
                               var level = 1;
                               level <= AppData.maxLevel;
@@ -150,12 +167,13 @@ class _HomeMapPageState extends State<HomeMapPage> {
                               _LevelPositionedButton(
                                 level: level,
                                 point: road.pointForLevel(level),
-                                unlocked: level <= AppData.unlockedLevel,
+                                unitColor: _MapUnitStyle.colorForLevel(level),
+                                unlocked: AppData.isLevelUnlocked(level),
                                 current: level == currentLevel,
-                                stars: level <= AppData.unlockedLevel
+                                stars: AppData.isLevelUnlocked(level)
                                     ? AppData.starsForLevel(level)
                                     : 0,
-                                onTap: level <= AppData.unlockedLevel
+                                onTap: AppData.isLevelUnlocked(level)
                                     ? (nodeCenter) =>
                                           _openLevel(level, nodeCenter)
                                     : null,
@@ -231,12 +249,23 @@ class _MapHeader extends StatelessWidget {
       height: 280,
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color.fromRGBO(67, 113, 24, 1),
+        color: TudloColors.green,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(42)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          Positioned.fill(child: CustomPaint(painter: _HeaderForestPainter())),
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/mapheader.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          Positioned.fill(
+            child: ColoredBox(color: TudloColors.forest.withValues(alpha: .12)),
+          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -421,7 +450,7 @@ class _ScrollTopButton extends StatelessWidget {
 
   const _ScrollTopButton({required this.onTap});
 
-//back to the top button
+  //back to the top button
   @override
   Widget build(BuildContext context) {
     const borderRadius = BorderRadius.all(Radius.circular(15));
@@ -674,13 +703,13 @@ class _HeaderCounter extends StatelessWidget {
       height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: TudloColors.navy.withValues(alpha: .55),
+        color: TudloColors.sky.withValues(alpha: .72),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: TudloColors.meadow, size: 30),
+          Icon(icon, color: Colors.white, size: 30),
           const SizedBox(width: 8),
           Text(
             value,
@@ -694,26 +723,6 @@ class _HeaderCounter extends StatelessWidget {
       ),
     );
   }
-}
-
-class _HeaderForestPainter extends CustomPainter {
-  const _HeaderForestPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final dark = Paint()..color = TudloColors.navy.withValues(alpha: .16);
-    final light = Paint()..color = TudloColors.blue.withValues(alpha: .18);
-    final bush = Paint()..color = TudloColors.meadow.withValues(alpha: .24);
-
-    canvas.drawCircle(Offset(size.width * .86, -26), size.width * .38, dark);
-    canvas.drawCircle(Offset(size.width * .78, size.height * .72), 86, light);
-    canvas.drawCircle(Offset(size.width * .34, size.height * .86), 74, bush);
-    canvas.drawCircle(Offset(size.width * .62, size.height * .92), 68, bush);
-    canvas.drawCircle(Offset(size.width * .92, size.height * .88), 84, bush);
-  }
-
-  @override
-  bool shouldRepaint(covariant _HeaderForestPainter oldDelegate) => false;
 }
 
 class _MapAsset extends StatelessWidget {
@@ -814,14 +823,14 @@ class _MapDecorationLayer extends StatelessWidget {
         : _assets[index % _assets.length];
     final isTree = asset.contains('tree');
     final baseWidth = switch (asset) {
-      'assets/images/tree1.png' => compact ? 96.0 : 132.0,
-      'assets/images/tree2.png' => compact ? 96.0 : 132.0,
-      'assets/images/tree1 (2).png' => compact ? 96.0 : 132.0,
+      'assets/images/tree1.png' => compact ? 154.0 : 211.0,
+      'assets/images/tree2.png' => compact ? 154.0 : 211.0,
+      'assets/images/tree1 (2).png' => compact ? 154.0 : 211.0,
       'assets/images/grass.png' => compact ? 74.0 : 116.0,
       'assets/images/rock.png' => compact ? 62.0 : 92.0,
       _ => compact ? 32.0 : 44.0,
     };
-    final assetHeight = isTree ? (compact ? 106.0 : 144.0) : null;
+    final assetHeight = isTree ? (compact ? 170.0 : 230.0) : null;
     final variation = math.sin(index * 1.73) * 20;
     final roadLevel = ((y - road.topPad) / road.levelGap) + 1;
     final roadX = road.xForLevel(roadLevel);
@@ -864,94 +873,28 @@ class _MapDecorationLayer extends StatelessWidget {
     required double roadX,
     required double variation,
   }) {
-    final roadClearance = asset.contains('tree')
-        ? 138.0
+    final isTree = asset.contains('tree');
+    final roadClearance = isTree
+        ? 150.0
         : asset.contains('grass')
         ? 110.0
         : 98.0;
     if (leftSide) {
       final target = 14.0 + variation.abs();
       final maxSafe = roadX - roadClearance - assetWidth;
+      if (isTree) {
+        return math.min(target, maxSafe);
+      }
       return target.clamp(0.0, math.max(0.0, maxSafe)).toDouble();
     }
 
     final target = width - assetWidth - 14.0 - variation.abs();
     final maxSafe = math.max(0.0, width - assetWidth);
     final minSafe = math.min(maxSafe, roadX + roadClearance);
+    if (isTree) {
+      return math.max(target, roadX + roadClearance);
+    }
     return target.clamp(minSafe, maxSafe).toDouble();
-  }
-}
-
-class _AccountReminder extends StatelessWidget {
-  final double top;
-
-  const _AccountReminder({required this.top});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: 22,
-      right: 22,
-      top: top,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: () {},
-          child: Container(
-            height: 104,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: TudloColors.forest.withValues(alpha: .15),
-                  blurRadius: 22,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.local_fire_department_rounded,
-                  color: Color(0xFFFF6A3D),
-                  size: 46,
-                ),
-                SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Don't lose your progress",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 7),
-                      Text(
-                        'ENTER YOUR ACCOUNT',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -1155,9 +1098,289 @@ class _CenterSparkleState extends State<_CenterSparkle>
   }
 }
 
+class _MapUnitStyle {
+  static const _unitColors = [
+    TudloColors.brightGreen,
+    Color(0xFF3D91E8),
+    Color(0xFF8B5CF6),
+    Color(0xFFE85D9E),
+    Color(0xFFE05A47),
+    Color(0xFFF59E0B),
+  ];
+
+  static Color colorForLevel(int level) {
+    final unitIndex = ((level - 1) ~/ 5).clamp(0, _unitColors.length - 1);
+    return _unitColors[unitIndex];
+  }
+}
+
+class _UnitMessageCard extends StatelessWidget {
+  final AppUnit unit;
+  final Offset point;
+  final VoidCallback onPreview;
+
+  const _UnitMessageCard({
+    required this.unit,
+    required this.point,
+    required this.onPreview,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: 72,
+      right: 72,
+      top: point.dy,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 14, 18),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .96),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: TudloColors.softGreen, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.forest.withValues(alpha: .12),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Unit ${unit.number}',
+                      style: const TextStyle(
+                        color: TudloColors.muted,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      unit.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: TudloColors.ink,
+                        fontSize: 22,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              InkWell(
+                borderRadius: BorderRadius.circular(22),
+                onTap: onPreview,
+                child: Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: TudloColors.green,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: TudloColors.green.withValues(alpha: .22),
+                        blurRadius: 14,
+                        offset: const Offset(0, 7),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.menu_book_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UnitContentPreviewSheet extends StatelessWidget {
+  final AppUnit unit;
+
+  const _UnitContentPreviewSheet({required this.unit});
+
+  List<LessonTerm> get _terms {
+    final seen = <String>{};
+    final terms = <LessonTerm>[];
+    for (var level = unit.startLevel; level <= unit.endLevel; level++) {
+      for (final term in LessonBank.termsForLevel(level)) {
+        final key = '${term.hil}|${term.eng}'.toLowerCase();
+        if (seen.add(key)) terms.add(term);
+      }
+    }
+    return terms;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final terms = _terms;
+    final height = MediaQuery.sizeOf(context).height * .86;
+
+    return Container(
+      height: height,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: 'Close',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                  color: TudloColors.muted,
+                  iconSize: 32,
+                ),
+                const Spacer(),
+              ],
+            ),
+          ),
+          const TudloMascot(size: 118),
+          const SizedBox(height: 10),
+          Text(
+            'UNIT ${unit.number}',
+            style: const TextStyle(
+              color: TudloColors.muted,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.6,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            unit.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: TudloColors.ink,
+              fontSize: 30,
+              height: 1.05,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: TudloColors.paper,
+                border: Border(top: BorderSide(color: TudloColors.line)),
+              ),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(22, 22, 22, 34),
+                children: [
+                  const Text(
+                    'KEY PHRASES',
+                    style: TextStyle(
+                      color: TudloColors.green,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ...terms.map((term) => _PreviewPhraseCard(term: term)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewPhraseCard extends StatelessWidget {
+  final LessonTerm term;
+
+  const _PreviewPhraseCard({required this.term});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: TudloColors.line, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.forest.withValues(alpha: .05),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: TudloColors.softGreen,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              Icons.volume_up_rounded,
+              color: TudloColors.green,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  term.hil,
+                  style: const TextStyle(
+                    color: TudloColors.ink,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  term.eng,
+                  style: const TextStyle(
+                    color: TudloColors.muted,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LevelPositionedButton extends StatefulWidget {
   final int level;
   final Offset point;
+  final Color unitColor;
   final bool unlocked;
   final bool current;
   final int stars;
@@ -1166,6 +1389,7 @@ class _LevelPositionedButton extends StatefulWidget {
   const _LevelPositionedButton({
     required this.level,
     required this.point,
+    required this.unitColor,
     required this.unlocked,
     required this.current,
     required this.stars,
@@ -1204,10 +1428,10 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
     const starClusterHeight = 50.0;
     const starNodeGap = 1.0;
     final nodeColor = widget.unlocked
-        ? TudloColors.brightGreen
+        ? widget.unitColor
         : const Color(0xFFD6BA8C);
     final borderColor = widget.unlocked
-        ? TudloColors.softGreen
+        ? Colors.white.withValues(alpha: .78)
         : const Color(0xFFE7D2B0);
     final lockedIconColor = const Color(0xFF9A7B50);
 
@@ -1266,10 +1490,9 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
                                   boxShadow: [
                                     if (widget.current)
                                       BoxShadow(
-                                        color: TudloColors.brightGreen
-                                            .withValues(
-                                              alpha: .22 + glow * .12,
-                                            ),
+                                        color: widget.unitColor.withValues(
+                                          alpha: .22 + glow * .12,
+                                        ),
                                         blurRadius: 24 + glow * 18,
                                         spreadRadius: 4 + glow * 6,
                                       ),
@@ -1326,7 +1549,7 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
                                   Center(
                                     child: widget.unlocked
                                         ? Text(
-                                            '${widget.level}',
+                                            '${_localLevelNumber(widget.level)}',
                                             style: GoogleFonts.nunito(
                                               color: Colors.white,
                                               fontSize: widget.current
@@ -1358,6 +1581,10 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
       ),
     );
   }
+}
+
+int _localLevelNumber(int globalLevel) {
+  return ((globalLevel - 1) % 5) + 1;
 }
 
 class _FloatingStarCluster extends StatefulWidget {
@@ -1532,16 +1759,25 @@ class _RoadGeometry {
   final double width;
   final double topPad;
   final double levelGap;
+  final double unitMessageGap;
 
   const _RoadGeometry({
     required this.width,
     required this.topPad,
     required this.levelGap,
+    required this.unitMessageGap,
   });
 
   Offset pointForLevel(int level) {
-    final y = topPad + (level - 1) * levelGap;
+    final y =
+        topPad + (level - 1) * levelGap + ((level - 1) ~/ 5) * unitMessageGap;
     return Offset(xForLevel(level.toDouble()), y);
+  }
+
+  Offset pointForUnitStart(int level) {
+    final levelPoint = pointForLevel(level);
+    final offset = level == 1 ? 166.0 : 226.0;
+    return Offset(levelPoint.dx, levelPoint.dy - offset);
   }
 
   double xForLevel(double level) {

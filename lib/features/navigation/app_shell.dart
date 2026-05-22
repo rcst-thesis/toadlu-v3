@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tudloapp/core/style/app_theme.dart';
+import 'package:tudloapp/features/dictionary/dictionary_page.dart';
 import 'package:tudloapp/features/lessons/test_page.dart';
 import 'package:tudloapp/features/lessons/translation_page.dart';
 import 'package:tudloapp/features/navigation/home_map_page.dart';
@@ -41,19 +42,28 @@ class AppShellState extends State<AppShell> {
     final pages = [
       const HomeMapPage(),
       const TranslationPage(),
+      const DictionaryPage(),
       const StreakPage(),
-      const TestPage(),
+      TestPage(onBack: () => switchTo(0)),
       const UserPage(),
     ];
 
     final icons = const [
       Icons.home,
       Icons.translate,
-      Icons.local_fire_department,
+      Icons.menu_book_rounded,
+      Icons.pets_rounded,
       Icons.fact_check,
       Icons.person,
     ];
-    final labels = const ['Map', 'Translate', 'Streak', 'Test', 'Profile'];
+    final labels = const [
+      'Map',
+      'Translate',
+      'Dictionary',
+      'Pet',
+      'Test',
+      'Profile',
+    ];
 
     return Scaffold(
       body: Stack(
