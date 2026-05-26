@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:tudloapp/core/style/app_theme.dart';
-import 'package:tudloapp/features/dictionary/dictionary_page.dart';
-import 'package:tudloapp/features/lessons/test_page.dart';
-import 'package:tudloapp/features/lessons/translation_page.dart';
-import 'package:tudloapp/features/navigation/home_map_page.dart';
-import 'package:tudloapp/features/streak/streak_page.dart';
-import 'package:tudloapp/features/user/user_page.dart';
+import 'package:tudloapp/features/dictionary/screens/dictionary_page.dart';
+import 'package:tudloapp/features/test/screens/test_page.dart';
+import 'package:tudloapp/features/translation/screens/translation_page.dart';
+import 'package:tudloapp/features/home_map/screens/home_map_page.dart';
+import 'package:tudloapp/features/pet/screens/pet_page.dart';
+import 'package:tudloapp/features/profile/screens/profile_page.dart';
+import 'package:tudloapp/features/navigation/bottom_nav_bar.dart';
 
 /// Main app container after onboarding.
 ///
@@ -31,6 +31,8 @@ class AppShellState extends State<AppShell> {
   }
 
   void switchTo(int index) {
+    // Called by the bottom navigation bar and by child pages that need to jump
+    // back to another tab, such as Test returning to Map.
     setState(() {
       _selectedIndex = index;
     });
@@ -39,30 +41,20 @@ class AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     // Keep page order, icons, and labels aligned by index.
+    // Example: index 0 = Map page, Map icon, and "Map" label.
     final pages = [
+      // Opens the Home Map where learners choose lesson levels.
       const HomeMapPage(),
+      // Opens the translator helper tab.
       const TranslationPage(),
+      // Opens the searchable vocabulary dictionary.
       const DictionaryPage(),
-      const StreakPage(),
+      // Opens Koka's energy companion page.
+      const PetPage(),
+      // Opens the unit test page. Its back button returns to the Map tab.
       TestPage(onBack: () => switchTo(0)),
-      const UserPage(),
-    ];
-
-    final icons = const [
-      Icons.home,
-      Icons.translate,
-      Icons.menu_book_rounded,
-      Icons.pets_rounded,
-      Icons.fact_check,
-      Icons.person,
-    ];
-    final labels = const [
-      'Map',
-      'Translate',
-      'Dictionary',
-      'Pet',
-      'Test',
-      'Profile',
+      // Opens the user's profile, streak, and progress page.
+      const ProfilePage(),
     ];
 
     return Scaffold(
@@ -75,92 +67,9 @@ class AppShellState extends State<AppShell> {
             left: 18,
             right: 18,
             bottom: 18,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-              height: 78,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Colors.white.withValues(alpha: .92)),
-                boxShadow: [
-                  BoxShadow(
-                    color: TudloColors.forest.withValues(alpha: 0.12),
-                    blurRadius: 34,
-                    offset: const Offset(0, 16),
-                  ),
-                  BoxShadow(
-                    color: TudloColors.brightGreen.withValues(alpha: 0.07),
-                    blurRadius: 18,
-                    offset: const Offset(0, 7),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: List.generate(icons.length, (index) {
-                  final isSelected = _selectedIndex == index;
-
-                  return Expanded(
-                    child: AnimatedScale(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      scale: isSelected ? 1.03 : 1,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () => switchTo(index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOut,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? TudloColors.softGreen
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(22),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: TudloColors.brightGreen.withValues(
-                                        alpha: .10,
-                                      ),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 7),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                icons[index],
-                                size: isSelected ? 31 : 29,
-                                color: isSelected
-                                    ? TudloColors.forest
-                                    : TudloColors.muted,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                labels[index],
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? TudloColors.forest
-                                      : TudloColors.muted,
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w900
-                                      : FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
+            child: TudloBottomNavBar(
+              selectedIndex: _selectedIndex,
+              onTap: switchTo,
             ),
           ),
         ],

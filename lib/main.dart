@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/constants/app_strings.dart';
+import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/state/app_state.dart';
-import 'package:tudloapp/core/style/app_theme.dart';
-import 'package:tudloapp/features/onboarding/mascot_screen.dart';
+import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/features/onboarding/screens/mascot_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AppData.initialize();
   runApp(const TudloApp());
 }
 
@@ -27,7 +31,7 @@ class _TudloAppState extends State<TudloApp> {
       notifier: _appState,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Tudlo',
+        title: AppStrings.appName,
         theme: TudloTheme.theme,
         home: const MascotScreen(),
       ),

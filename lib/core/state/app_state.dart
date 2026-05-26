@@ -16,22 +16,29 @@ class AppState extends ChangeNotifier {
 
   String get displayUsername => username.trim().isEmpty ? 'friend' : username;
 
+  /// Saves the typed username from onboarding or the Profile edit dialog.
   void setUsername(String value) {
     username = value.trim();
     notifyListeners();
   }
 
+  /// Saves the selected age range for display on the Profile page.
   void setAgeRange(String value) {
     ageRange = value;
     notifyListeners();
   }
 
+  /// Stores the visible knowledge label and its hidden numeric level.
   void setKnowledgeOption(KnowledgeOption value) {
     knowledgeLabel = value.label;
     knowledgeLevel = value.level;
     notifyListeners();
   }
 
+  /// Converts the evaluation score into the internal Home Map dataset.
+  ///
+  /// The user only moves forward after the evaluation; dataset names like
+  /// easy/medium/hard are intentionally kept hidden from the UI.
   void saveEvaluationScore(int score) {
     if (score <= 6) {
       homeMapDataset = HomeMapDataset.easy;
@@ -43,6 +50,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Skipping the evaluation starts the user on the default/easy dataset.
   void skipEvaluation() {
     homeMapDataset = HomeMapDataset.easy;
     notifyListeners();

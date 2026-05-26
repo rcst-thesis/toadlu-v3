@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +62,14 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/images/level_game/action/
+    - assets/images/level_game/animal/
+    - assets/images/level_game/complete the sentence/
+    - assets/images/level_game/unit 1/level 1/complete the sentence/
+    - assets/images/level_game/fruits/
+    - assets/images/level_game/people/
+    - assets/images/level_game/transportation/
+    - assets/images/pet/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
