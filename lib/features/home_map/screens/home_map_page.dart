@@ -271,7 +271,7 @@ class _MapHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Header uses a real image asset instead of painted shapes so it can be
-    // easily swapped by replacing assets/images/mapheader.png.
+    // easily swapped by replacing the game_map header asset.
     return Container(
       height: 280,
       width: double.infinity,
@@ -284,7 +284,7 @@ class _MapHeader extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/mapheader.png',
+              'assets/images/game_map/mapheader.png',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               filterQuality: FilterQuality.high,
@@ -738,7 +738,7 @@ class _MapAsset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Unit cards mark the beginning of each 5-level unit. The book button
+    // Unit cards mark the beginning of each unit. The book button
     // opens a preview of the vocabulary used in that unit.
     return Positioned(
       left: left,
@@ -774,12 +774,11 @@ class _MapDecorationLayer extends StatelessWidget {
   });
 
   static const _assets = [
-    'assets/images/tree1.png',
-    'assets/images/tree2.png',
-    'assets/images/tree1 (2).png',
-    'assets/images/grass.png',
-    'assets/images/rock.png',
-    'assets/images/flower.png',
+    'assets/images/game_map/tree1.png',
+    'assets/images/game_map/tree2.png',
+    'assets/images/game_map/tree1 (2).png',
+    'assets/images/game_map/grass.png',
+    'assets/images/game_map/rock.png',
   ];
 
   @override
@@ -820,11 +819,11 @@ class _MapDecorationLayer extends StatelessWidget {
         : _assets[index % _assets.length];
     final isTree = asset.contains('tree');
     final baseWidth = switch (asset) {
-      'assets/images/tree1.png' => compact ? 154.0 : 211.0,
-      'assets/images/tree2.png' => compact ? 154.0 : 211.0,
-      'assets/images/tree1 (2).png' => compact ? 154.0 : 211.0,
-      'assets/images/grass.png' => compact ? 74.0 : 116.0,
-      'assets/images/rock.png' => compact ? 62.0 : 92.0,
+      'assets/images/game_map/tree1.png' => compact ? 154.0 : 211.0,
+      'assets/images/game_map/tree2.png' => compact ? 154.0 : 211.0,
+      'assets/images/game_map/tree1 (2).png' => compact ? 154.0 : 211.0,
+      'assets/images/game_map/grass.png' => compact ? 74.0 : 116.0,
+      'assets/images/game_map/rock.png' => compact ? 62.0 : 92.0,
       _ => compact ? 32.0 : 44.0,
     };
     final assetHeight = isTree ? (compact ? 170.0 : 230.0) : null;

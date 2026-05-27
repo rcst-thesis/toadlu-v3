@@ -40,9 +40,9 @@ class AppState extends ChangeNotifier {
   /// The user only moves forward after the evaluation; dataset names like
   /// easy/medium/hard are intentionally kept hidden from the UI.
   void saveEvaluationScore(int score) {
-    if (score <= 6) {
+    if (score <= 4) {
       homeMapDataset = HomeMapDataset.easy;
-    } else if (score <= 11) {
+    } else if (score <= 7) {
       homeMapDataset = HomeMapDataset.medium;
     } else {
       homeMapDataset = HomeMapDataset.hard;

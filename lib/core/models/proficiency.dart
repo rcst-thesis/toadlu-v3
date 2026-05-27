@@ -11,10 +11,10 @@ class KnowledgeOption {
 }
 
 const knowledgeOptions = [
-  KnowledgeOption(label: "I’m still learning", level: 1),
+  KnowledgeOption(label: "I'm still learning", level: 1),
   KnowledgeOption(label: 'I know a bit', level: 2),
   KnowledgeOption(label: 'I can understand most', level: 3),
-  KnowledgeOption(label: "I’m fluent", level: 4),
+  KnowledgeOption(label: "I'm fluent", level: 4),
 ];
 
 /// Question formats used by the onboarding evaluation test.

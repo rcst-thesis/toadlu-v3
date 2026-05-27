@@ -107,89 +107,115 @@ class _ScaffoldCardState extends State<ScaffoldCard>
         child: DecoratedBox(
           decoration: const BoxDecoration(color: OnboardingColors.bg),
           child: SafeArea(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      24,
-                      18,
-                      24,
-                      widget.bottomAction == null ? 34 : 122,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _OnboardingTopBar(step: _step),
-                        const SizedBox(height: 30),
-                        const Text(
-                          'ABOUT YOU',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Onboarding should not scroll. Spacing and mascot size shrink
+                // on shorter screens so the options and Continue button stay
+                // visible in one clean viewport.
+                final compact = constraints.maxHeight < 820;
+                final tiny = constraints.maxHeight < 720;
+                final mascotSize = tiny
+                    ? 76.0
+                    : compact
+                    ? 116.0
+                    : 148.0;
+                final topGap = tiny
+                    ? 8.0
+                    : compact
+                    ? 18.0
+                    : 30.0;
+                final mascotGap = tiny
+                    ? 12.0
+                    : compact
+                    ? 24.0
+                    : 42.0;
+                final titleGap = tiny
+                    ? 12.0
+                    : compact
+                    ? 24.0
+                    : 34.0;
+                final childGap = tiny
+                    ? 12.0
+                    : compact
+                    ? 26.0
+                    : 42.0;
+                final horizontalPadding = tiny ? 18.0 : 24.0;
+
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    18,
+                    horizontalPadding,
+                    12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _OnboardingTopBar(step: _step),
+                      SizedBox(height: topGap),
+                      const Text(
+                        'ABOUT YOU',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: OnboardingColors.muted,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.6,
+                        ),
+                      ),
+                      SizedBox(height: mascotGap),
+                      AnimatedBuilder(
+                        animation: _floatAnimation,
+                        builder: (context, child) {
+                          final lift = -5 * _floatAnimation.value;
+                          final scale = 1 + (_floatAnimation.value * .015);
+                          return Transform.translate(
+                            offset: Offset(0, lift),
+                            child: Transform.scale(scale: scale, child: child),
+                          );
+                        },
+                        child: TudloMascot(size: mascotSize),
+                      ),
+                      SizedBox(height: titleGap),
+                      Text(
+                        widget.title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: OnboardingColors.text,
+                          fontSize: tiny ? 24 : 28,
+                          height: 1.12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      if (widget.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.subtitle,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: OnboardingColors.muted,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.6,
+                            fontSize: tiny ? 15 : 18,
+                            height: 1.25,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 42),
-                        AnimatedBuilder(
-                          animation: _floatAnimation,
-                          builder: (context, child) {
-                            final lift = -5 * _floatAnimation.value;
-                            final scale = 1 + (_floatAnimation.value * .015);
-                            return Transform.translate(
-                              offset: Offset(0, lift),
-                              child: Transform.scale(
-                                scale: scale,
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: const TudloMascot(size: 148),
-                        ),
-                        const SizedBox(height: 34),
-                        Text(
-                          widget.title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: OnboardingColors.text,
-                            fontSize: 28,
-                            height: 1.12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                        if (widget.subtitle.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Text(
-                            widget.subtitle,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: OnboardingColors.muted,
-                              fontSize: 18,
-                              height: 1.3,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 42),
-                        AnimatedSwitcher(
+                      ],
+                      SizedBox(height: childGap),
+                      Flexible(
+                        child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 260),
                           child: widget.child,
                         ),
+                      ),
+                      if (widget.bottomAction != null) ...[
+                        const SizedBox(height: 8),
+                        widget.bottomAction!,
                       ],
-                    ),
+                    ],
                   ),
-                ),
-                if (widget.bottomAction != null)
-                  Positioned(
-                    left: 24,
-                    right: 24,
-                    bottom: 30,
-                    child: widget.bottomAction!,
-                  ),
-              ],
+                );
+              },
             ),
           ),
         ),

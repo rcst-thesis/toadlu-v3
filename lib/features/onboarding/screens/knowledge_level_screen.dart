@@ -45,13 +45,16 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           ...List.generate(knowledgeOptions.length, (index) {
             final option = knowledgeOptions[index];
             final active = selected == option;
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(
+                bottom: index == knowledgeOptions.length - 1 ? 0 : 8,
+              ),
               child: GestureDetector(
                 onTap: () {
                   // Selecting a new option updates the active green outline.
@@ -66,10 +69,10 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOut,
-                    constraints: const BoxConstraints(minHeight: 72),
+                    constraints: const BoxConstraints(minHeight: 56),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 18,
+                      horizontal: 18,
+                      vertical: 11,
                     ),
                     decoration: BoxDecoration(
                       color: active
@@ -120,19 +123,19 @@ class _KnowledgeLevelScreenState extends State<KnowledgeLevelScreen> {
                                 )
                               : null,
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             option.label,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: OnboardingColors.text,
-                              fontSize: 19,
+                              fontSize: 17,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 38),
+                        const SizedBox(width: 34),
                       ],
                     ),
                   ),

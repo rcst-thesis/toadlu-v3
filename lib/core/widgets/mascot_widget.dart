@@ -6,21 +6,13 @@ import 'package:flutter/material.dart';
 /// without hunting through every screen.
 class TudloMascot extends StatelessWidget {
   final double size;
-  final bool happy;
   final String? asset;
 
-  const TudloMascot({
-    super.key,
-    this.size = 118,
-    this.happy = true,
-    this.asset,
-  });
+  const TudloMascot({super.key, this.size = 118, this.asset});
 
   @override
   Widget build(BuildContext context) {
-    final imageAsset =
-        asset ??
-        (happy ? 'assets/images/mascot1.png' : 'assets/images/mascot2.png');
+    final imageAsset = asset ?? 'assets/images/mascot1.png';
     return Image.asset(
       imageAsset,
       width: size,

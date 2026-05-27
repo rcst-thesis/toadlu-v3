@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:tudloapp/core/models/proficiency.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
@@ -25,13 +24,15 @@ class EvaluationTestScreen extends StatefulWidget {
 class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
   // Generated once when the screen opens so the evaluation does not change
   // while the user is answering.
-  late final List<EvaluationQuestion> questions =
-      LessonBank.randomEvaluationQuestions();
+  late final List<LessonQuestion> questions =
+      LessonBank.tutorialEvaluationQuestions();
   final Map<int, bool> _earnedPointByQuestion = {};
+  final TextEditingController typedAnswerController = TextEditingController();
   int questionIndex = 0;
   int score = 0;
 
   String? selectedAnswer;
+  final List<String> builtWords = [];
   String? selectedMatchLeft;
   String? wrongMatchLeft;
   String? wrongMatchRight;
@@ -47,21 +48,34 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
   bool hadWrongMatchAttempt = false;
   final Map<String, String> matches = {};
 
-  EvaluationQuestion get currentQuestion => questions[questionIndex];
+  LessonQuestion get currentQuestion => questions[questionIndex];
 
   bool get canContinue {
     final q = currentQuestion;
     if (checked) return true;
     return switch (q.type) {
-      EvaluationQuestionType.matchingPair => matches.length == q.pairs.length,
+      QuestionType.matching => matches.length == q.leftItems.length,
+      QuestionType.typedTranslation =>
+        typedAnswerController.text.trim().isNotEmpty,
+      QuestionType.arrangeWords || QuestionType.fillBlank =>
+        builtWords.length >= _answerWords(q.answer).length,
       _ => selectedAnswer != null,
     };
   }
 
   bool get isCorrect {
     final q = currentQuestion;
-    if (q.type == EvaluationQuestionType.matchingPair) {
+    if (q.type == QuestionType.matching) {
       return !hadWrongMatchAttempt && _matchingCorrect(q);
+    }
+    if (q.type == QuestionType.typedTranslation) {
+      return _normalizeAnswer(typedAnswerController.text) ==
+          _normalizeAnswer(q.answer);
+    }
+    if (q.type == QuestionType.arrangeWords ||
+        q.type == QuestionType.fillBlank) {
+      return _normalizeAnswer(builtWords.join(' ')) ==
+          _normalizeAnswer(q.answer);
     }
     return selectedAnswer == q.answer;
   }
@@ -70,6 +84,7 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
   void dispose() {
     _wrongMatchClearTimer?.cancel();
     _matchedPulseTimer?.cancel();
+    typedAnswerController.dispose();
     super.dispose();
   }
 
@@ -106,6 +121,8 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
   void _resetQuestionState() {
     selectedAnswer = null;
     selectedMatchLeft = null;
+    builtWords.clear();
+    typedAnswerController.clear();
     _clearWrongMatch();
     _clearMatchedPulse();
     wrongMatchAttempt = 0;
@@ -117,11 +134,31 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
     matches.clear();
   }
 
-  bool _matchingCorrect(EvaluationQuestion q) {
-    for (final entry in q.pairs.entries) {
-      if (matches[entry.key] != entry.value) return false;
+  bool _matchingCorrect(LessonQuestion q) {
+    for (var index = 0; index < q.leftItems.length; index++) {
+      final left = q.leftItems[index];
+      final expected = LessonBank.terms
+          .firstWhere((term) => term.hil == left)
+          .eng;
+      if (matches[left] != expected) return false;
     }
     return true;
+  }
+
+  List<String> _answerWords(String answer) {
+    return answer
+        .replaceAll(RegExp(r'[.!?"]'), '')
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
+  }
+
+  String _normalizeAnswer(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[.!?"]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   void _selectMatchLeft(String left) {
@@ -138,7 +175,9 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
     }
 
     final left = selectedMatchLeft!;
-    final expected = currentQuestion.pairs[left];
+    final expected = LessonBank.terms
+        .firstWhere((term) => term.hil == left)
+        .eng;
     setState(() {
       // Matching questions immediately store correct pairs. A wrong pair marks
       // the whole matching question wrong for scoring.
@@ -216,7 +255,7 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
                   ),
                   const SizedBox(width: 14),
                   Text(
-                    '${questionIndex + 1}/15',
+                    '${questionIndex + 1}/${questions.length}',
                     style: const TextStyle(
                       color: TudloColors.forest,
                       fontSize: 16,
@@ -244,8 +283,11 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PromptCard(question: currentQuestion),
-                      const SizedBox(height: 26),
+                      if (currentQuestion.type != QuestionType.imageChoice &&
+                          currentQuestion.type != QuestionType.fillBlank) ...[
+                        _PromptCard(question: currentQuestion),
+                        const SizedBox(height: 26),
+                      ],
                       _buildQuestionBody(currentQuestion),
                     ],
                   ),
@@ -292,19 +334,22 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
     );
   }
 
-  String _titleFor(EvaluationQuestionType type) {
+  String _titleFor(QuestionType type) {
     return switch (type) {
-      EvaluationQuestionType.whatIsTheWord => 'What is the word?',
-      EvaluationQuestionType.selectMissingWord => 'Select the missing word',
-      EvaluationQuestionType.translateSentence => 'Translate the sentence',
-      EvaluationQuestionType.matchingPair => 'Matching pair',
+      QuestionType.translationChoice => 'Choose the translation',
+      QuestionType.imageChoice => currentQuestion.prompt,
+      QuestionType.typedTranslation => 'Translate the sentence',
+      QuestionType.arrangeWords => 'Arrange the words',
+      QuestionType.matching => 'Matching pair',
+      QuestionType.fillBlank => 'Complete the sentence',
+      _ => 'Choose the answer',
     };
   }
 
-  Widget _buildQuestionBody(EvaluationQuestion q) {
+  Widget _buildQuestionBody(LessonQuestion q) {
     // Each evaluation question type uses a different interaction widget, but
     // all answers flow back into the same scoring state above.
-    if (q.type == EvaluationQuestionType.matchingPair) {
+    if (q.type == QuestionType.matching) {
       return _MatchingExercise(
         question: q,
         matches: matches,
@@ -317,6 +362,46 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
         matchPulseAttempt: matchPulseAttempt,
         onSelectLeft: _selectMatchLeft,
         onSelectRight: _selectMatchRight,
+      );
+    }
+
+    if (q.type == QuestionType.imageChoice) {
+      return _ImageChoiceGrid(
+        question: q,
+        selected: selectedAnswer,
+        checked: checked,
+        onSelected: (value) {
+          if (checked) return;
+          setState(() => selectedAnswer = value);
+        },
+      );
+    }
+
+    if (q.type == QuestionType.typedTranslation) {
+      return _TypedAnswerBox(
+        controller: typedAnswerController,
+        checked: checked,
+        correct: checked && lastCorrect,
+        answer: q.answer,
+        onChanged: (_) => setState(() {}),
+      );
+    }
+
+    if (q.type == QuestionType.arrangeWords ||
+        q.type == QuestionType.fillBlank) {
+      return _WordBuilderExercise(
+        question: q,
+        builtWords: builtWords,
+        checked: checked,
+        correct: checked && lastCorrect,
+        onAddWord: (word) {
+          if (checked) return;
+          setState(() => builtWords.add(word));
+        },
+        onRemoveWord: (index) {
+          if (checked) return;
+          setState(() => builtWords.removeAt(index));
+        },
       );
     }
 
@@ -599,7 +684,7 @@ class _FeedbackBanner extends StatelessWidget {
 }
 
 class _PromptCard extends StatelessWidget {
-  final EvaluationQuestion question;
+  final LessonQuestion question;
 
   const _PromptCard({required this.question});
 
@@ -631,13 +716,13 @@ class _PromptCard extends StatelessWidget {
             ),
             child: Icon(
               switch (question.type) {
-                EvaluationQuestionType.selectMissingWord =>
-                  Icons.auto_awesome_rounded,
-                EvaluationQuestionType.matchingPair => Icons.link_rounded,
-                EvaluationQuestionType.whatIsTheWord =>
-                  Icons.text_fields_rounded,
-                EvaluationQuestionType.translateSentence =>
-                  Icons.translate_rounded,
+                QuestionType.fillBlank => Icons.auto_awesome_rounded,
+                QuestionType.matching => Icons.link_rounded,
+                QuestionType.translationChoice => Icons.text_fields_rounded,
+                QuestionType.typedTranslation => Icons.translate_rounded,
+                QuestionType.arrangeWords => Icons.sort_rounded,
+                QuestionType.imageChoice => Icons.image_rounded,
+                _ => Icons.quiz_rounded,
               },
               color: Colors.white,
               size: 32,
@@ -652,7 +737,7 @@ class _PromptCard extends StatelessWidget {
 }
 
 class _PromptText extends StatelessWidget {
-  final EvaluationQuestion question;
+  final LessonQuestion question;
 
   const _PromptText({required this.question});
 
@@ -721,8 +806,321 @@ class _ChoiceList extends StatelessWidget {
   }
 }
 
+class _ImageChoiceGrid extends StatelessWidget {
+  final LessonQuestion question;
+  final String? selected;
+  final bool checked;
+  final ValueChanged<String> onSelected;
+
+  const _ImageChoiceGrid({
+    required this.question,
+    required this.selected,
+    required this.checked,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: question.imageChoices.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: .86,
+      ),
+      itemBuilder: (context, index) {
+        final choice = question.imageChoices[index];
+        final active = selected == choice.hil;
+        final correct = checked && active && choice.hil == question.answer;
+        final wrong = checked && active && choice.hil != question.answer;
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: checked ? null : () => onSelected(choice.hil),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: correct
+                  ? TudloColors.green.withValues(alpha: .10)
+                  : wrong
+                  ? TudloColors.coral.withValues(alpha: .08)
+                  : active
+                  ? TudloColors.green.withValues(alpha: .08)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: correct || active
+                    ? TudloColors.green
+                    : wrong
+                    ? TudloColors.coral
+                    : TudloColors.line,
+                width: correct || wrong || active ? 4 : 3,
+              ),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Image.asset(
+                    choice.imagePath ?? '',
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  choice.hil,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: wrong ? TudloColors.coral : TudloColors.ink,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TypedAnswerBox extends StatelessWidget {
+  final TextEditingController controller;
+  final bool checked;
+  final bool correct;
+  final String answer;
+  final ValueChanged<String> onChanged;
+
+  const _TypedAnswerBox({
+    required this.controller,
+    required this.checked,
+    required this.correct,
+    required this.answer,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = checked
+        ? correct
+              ? TudloColors.green
+              : TudloColors.coral
+        : TudloColors.line;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: borderColor, width: 4),
+          ),
+          child: TextField(
+            controller: controller,
+            readOnly: checked,
+            minLines: 3,
+            maxLines: 4,
+            cursorColor: TudloColors.green,
+            onChanged: onChanged,
+            style: const TextStyle(
+              color: TudloColors.ink,
+              fontSize: 23,
+              height: 1.25,
+              fontWeight: FontWeight.w800,
+            ),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: 'Type the translation here',
+              hintStyle: TextStyle(
+                color: TudloColors.muted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        if (checked && !correct) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Correct answer: $answer',
+            style: const TextStyle(
+              color: TudloColors.forest,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _WordBuilderExercise extends StatelessWidget {
+  final LessonQuestion question;
+  final List<String> builtWords;
+  final bool checked;
+  final bool correct;
+  final ValueChanged<String> onAddWord;
+  final ValueChanged<int> onRemoveWord;
+
+  const _WordBuilderExercise({
+    required this.question,
+    required this.builtWords,
+    required this.checked,
+    required this.correct,
+    required this.onAddWord,
+    required this.onRemoveWord,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final blocks = question.type == QuestionType.fillBlank
+        ? question.choices
+        : question.sentenceWords;
+    final available = [...blocks];
+    for (final word in builtWords) {
+      available.remove(word);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (question.imagePath.trim().isNotEmpty) ...[
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360, maxHeight: 170),
+              child: Image.asset(
+                question.imagePath,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+        ],
+        Container(
+          constraints: const BoxConstraints(minHeight: 96),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: checked && !correct
+                ? TudloColors.coral.withValues(alpha: .06)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: checked
+                  ? correct
+                        ? TudloColors.green
+                        : TudloColors.coral
+                  : TudloColors.line,
+              width: 4,
+            ),
+          ),
+          child: builtWords.isEmpty
+              ? const Text(
+                  'Tap the words below',
+                  style: TextStyle(
+                    color: TudloColors.muted,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (var index = 0; index < builtWords.length; index++)
+                      _WordChip(
+                        label: builtWords[index],
+                        active: true,
+                        onTap: checked ? null : () => onRemoveWord(index),
+                      ),
+                  ],
+                ),
+        ),
+        if (question.type == QuestionType.fillBlank) ...[
+          const SizedBox(height: 14),
+          Text(
+            question.prompt,
+            style: const TextStyle(
+              color: TudloColors.ink,
+              fontSize: 22,
+              height: 1.25,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+        const SizedBox(height: 22),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.center,
+          children: [
+            for (final word in available)
+              _WordChip(
+                label: word,
+                active: false,
+                onTap: checked ? null : () => onAddWord(word),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _WordChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
+
+  const _WordChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+        decoration: BoxDecoration(
+          color: active
+              ? TudloColors.green.withValues(alpha: .10)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: active ? TudloColors.green : TudloColors.line,
+            width: 3,
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: TudloColors.ink,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MatchingExercise extends StatelessWidget {
-  final EvaluationQuestion question;
+  final LessonQuestion question;
   final Map<String, String> matches;
   final String? selectedLeft;
   final String? wrongLeft;
@@ -750,7 +1148,7 @@ class _MatchingExercise extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leftItems = question.pairs.keys.toList();
+    final leftItems = question.leftItems;
     final rightItems = question.rightItems;
     final usedRight = matches.values.toSet();
     final maxRows = leftItems.length > rightItems.length

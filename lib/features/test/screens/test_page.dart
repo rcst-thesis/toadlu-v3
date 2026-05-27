@@ -133,7 +133,7 @@ class _TestPageState extends State<TestPage> {
     return _TestMeta(
       unitTitle: unit.title,
       unitLabel: 'Unit ${unit.number}',
-      range: 'Levels 1-5',
+      range: 'Levels 1-${AppData.unitLevels}',
     );
   }
 

@@ -62,13 +62,14 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/images/game_map/
     - assets/images/level_game/action/
     - assets/images/level_game/animal/
-    - assets/images/level_game/complete the sentence/
-    - assets/images/level_game/unit 1/level 1/complete the sentence/
+    - assets/images/level_game/unit 1/arrange-words/
+    - assets/images/level_game/unit 1/complete_the_sentence/
+    - assets/images/level_game/unit 1/image_choice/people/
+    - assets/images/level_game/unit 1/image_choice/transportation/
     - assets/images/level_game/fruits/
-    - assets/images/level_game/people/
-    - assets/images/level_game/transportation/
     - assets/images/pet/
 
   # An image asset can refer to one or more resolution-specific "variants", see

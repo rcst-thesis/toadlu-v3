@@ -247,13 +247,45 @@ class LessonBank {
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
       difficulty: 1,
+      hil: 'Kamusta ka?',
+      eng: 'How are you?',
+      missingSentence: '___ ka?',
+      missingAnswer: 'Kamusta',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      difficulty: 1,
+      hil: 'Maayong aga, Josh! Kamusta ka?',
+      eng: 'Good morning, Josh! How are you?',
+      wordBlocks: ['Maayong', 'aga,', 'Josh!', 'Kamusta', 'ka?'],
+      imagePath:
+          'assets/images/level_game/unit 1/arrange-words/good-morning-how-are-you.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      difficulty: 1,
+      hil: 'Grabe gid ang init subong',
+      eng: "It's really hot today",
+      wordBlocks: ['gid', 'init', 'grabe', 'subong', 'ang'],
+      imagePath:
+          'assets/images/level_game/unit 1/arrange-words/It\'s-really-hot-today.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      difficulty: 1,
       hil: 'Ga pila kami para mag bayad.',
       eng: 'We are lining up to pay',
       missingSentence: 'ga pila ____ para mag ____.',
       missingAnswer: 'kami bayad',
       choices: ['gina', 'kami', 'dalagan', 'bayad', 'kaon', 'kanta'],
       imagePath:
-          'assets/images/level_game/unit 1/level 1/complete the sentence/ga pila kami para mag bayad.png',
+          'assets/images/level_game/unit 1/complete_the_sentence/ga-pila-kami-para-mag-bayad.png',
       wordMeanings: {
         'pila': 'line',
         'dalagan': 'ran',
@@ -267,20 +299,30 @@ class LessonBank {
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
       difficulty: 1,
-      hil: 'Ga ano ka subong',
-      eng: 'What are you doing right now',
-      missingSentence: 'Ga ano ka ___.',
-      missingAnswer: 'subong',
+      hil: 'Ga hulat ako sang jeep.',
+      eng: 'I am waiting for a jeep.',
+      missingSentence: 'ga ____ ako sang ____.',
+      missingAnswer: 'hulat jeep',
+      choices: ['hulat', 'jeep', 'kaon', 'kanta', 'dalagan', 'tubig'],
+      imagePath:
+          'assets/images/level_game/unit 1/complete_the_sentence/ga-hulat-ako-sang-jeep.png',
+      wordMeanings: {
+        'ga': 'is / currently',
+        'hulat': 'waiting',
+        'ako': 'I / me',
+        'sang': 'for / of',
+        'jeep': 'jeepney',
+      },
+      lessonNumber: 1,
     ),
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
       difficulty: 1,
-      hil: 'Kamusta ka?',
-      eng: 'How are you?',
-      missingSentence: '___ ka?',
-      missingAnswer: 'Kamusta',
-      lessonNumber: 1,
+      hil: 'Ga ano ka subong',
+      eng: 'What are you doing right now',
+      missingSentence: 'Ga ano ka ___.',
+      missingAnswer: 'subong',
     ),
     LessonTerm(
       unitNumber: 1,
@@ -359,9 +401,9 @@ class LessonBank {
       eng: 'I am being chased by a dog.',
       missingSentence: '____ ____ ako sang ____.',
       missingAnswer: 'gina lagas ido',
-      choices: ['gina', 'lagas', 'ido', 'basa', 'kaon', 'tubig'],
+      choices: ['basa', 'gina', 'tubig', 'lagas', 'kaon', 'ido'],
       imagePath:
-          'assets/images/level_game/complete the sentence/gina lagas ako sang ido.png',
+          'assets/images/level_game/unit 1/complete_the_sentence/gina-lagas-ako-sang-ido.png',
       wordMeanings: {'ako': 'I / me', 'sang': 'by / of'},
       lessonNumber: 1,
     ),
@@ -371,11 +413,11 @@ class LessonBank {
       difficulty: 1,
       hil: 'Na basa akon bayo kay nag-ulan gulpi.',
       eng: 'My clothes got wet because it suddenly rained.',
-      missingSentence: 'Na ____ akon bayo kay nag-ulan gulpi.',
+      missingSentence: 'Na ____ akon ____ kay nag-ulan gulpi.',
       missingAnswer: 'basa',
-      choices: ['basa', 'init', 'dako', 'gamay'],
+      choices: ['dako', 'init', 'basa', 'gamay', 'bayo'],
       imagePath:
-          'assets/images/level_game/unit 1/level 1/complete the sentence/Na basa bayo ko kay nag ulan gulpi.png',
+          'assets/images/level_game/unit 1/complete_the_sentence/Na-basa-bayo-ko-kay-nag-ulan-gulpi.png',
       wordMeanings: {
         'Na': 'got / became',
         'akon': 'my',
@@ -390,8 +432,24 @@ class LessonBank {
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
       difficulty: 1,
-      hil: 'Ang pangalan ko ay Nicole',
+      hil: 'Ang ngalan ko si Nicole',
       eng: 'My name is Nicole',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      difficulty: 1,
+      hil: 'Lamig',
+      eng: 'Cold',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      difficulty: 1,
+      hil: 'Init',
+      eng: 'Hot',
       lessonNumber: 1,
     ),
     LessonTerm(
@@ -400,7 +458,8 @@ class LessonBank {
       difficulty: 1,
       hil: 'Nanay',
       eng: 'Mother',
-      imagePath: 'assets/images/level_game/people/mother.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/mother.png',
       lessonNumber: 1,
     ),
     LessonTerm(
@@ -409,7 +468,8 @@ class LessonBank {
       difficulty: 1,
       hil: 'Tatay',
       eng: 'Father',
-      imagePath: 'assets/images/level_game/people/father.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/father.png',
       lessonNumber: 1,
     ),
     LessonTerm(
@@ -418,7 +478,8 @@ class LessonBank {
       difficulty: 1,
       hil: 'Lola',
       eng: 'Grandmother',
-      imagePath: 'assets/images/level_game/people/grandmother.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/grandmother.png',
       lessonNumber: 1,
     ),
     LessonTerm(
@@ -427,7 +488,8 @@ class LessonBank {
       difficulty: 1,
       hil: 'Lolo',
       eng: 'Grandfather',
-      imagePath: 'assets/images/level_game/people/grandfather.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/grandfather.png',
       lessonNumber: 1,
     ),
     LessonTerm(
@@ -436,7 +498,8 @@ class LessonBank {
       difficulty: 1,
       hil: 'Jeep',
       eng: 'Jeepney',
-      imagePath: 'assets/images/level_game/transportation/Jeep.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Jeep.png',
       lessonNumber: 1,
     ),
     LessonTerm(
@@ -445,7 +508,28 @@ class LessonBank {
       difficulty: 1,
       hil: 'Bangka',
       eng: 'Boat',
-      imagePath: 'assets/images/level_game/transportation/Bangka.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Bangka.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      difficulty: 1,
+      hil: 'Eroplano',
+      eng: 'Airplane',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Eroplano.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      difficulty: 1,
+      hil: 'Traysikad',
+      eng: 'Tricycle',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Traysikad.png',
       lessonNumber: 1,
     ),
 
@@ -470,7 +554,8 @@ class LessonBank {
       difficulty: 2,
       hil: 'Jeep',
       eng: 'Jeepney',
-      imagePath: 'assets/images/level_game/transportation/Jeep.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Jeep.png',
     ),
     LessonTerm(
       unitNumber: 2,
@@ -478,7 +563,8 @@ class LessonBank {
       difficulty: 2,
       hil: 'Bangka',
       eng: 'Boat',
-      imagePath: 'assets/images/level_game/transportation/Bangka.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Bangka.png',
     ),
     LessonTerm(
       unitNumber: 2,
@@ -486,7 +572,8 @@ class LessonBank {
       difficulty: 2,
       hil: 'Eroplano',
       eng: 'Airplane',
-      imagePath: 'assets/images/level_game/transportation/Eroplano.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Eroplano.png',
     ),
     LessonTerm(
       unitNumber: 2,
@@ -494,7 +581,8 @@ class LessonBank {
       difficulty: 2,
       hil: 'Traysikad',
       eng: 'Pedicab',
-      imagePath: 'assets/images/level_game/transportation/Traysikad.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/transportation/Traysikad.png',
     ),
     LessonTerm(
       unitNumber: 2,
@@ -777,7 +865,8 @@ class LessonBank {
       difficulty: 3,
       hil: 'Nanay',
       eng: 'Mother',
-      imagePath: 'assets/images/level_game/people/mother.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/mother.png',
     ),
     LessonTerm(
       unitNumber: 4,
@@ -785,7 +874,8 @@ class LessonBank {
       difficulty: 3,
       hil: 'Tatay',
       eng: 'Father',
-      imagePath: 'assets/images/level_game/people/father.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/father.png',
     ),
     LessonTerm(
       unitNumber: 4,
@@ -800,7 +890,8 @@ class LessonBank {
       difficulty: 3,
       hil: 'Lola',
       eng: 'Grandmother',
-      imagePath: 'assets/images/level_game/people/grandmother.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/grandmother.png',
     ),
     LessonTerm(
       unitNumber: 4,
@@ -808,7 +899,8 @@ class LessonBank {
       difficulty: 3,
       hil: 'Lolo',
       eng: 'Grandfather',
-      imagePath: 'assets/images/level_game/people/grandfather.png',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/grandfather.png',
     ),
     LessonTerm(
       unitNumber: 4,
@@ -892,7 +984,7 @@ class LessonBank {
       missingAnswer: 'basa',
       choices: ['basa', 'init', 'dako', 'gamay'],
       imagePath:
-          'assets/images/level_game/complete the sentence/Na basa bayo ko kay nag ulan gulpi.png',
+          'assets/images/level_game/unit 1/complete_the_sentence/Na-basa-bayo-ko-kay-nag-ulan-gulpi.png',
       wordMeanings: {
         'Na': 'got / became',
         'akon': 'my',
@@ -912,7 +1004,7 @@ class LessonBank {
       missingAnswer: 'gina lagas ido',
       choices: ['gina', 'lagas', 'ido', 'basa', 'kaon', 'tubig'],
       imagePath:
-          'assets/images/level_game/complete the sentence/gina lagas ako sang ido.png',
+          'assets/images/level_game/unit 1/complete_the_sentence/gina-lagas-ako-sang-ido.png',
       wordMeanings: {'ako': 'I / me', 'sang': 'by / of'},
     ),
     LessonTerm(
@@ -1213,6 +1305,38 @@ class LessonBank {
     ]..shuffle(rng);
   }
 
+  static List<LessonQuestion> tutorialEvaluationQuestions({
+    math.Random? random,
+  }) {
+    // The evaluation behaves like a short tutorial, so it previews the same
+    // activity types as the lesson game without spending energy.
+    final rng = random ?? math.Random();
+    final showcaseQuestions = questionsForLevel(1);
+    const targets = {
+      QuestionType.translationChoice: 2,
+      QuestionType.imageChoice: 2,
+      QuestionType.typedTranslation: 1,
+      QuestionType.arrangeWords: 2,
+      QuestionType.matching: 1,
+      QuestionType.fillBlank: 2,
+    };
+    final selected = <LessonQuestion>[];
+    final counts = <QuestionType, int>{};
+
+    for (final type in targets.keys) {
+      final candidates =
+          showcaseQuestions.where((question) => question.type == type).toList()
+            ..shuffle(rng);
+      for (final question in candidates) {
+        if ((counts[type] ?? 0) >= targets[type]!) break;
+        selected.add(question);
+        counts[type] = (counts[type] ?? 0) + 1;
+      }
+    }
+
+    return selected..shuffle(rng);
+  }
+
   static List<EvaluationQuestion> _evaluationQuestionsForDifficulty(
     int difficulty,
     int count,
@@ -1411,11 +1535,16 @@ class LessonBank {
 
   static List<LessonQuestion> questionsForLevel(int level) {
     final rng = math.Random();
+    if (level == 1) {
+      return _unitOneLevelOneQuestionSet(rng)..shuffle(rng);
+    }
+
     final unit = unitForLevel(level);
     final unitTerms = termsForUnit(unit);
+    final scopedUnitTerms = _termsForUnitLessonScope(level);
     final levelTerms = _termsForLocalLesson(level);
     final practiceTerms = _nonScenarioTerms(levelTerms);
-    final practiceUnitTerms = _nonScenarioTerms(unitTerms);
+    final practiceUnitTerms = _nonScenarioTerms(scopedUnitTerms);
 
     // Unit 1 Level 1 is the polished showcase level and gets the complete
     // activity mix requested for demo/testing. Other levels use the normal
@@ -1440,7 +1569,7 @@ class LessonBank {
           level + index,
           levelTerms,
           rng,
-          unitFallbackTerms: unitTerms,
+          unitFallbackTerms: scopedUnitTerms,
         ),
     ];
     final firstImageQuestion = _imageChoiceQuestion(
@@ -1477,9 +1606,140 @@ class LessonBank {
       levelTerms: practiceTerms,
       unitTerms: practiceUnitTerms,
       scenarioTerms: levelTerms,
-      scenarioUnitTerms: unitTerms,
+      scenarioUnitTerms: scopedUnitTerms,
       rng: rng,
     )..shuffle(rng);
+  }
+
+  static List<LessonQuestion> _unitOneLevelOneQuestionSet(math.Random rng) {
+    // Unit 1 Level 1 is the showcase level, so it uses a fixed set from the
+    // lesson plan instead of the flexible generator used by later levels.
+    final levelTerms = _termsForLocalLesson(1);
+    LessonTerm term(String hil) =>
+        levelTerms.firstWhere((term) => term.hil == hil);
+    List<String> shuffled(List<String> values) => [...values]..shuffle(rng);
+
+    final familyChoices = [
+      term('Nanay'),
+      term('Tatay'),
+      term('Lola'),
+      term('Lolo'),
+    ];
+    final transportationChoices = [
+      term('Jeep'),
+      term('Bangka'),
+      term('Eroplano'),
+      term('Traysikad'),
+    ];
+
+    return [
+      LessonQuestion.translationChoice(
+        prompt: 'Which of these is "Yes"?',
+        answer: 'Huo',
+        choices: shuffled(['Huo', 'Indi', 'Palihog', 'Maayong aga']),
+        targetPhrase: 'Yes',
+        targetMeaning: 'Huo',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.translationChoice(
+        prompt: 'Which of these is "Please"?',
+        answer: 'Palihog',
+        choices: shuffled(['Palihog', 'Huo', 'Indi', 'Kamusta ka?']),
+        targetPhrase: 'Please',
+        targetMeaning: 'Palihog',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.translationChoice(
+        prompt: 'Which of these is "How are you?"',
+        answer: 'Kamusta ka?',
+        choices: shuffled(['Kamusta ka?', 'Maayong aga', 'Palihog', 'Huo']),
+        targetPhrase: 'How are you?',
+        targetMeaning: 'Kamusta ka?',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.translationChoice(
+        prompt: 'Which of these is "Good morning"?',
+        answer: 'Maayong aga',
+        choices: shuffled(['Maayong aga', 'Kamusta ka?', 'Palihog', 'Indi']),
+        targetPhrase: 'Good morning',
+        targetMeaning: 'Maayong aga',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.typedTranslation(
+        prompt: 'Translate: "How are you?"',
+        answer: 'Kamusta ka?',
+        targetPhrase: 'How are you?',
+        targetMeaning: 'Kamusta ka?',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.typedTranslation(
+        prompt: 'Translate: "Good morning"',
+        answer: 'Maayong aga',
+        targetPhrase: 'Good morning',
+        targetMeaning: 'Maayong aga',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.arrangeWords(
+        prompt: 'Arrange the words to say: "It\'s really hot today"',
+        answer: 'Grabe gid ya ang init subong',
+        sentenceWords: shuffled([
+          'Grabe',
+          'gid',
+          'ya',
+          'ang',
+          'init',
+          'subong',
+        ]),
+        imagePath:
+            'assets/images/level_game/unit 1/arrange-words/It\'s-really-hot-today.png',
+        targetPhrase: "It's really hot today",
+        targetMeaning: 'Grabe gid ya ang init subong',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.arrangeWords(
+        prompt: 'Arrange the words to say: "Good morning, Josh! How are you?"',
+        answer: 'Maayong aga, Josh! Kamusta ka?',
+        sentenceWords: shuffled(['Maayong', 'aga,', 'Josh!', 'Kamusta', 'ka?']),
+        imagePath:
+            'assets/images/level_game/unit 1/arrange-words/good-morning-how-are-you.png',
+        targetPhrase: 'Good morning, Josh! How are you?',
+        targetMeaning: 'Maayong aga, Josh! Kamusta ka?',
+        directionLabel: 'English to Hiligaynon',
+      ),
+      LessonQuestion.matching(
+        prompt: 'Match each Hiligaynon word to English.',
+        leftItems: ['Lamig', 'Init', 'Nanay', 'Tatay'],
+        rightItems: shuffled(['Cold', 'Hot', 'Mother', 'Father']),
+      ),
+      LessonQuestion.matching(
+        prompt: 'Match each Hiligaynon word to English.',
+        leftItems: ['Jeep', 'Eroplano', 'Bangka', 'Traysikad'],
+        rightItems: shuffled(['Jeepney', 'Airplane', 'Boat', 'Tricycle']),
+      ),
+      _fillBlankQuestion(
+        term('Na basa akon bayo kay nag-ulan gulpi.'),
+        levelTerms,
+        rng,
+      ),
+      _fillBlankQuestion(term('Ga pila kami para mag bayad.'), levelTerms, rng),
+      _fillBlankQuestion(term('Ga hulat ako sang jeep.'), levelTerms, rng),
+      LessonQuestion.imageChoice(
+        prompt: 'Which of these is "Mother"?',
+        answer: 'Nanay',
+        imageChoices: [...familyChoices]..shuffle(rng),
+        targetPhrase: 'Nanay',
+        targetMeaning: 'Mother',
+        directionLabel: 'Hiligaynon to English',
+      ),
+      LessonQuestion.imageChoice(
+        prompt: 'Which of these is "Jeepney"?',
+        answer: 'Jeep',
+        imageChoices: [...transportationChoices]..shuffle(rng),
+        targetPhrase: 'Jeep',
+        targetMeaning: 'Jeepney',
+        directionLabel: 'Hiligaynon to English',
+      ),
+    ];
   }
 
   static List<LessonTerm> termsForLevel(int level) {
@@ -1531,11 +1791,21 @@ class LessonBank {
     );
     for (var offset = 0; offset < unitTerms.length; offset++) {
       final term = unitTerms[(start + offset) % unitTerms.length];
+      if (term.lessonNumber != null && term.lessonNumber != localLevel + 1) {
+        continue;
+      }
       if (selected.any((item) => item.hil == term.hil)) continue;
       selected.add(term);
       if (selected.length >= math.min(12, unitTerms.length)) break;
     }
     return selected;
+  }
+
+  static List<LessonTerm> _termsForUnitLessonScope(int level) {
+    final localLesson = ((level - 1) % AppData.unitLevels) + 1;
+    return termsForUnit(unitForLevel(level)).where((term) {
+      return term.lessonNumber == null || term.lessonNumber == localLesson;
+    }).toList();
   }
 
   static LessonQuestion _missingWordQuestion(
@@ -1671,7 +1941,7 @@ class LessonBank {
     return term.missingSentence != null &&
         term.missingAnswer != null &&
         term.imagePath != null &&
-        term.imagePath!.contains('/complete the sentence/');
+        term.imagePath!.contains('/complete_the_sentence/');
   }
 
   static LessonQuestion _translationChoiceQuestion({
@@ -1728,6 +1998,19 @@ class LessonBank {
       offset++
     ) {
       final candidate = unitWords[(seed + offset) % unitWords.length];
+      if (!selected.any((term) => term.hil == candidate.hil)) {
+        selected.add(candidate);
+      }
+    }
+    final globalWords = _matchingTerms(
+      terms.where((term) => term.lessonNumber != 1).toList(),
+    );
+    for (
+      var offset = 0;
+      selected.length < 4 && offset < globalWords.length;
+      offset++
+    ) {
+      final candidate = globalWords[(seed + offset) % globalWords.length];
       if (!selected.any((term) => term.hil == candidate.hil)) {
         selected.add(candidate);
       }
@@ -1804,7 +2087,10 @@ class LessonBank {
       // Unit 1 Level 1 is the showcase level. It may use the approved people
       // and transportation visual pools even though those images live outside
       // Unit 1's local lesson slice.
-      imageTerms = terms.where(_isImageChoiceTerm).toList();
+      imageTerms = terms
+          .where(_isImageChoiceTerm)
+          .where((term) => term.lessonNumber != 1)
+          .toList();
     }
     imageTerms = _sameImageFolderTerms(imageTerms, seed);
     if (imageTerms.length < 4) return null;
@@ -1837,11 +2123,11 @@ class LessonBank {
     required math.Random rng,
   }) {
     const targets = {
-      QuestionType.translationChoice: 3,
-      QuestionType.typedTranslation: 3,
-      QuestionType.arrangeWords: 3,
+      QuestionType.translationChoice: 4,
+      QuestionType.typedTranslation: 2,
+      QuestionType.arrangeWords: 2,
       QuestionType.matching: 2,
-      QuestionType.fillBlank: 2,
+      QuestionType.fillBlank: 3,
       QuestionType.imageChoice: 2,
     };
     final completed = <LessonQuestion>[];
@@ -1886,13 +2172,21 @@ class LessonBank {
           unitTerms,
           level + cursor,
         ),
-        QuestionType.fillBlank => _missingWordQuestion(
-          level + cursor,
-          scenarioTerms,
-          rng,
-          unitFallbackTerms: scenarioUnitTerms,
-          preferScenario: cursor.isEven,
-        ),
+        QuestionType.fillBlank =>
+          cursor < scenarioUnitTerms.length
+              ? _missingWordQuestion(
+                  level + cursor,
+                  scenarioUnitTerms,
+                  rng,
+                  unitFallbackTerms: scenarioUnitTerms,
+                  preferScenario: cursor.isEven,
+                )
+              : _generatedFillBlankQuestion(
+                  scenarioUnitTerms[(level + cursor) %
+                      scenarioUnitTerms.length],
+                  scenarioUnitTerms,
+                  rng,
+                ),
         QuestionType.imageChoice => _imageChoiceQuestion(
           scenarioTerms,
           rng,
@@ -1922,48 +2216,89 @@ class LessonBank {
     required List<LessonTerm> scenarioUnitTerms,
     required math.Random rng,
   }) {
+    const targets = {
+      QuestionType.translationChoice: 4,
+      QuestionType.typedTranslation: 2,
+      QuestionType.arrangeWords: 2,
+      QuestionType.matching: 2,
+      QuestionType.fillBlank: 3,
+      QuestionType.imageChoice: 2,
+    };
     final completed = <LessonQuestion>[];
     final seen = <String>{};
+    final counts = <QuestionType, int>{};
 
-    void addIfUnique(LessonQuestion? question) {
+    void addIfNeeded(LessonQuestion? question) {
       if (question == null) return;
+      final target = targets[question.type];
+      if (target == null) return;
+      if ((counts[question.type] ?? 0) >= target) return;
       final key = _questionKey(question);
       if (!seen.add(key)) return;
       completed.add(question);
+      counts[question.type] = (counts[question.type] ?? 0) + 1;
     }
 
     for (final question in questions) {
-      addIfUnique(question);
+      addIfNeeded(question);
     }
 
-    LessonQuestion? candidateFor(int cursor) {
+    LessonQuestion? candidateFor(QuestionType type, int cursor) {
       final term = levelTerms[cursor % levelTerms.length];
-      return switch (cursor % 6) {
-        0 => _translationChoiceQuestion(
+      return switch (type) {
+        QuestionType.translationChoice => _translationChoiceQuestion(
           term: term,
           englishToHiligaynon: cursor.isEven,
           pool: levelTerms,
           rng: rng,
         ),
-        1 => _typedTranslationQuestion(level + cursor, levelTerms),
-        2 => _arrangeWordsQuestion(level + cursor, levelTerms, rng),
-        3 => _matchingQuestion(levelTerms, unitTerms, level + cursor),
-        4 => _missingWordQuestion(
+        QuestionType.typedTranslation => _typedTranslationQuestion(
           level + cursor,
-          scenarioTerms,
-          rng,
-          unitFallbackTerms: scenarioUnitTerms,
-          preferScenario: cursor.isEven,
+          levelTerms,
         ),
-        _ => _imageChoiceQuestion(scenarioTerms, rng, seed: level + cursor),
+        QuestionType.arrangeWords => _arrangeWordsQuestion(
+          level + cursor,
+          levelTerms,
+          rng,
+        ),
+        QuestionType.matching => _matchingQuestion(
+          levelTerms,
+          unitTerms,
+          level + cursor,
+        ),
+        QuestionType.fillBlank =>
+          cursor < scenarioUnitTerms.length
+              ? _missingWordQuestion(
+                  level + cursor,
+                  scenarioUnitTerms,
+                  rng,
+                  unitFallbackTerms: scenarioUnitTerms,
+                  preferScenario: cursor.isEven,
+                )
+              : _generatedFillBlankQuestion(
+                  scenarioUnitTerms[(level + cursor) %
+                      scenarioUnitTerms.length],
+                  scenarioUnitTerms,
+                  rng,
+                ),
+        QuestionType.imageChoice => _imageChoiceQuestion(
+          unitTerms,
+          rng,
+          seed: level + cursor,
+          allowGlobalFallback: true,
+        ),
+        _ => null,
       };
     }
 
-    var cursor = 0;
-    while (completed.length < AppData.questionsPerUnit && cursor < 180) {
-      addIfUnique(candidateFor(cursor));
-      cursor++;
+    for (final entry in targets.entries) {
+      var cursor = 0;
+      while ((counts[entry.key] ?? 0) < entry.value && cursor < 180) {
+        addIfNeeded(candidateFor(entry.key, cursor));
+        cursor++;
+      }
     }
+
     return completed.take(AppData.questionsPerUnit).toList();
   }
 
@@ -1983,8 +2318,9 @@ class LessonBank {
     // Keep image-choice questions to the approved visual vocabulary folders.
     // Scenario images under "complete the sentence" belong exclusively to
     // fill-blank activities.
-    return imagePath.contains('/people/') ||
-        imagePath.contains('/transportation/');
+    return imagePath.contains('/animal/') ||
+        imagePath.contains('/fruits/') ||
+        imagePath.contains('/action/');
   }
 
   static List<LessonTerm> _sameImageFolderTerms(
@@ -2088,7 +2424,17 @@ class LessonBank {
 
   static List<LessonTerm> _matchingTerms(List<LessonTerm> pool) {
     final words = pool.where(_isMatchingWordTerm).toList();
-    return words;
+    if (words.length >= 4) return words;
+
+    final phraseFallback = pool.where((term) {
+      return !_isScenarioMissingTerm(term) &&
+          term.imagePath == null &&
+          !term.hil.contains('?') &&
+          !term.eng.contains('?') &&
+          term.hil.split(RegExp(r'\s+')).length <= 4 &&
+          term.eng.split(RegExp(r'\s+')).length <= 4;
+    });
+    return _uniqueTerms([...words, ...phraseFallback]);
   }
 
   static bool _isMatchingWordTerm(LessonTerm term) {
