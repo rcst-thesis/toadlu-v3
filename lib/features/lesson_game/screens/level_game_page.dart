@@ -444,32 +444,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                 ),
               ),
               const SizedBox(height: 22),
-              Expanded(
-                child:
-                    currentQuestion.type == QuestionType.matching ||
-                        currentQuestion.type == QuestionType.imageChoice
-                    ? _buildQuestionBody(currentQuestion)
-                    : currentQuestion.type == QuestionType.fillBlank
-                    ? _buildQuestionBody(currentQuestion)
-                    : currentQuestion.type == QuestionType.buildSentence ||
-                          currentQuestion.type == QuestionType.arrangeWords
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _PromptCard(question: currentQuestion),
-                          const SizedBox(height: 18),
-                          Expanded(child: _buildQuestionBody(currentQuestion)),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _PromptCard(question: currentQuestion),
-                          const SizedBox(height: 26),
-                          _buildQuestionBody(currentQuestion),
-                        ],
-                      ),
-              ),
+              Expanded(child: _questionContentArea(currentQuestion)),
               if (checked) ...[
                 const SizedBox(height: 12),
                 _AnswerFeedbackPanel(
@@ -642,6 +617,55 @@ class _LevelGamePageState extends State<LevelGamePage> {
         },
       ),
     };
+  }
+
+  Widget _questionContentArea(LessonQuestion question) {
+    if (question.type == QuestionType.matching ||
+        question.type == QuestionType.imageChoice ||
+        question.type == QuestionType.fillBlank) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _buildQuestionBody(question),
+      );
+    }
+
+    if (question.type == QuestionType.buildSentence ||
+        question.type == QuestionType.arrangeWords) {
+      if (checked) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _PromptCard(question: question),
+              const SizedBox(height: 18),
+              _buildQuestionBody(question),
+            ],
+          ),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PromptCard(question: question),
+          const SizedBox(height: 18),
+          Expanded(child: _buildQuestionBody(question)),
+        ],
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PromptCard(question: question),
+          const SizedBox(height: 26),
+          _buildQuestionBody(question),
+        ],
+      ),
+    );
   }
 
   String _expectedMatch(String left) {
@@ -1266,15 +1290,17 @@ class _ScenarioFillBlankExercise extends StatelessWidget {
                 onRemove: onRemove,
               ),
             ),
-            const SizedBox(height: 24),
-            _ScenarioWordChoices(
-              choices: remaining,
-              checked: checked,
-              answerWords: answer.split(' '),
-              feedbackAttempt: feedbackAttempt,
-              wordMeanings: question.wordMeanings,
-              onAdd: onAdd,
-            ),
+            if (!checked) ...[
+              const SizedBox(height: 24),
+              _ScenarioWordChoices(
+                choices: remaining,
+                checked: checked,
+                answerWords: answer.split(' '),
+                feedbackAttempt: feedbackAttempt,
+                wordMeanings: question.wordMeanings,
+                onAdd: onAdd,
+              ),
+            ],
           ],
         );
       },
@@ -1858,11 +1884,9 @@ class _BuildSentenceExercise extends StatelessWidget {
       builder: (context, constraints) {
         final hasImage = question.imagePath.trim().isNotEmpty;
         final imageHeight = hasImage
-            ? (constraints.maxHeight * (checked ? .42 : .50))
-                  .clamp(160.0, checked ? 230.0 : 300.0)
-                  .toDouble()
+            ? (constraints.maxHeight * .50).clamp(160.0, 300.0).toDouble()
             : 0.0;
-        final answerHeight = checked ? 76.0 : 120.0;
+        const answerHeight = 120.0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1882,7 +1906,7 @@ class _BuildSentenceExercise extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: checked ? 8 : 12),
+              const SizedBox(height: 12),
             ],
             _FeedbackMotion(
               key: ValueKey('build-$feedbackAttempt'),
@@ -1914,40 +1938,42 @@ class _BuildSentenceExercise extends StatelessWidget {
                             : TudloColors.line,
                       ),
                     ),
-                    if (!checked)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 7,
-                          children: builtWords.asMap().entries.map((entry) {
-                            return ActionChip(
-                              label: Text(entry.value),
-                              labelPadding: const EdgeInsets.symmetric(
-                                horizontal: 13,
-                                vertical: 7,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 7,
+                        children: builtWords.asMap().entries.map((entry) {
+                          return ActionChip(
+                            label: Text(entry.value),
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 13,
+                              vertical: 7,
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: Colors.white,
+                            disabledColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: const BorderSide(
+                                color: TudloColors.line,
+                                width: 2.5,
                               ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                                side: const BorderSide(
-                                  color: TudloColors.line,
-                                  width: 2.5,
-                                ),
-                              ),
-                              labelStyle: const TextStyle(
-                                color: TudloColors.ink,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                              ),
-                              onPressed: () => onRemove(entry.key),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                            labelStyle: const TextStyle(
+                              color: TudloColors.ink,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            onPressed: checked
+                                ? () {}
+                                : () => onRemove(entry.key),
+                          );
+                        }).toList(),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -2053,28 +2079,31 @@ class _ImageChoiceGrid extends StatelessWidget {
       );
     }).toList();
 
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: cards[0]),
-              const SizedBox(width: 14),
-              Expanded(child: cards[1]),
-            ],
+    return SizedBox(
+      height: 520,
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: cards[0]),
+                const SizedBox(width: 14),
+                Expanded(child: cards[1]),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: cards[2]),
-              const SizedBox(width: 14),
-              Expanded(child: cards[3]),
-            ],
+          const SizedBox(height: 14),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: cards[2]),
+                const SizedBox(width: 14),
+                Expanded(child: cards[3]),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -2255,21 +2284,21 @@ class _AnswerFeedbackPanel extends StatelessWidget {
                 ),
                 if (showDetails) ...[
                   const SizedBox(height: 12),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      Flexible(
-                        child: Text(
-                          phrase,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: TudloColors.ink,
-                            fontSize: 25,
-                            fontWeight: FontWeight.w900,
-                          ),
+                      Text(
+                        phrase,
+                        softWrap: true,
+                        style: const TextStyle(
+                          color: TudloColors.ink,
+                          fontSize: 23,
+                          height: 1.15,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Icon(Icons.volume_up_rounded, color: accent, size: 26),
                     ],
                   ),
@@ -2277,11 +2306,11 @@ class _AnswerFeedbackPanel extends StatelessWidget {
                   if (meaning.trim().isNotEmpty)
                     Text(
                       meaning,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
                       style: const TextStyle(
                         color: TudloColors.muted,
                         fontSize: 17,
+                        height: 1.2,
                         fontWeight: FontWeight.w800,
                       ),
                     ),

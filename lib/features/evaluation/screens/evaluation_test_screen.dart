@@ -232,6 +232,9 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
   @override
   Widget build(BuildContext context) {
     final progress = (questionIndex + 1) / questions.length;
+    final feedbackPhrase = _feedbackPhraseFor(currentQuestion);
+    final feedbackMeaning = _feedbackMeaningFor(currentQuestion);
+    final showMeaning = currentQuestion.type != QuestionType.matching;
 
     return Scaffold(
       backgroundColor: TudloColors.paper,
@@ -265,10 +268,15 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
                 ],
               ),
               const SizedBox(height: 26),
-              Center(
+              Align(
+                alignment: currentQuestion.type == QuestionType.fillBlank
+                    ? Alignment.centerLeft
+                    : Alignment.center,
                 child: Text(
                   _titleFor(currentQuestion.type),
-                  textAlign: TextAlign.center,
+                  textAlign: currentQuestion.type == QuestionType.fillBlank
+                      ? TextAlign.left
+                      : TextAlign.center,
                   style: const TextStyle(
                     color: TudloColors.ink,
                     fontSize: 31,
@@ -278,24 +286,15 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
                 ),
               ),
               const SizedBox(height: 22),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (currentQuestion.type != QuestionType.imageChoice &&
-                          currentQuestion.type != QuestionType.fillBlank) ...[
-                        _PromptCard(question: currentQuestion),
-                        const SizedBox(height: 26),
-                      ],
-                      _buildQuestionBody(currentQuestion),
-                    ],
-                  ),
-                ),
-              ),
+              Expanded(child: _exerciseArea(currentQuestion)),
               if (checked) ...[
                 const SizedBox(height: 12),
-                _FeedbackBanner(correct: lastCorrect),
+                _FeedbackBanner(
+                  correct: lastCorrect,
+                  phrase: feedbackPhrase,
+                  meaning: feedbackMeaning,
+                  showDetails: showMeaning,
+                ),
               ],
               const SizedBox(height: 16),
               SizedBox(
@@ -340,10 +339,37 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
       QuestionType.imageChoice => currentQuestion.prompt,
       QuestionType.typedTranslation => 'Translate the sentence',
       QuestionType.arrangeWords => 'Arrange the words',
-      QuestionType.matching => 'Matching pair',
+      QuestionType.matching => 'Match the words',
       QuestionType.fillBlank => 'Complete the sentence',
       _ => 'Choose the answer',
     };
+  }
+
+  String _feedbackPhraseFor(LessonQuestion question) {
+    // Missing-word tutorial questions show the completed sentence after CHECK,
+    // matching the real lesson game feedback.
+    final match = RegExp(r'"([^"]+)"').firstMatch(question.prompt);
+    final sentence = match?.group(1) ?? question.prompt;
+    if (sentence.contains('___')) {
+      return _fillBlanks(sentence, question.answer.split(' '));
+    }
+    return question.targetPhrase;
+  }
+
+  String _fillBlanks(String sentence, List<String> answers) {
+    var index = 0;
+    return sentence.replaceAllMapped(RegExp(r'_{3,}'), (_) {
+      if (answers.isEmpty) return '';
+      if (index >= answers.length) return answers.last;
+      return answers[index++];
+    });
+  }
+
+  String _feedbackMeaningFor(LessonQuestion question) {
+    if (question.sentenceMeaning.trim().isNotEmpty) {
+      return question.sentenceMeaning.trim();
+    }
+    return question.targetMeaning.trim();
   }
 
   Widget _buildQuestionBody(LessonQuestion q) {
@@ -418,6 +444,41 @@ class _EvaluationTestScreenState extends State<EvaluationTestScreen> {
         if (checked) return;
         setState(() => selectedAnswer = value);
       },
+    );
+  }
+
+  Widget _exerciseArea(LessonQuestion q) {
+    if (q.type == QuestionType.matching) {
+      return _buildQuestionBody(q);
+    }
+
+    if (q.type == QuestionType.imageChoice ||
+        q.type == QuestionType.fillBlank) {
+      return SingleChildScrollView(child: _buildQuestionBody(q));
+    }
+
+    if (q.type == QuestionType.arrangeWords) {
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _PromptCard(question: q),
+            const SizedBox(height: 18),
+            _buildQuestionBody(q),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PromptCard(question: q),
+          const SizedBox(height: 26),
+          _buildQuestionBody(q),
+        ],
+      ),
     );
   }
 }
@@ -645,36 +706,95 @@ class _SoftSparkle extends StatelessWidget {
 
 class _FeedbackBanner extends StatelessWidget {
   final bool correct;
+  final String phrase;
+  final String meaning;
+  final bool showDetails;
 
-  const _FeedbackBanner({required this.correct});
+  const _FeedbackBanner({
+    required this.correct,
+    required this.phrase,
+    required this.meaning,
+    required this.showDetails,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final accent = correct ? TudloColors.green : TudloColors.coral;
+    final title = correct ? 'Excellent!' : 'Try again';
+    final subtitle = correct ? "You're correct!" : 'Check the answer below.';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
       decoration: BoxDecoration(
         color: correct
-            ? TudloColors.green.withValues(alpha: .12)
-            : TudloColors.coral.withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(8),
+            ? TudloColors.softGreen.withValues(alpha: .92)
+            : TudloColors.coral.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: accent.withValues(alpha: .22), width: 2),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            correct ? Icons.check_circle_rounded : Icons.cancel_rounded,
-            color: correct ? TudloColors.green : TudloColors.coral,
-            size: 30,
-          ),
-          const SizedBox(width: 10),
-          Text(
-            correct ? 'Great job!' : 'Try again',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: correct ? TudloColors.green : TudloColors.coral,
-              fontSize: 27,
-              fontWeight: FontWeight.w900,
+          const TudloMascot(size: 92),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 30,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (showDetails) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          phrase,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: TudloColors.ink,
+                            fontSize: 25,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.volume_up_rounded, color: accent, size: 26),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (meaning.trim().isNotEmpty)
+                    Text(
+                      meaning,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: TudloColors.muted,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                ],
+              ],
             ),
           ),
         ],
@@ -690,46 +810,54 @@ class _PromptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Same prompt layout as the real lesson game: Koka speaks the question in
+    // a rounded bubble, with a speaker icon at the start of the prompt.
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: TudloColors.line, width: 4),
-        boxShadow: [
-          BoxShadow(
-            color: TudloColors.ink.withValues(alpha: .08),
-            blurRadius: 18,
-            offset: const Offset(0, 9),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: TudloColors.green,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              switch (question.type) {
-                QuestionType.fillBlank => Icons.auto_awesome_rounded,
-                QuestionType.matching => Icons.link_rounded,
-                QuestionType.translationChoice => Icons.text_fields_rounded,
-                QuestionType.typedTranslation => Icons.translate_rounded,
-                QuestionType.arrangeWords => Icons.sort_rounded,
-                QuestionType.imageChoice => Icons.image_rounded,
-                _ => Icons.quiz_rounded,
-              },
-              color: Colors.white,
-              size: 32,
+          const SizedBox(
+            width: 108,
+            height: 130,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: TudloMascot(size: 112),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(child: _PromptText(question: question)),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(left: 8, bottom: 10),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: TudloColors.line, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: TudloColors.ink.withValues(alpha: .08),
+                    blurRadius: 18,
+                    offset: const Offset(0, 9),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2, right: 12),
+                    child: Icon(
+                      Icons.volume_up_rounded,
+                      color: TudloColors.green,
+                      size: 34,
+                    ),
+                  ),
+                  Expanded(child: _PromptText(question: question)),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -743,25 +871,43 @@ class _PromptText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final promptText = _displayPrompt(question.prompt);
     const style = TextStyle(
       color: TudloColors.ink,
-      fontSize: 24,
+      fontSize: 27,
       height: 1.2,
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.w900,
     );
+
+    if (question.type == QuestionType.arrangeWords) {
+      return Text(promptText, style: style);
+    }
 
     if (question.targetPhrase.trim().isEmpty ||
         question.targetMeaning.trim().isEmpty) {
-      return Text(question.prompt, style: style);
+      return Text(promptText, style: style);
     }
 
     return TapWordMeaningText(
-      fullQuestionText: question.prompt,
+      fullQuestionText: promptText,
       targetPhrase: question.targetPhrase,
       targetMeaning: question.targetMeaning,
       directionLabel: question.directionLabel,
       style: style,
+      includeKnownWords: true,
     );
+  }
+
+  String _displayPrompt(String prompt) {
+    final match = RegExp(r'"([^"]+)"').firstMatch(prompt);
+    final quoted = match?.group(1);
+    return quoted == null ? _quoteOnce(prompt) : _quoteOnce(quoted);
+  }
+
+  String _quoteOnce(String value) {
+    final trimmed = value.trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed;
+    return '"$trimmed"';
   }
 }
 
@@ -797,7 +943,6 @@ class _ChoiceList extends StatelessWidget {
           correct: correct,
           wrong: wrong,
           feedbackKey: active ? feedbackAttempt : 0,
-          icon: active ? Icons.check_circle_rounded : Icons.circle_outlined,
           longPressMeaning: choiceMeanings[choice] ?? choice,
           onTap: checked ? null : () => onSelected(choice),
         );
@@ -821,23 +966,13 @@ class _ImageChoiceGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: question.imageChoices.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: .86,
-      ),
-      itemBuilder: (context, index) {
-        final choice = question.imageChoices[index];
-        final active = selected == choice.hil;
-        final correct = checked && active && choice.hil == question.answer;
-        final wrong = checked && active && choice.hil != question.answer;
+    final cards = question.imageChoices.take(4).map((choice) {
+      final active = selected == choice.hil;
+      final correct = checked && active && choice.hil == question.answer;
+      final wrong = checked && active && choice.hil != question.answer;
 
-        return InkWell(
+      return Expanded(
+        child: InkWell(
           borderRadius: BorderRadius.circular(24),
           onTap: checked ? null : () => onSelected(choice.hil),
           child: AnimatedContainer(
@@ -885,8 +1020,31 @@ class _ImageChoiceGrid extends StatelessWidget {
               ],
             ),
           ),
-        );
-      },
+        ),
+      );
+    }).toList();
+
+    while (cards.length < 4) {
+      cards.add(const Expanded(child: SizedBox.shrink()));
+    }
+
+    return SizedBox(
+      height: 520,
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [cards[0], const SizedBox(width: 14), cards[1]],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: Row(
+              children: [cards[2], const SizedBox(width: 14), cards[3]],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -983,21 +1141,345 @@ class _WordBuilderExercise extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final blocks = question.type == QuestionType.fillBlank
-        ? question.choices
-        : question.sentenceWords;
-    final available = [...blocks];
+    if (question.type == QuestionType.fillBlank) {
+      return _ScenarioFillBlankExercise(
+        question: question,
+        builtWords: builtWords,
+        checked: checked,
+        correct: correct,
+        onAddWord: onAddWord,
+        onRemoveWord: onRemoveWord,
+      );
+    }
+
+    return _BuildSentenceExercise(
+      question: question,
+      builtWords: builtWords,
+      checked: checked,
+      correct: correct,
+      onAddWord: onAddWord,
+      onRemoveWord: onRemoveWord,
+    );
+  }
+}
+
+class _ScenarioFillBlankExercise extends StatelessWidget {
+  final LessonQuestion question;
+  final List<String> builtWords;
+  final bool checked;
+  final bool correct;
+  final ValueChanged<String> onAddWord;
+  final ValueChanged<int> onRemoveWord;
+
+  const _ScenarioFillBlankExercise({
+    required this.question,
+    required this.builtWords,
+    required this.checked,
+    required this.correct,
+    required this.onAddWord,
+    required this.onRemoveWord,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final available = [...question.choices];
+    for (final word in builtWords) {
+      available.remove(word);
+    }
+    final sentence = _missingSentenceFrom(question.prompt);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hasImage = question.imagePath.trim().isNotEmpty;
+        final imageHeight = hasImage
+            ? (constraints.maxHeight * .46).clamp(260.0, 360.0).toDouble()
+            : 0.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (hasImage) ...[
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 500,
+                    maxHeight: imageHeight,
+                  ),
+                  child: Image.asset(
+                    question.imagePath,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+            _ScenarioSentenceText(
+              sentence: sentence,
+              builtWords: builtWords,
+              checked: checked,
+              correct: correct,
+              wordMeanings: question.wordMeanings,
+              onRemoveWord: onRemoveWord,
+            ),
+            const SizedBox(height: 24),
+            _ScenarioWordChoices(
+              choices: available,
+              checked: checked,
+              answerWords: question.answer.split(' '),
+              wordMeanings: question.wordMeanings,
+              onAdd: onAddWord,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _missingSentenceFrom(String prompt) {
+    final match = RegExp(r'"([^"]+)"').firstMatch(prompt);
+    return match?.group(1) ?? prompt;
+  }
+}
+
+class _ScenarioSentenceText extends StatelessWidget {
+  final String sentence;
+  final List<String> builtWords;
+  final bool checked;
+  final bool correct;
+  final Map<String, String> wordMeanings;
+  final ValueChanged<int> onRemoveWord;
+
+  const _ScenarioSentenceText({
+    required this.sentence,
+    required this.builtWords,
+    required this.checked,
+    required this.correct,
+    required this.wordMeanings,
+    required this.onRemoveWord,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    var blankIndex = 0;
+    final words = sentence.split(RegExp(r'\s+'));
+
+    return Wrap(
+      alignment: WrapAlignment.start,
+      crossAxisAlignment: WrapCrossAlignment.end,
+      spacing: 9,
+      runSpacing: 16,
+      children: words.map((word) {
+        if (word.contains('___')) {
+          final currentBlank = blankIndex;
+          final suffix = word.replaceFirst(RegExp(r'_{3,}'), '');
+          final selectedWord = blankIndex < builtWords.length
+              ? builtWords[blankIndex]
+              : '';
+          final chip = _ScenarioBlankChip(
+            label: selectedWord,
+            checked: checked,
+            correct: correct,
+            onTap: selectedWord.isEmpty || checked
+                ? null
+                : () => onRemoveWord(currentBlank),
+          );
+          blankIndex++;
+          if (suffix.isEmpty) return chip;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              chip,
+              Text(
+                suffix,
+                style: const TextStyle(
+                  color: TudloColors.ink,
+                  fontSize: 25,
+                  height: 1.15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          );
+        }
+
+        final key = _meaningKeyFor(word);
+        final meaning = wordMeanings[key] ?? '';
+        final text = Text(
+          word,
+          style: TextStyle(
+            color: TudloColors.ink,
+            fontSize: 25,
+            height: 1.15,
+            fontWeight: FontWeight.w900,
+            decoration: meaning.isEmpty ? null : TextDecoration.underline,
+            decorationStyle: TextDecorationStyle.dotted,
+            decorationColor: TudloColors.brightGreen,
+            decorationThickness: 2,
+          ),
+        );
+        return meaning.isEmpty
+            ? text
+            : WordMeaningTooltipTarget(
+                meaning: meaning,
+                showOnTap: true,
+                child: text,
+              );
+      }).toList(),
+    );
+  }
+
+  String _meaningKeyFor(String word) {
+    return word.replaceAll(RegExp(r'^[^\w-]+|[^\w-]+$'), '');
+  }
+}
+
+class _ScenarioBlankChip extends StatelessWidget {
+  final String label;
+  final bool checked;
+  final bool correct;
+  final VoidCallback? onTap;
+
+  const _ScenarioBlankChip({
+    required this.label,
+    required this.checked,
+    required this.correct,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasWord = label.trim().isNotEmpty;
+    final color = checked
+        ? correct
+              ? TudloColors.green
+              : TudloColors.coral
+        : TudloColors.green;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 82, minHeight: 38),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: hasWord ? color.withValues(alpha: .12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          border: hasWord
+              ? Border.all(color: color.withValues(alpha: .72), width: 2.5)
+              : Border(
+                  bottom: BorderSide(
+                    color: TudloColors.muted.withValues(alpha: .55),
+                    width: 3,
+                  ),
+                ),
+        ),
+        child: Text(
+          hasWord ? label : '',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: checked && !correct ? TudloColors.coral : TudloColors.ink,
+            fontSize: 22,
+            height: 1,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScenarioWordChoices extends StatelessWidget {
+  final List<String> choices;
+  final bool checked;
+  final List<String> answerWords;
+  final Map<String, String> wordMeanings;
+  final ValueChanged<String> onAdd;
+
+  const _ScenarioWordChoices({
+    required this.choices,
+    required this.checked,
+    required this.answerWords,
+    required this.wordMeanings,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 10,
+      children: choices.map((choice) {
+        final canRevealMeaning = !answerWords.any(
+          (answer) => answer.toLowerCase() == choice.toLowerCase(),
+        );
+        final chip = ActionChip(
+          label: Text(choice),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: TudloColors.line, width: 2.5),
+          ),
+          labelStyle: const TextStyle(
+            color: TudloColors.ink,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+          ),
+          onPressed: checked ? () {} : () => onAdd(choice),
+        );
+        final meaning = canRevealMeaning ? wordMeanings[choice] ?? '' : '';
+        return meaning.isEmpty
+            ? chip
+            : WordMeaningTooltipTarget(meaning: meaning, child: chip);
+      }).toList(),
+    );
+  }
+}
+
+class _BuildSentenceExercise extends StatelessWidget {
+  final LessonQuestion question;
+  final List<String> builtWords;
+  final bool checked;
+  final bool correct;
+  final ValueChanged<String> onAddWord;
+  final ValueChanged<int> onRemoveWord;
+
+  const _BuildSentenceExercise({
+    required this.question,
+    required this.builtWords,
+    required this.checked,
+    required this.correct,
+    required this.onAddWord,
+    required this.onRemoveWord,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final available = [...question.sentenceWords];
     for (final word in builtWords) {
       available.remove(word);
     }
 
+    const imageHeight = 170.0;
+    final answerHeight = checked ? 150.0 : 120.0;
+    final wordBlockHeight = checked ? 24.0 : 120.0;
+    final hasImage = question.imagePath.trim().isNotEmpty;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (question.imagePath.trim().isNotEmpty) ...[
+        if (hasImage) ...[
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360, maxHeight: 170),
+              constraints: const BoxConstraints(
+                maxWidth: 520,
+                maxHeight: imageHeight,
+              ),
               child: Image.asset(
                 question.imagePath,
                 fit: BoxFit.contain,
@@ -1005,115 +1487,121 @@ class _WordBuilderExercise extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
         ],
         Container(
-          constraints: const BoxConstraints(minHeight: 96),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: checked && !correct
-                ? TudloColors.coral.withValues(alpha: .06)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: checked
-                  ? correct
-                        ? TudloColors.green
-                        : TudloColors.coral
-                  : TudloColors.line,
-              width: 4,
-            ),
-          ),
-          child: builtWords.isEmpty
-              ? const Text(
-                  'Tap the words below',
-                  style: TextStyle(
-                    color: TudloColors.muted,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                )
-              : Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (var index = 0; index < builtWords.length; index++)
-                      _WordChip(
-                        label: builtWords[index],
-                        active: true,
-                        onTap: checked ? null : () => onRemoveWord(index),
-                      ),
-                  ],
-                ),
-        ),
-        if (question.type == QuestionType.fillBlank) ...[
-          const SizedBox(height: 14),
-          Text(
-            question.prompt,
-            style: const TextStyle(
-              color: TudloColors.ink,
-              fontSize: 22,
-              height: 1.25,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-        const SizedBox(height: 22),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          alignment: WrapAlignment.center,
-          children: [
-            for (final word in available)
-              _WordChip(
-                label: word,
-                active: false,
-                onTap: checked ? null : () => onAddWord(word),
+          width: double.infinity,
+          height: answerHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: answerHeight * .38,
+                child: const _BuildSentenceLine(),
               ),
-          ],
+              Positioned(
+                left: 0,
+                right: 0,
+                top: answerHeight * .76,
+                child: const _BuildSentenceLine(),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 7,
+                  children: builtWords.asMap().entries.map((entry) {
+                    return ActionChip(
+                      label: Text(entry.value),
+                      labelPadding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 7,
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: Colors.white,
+                      disabledColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        side: const BorderSide(
+                          color: TudloColors.line,
+                          width: 2.5,
+                        ),
+                      ),
+                      labelStyle: const TextStyle(
+                        color: TudloColors.ink,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      onPressed: checked
+                          ? () {}
+                          : () => onRemoveWord(entry.key),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: wordBlockHeight,
+          child: Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: available.map((word) {
+                return WordMeaningTooltipTarget(
+                  meaning: translatedMeaningFor(word),
+                  child: ActionChip(
+                    label: Text(word),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 7,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: const BorderSide(
+                        color: TudloColors.line,
+                        width: 2.5,
+                      ),
+                    ),
+                    labelStyle: const TextStyle(
+                      color: TudloColors.ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    onPressed: checked ? () {} : () => onAddWord(word),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _WordChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _WordChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
+class _BuildSentenceLine extends StatelessWidget {
+  const _BuildSentenceLine();
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-        decoration: BoxDecoration(
-          color: active
-              ? TudloColors.green.withValues(alpha: .10)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: active ? TudloColors.green : TudloColors.line,
-            width: 3,
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: TudloColors.ink,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+    return Container(
+      width: double.infinity,
+      height: 4,
+      decoration: BoxDecoration(
+        color: TudloColors.line.withValues(alpha: .78),
+        borderRadius: BorderRadius.circular(999),
       ),
     );
   }
@@ -1322,7 +1810,6 @@ class _AnswerTile extends StatelessWidget {
   final bool correct;
   final bool wrong;
   final int feedbackKey;
-  final IconData icon;
   final String longPressMeaning;
   final VoidCallback? onTap;
 
@@ -1332,7 +1819,6 @@ class _AnswerTile extends StatelessWidget {
     required this.correct,
     required this.wrong,
     required this.feedbackKey,
-    required this.icon,
     required this.longPressMeaning,
     required this.onTap,
   });
@@ -1353,13 +1839,6 @@ class _AnswerTile extends StatelessWidget {
         : active
         ? TudloColors.sky.withValues(alpha: .12)
         : Colors.white;
-    final iconColor = correct
-        ? TudloColors.green
-        : wrong
-        ? TudloColors.coral
-        : active
-        ? TudloColors.green
-        : TudloColors.muted;
 
     return WordMeaningTooltipTarget(
       meaning: longPressMeaning,
@@ -1374,47 +1853,23 @@ class _AnswerTile extends StatelessWidget {
             duration: const Duration(milliseconds: 140),
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(15),
+            constraints: const BoxConstraints(minHeight: 84),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 19),
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(32),
               border: Border.all(color: borderColor, width: 4),
             ),
-            child: Row(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 140),
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: (active || correct) && !wrong
-                        ? TudloColors.green
-                        : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: iconColor, width: 2),
-                  ),
-                  child: wrong || active || correct
-                      ? Icon(
-                          wrong ? Icons.close_rounded : Icons.check_rounded,
-                          color: (active || correct) && !wrong
-                              ? Colors.white
-                              : iconColor,
-                          size: 17,
-                        )
-                      : null,
+            child: Center(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: wrong ? TudloColors.coral : TudloColors.ink,
+                  fontSize: 24,
+                  fontWeight: active ? FontWeight.w900 : FontWeight.w800,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: wrong ? TudloColors.coral : TudloColors.ink,
-                      fontSize: 22,
-                      fontWeight: active ? FontWeight.w900 : FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
