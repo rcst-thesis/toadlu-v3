@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:tudloapp/core/services/app_storage.dart';
 import 'package:tudloapp/features/energy/services/energy_storage.dart';
 
 /// Shared in-app progress and energy state.
@@ -35,9 +36,9 @@ class AppData {
 
   static int streakDays = 0;
   static int unlockedLevel = 1;
-  static final Map<int, int> levelStars = {};
-  static final Map<int, int> bestTestScores = {};
-  static final Set<int> completedLevels = {};
+  static Map<int, int> levelStars = {};
+  static Map<int, int> bestTestScores = {};
+  static Set<int> completedLevels = {};
 
   /// Home Map unit definitions shared by the Map, Test, and Profile screens.
   static const units = [
@@ -49,18 +50,29 @@ class AppData {
     AppUnit(number: 6, startLevel: 31, title: 'Community'),
   ];
 
-  /// Loads energy from storage, then immediately applies real-time recharge.
-  /// This is called before runApp so all screens see restored energy.
   static Future<void> initialize() async {
-    final values = await EnergyStorage.read();
+    final energyValues = await EnergyStorage.read();
     currentEnergy =
         int.tryParse(
-          values['currentEnergy'] ?? '',
+          energyValues['currentEnergy'] ?? '',
         )?.clamp(0, maxEnergy).toInt() ??
         maxEnergy;
     _lastEnergyAt =
-        DateTime.tryParse(values['lastEnergyAt'] ?? '') ?? DateTime.now();
+        DateTime.tryParse(energyValues['lastEnergyAt'] ?? '') ?? DateTime.now();
     await refreshEnergy(save: true);
+
+    final data = await AppStorage.readAppState();
+    streakDays = data['streakDays'] ?? 1;
+    unlockedLevel = data['unlockedLevel'] ?? 1;
+    levelStars
+      ..clear()
+      ..addAll(AppStorage.parseIntPairMap(data['levelStars'] ?? ''));
+    bestTestScores
+      ..clear()
+      ..addAll(AppStorage.parseIntPairMap(data['bestTestScores'] ?? ''));
+    completedLevels
+      ..clear()
+      ..addAll(AppStorage.parseIntSet(data['completedLevels'] ?? ''));
   }
 
   /// Recharges energy based on elapsed real time.
@@ -194,6 +206,16 @@ class AppData {
     return units.firstWhere((unit) => unit.number == number);
   }
 
+  static Future<void> saveProgressState() {
+    return AppStorage.writeAppData(
+      streakDays: streakDays,
+      unlockedLevel: unlockedLevel,
+      levelStars: levelStars,
+      bestTestScores: bestTestScores,
+      completedLevels: completedLevels,
+    );
+  }
+
   /// Converts a lesson score into 0-3 stars and keeps the best result.
   static void saveLevelScore(int level, int score, int total) {
     completedLevels.add(level);
@@ -206,16 +228,16 @@ class AppData {
         ? 1
         : 0;
     final previous = levelStars[level] ?? 0;
-    if (stars > previous) {
-      levelStars[level] = stars;
-    }
+    if (stars > previous) levelStars[level] = stars;
+
+    saveProgressState();
   }
 
   static void saveTestScore(int test, int score) {
     final previous = bestTestScores[test] ?? 0;
-    if (score > previous) {
-      bestTestScores[test] = score;
-    }
+    if (score > previous) bestTestScores[test] = score;
+
+    saveProgressState();
   }
 }
 

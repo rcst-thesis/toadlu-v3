@@ -189,6 +189,7 @@ class _EvaluationIntroScreenState extends State<EvaluationIntroScreen>
                       // Internally, it selects the easiest/default dataset,
                       // but the learner never sees the dataset name.
                       AppStateScope.of(context).skipEvaluation();
+                      AppStateScope.of(context).completeOnboarding();
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(

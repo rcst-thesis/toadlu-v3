@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tudloapp/core/models/proficiency.dart';
+import 'package:tudloapp/core/services/app_storage.dart';
 
 /// App-wide onboarding/profile state.
 ///
@@ -13,48 +14,81 @@ class AppState extends ChangeNotifier {
   int knowledgeLevel = 1;
   HomeMapDataset homeMapDataset = HomeMapDataset.easy;
   final DateTime joinedOn = DateTime.now();
+  bool onboardingComplete = false;
 
-  String get displayUsername => username.trim().isEmpty ? 'friend' : username;
+  Future<void> initialize() async {
+    final data = await AppStorage.readAppState();
+    username = data['username'] as String;
+    ageRange = data['ageRange'] as String;
+    knowledgeLabel = (data['knowledgeLabel'] as String).isEmpty
+        ? knowledgeOptions.first.label
+        : data['knowledgeLabel'] as String;
+    knowledgeLevel = data['knowledgeLevel'] as int;
+    homeMapDataset = _parseDataset(data['homeMapDataset'] as String);
+    onboardingComplete = data['onboardingComplete'] as bool;
 
-  /// Saves the typed username from onboarding or the Profile edit dialog.
+    notifyListeners();
+  }
+
+  static HomeMapDataset _parseDataset(String value) {
+    return switch (value) {
+      'medium' => HomeMapDataset.medium,
+      'hard' => HomeMapDataset.hard,
+      _ => HomeMapDataset.easy,
+    };
+  }
+
+  Future<void> _persist() => AppStorage.writeAppState(
+    username: username,
+    ageRange: ageRange,
+    knowledgeLabel: knowledgeLabel,
+    knowledgeLevel: knowledgeLevel,
+    homeMapDataset: homeMapDataset.name,
+    onboardingComplete: onboardingComplete,
+  );
+
+  void completeOnboarding() {
+    onboardingComplete = true;
+    notifyListeners();
+    _persist();
+  }
+
   void setUsername(String value) {
     username = value.trim();
     notifyListeners();
+    _persist();
   }
 
-  /// Saves the selected age range for display on the Profile page.
   void setAgeRange(String value) {
     ageRange = value;
     notifyListeners();
+    _persist();
   }
 
-  /// Stores the visible knowledge label and its hidden numeric level.
   void setKnowledgeOption(KnowledgeOption value) {
     knowledgeLabel = value.label;
     knowledgeLevel = value.level;
     notifyListeners();
+    _persist();
   }
 
-  /// Converts the evaluation score into the internal Home Map dataset.
-  ///
-  /// The user only moves forward after the evaluation; dataset names like
-  /// easy/medium/hard are intentionally kept hidden from the UI.
   void saveEvaluationScore(int score) {
-    if (score <= 4) {
-      homeMapDataset = HomeMapDataset.easy;
-    } else if (score <= 7) {
-      homeMapDataset = HomeMapDataset.medium;
-    } else {
-      homeMapDataset = HomeMapDataset.hard;
-    }
+    homeMapDataset = score <= 4
+        ? HomeMapDataset.easy
+        : score <= 7
+        ? HomeMapDataset.medium
+        : HomeMapDataset.hard;
     notifyListeners();
+    _persist();
   }
 
-  /// Skipping the evaluation starts the user on the default/easy dataset.
   void skipEvaluation() {
     homeMapDataset = HomeMapDataset.easy;
     notifyListeners();
+    _persist();
   }
+
+  String get displayUsername => username.trim().isEmpty ? 'friend' : username;
 }
 
 /// Makes [AppState] available below `MaterialApp` without passing it manually.

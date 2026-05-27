@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/features/navigation/app_shell.dart';
 import 'package:tudloapp/features/onboarding/screens/username_screen.dart';
 
 class MascotScreen extends StatefulWidget {
@@ -31,9 +33,13 @@ class _MascotScreenState extends State<MascotScreen>
 
     Future.delayed(const Duration(milliseconds: 2300), () {
       if (!mounted) return;
+      final isReturning = AppStateScope.of(context).onboardingComplete;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const UsernameScreen()),
+        MaterialPageRoute(
+          builder: (_) =>
+              isReturning ? const AppShell() : const UsernameScreen(),
+        ),
       );
     });
   }
