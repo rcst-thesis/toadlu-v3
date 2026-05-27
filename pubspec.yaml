@@ -37,6 +37,7 @@ dependencies:
   google_fonts: ^6.2.1
   web: ^1.1.1
   hive_ce: ^2.19.3
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

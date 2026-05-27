@@ -11,10 +11,6 @@ Future<void> main() async {
   runApp(const TudloApp());
 }
 
-/// Root widget for the app.
-///
-/// `AppStateScope` wraps the whole app so onboarding choices and profile data
-/// can be read from any screen without passing values through constructors.
 class TudloApp extends StatefulWidget {
   const TudloApp({super.key});
 
@@ -24,9 +20,25 @@ class TudloApp extends StatefulWidget {
 
 class _TudloAppState extends State<TudloApp> {
   final AppState _appState = AppState();
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _appState.initialize().then((_) {
+      if (mounted) setState(() => _ready = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_ready) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     return AppStateScope(
       notifier: _appState,
       child: MaterialApp(
