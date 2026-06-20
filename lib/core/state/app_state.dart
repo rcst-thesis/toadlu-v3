@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:tudloapp/core/models/proficiency.dart';
-import 'package:tudloapp/core/services/app_storage.dart';
+import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/core/models/learner_profile.dart';
+import 'package:tudloapp/features/profile/services/profile_storage.dart';
 
 /// App-wide onboarding/profile state.
 ///
@@ -9,86 +11,168 @@ import 'package:tudloapp/core/services/app_storage.dart';
 /// changes because this class extends [ChangeNotifier].
 class AppState extends ChangeNotifier {
   String username = '';
-  String ageRange = '';
-  String knowledgeLabel = knowledgeOptions.first.label;
-  int knowledgeLevel = 1;
-  HomeMapDataset homeMapDataset = HomeMapDataset.easy;
+  String gradeLevel = 'Grade 1';
+  String appLanguage = 'Hiligaynon';
   final DateTime joinedOn = DateTime.now();
-  bool onboardingComplete = false;
+  final List<LearnerProfile> profiles = [];
+  String? activeProfileId;
 
-  Future<void> initialize() async {
-    final data = await AppStorage.readAppState();
-    username = data['username'] as String;
-    ageRange = data['ageRange'] as String;
-    knowledgeLabel = (data['knowledgeLabel'] as String).isEmpty
-        ? knowledgeOptions.first.label
-        : data['knowledgeLabel'] as String;
-    knowledgeLevel = data['knowledgeLevel'] as int;
-    homeMapDataset = _parseDataset(data['homeMapDataset'] as String);
-    onboardingComplete = data['onboardingComplete'] as bool;
+  String get displayUsername {
+    final value = username.trim();
+    if (value.isEmpty) return 'Friend';
+    return value[0].toUpperCase() + value.substring(1);
+  }
 
+  String get gradeLabel => gradeLevel;
+  bool get isHiligaynon => appLanguage == 'Hiligaynon';
+  LearnerProfile? get activeProfile {
+    for (final profile in profiles) {
+      if (profile.id == activeProfileId) return profile;
+    }
+    return null;
+  }
+
+  Future<void> loadProfiles() async {
+    final data = decodeProfiles(await ProfileStorage.read());
+    profiles
+      ..clear()
+      ..addAll(data.profiles);
+    activeProfileId = data.activeProfileId;
+    final selected = activeProfile;
+    if (selected != null) _applyProfile(selected);
     notifyListeners();
   }
 
-  static HomeMapDataset _parseDataset(String value) {
-    return switch (value) {
-      'medium' => HomeMapDataset.medium,
-      'hard' => HomeMapDataset.hard,
-      _ => HomeMapDataset.easy,
-    };
-  }
-
-  Future<void> _persist() => AppStorage.writeAppState(
-    username: username,
-    ageRange: ageRange,
-    knowledgeLabel: knowledgeLabel,
-    knowledgeLevel: knowledgeLevel,
-    homeMapDataset: homeMapDataset.name,
-    onboardingComplete: onboardingComplete,
-  );
-
-  void completeOnboarding() {
-    onboardingComplete = true;
+  Future<void> addProfile({required String name, required String grade}) async {
+    final profile = LearnerProfile.newProfile(name: name, gradeLevel: grade);
+    profiles.add(profile);
+    _applyProfile(profile);
+    await _saveProfiles();
     notifyListeners();
-    _persist();
   }
 
+  Future<void> selectProfile(String profileId) async {
+    await saveActiveProfileProgress();
+    final profile = profiles.firstWhere((profile) => profile.id == profileId);
+    _applyProfile(profile);
+    await _saveProfiles();
+    notifyListeners();
+  }
+
+  Future<void> deleteProfile(String profileId) async {
+    profiles.removeWhere((profile) => profile.id == profileId);
+    if (activeProfileId == profileId) {
+      activeProfileId = profiles.isEmpty ? null : profiles.first.id;
+      final selected = activeProfile;
+      if (selected == null) {
+        username = '';
+        gradeLevel = 'Grade 1';
+        AppData.clearLearningProgress();
+      } else {
+        _applyProfile(selected);
+      }
+    }
+    await _saveProfiles();
+    notifyListeners();
+  }
+
+  Future<void> clearActiveProfileData() async {
+    final profile = activeProfile;
+    if (profile == null) return;
+    AppData.clearLearningProgress();
+    _replaceActiveProfile(
+      profile.copyWith(
+        unlockedLevel: 1,
+        streakDays: 0,
+        currentEnergy: AppData.maxEnergy,
+        levelStars: {},
+        completedLevels: {},
+      ),
+    );
+    await _saveProfiles();
+    notifyListeners();
+  }
+
+  /// Saves the typed username from onboarding or the Profile edit dialog.
   void setUsername(String value) {
     username = value.trim();
+    final profile = activeProfile;
+    if (profile != null) {
+      _replaceActiveProfile(profile.copyWith(name: username));
+      _saveProfiles();
+    }
     notifyListeners();
-    _persist();
   }
 
-  void setAgeRange(String value) {
-    ageRange = value;
+  /// Saves the selected grade level for grade-based lesson content.
+  void setGradeLevel(String value) {
+    gradeLevel = value.trim().isEmpty ? 'Grade 1' : value.trim();
+    AppData.selectedGradeLevel = gradeLevelFromLabel(gradeLevel);
+    final profile = activeProfile;
+    if (profile != null) {
+      _replaceActiveProfile(profile.copyWith(gradeLevel: gradeLevel));
+      _saveProfiles();
+    }
     notifyListeners();
-    _persist();
   }
 
-  void setKnowledgeOption(KnowledgeOption value) {
-    knowledgeLabel = value.label;
-    knowledgeLevel = value.level;
-    notifyListeners();
-    _persist();
+  bool isFavoriteWord(String word) {
+    return activeProfile?.favoriteWords.contains(word) ?? false;
   }
 
-  void saveEvaluationScore(int score) {
-    homeMapDataset = score <= 4
-        ? HomeMapDataset.easy
-        : score <= 7
-        ? HomeMapDataset.medium
-        : HomeMapDataset.hard;
+  Future<void> toggleFavoriteWord(String word) async {
+    final profile = activeProfile;
+    if (profile == null || word.trim().isEmpty) return;
+    final updatedWords = Set<String>.from(profile.favoriteWords);
+    if (!updatedWords.add(word.trim())) {
+      updatedWords.remove(word.trim());
+    }
+    _replaceActiveProfile(profile.copyWith(favoriteWords: updatedWords));
+    await _saveProfiles();
     notifyListeners();
-    _persist();
   }
 
-  void skipEvaluation() {
-    homeMapDataset = HomeMapDataset.easy;
+  Future<void> setProfileAvatar(String asset) async {
+    final profile = activeProfile;
+    if (profile == null || asset.trim().isEmpty) return;
+    _replaceActiveProfile(profile.copyWith(avatarAsset: asset));
+    await _saveProfiles();
     notifyListeners();
-    _persist();
   }
 
-  String get displayUsername => username.trim().isEmpty ? 'friend' : username;
+  void setAppLanguage(String value) {
+    appLanguage = value == 'English' ? 'English' : 'Hiligaynon';
+    notifyListeners();
+  }
+
+  void toggleAppLanguage() {
+    appLanguage = isHiligaynon ? 'English' : 'Hiligaynon';
+    notifyListeners();
+  }
+
+  Future<void> saveActiveProfileProgress() async {
+    final profile = activeProfile;
+    if (profile == null) return;
+    _replaceActiveProfile(AppData.snapshotForProfile(profile));
+    await _saveProfiles();
+  }
+
+  void _applyProfile(LearnerProfile profile) {
+    activeProfileId = profile.id;
+    username = profile.name;
+    gradeLevel = profile.gradeLevel;
+    AppData.applyProfile(profile);
+  }
+
+  void _replaceActiveProfile(LearnerProfile updated) {
+    final index = profiles.indexWhere((profile) => profile.id == updated.id);
+    if (index == -1) return;
+    profiles[index] = updated;
+  }
+
+  Future<void> _saveProfiles() {
+    return ProfileStorage.write(encodeProfiles(profiles, activeProfileId));
+  }
 }
 
 /// Makes [AppState] available below `MaterialApp` without passing it manually.

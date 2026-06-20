@@ -30,7 +30,7 @@ class _TranslationPageState extends State<TranslationPage> {
 
   String fromLanguage = 'Hiligaynon';
   String toLanguage = 'English';
-  bool showTutorial = !AppData.translateTutorialDone;
+  bool showHelpOverlay = !AppData.translateHelpDone;
   bool _isUpdating = false;
 
   @override
@@ -50,10 +50,10 @@ class _TranslationPageState extends State<TranslationPage> {
     bottomController.text = result.translation;
     _isUpdating = false;
 
-    if (input.trim().isNotEmpty && !AppData.translateTutorialDone) {
+    if (input.trim().isNotEmpty && !AppData.translateHelpDone) {
       setState(() {
-        showTutorial = false;
-        AppData.translateTutorialDone = true;
+        showHelpOverlay = false;
+        AppData.translateHelpDone = true;
       });
     } else {
       setState(() {});
@@ -177,22 +177,12 @@ class _TranslationPageState extends State<TranslationPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'QUICK TRANSLATE',
+                        'Translate',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.archivoBlack(
                           color: TudloColors.green,
                           fontSize: 26,
                           letterSpacing: 0,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Translate Hiligaynon instantly',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.nunito(
-                          color: TudloColors.muted,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 26),
@@ -227,34 +217,117 @@ class _TranslationPageState extends State<TranslationPage> {
               ),
             ),
           ),
-          if (showTutorial)
+          if (showHelpOverlay)
             Positioned.fill(
-              child: GestureDetector(
-                onTap: () => setState(() => showTutorial = false),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.38),
-                  child: Center(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 30),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: _TranslateStyle.green,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Type any English or Hiligaynon word.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
+              child: _TranslateHelpOverlay(
+                onTap: () => setState(() => showHelpOverlay = false),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TranslateHelpOverlay extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _TranslateHelpOverlay({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final mascotWidth = (size.width * .55).clamp(190.0, 270.0);
+    final bubbleWidth = (size.width * .58).clamp(200.0, 280.0);
+    final mascotBottom = (size.height * .14).clamp(104.0, 150.0);
+    final mascotLeft = (size.width * .07).clamp(16.0, 34.0);
+    final mascotTop = size.height - mascotBottom - mascotWidth;
+    final mascotVisibleTop = mascotTop + mascotWidth * .158;
+    final bubbleVisibleBottom = bubbleWidth * 1.234;
+    final bubbleTop = (mascotVisibleTop - bubbleVisibleBottom - 12).clamp(
+      MediaQuery.paddingOf(context).top + 86,
+      size.height * .46,
+    );
+    final bubbleLeft = (mascotLeft + mascotWidth * .5 - bubbleWidth * .5).clamp(
+      12.0,
+      size.width - bubbleWidth - 12,
+    );
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        color: Colors.black.withValues(alpha: .34),
+        child: Stack(
+          children: [
+            Positioned(
+              left: mascotLeft,
+              bottom: mascotBottom,
+              child: Image.asset(
+                'assets/images/dialogue/mascot2.png',
+                width: mascotWidth,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
+            Positioned(
+              left: bubbleLeft,
+              top: bubbleTop,
+              child: _TranslateDialogueBubble(
+                width: bubbleWidth,
+                message: 'Testingan ta mag type',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TranslateDialogueBubble extends StatelessWidget {
+  final double width;
+  final String message;
+
+  const _TranslateDialogueBubble({required this.width, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final bubbleHeight = width * 1920 / 1080;
+    return SizedBox(
+      width: width,
+      height: bubbleHeight,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/dialogue/dialoguebox.png',
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          Positioned(
+            left: width * .20,
+            right: width * .20,
+            top: width * .59,
+            height: width * .46,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: width * .58),
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.ink,
+                    fontSize: 22,
+                    height: 1.08,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
             ),
+          ),
         ],
       ),
     );

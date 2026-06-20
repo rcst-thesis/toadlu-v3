@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 
 /// Shared color tokens for the three onboarding question screens.
 ///
-/// Keeping the onboarding palette here makes Username, Age, and Knowledge
-/// Level screens feel like one consistent flow.
+/// Keeping the onboarding palette here makes the onboarding screens feel like
+/// one consistent flow.
 class OnboardingColors {
-  static const bg = Colors.white;
+  static const bg = Color(0xFFD8F35B);
   static const panel = Colors.white;
-  static const panel2 = Color(0xFFF5FAF5);
-  static const border = Color(0xFFDCEBDE);
-  static const text = Color(0xFF25382A);
-  static const muted = Color(0xFF728173);
-  static const green = Color(0xFF08C66B);
-  static const blue = Color(0xFF08C66B);
-  static const selected = Color(0xFFE3F5EA);
-  static const shadow = Color(0x3308C66B);
+  static const panel2 = Color(0xFFA6F4E0);
+  static const border = Color(0xFF83DEFF);
+  static const text = Color(0xFF17324D);
+  static const muted = Color(0xFF32607A);
+  static const green = Color(0xFF79D900);
+  static const blue = Color(0xFF18A8FF);
+  static const yellow = Color(0xFFFFD429);
+  static const orange = Color(0xFFFF8A00);
+  static const selected = Color(0xFFEFFFF6);
+  static const shadow = Color(0x552A9DFF);
 }
 
-/// Reusable layout for the Username, Age, and Knowledge Level onboarding pages.
+/// Reusable layout for the onboarding pages.
 ///
 /// It provides the progress bar, back button, mascot area, question text, and
 /// bottom Continue button space so each screen only supplies its own input.
@@ -51,8 +54,7 @@ class _ScaffoldCardState extends State<ScaffoldCard>
     if (widget.title.contains('call you') || widget.title.contains('call')) {
       return 1;
     }
-    if (widget.title.contains('old')) return 2;
-    return 3;
+    return 2;
   }
 
   @override
@@ -90,14 +92,14 @@ class _ScaffoldCardState extends State<ScaffoldCard>
               disabledForegroundColor: OnboardingColors.muted.withValues(
                 alpha: .45,
               ),
-              elevation: 0,
-              shadowColor: Colors.transparent,
-              minimumSize: const Size(240, 60),
+              elevation: 5,
+              shadowColor: OnboardingColors.green.withValues(alpha: .45),
+              minimumSize: const Size(260, 68),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(28),
               ),
               textStyle: const TextStyle(
-                fontSize: 20,
+                fontSize: 23,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
               ),
@@ -105,7 +107,13 @@ class _ScaffoldCardState extends State<ScaffoldCard>
           ),
         ),
         child: DecoratedBox(
-          decoration: const BoxDecoration(color: OnboardingColors.bg),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [OnboardingColors.bg, OnboardingColors.panel2],
+            ),
+          ),
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -157,10 +165,10 @@ class _ScaffoldCardState extends State<ScaffoldCard>
                         'ABOUT YOU',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: OnboardingColors.muted,
-                          fontSize: 15,
+                          color: OnboardingColors.blue,
+                          fontSize: 17,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 2.6,
+                          letterSpacing: 1.2,
                         ),
                       ),
                       SizedBox(height: mascotGap),
@@ -182,22 +190,28 @@ class _ScaffoldCardState extends State<ScaffoldCard>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: OnboardingColors.text,
-                          fontSize: tiny ? 24 : 28,
+                          fontSize: tiny ? 29 : 36,
                           height: 1.12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0,
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      TudloVoiceButton(
+                        message: widget.title,
+                        tooltip: 'Listen',
+                        size: tiny ? 48 : 54,
+                      ),
                       if (widget.subtitle.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text(
                           widget.subtitle,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: OnboardingColors.muted,
-                            fontSize: tiny ? 15 : 18,
+                            fontSize: tiny ? 18 : 21,
                             height: 1.25,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ],
@@ -231,8 +245,8 @@ class _OnboardingTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Back returns to the previous onboarding step. The three green segments
-    // show progress without using "Step 1 of 3" text.
+    // Back returns to the previous onboarding step. The two green segments
+    // show progress without using step-count text.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -245,10 +259,10 @@ class _OnboardingTopBar extends StatelessWidget {
             onPressed: () => Navigator.maybePop(context),
             icon: const Icon(Icons.chevron_left_rounded),
             color: OnboardingColors.muted,
-            iconSize: 34,
+            iconSize: 38,
             style: IconButton.styleFrom(
-              backgroundColor: OnboardingColors.panel2,
-              disabledBackgroundColor: OnboardingColors.panel2,
+              backgroundColor: Colors.white,
+              disabledBackgroundColor: Colors.white,
               shape: const CircleBorder(),
               padding: EdgeInsets.zero,
             ),
@@ -257,17 +271,18 @@ class _OnboardingTopBar extends StatelessWidget {
         const SizedBox(width: 18),
         Expanded(
           child: Row(
-            children: List.generate(3, (index) {
+            children: List.generate(2, (index) {
               final active = index < step;
               return Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 240),
-                  height: 12,
-                  margin: EdgeInsets.only(right: index == 2 ? 0 : 10),
+                  height: 16,
+                  margin: EdgeInsets.only(right: index == 1 ? 0 : 10),
                   decoration: BoxDecoration(
                     color: active
                         ? OnboardingColors.green
-                        : OnboardingColors.selected,
+                        : Colors.white.withValues(alpha: .78),
+                    border: Border.all(color: Colors.white, width: 2),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -276,6 +291,7 @@ class _OnboardingTopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
+        const TudloLanguageToggle(),
       ],
     );
   }

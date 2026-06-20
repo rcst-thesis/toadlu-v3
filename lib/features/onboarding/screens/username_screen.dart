@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tudloapp/core/state/app_state.dart';
-import 'package:tudloapp/features/onboarding/widgets/scaffold_card.dart';
-import 'package:tudloapp/features/onboarding/screens/age_range_screen.dart';
+import 'package:tudloapp/features/onboarding/screens/grade_level_screen.dart';
 
-/// First onboarding screen.
-///
-/// This screen collects the name that appears later on the Home Map and
-/// Profile page.
 class UsernameScreen extends StatefulWidget {
   const UsernameScreen({super.key});
 
@@ -16,116 +10,174 @@ class UsernameScreen extends StatefulWidget {
 
 class _UsernameScreenState extends State<UsernameScreen> {
   final TextEditingController controller = TextEditingController();
-  final FocusNode focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    focusNode.addListener(() => setState(() {}));
     controller.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    focusNode.dispose();
     controller.dispose();
     super.dispose();
   }
 
+  void _continue() {
+    final name = controller.text.trim();
+    if (name.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => GradeLevelScreen(learnerName: name)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Continue stays disabled until the user enters a non-empty name.
     final hasName = controller.text.trim().isNotEmpty;
 
-    return ScaffoldCard(
-      title: 'What should we call you?',
-      subtitle: 'This helps personalize your experience.',
-      bottomAction: SizedBox(
-        width: double.infinity,
-        height: 60,
-        child: ElevatedButton(
-          onPressed: hasName
-              ? () {
-                  // Continue button:
-                  // Save the name in AppState, then direct the user to the
-                  // Age Range screen, which is the next onboarding step.
-                  AppStateScope.of(context).setUsername(controller.text.trim());
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AgeRangeScreen()),
-                  );
-                }
-              : null,
-          child: const Text('Continue'),
-        ),
-      ),
-      child: Column(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: OnboardingColors.shadow,
-                  blurRadius: focusNode.hasFocus ? 18 : 0,
-                  offset: focusNode.hasFocus
-                      ? const Offset(0, 9)
-                      : const Offset(8, 8),
+    return _GreenOnboardingScaffold(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight < 680;
+          final eyesWidth = (constraints.maxWidth * .78).clamp(220.0, 360.0);
+          final fieldWidth = (constraints.maxWidth * .76).clamp(230.0, 360.0);
+          final nextSize = compact ? 82.0 : 100.0;
+
+          return Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(vertical: compact ? 20 : 34),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: (constraints.maxHeight - (compact ? 40 : 68))
+                      .clamp(0, double.infinity),
                 ),
-              ],
-            ),
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              autofocus: true,
-              cursorColor: OnboardingColors.blue,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: OnboardingColors.text,
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Type your name here...',
-                hintStyle: const TextStyle(
-                  color: OnboardingColors.muted,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-                filled: true,
-                fillColor: OnboardingColors.panel,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 21,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(28),
-                  borderSide: const BorderSide(
-                    color: OnboardingColors.border,
-                    width: 2.5,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(28),
-                  borderSide: const BorderSide(
-                    color: OnboardingColors.border,
-                    width: 2.5,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(28),
-                  borderSide: const BorderSide(
-                    color: OnboardingColors.green,
-                    width: 3,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/onbaording/eyes.png',
+                      width: eyesWidth,
+                      fit: BoxFit.contain,
+                    ),
+                    SizedBox(height: compact ? 32 : 52),
+                    const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Ano ang imo pangalan?',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: fieldWidth,
+                      child: TextField(
+                        controller: controller,
+                        autofocus: true,
+                        textAlign: TextAlign.center,
+                        textCapitalization: TextCapitalization.words,
+                        cursorColor: const Color(0xFF237915),
+                        style: const TextStyle(
+                          color: Color(0xFF237915),
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: compact ? 17 : 21,
+                          ),
+                          border: _pillBorder(),
+                          enabledBorder: _pillBorder(),
+                          focusedBorder: _pillBorder(width: 4),
+                        ),
+                        onSubmitted: (_) => _continue(),
+                      ),
+                    ),
+                    SizedBox(height: compact ? 42 : 64),
+                    _RoundNextButton(
+                      enabled: hasName,
+                      size: nextSize,
+                      onTap: _continue,
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
+}
+
+class _GreenOnboardingScaffold extends StatelessWidget {
+  final Widget child;
+
+  const _GreenOnboardingScaffold({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF2FAA1F),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _RoundNextButton extends StatelessWidget {
+  final bool enabled;
+  final double size;
+  final VoidCallback onTap;
+
+  const _RoundNextButton({
+    required this.enabled,
+    required this.size,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : .55,
+      child: Material(
+        color: Colors.white,
+        shape: const CircleBorder(),
+        elevation: 3,
+        shadowColor: Colors.black38,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: enabled ? onTap : null,
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF237915),
+              size: size * .70,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+OutlineInputBorder _pillBorder({double width = 3}) {
+  return OutlineInputBorder(
+    borderRadius: BorderRadius.circular(999),
+    borderSide: BorderSide(color: const Color(0xFF239015), width: width),
+  );
 }

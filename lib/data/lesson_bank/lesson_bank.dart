@@ -1,14 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:tudloapp/core/data/app_data.dart';
-import 'package:tudloapp/core/models/proficiency.dart';
+import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/data/lesson_bank/grade_1_lesson_bank.dart';
+import 'package:tudloapp/data/lesson_bank/grade_2_lesson_bank.dart';
+import 'package:tudloapp/data/lesson_bank/grade_3_lesson_bank.dart';
+import 'package:tudloapp/data/lesson_bank/grade_lesson_dataset.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank_item.dart';
 
 export 'package:tudloapp/data/lesson_bank/lesson_bank_item.dart';
 
 enum QuestionType {
   translationChoice,
-  typedTranslation,
   arrangeWords,
   fillBlank,
   choice,
@@ -81,22 +84,6 @@ class LessonQuestion {
     this.targetMeaning = '',
     this.directionLabel = '',
   }) : type = QuestionType.fillBlank,
-       leftItems = const [],
-       rightItems = const [],
-       sentenceWords = const [],
-       imageChoices = const [];
-
-  const LessonQuestion.typedTranslation({
-    required this.prompt,
-    required this.answer,
-    this.imagePath = '',
-    this.sentenceMeaning = '',
-    this.wordMeanings = const {},
-    this.targetPhrase = '',
-    this.targetMeaning = '',
-    this.directionLabel = '',
-  }) : type = QuestionType.typedTranslation,
-       choices = const [],
        leftItems = const [],
        rightItems = const [],
        sentenceWords = const [],
@@ -183,38 +170,48 @@ class LessonQuestion {
        sentenceWords = const [];
 }
 
-class EvaluationQuestion {
-  final EvaluationQuestionType type;
-  final String prompt;
-  final String answer;
-  final List<String> choices;
-  final Map<String, String> pairs;
-  final List<String> rightItems;
-  final String targetPhrase;
-  final String targetMeaning;
-  final String directionLabel;
+class LessonExample {
+  final String category;
+  final String hiligaynon;
+  final String english;
+  final String note;
 
-  const EvaluationQuestion.choice({
-    required this.type,
-    required this.prompt,
-    required this.answer,
-    required this.choices,
-    this.targetPhrase = '',
-    this.targetMeaning = '',
-    this.directionLabel = '',
-  }) : pairs = const {},
-       rightItems = const [];
+  const LessonExample({
+    this.category = '',
+    required this.hiligaynon,
+    required this.english,
+    this.note = '',
+  });
+}
 
-  const EvaluationQuestion.matching({
-    required this.prompt,
-    required this.pairs,
-    required this.rightItems,
-  }) : type = EvaluationQuestionType.matchingPair,
-       answer = '',
-       choices = const [],
-       targetPhrase = '',
-       targetMeaning = '',
-       directionLabel = '';
+class LessonConceptCard {
+  final String title;
+  final String hiligaynon;
+  final String english;
+
+  const LessonConceptCard({
+    required this.title,
+    required this.hiligaynon,
+    required this.english,
+  });
+}
+
+class LessonLevelContent {
+  final String title;
+  final String storyTitle;
+  final String story;
+  final String shortLesson;
+  final List<LessonConceptCard> concepts;
+  final List<LessonExample> examples;
+
+  const LessonLevelContent({
+    required this.title,
+    required this.storyTitle,
+    required this.story,
+    required this.shortLesson,
+    this.concepts = const [],
+    required this.examples,
+  });
 }
 
 /// Central lesson content source.
@@ -223,12 +220,18 @@ class EvaluationQuestion {
 /// also reads from this same bank, so editing content here updates both places.
 class LessonBank {
   static const unitTitles = {
-    1: 'Everyday Conversation',
-    2: 'Talk to Locals',
-    3: 'Conversation with Friends',
-    4: 'Family is Love',
-    5: 'Daily Life',
-    6: 'Community',
+    1: 'Pagkilala sa Akon Kaugalingon kag Pamilya',
+    2: 'Pakig-istorya sa Palibot',
+    3: 'Ako kag Akon mga Abyan',
+    4: 'Palangga Ko ang Pamilya',
+    5: 'Adlaw-adlaw nga Kabuhi',
+    6: 'Akon Komunidad',
+  };
+
+  static const gradeDatasets = {
+    GradeLevel.grade1: grade1LessonDataset,
+    GradeLevel.grade2: grade2LessonDataset,
+    GradeLevel.grade3: grade3LessonDataset,
   };
 
   static const terms = [
@@ -236,7 +239,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Maayong aga',
       eng: 'Good morning',
       missingSentence: 'Maayong ___.',
@@ -246,7 +249,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Kamusta ka?',
       eng: 'How are you?',
       missingSentence: '___ ka?',
@@ -256,7 +259,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Maayong aga, Josh! Kamusta ka?',
       eng: 'Good morning, Josh! How are you?',
       wordBlocks: ['Maayong', 'aga,', 'Josh!', 'Kamusta', 'ka?'],
@@ -267,7 +270,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Grabe gid ang init subong',
       eng: "It's really hot today",
       wordBlocks: ['gid', 'init', 'grabe', 'subong', 'ang'],
@@ -278,7 +281,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Ga pila kami para mag bayad.',
       eng: 'We are lining up to pay',
       missingSentence: 'ga pila ____ para mag ____.',
@@ -298,7 +301,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Ga hulat ako sang jeep.',
       eng: 'I am waiting for a jeep.',
       missingSentence: 'ga ____ ako sang ____.',
@@ -318,7 +321,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Ga ano ka subong',
       eng: 'What are you doing right now',
       missingSentence: 'Ga ano ka ___.',
@@ -327,21 +330,21 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Kamusta ang adlaw mo?',
       eng: 'How is your day?',
     ),
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Diin ka subong?',
       eng: 'Where are you right now?',
     ),
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Salamat',
       eng: 'Thank you',
       missingSentence: 'Salamat ___.',
@@ -351,7 +354,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Palihog',
       eng: 'Please',
       lessonNumber: 1,
@@ -359,7 +362,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Huo',
       eng: 'Yes',
       lessonNumber: 1,
@@ -367,7 +370,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Indi',
       eng: 'No',
       lessonNumber: 1,
@@ -375,28 +378,28 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Okay lang ako',
       eng: "I'm okay",
     ),
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Maayo man ako',
       eng: "I'm fine",
     ),
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Kitaay ta liwat',
       eng: 'See you again',
     ),
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Gina lagas ako sang ido.',
       eng: 'I am being chased by a dog.',
       missingSentence: '____ ____ ako sang ____.',
@@ -410,7 +413,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Na basa akon bayo kay nag-ulan gulpi.',
       eng: 'My clothes got wet because it suddenly rained.',
       missingSentence: 'Na ____ akon bayo kay nag-ulan gulpi.',
@@ -431,7 +434,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Ang ngalan ko si Nicole',
       eng: 'My name is Nicole',
       lessonNumber: 1,
@@ -439,7 +442,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Lamig',
       eng: 'Cold',
       lessonNumber: 1,
@@ -447,7 +450,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Init',
       eng: 'Hot',
       lessonNumber: 1,
@@ -455,7 +458,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Nanay',
       eng: 'Mother',
       imagePath:
@@ -465,7 +468,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Tatay',
       eng: 'Father',
       imagePath:
@@ -475,7 +478,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Lola',
       eng: 'Grandmother',
       imagePath:
@@ -485,7 +488,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Lolo',
       eng: 'Grandfather',
       imagePath:
@@ -495,7 +498,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Jeep',
       eng: 'Jeepney',
       imagePath:
@@ -505,7 +508,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Bangka',
       eng: 'Boat',
       imagePath:
@@ -515,7 +518,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Eroplano',
       eng: 'Airplane',
       imagePath:
@@ -525,11 +528,121 @@ class LessonBank {
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
-      difficulty: 1,
+      gradeLevel: 1,
       hil: 'Traysikad',
       eng: 'Tricycle',
       imagePath:
           'assets/images/level_game/unit 1/image_choice/transportation/Traysikad.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Pangalan',
+      eng: 'Noun',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Tawo',
+      eng: 'Person',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Lugar',
+      eng: 'Place',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Butang',
+      eng: 'Thing',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Sapat',
+      eng: 'Animal',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Halamtangan',
+      eng: 'Setting',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Katawhan',
+      eng: 'Characters',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Hinabo',
+      eng: 'Event',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Rina',
+      eng: 'child',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/mother.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Nanay Rowena',
+      eng: 'mother',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/mother.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Mayor Basilio',
+      eng: 'mayor',
+      imagePath:
+          'assets/images/level_game/unit 1/image_choice/people/father.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Iloilo River',
+      eng: 'river',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Everyday Conversation',
+      gradeLevel: 3,
+      hil: 'Plaza Libertad',
+      eng: 'park',
       lessonNumber: 1,
     ),
 
@@ -537,21 +650,21 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Diin ang Jaro Plaza?',
       eng: 'Where is Jaro Plaza?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Ano nga jeep sakyan ko?',
       eng: 'What jeepney should I take?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Jeep',
       eng: 'Jeepney',
       imagePath:
@@ -560,7 +673,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Bangka',
       eng: 'Boat',
       imagePath:
@@ -569,7 +682,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Eroplano',
       eng: 'Airplane',
       imagePath:
@@ -578,7 +691,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Traysikad',
       eng: 'Pedicab',
       imagePath:
@@ -587,7 +700,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Tagpila ang mangga?',
       eng: 'How much are the mangoes?',
       missingSentence: 'Tagpila ang ___?',
@@ -596,49 +709,49 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Mangga',
       eng: 'Mango',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Diin ang merkado?',
       eng: 'Where is the market?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Merkado',
       eng: 'Market',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Diin ang terminal?',
       eng: 'Where is the terminal?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Terminal',
       eng: 'Terminal',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Pakadto ini sa CPU?',
       eng: 'Is this going to CPU?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Pila ang plete?',
       eng: 'How much is the fare?',
       missingSentence: 'Pila ang ___?',
@@ -647,56 +760,56 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Plete',
       eng: 'Fare',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Lugar lang',
       eng: 'Please stop here',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Mabakal ako sini',
       eng: 'I will buy this',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Mahal ini?',
       eng: 'Is this expensive?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'May lapit nga tindahan?',
       eng: 'Is there a nearby store?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Tindahan',
       eng: 'Store',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Diin ang CR?',
       eng: 'Where is the restroom?',
     ),
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Pwede mo ako buligan?',
       eng: 'Can you help me?',
       wordMeanings: {
@@ -709,7 +822,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 2,
       unitTitle: 'Talk to Locals',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Buligi ako palihog',
       eng: 'Help me please',
     ),
@@ -718,70 +831,70 @@ class LessonBank {
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Nabatian mo ang natabo sa school?',
       eng: 'Have you heard what happened at school?',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Ginahulat ta ka',
       eng: "I'm waiting for you",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Kadto na ta',
       eng: "Let's go",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Kadto',
       eng: 'Go',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Ari na ko',
       eng: "I'm here",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Diin ka?',
       eng: 'Where are you?',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Makadto ka?',
       eng: 'Are you coming?',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Mangaon ta',
       eng: "Let's eat",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Mauna ako',
       eng: "I'll go first",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Hulata ko',
       eng: 'Wait for me',
       missingSentence: '___ ko.',
@@ -790,70 +903,70 @@ class LessonBank {
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Hulat',
       eng: 'Wait',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Katawa man na',
       eng: "That's funny",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Katawa',
       eng: 'Funny',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Namiss ta ka',
       eng: 'I miss you',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Kitaay ta karon',
       eng: "Let's meet later",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Ano ginahimo mo?',
       eng: 'What are you doing?',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Busy ako',
       eng: "I'm busy",
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Busy',
       eng: 'Busy',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Chat-i ko karon',
       eng: 'Message me later',
     ),
     LessonTerm(
       unitNumber: 3,
       unitTitle: 'Conversation with Friends',
-      difficulty: 2,
+      gradeLevel: 2,
       hil: 'Chat',
       eng: 'Message',
     ),
@@ -862,7 +975,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nanay',
       eng: 'Mother',
       imagePath:
@@ -871,7 +984,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Tatay',
       eng: 'Father',
       imagePath:
@@ -880,14 +993,14 @@ class LessonBank {
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Utod',
       eng: 'Sibling',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Lola',
       eng: 'Grandmother',
       imagePath:
@@ -896,7 +1009,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Lolo',
       eng: 'Grandfather',
       imagePath:
@@ -905,70 +1018,70 @@ class LessonBank {
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Palangga ko ang akon pamilya',
       eng: 'I love my family',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Diin si nanay?',
       eng: 'Where is mother?',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagaluto si tatay',
       eng: 'Father is cooking',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagakatulog ang akon utod',
       eng: 'My sibling is sleeping',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Buotan si lola',
       eng: 'Grandmother is kind',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Mangaon ta tanan',
       eng: "Let's eat together",
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Halong',
       eng: 'Take care',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Namiss ko ang akon pamilya',
       eng: 'I miss my family',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Malipayon ang amon balay',
       eng: 'Our house is happy',
     ),
     LessonTerm(
       unitNumber: 4,
       unitTitle: 'Family is Love',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Buligi ang imo utod',
       eng: 'Help your sibling',
     ),
@@ -977,7 +1090,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagmata ako sang aga.',
       eng: 'I woke up in the morning.',
       missingSentence: 'Nagmata ako sang ___.',
@@ -988,7 +1101,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Gina lagas ako sang ido.',
       eng: 'I am being chased by a dog.',
       missingSentence: '____ ____ ako sang ____.',
@@ -1001,35 +1114,35 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagakaon ako',
       eng: 'I am eating',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagabasa ako',
       eng: 'I am reading',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Basa',
       eng: 'Read',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagakadto ako sa eskwelahan',
       eng: 'I am going to school',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagainom ako sang tubig',
       eng: 'I am drinking water',
       missingSentence: 'Nagainom ako sang ___.',
@@ -1038,56 +1151,56 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Tubig',
       eng: 'Water',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagakatulog ako',
       eng: 'I am sleeping',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagatuon ako',
       eng: 'I am studying',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagapanglaba ako',
       eng: 'I am washing clothes',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nagatinlo ako sang balay',
       eng: 'I am cleaning the house',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Aga ako nagbugtaw',
       eng: 'I woke up early',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Mapauli ako',
       eng: 'I will go home',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'May libro ako',
       eng: 'I have a book',
       missingSentence: 'May ___ ako.',
@@ -1096,14 +1209,14 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Libro',
       eng: 'Book',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Ido',
       eng: 'Dog',
       imagePath: 'assets/images/level_game/animal/dog.png',
@@ -1111,7 +1224,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Kuring',
       eng: 'Cat',
       imagePath: 'assets/images/level_game/animal/cat.png',
@@ -1119,7 +1232,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Pispis',
       eng: 'Bird',
       imagePath: 'assets/images/level_game/animal/bird.png',
@@ -1127,7 +1240,7 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Isda',
       eng: 'Fish',
       imagePath: 'assets/images/level_game/animal/fish.png',
@@ -1135,28 +1248,28 @@ class LessonBank {
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Kinahanglan ko sang tubig',
       eng: 'I need water',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Kapoy ako',
       eng: 'I am tired',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Gutom ako',
       eng: 'I am hungry',
     ),
     LessonTerm(
       unitNumber: 5,
       unitTitle: 'Daily Life',
-      difficulty: 3,
+      gradeLevel: 3,
       hil: 'Nalipay ako',
       eng: 'I am happy',
     ),
@@ -1165,369 +1278,285 @@ class LessonBank {
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Barangay',
       eng: 'Barangay',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Eskwelahan',
       eng: 'School',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Simbahan',
       eng: 'Church',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Ospital',
       eng: 'Hospital',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Merkado',
       eng: 'Market',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Istasyon sang pulis',
       eng: 'Police station',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Istasyon sang bombero',
       eng: 'Fire station',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Manunudlo',
       eng: 'Teacher',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Nars',
       eng: 'Nurse',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Doktor',
       eng: 'Doctor',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Kapitan',
       eng: 'Barangay captain',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Tinlo ang komunidad',
       eng: 'The community is clean',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Buligi ang komunidad',
       eng: 'Help the community',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Diin ang ospital?',
       eng: 'Where is the hospital?',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Buotan ang manunudlo',
       eng: 'The teacher is kind',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Nagabulig ang nars sa mga tawo',
       eng: 'The nurse helps people',
     ),
     LessonTerm(
       unitNumber: 6,
       unitTitle: 'Community',
-      difficulty: 4,
+      gradeLevel: 3,
       hil: 'Tipigan ta nga tinlo ang lugar',
       eng: "Let's keep the place clean",
     ),
   ];
 
-  static List<EvaluationQuestion> randomEvaluationQuestions({
-    math.Random? random,
-  }) {
-    // Evaluation stays random across all units. It samples easy, mid, and hard
-    // content because it measures overall ability, not one Home Map unit.
-    final rng = random ?? math.Random();
-    return [
-      ..._evaluationQuestionsForDifficulty(1, 5, rng),
-      ..._evaluationQuestionsForDifficulty(2, 5, rng),
-      ..._evaluationQuestionsForDifficulty(3, 5, rng),
-    ]..shuffle(rng);
-  }
-
-  static List<LessonQuestion> tutorialEvaluationQuestions({
-    math.Random? random,
-  }) {
-    // The evaluation behaves like a short tutorial, so it previews the same
-    // activity types as the lesson game without spending energy.
-    final rng = random ?? math.Random();
-    final showcaseQuestions = questionsForLevel(1);
-    const targets = {
-      QuestionType.translationChoice: 2,
-      QuestionType.imageChoice: 2,
-      QuestionType.typedTranslation: 1,
-      QuestionType.arrangeWords: 2,
-      QuestionType.matching: 1,
-      QuestionType.fillBlank: 2,
-    };
-    final selected = <LessonQuestion>[];
-    final counts = <QuestionType, int>{};
-
-    for (final type in targets.keys) {
-      final candidates =
-          showcaseQuestions.where((question) => question.type == type).toList()
-            ..shuffle(rng);
-      for (final question in candidates) {
-        if ((counts[type] ?? 0) >= targets[type]!) break;
-        selected.add(question);
-        counts[type] = (counts[type] ?? 0) + 1;
-      }
+  static LessonLevelContent contentForLevel(int level) {
+    if (AppData.selectedGradeLevel == GradeLevel.grade3) {
+      return _gradeThreePdfContentForLevel(level);
     }
 
-    return selected..shuffle(rng);
+    final dataset = _activeGradeDataset;
+    final unit = unitForLevel(level);
+    final unitTitle = unitTitles[unit] ?? 'Hiligaynon';
+    final levelTerms = _nonScenarioTerms(_termsForLocalLesson(level));
+    final focusTerms = levelTerms.take(4).toList();
+    final focusLabels = focusTerms.map((term) => term.hil).toList();
+    final focusWords = _joinQuoted(focusLabels);
+
+    return LessonLevelContent(
+      title: unitTitle,
+      storyTitle: 'Listen and Learn',
+      story: _applyGradeTemplate(
+        dataset.storyTemplate,
+        unitTitle: unitTitle,
+        focusWords: focusWords,
+      ),
+      shortLesson: _applyGradeTemplate(
+        dataset.lessonTemplate,
+        unitTitle: unitTitle,
+        focusWords: focusWords,
+      ),
+      examples: focusTerms
+          .map((term) => LessonExample(hiligaynon: term.hil, english: term.eng))
+          .toList(),
+    );
   }
 
-  static List<EvaluationQuestion> _evaluationQuestionsForDifficulty(
-    int difficulty,
-    int count,
-    math.Random rng,
-  ) {
-    final pool =
-        terms.where((term) => term.difficulty <= difficulty + 1).toList()
-          ..shuffle(rng);
-    final questions = <EvaluationQuestion>[];
-    final usedConcepts = <String>{};
-
-    var cursor = 0;
-    while (questions.length < count) {
-      final type = EvaluationQuestionType.values[questions.length % 4];
-      final question = _buildEvaluationQuestion(
-        type,
-        pool,
-        rng,
-        usedConcepts,
-        cursor,
+  static LessonLevelContent _gradeThreePdfContentForLevel(int level) {
+    final localLevel = ((level - 1) % AppData.unitLevels) + 1;
+    if (localLevel == 2) {
+      return const LessonLevelContent(
+        title: 'Count Nouns and Mass Nouns',
+        storyTitle: 'Sa Merkado sang Pamilya',
+        story:
+            'Nag-upod si Rina sa iya nanay sa merkado. Nagbakal sila sang tatlo ka mansanas, duha ka libro, bugas, tubig, kag asukar para sa ila panimalay.',
+        shortLesson:
+            'Ang count noun amo ang pangalan sang butang nga maisip naton, pareho sang mansanas kag libro. Ang mass noun amo ang pangalan sang butang nga indi dali maisip isa-isa, pareho sang tubig, bugas, kag asukar.',
+        concepts: [
+          LessonConceptCard(
+            title: 'Count Noun',
+            hiligaynon: 'Pangalan nga maisip',
+            english: 'Names things we can count one by one.',
+          ),
+          LessonConceptCard(
+            title: 'Mass Noun',
+            hiligaynon: 'Pangalan nga indi maisip isa-isa',
+            english: 'Names things measured as a group or amount.',
+          ),
+        ],
+        examples: [
+          LessonExample(
+            category: 'Count Noun',
+            hiligaynon: 'mansanas',
+            english: 'apple',
+            note: 'isa, duha, tatlo ka mansanas',
+          ),
+          LessonExample(
+            category: 'Count Noun',
+            hiligaynon: 'libro',
+            english: 'book',
+            note: 'isa ka libro',
+          ),
+          LessonExample(
+            category: 'Mass Noun',
+            hiligaynon: 'tubig',
+            english: 'water',
+            note: 'isa ka baso nga tubig',
+          ),
+          LessonExample(
+            category: 'Mass Noun',
+            hiligaynon: 'bugas',
+            english: 'rice',
+            note: 'isa ka kilo nga bugas',
+          ),
+        ],
       );
-      cursor += 3;
-      if (question != null) questions.add(question);
     }
-    return questions;
-  }
 
-  static EvaluationQuestion? _buildEvaluationQuestion(
-    EvaluationQuestionType type,
-    List<LessonTerm> pool,
-    math.Random rng,
-    Set<String> usedConcepts,
-    int cursor,
-  ) {
-    return switch (type) {
-      EvaluationQuestionType.whatIsTheWord => _randomEvaluationWordQuestion(
-        pool,
-        rng,
-        usedConcepts,
-        cursor,
-      ),
-      EvaluationQuestionType.selectMissingWord =>
-        _randomEvaluationMissingWordQuestion(pool, rng, usedConcepts),
-      EvaluationQuestionType.translateSentence =>
-        _randomEvaluationTranslateQuestion(pool, rng, usedConcepts, cursor),
-      EvaluationQuestionType.matchingPair => _randomEvaluationMatchingQuestion(
-        pool,
-        rng,
-        usedConcepts,
-        cursor,
-      ),
-    };
-  }
-
-  static EvaluationQuestion _randomEvaluationWordQuestion(
-    List<LessonTerm> pool,
-    math.Random rng,
-    Set<String> usedConcepts,
-    int cursor,
-  ) {
-    final term = _nextUnusedTerm(pool, usedConcepts, cursor);
-    final englishToHiligaynon = rng.nextBool();
-    usedConcepts.add(_conceptKey(term));
-    if (englishToHiligaynon) {
-      return EvaluationQuestion.choice(
-        type: EvaluationQuestionType.whatIsTheWord,
-        prompt: 'What is "${term.eng}" in Hiligaynon?',
-        answer: term.hil,
-        choices: _optionsFor(
-          answer: term.hil,
-          values: pool.map((term) => term.hil).toList(),
-          fallbackValues: pool.map((term) => term.hil).toList(),
-          rng: rng,
+    return const LessonLevelContent(
+      title: 'Ako kag ang Akon Pamilya',
+      storyTitle: 'Dalayawon nga Bulig',
+      story:
+          'Si Rina isa ka bata nga masinulundon sa iya pamilya. Upod sang iya mga kaeskwela, nagtinlo sila sang dalan, nagtubo sang mga bulak, kag nagbulig sa pagpaninlo sang ila barangay.',
+      shortLesson:
+          'Ang pangalan, ukon noun, amo ang ngalan sang tawo, lugar, sapat, butang, kag hitabo. Sa istorya, ginatan-aw man naton ang katawhan, halamtangan, kag hinabo.',
+      concepts: [
+        LessonConceptCard(
+          title: 'Pangalan',
+          hiligaynon: 'Ngalan sang tawo, lugar, sapat, butang, ukon hitabo.',
+          english: 'A noun names a person, place, animal, thing, or event.',
         ),
-        targetPhrase: term.eng,
-        targetMeaning: term.hil,
-        directionLabel: 'English to Hiligaynon',
-      );
-    }
-
-    return EvaluationQuestion.choice(
-      type: EvaluationQuestionType.whatIsTheWord,
-      prompt: 'What is "${term.hil}" in English?',
-      answer: term.eng,
-      choices: _optionsFor(
-        answer: term.eng,
-        values: pool.map((term) => term.eng).toList(),
-        fallbackValues: pool.map((term) => term.eng).toList(),
-        rng: rng,
-      ),
-      targetPhrase: term.hil,
-      targetMeaning: term.eng,
-      directionLabel: 'Hiligaynon to English',
-    );
-  }
-
-  static EvaluationQuestion? _randomEvaluationMissingWordQuestion(
-    List<LessonTerm> pool,
-    math.Random rng,
-    Set<String> usedConcepts,
-  ) {
-    final templates =
-        pool
-            .where(
-              (term) =>
-                  term.missingSentence != null && term.missingAnswer != null,
-            )
-            .toList()
-          ..shuffle(rng);
-    for (final term in templates) {
-      final key = '${term.hil}|missing';
-      if (usedConcepts.contains(key)) continue;
-      usedConcepts.add(key);
-      return EvaluationQuestion.choice(
-        type: EvaluationQuestionType.selectMissingWord,
-        prompt: 'Complete the sentence "${term.missingSentence}"',
-        answer: term.missingAnswer!,
-        choices: _missingChoices(term, termsForUnit(term.unitNumber), rng),
-        targetPhrase: term.hil,
-        targetMeaning: term.eng,
-        directionLabel: 'Hiligaynon to English',
-      );
-    }
-    return null;
-  }
-
-  static EvaluationQuestion _randomEvaluationTranslateQuestion(
-    List<LessonTerm> pool,
-    math.Random rng,
-    Set<String> usedConcepts,
-    int cursor,
-  ) {
-    final sentenceTerms = pool.where(_isSentenceTerm).toList();
-    final term = _nextUnusedTerm(
-      sentenceTerms.isEmpty ? pool : sentenceTerms,
-      usedConcepts,
-      cursor,
-    );
-    final englishToHiligaynon = rng.nextBool();
-    usedConcepts.add(_conceptKey(term));
-
-    if (englishToHiligaynon) {
-      return EvaluationQuestion.choice(
-        type: EvaluationQuestionType.translateSentence,
-        prompt: 'Translate: "${term.eng}"',
-        answer: term.hil,
-        choices: _optionsFor(
-          answer: term.hil,
-          values: pool.map((term) => term.hil).toList(),
-          fallbackValues: pool.map((term) => term.hil).toList(),
-          rng: rng,
+        LessonConceptCard(
+          title: 'Katawhan',
+          hiligaynon: 'Mga tawo ukon karakter sa istorya.',
+          english: 'The characters in a story.',
         ),
-        targetPhrase: term.eng,
-        targetMeaning: term.hil,
-        directionLabel: 'English to Hiligaynon',
-      );
-    }
-
-    return EvaluationQuestion.choice(
-      type: EvaluationQuestionType.translateSentence,
-      prompt: 'Translate: "${term.hil}"',
-      answer: term.eng,
-      choices: _optionsFor(
-        answer: term.eng,
-        values: pool.map((term) => term.eng).toList(),
-        fallbackValues: pool.map((term) => term.eng).toList(),
-        rng: rng,
-      ),
-      targetPhrase: term.hil,
-      targetMeaning: term.eng,
-      directionLabel: 'Hiligaynon to English',
-    );
-  }
-
-  static EvaluationQuestion? _randomEvaluationMatchingQuestion(
-    List<LessonTerm> pool,
-    math.Random rng,
-    Set<String> usedConcepts,
-    int cursor,
-  ) {
-    // Matching pair activities should teach vocabulary words, not long
-    // sentence translation. We filter to word-like terms before selecting.
-    final matchingPool = _matchingTerms(pool);
-    final selected = _takeUniqueTerms(matchingPool, 4, cursor);
-    if (selected.length < 4) return null;
-    for (final term in selected) {
-      usedConcepts.add(_conceptKey(term));
-    }
-    final rightItems = selected.map((term) => term.eng).toList()..shuffle(rng);
-    return EvaluationQuestion.matching(
-      prompt: 'Match each Hiligaynon word to English.',
-      pairs: {for (final term in selected) term.hil: term.eng},
-      rightItems: rightItems,
+        LessonConceptCard(
+          title: 'Halamtangan',
+          hiligaynon: 'Lugar kag tion nga natabo ang istorya.',
+          english: 'The setting, or where and when the story happens.',
+        ),
+        LessonConceptCard(
+          title: 'Hinabo',
+          hiligaynon: 'Mga natabo sa istorya.',
+          english: 'The events that happen in a story.',
+        ),
+      ],
+      examples: [
+        LessonExample(
+          category: 'Tawo',
+          hiligaynon: 'Rina',
+          english: 'child',
+          note: 'Pat-od nga pangalan',
+        ),
+        LessonExample(
+          category: 'Tawo',
+          hiligaynon: 'Nanay Rowena',
+          english: 'mother',
+          note: 'Pat-od nga pangalan',
+        ),
+        LessonExample(
+          category: 'Lugar',
+          hiligaynon: 'Iloilo River',
+          english: 'river',
+          note: 'Ngalan sang lugar',
+        ),
+        LessonExample(
+          category: 'Lugar',
+          hiligaynon: 'Plaza Libertad',
+          english: 'park',
+          note: 'Ngalan sang lugar',
+        ),
+        LessonExample(
+          category: 'Kinaandan nga Pangalan',
+          hiligaynon: 'bata',
+          english: 'child',
+          note: 'Tanan nga bata',
+        ),
+        LessonExample(
+          category: 'Kinaandan nga Pangalan',
+          hiligaynon: 'suba',
+          english: 'river',
+          note: 'Tanan nga suba',
+        ),
+      ],
     );
   }
 
   static List<LessonQuestion> questionsForLevel(int level) {
-    final rng = math.Random();
+    final rng = math.Random(level + AppData.selectedGradeLevel.number * 1000);
+    if (AppData.selectedGradeLevel == GradeLevel.grade3 && level == 1) {
+      return _gradeThreePdfQuestionSet(rng);
+    }
+
     if (level == 1) {
-      return _unitOneLevelOneQuestionSet(rng)..shuffle(rng);
+      return _unitOneLevelOneQuestionSet(rng);
     }
 
     final unit = unitForLevel(level);
@@ -1549,8 +1578,6 @@ class LessonBank {
           pool: practiceTerms,
           rng: rng,
         ),
-      for (var index = 0; index < 3; index++)
-        _typedTranslationQuestion(level + index, practiceTerms),
       for (var index = 0; index < 3; index++)
         _arrangeWordsQuestion(level + index, practiceTerms, rng),
       for (var index = 0; index < 2; index++)
@@ -1588,7 +1615,7 @@ class LessonBank {
         scenarioTerms: levelTerms,
         scenarioUnitTerms: unitTerms,
         rng: rng,
-      )..shuffle(rng);
+      );
     }
 
     return _completeFlexibleQuestionSet(
@@ -1599,7 +1626,11 @@ class LessonBank {
       scenarioTerms: levelTerms,
       scenarioUnitTerms: scopedUnitTerms,
       rng: rng,
-    )..shuffle(rng);
+    );
+  }
+
+  static String lessonTitleForLevel(int level) {
+    return contentForLevel(level).title;
   }
 
   static List<LessonQuestion> _unitOneLevelOneQuestionSet(math.Random rng) {
@@ -1608,7 +1639,7 @@ class LessonBank {
     final levelTerms = _termsForLocalLesson(1);
     LessonTerm term(String hil) =>
         levelTerms.firstWhere((term) => term.hil == hil);
-    List<String> shuffled(List<String> values) => [...values]..shuffle(rng);
+    List<String> shuffled(List<String> values) => values;
 
     final familyChoices = [
       term('Nanay'),
@@ -1623,7 +1654,7 @@ class LessonBank {
       term('Traysikad'),
     ];
 
-    return [
+    final questions = [
       LessonQuestion.translationChoice(
         prompt: 'Which of these is "Yes"?',
         answer: 'Huo',
@@ -1656,18 +1687,20 @@ class LessonBank {
         targetMeaning: 'Maayong aga',
         directionLabel: 'English to Hiligaynon',
       ),
-      LessonQuestion.typedTranslation(
-        prompt: 'Translate: "How are you?"',
-        answer: 'Kamusta ka?',
-        targetPhrase: 'How are you?',
-        targetMeaning: 'Kamusta ka?',
+      LessonQuestion.translationChoice(
+        prompt: 'Which of these is "No"?',
+        answer: 'Indi',
+        choices: shuffled(['Indi', 'Huo', 'Palihog', 'Maayong aga']),
+        targetPhrase: 'No',
+        targetMeaning: 'Indi',
         directionLabel: 'English to Hiligaynon',
       ),
-      LessonQuestion.typedTranslation(
-        prompt: 'Translate: "Good morning"',
-        answer: 'Maayong aga',
-        targetPhrase: 'Good morning',
-        targetMeaning: 'Maayong aga',
+      LessonQuestion.arrangeWords(
+        prompt: 'Arrange the words to say: "How are you?"',
+        answer: 'Kamusta ka?',
+        sentenceWords: shuffled(['Kamusta', 'ka?']),
+        targetPhrase: 'How are you?',
+        targetMeaning: 'Kamusta ka?',
         directionLabel: 'English to Hiligaynon',
       ),
       LessonQuestion.arrangeWords(
@@ -1717,7 +1750,7 @@ class LessonBank {
       LessonQuestion.imageChoice(
         prompt: 'Which of these is "Mother"?',
         answer: 'Nanay',
-        imageChoices: [...familyChoices]..shuffle(rng),
+        imageChoices: familyChoices,
         targetPhrase: 'Nanay',
         targetMeaning: 'Mother',
         directionLabel: 'Hiligaynon to English',
@@ -1725,10 +1758,112 @@ class LessonBank {
       LessonQuestion.imageChoice(
         prompt: 'Which of these is "Jeepney"?',
         answer: 'Jeep',
-        imageChoices: [...transportationChoices]..shuffle(rng),
+        imageChoices: transportationChoices,
         targetPhrase: 'Jeep',
         targetMeaning: 'Jeepney',
         directionLabel: 'Hiligaynon to English',
+      ),
+    ];
+
+    return [
+      questions[0],
+      questions[1],
+      questions[2],
+      questions[5],
+      questions[6],
+      questions[8],
+      questions[10],
+      questions[11],
+      questions[13],
+      questions[14],
+    ];
+  }
+
+  static List<LessonQuestion> _gradeThreePdfQuestionSet(math.Random rng) {
+    List<String> shuffled(List<String> values) => values;
+
+    return [
+      LessonQuestion.translationChoice(
+        prompt:
+            'Ano ang tawag sa ngalan sang tawo, lugar, sapat, butang, ukon hitabo?',
+        answer: 'Pangalan',
+        choices: shuffled(['Pangalan', 'Hinabo', 'Katawhan', 'Halamtangan']),
+        targetPhrase: 'Pangalan',
+        targetMeaning: 'Noun',
+        directionLabel: 'Hiligaynon concept',
+      ),
+      LessonQuestion.translationChoice(
+        prompt: 'Ano ang tawag sa mga tawo ukon karakter sa istorya?',
+        answer: 'Katawhan',
+        choices: shuffled(['Katawhan', 'Halamtangan', 'Hinabo', 'Lugar']),
+        targetPhrase: 'Katawhan',
+        targetMeaning: 'Katawhan',
+        directionLabel: 'Konsepto sang istorya',
+      ),
+      LessonQuestion.translationChoice(
+        prompt: 'Ano ang tawag sa lugar kag tion sang istorya?',
+        answer: 'Halamtangan',
+        choices: shuffled(['Halamtangan', 'Katawhan', 'Hinabo', 'Butang']),
+        targetPhrase: 'Halamtangan',
+        targetMeaning: 'Halamtangan',
+        directionLabel: 'Konsepto sang istorya',
+      ),
+      LessonQuestion.translationChoice(
+        prompt: 'Ano ang tawag sa mga natabo sa istorya?',
+        answer: 'Hinabo',
+        choices: shuffled(['Hinabo', 'Tawo', 'Lugar', 'Katawhan']),
+        targetPhrase: 'Hinabo',
+        targetMeaning: 'Hinabo',
+        directionLabel: 'Konsepto sang istorya',
+      ),
+      LessonQuestion.arrangeWords(
+        prompt: 'Ipahamtang ang mga pulong para mahimo ang titulo.',
+        answer: 'Ako kag ang Akon Pamilya',
+        sentenceWords: shuffled(['Ako', 'kag', 'ang', 'Akon', 'Pamilya']),
+        targetPhrase: 'Ako kag ang Akon Pamilya',
+        targetMeaning: 'Me and My Family',
+        directionLabel: 'Story title',
+      ),
+      LessonQuestion.arrangeWords(
+        prompt: 'Ipahamtang ang mga pulong para mahimo ang pangungusap.',
+        answer: 'Si Rina isa ka bata',
+        sentenceWords: shuffled(['Si', 'Rina', 'isa', 'ka', 'bata']),
+        targetPhrase: 'Si Rina isa ka bata',
+        targetMeaning: 'Rina is a child',
+        directionLabel: 'Hiligaynon sentence',
+      ),
+      LessonQuestion.matching(
+        prompt: 'Ipares ang pulong kag kahulugan.',
+        leftItems: ['Pangalan', 'Katawhan', 'Halamtangan', 'Hinabo'],
+        rightItems: shuffled([
+          'ngalan',
+          'mga karakter',
+          'lugar kag tion',
+          'natabo',
+        ]),
+      ),
+      LessonQuestion.matching(
+        prompt: 'Ipares ang halimbawa kag kahulugan.',
+        leftItems: ['Rina', 'Nanay Rowena', 'Iloilo River', 'Plaza Libertad'],
+        rightItems: shuffled(['bata', 'nanay', 'suba', 'parke']),
+      ),
+      LessonQuestion.fillBlank(
+        prompt:
+            'Kompletoha: Ang ___ amo ang ngalan sang tawo, lugar, sapat, butang, ukon hitabo.',
+        answer: 'pangalan',
+        choices: shuffled(['pangalan', 'hinabo', 'suba', 'bulak']),
+        targetPhrase:
+            'Ang pangalan amo ang ngalan sang tawo, lugar, sapat, butang, ukon hitabo.',
+        targetMeaning: 'A noun names a person, place, animal, thing, or event.',
+        directionLabel: 'Fill in the blank',
+      ),
+      LessonQuestion.fillBlank(
+        prompt: 'Kompletoha: Si ___ ang bata sa istorya.',
+        answer: 'Rina',
+        choices: shuffled(['Rina', 'suba', 'parke', 'butang']),
+        targetPhrase: 'Si Rina ang bata sa istorya.',
+        targetMeaning: 'Rina is the child in the story.',
+        directionLabel: 'Fill in the blank',
       ),
     ];
   }
@@ -1746,40 +1881,19 @@ class LessonBank {
     return unit.clamp(1, unitTitles.length);
   }
 
-  static HomeMapDataset datasetForLevel(int level) {
-    final localLevel = ((level - 1) % AppData.unitLevels) + 1;
-    if (localLevel <= 2) return HomeMapDataset.easy;
-    if (localLevel <= 4) return HomeMapDataset.medium;
-    return HomeMapDataset.hard;
-  }
-
   static List<LessonTerm> _termsForLocalLesson(int level) {
-    final unitTerms = termsForUnit(unitForLevel(level));
+    final allUnitTerms = termsForUnit(unitForLevel(level));
+    var unitTerms = allUnitTerms.where(_activeGradeDataset.includes).toList();
+    if (unitTerms.length < 4) unitTerms = allUnitTerms;
     final localLevel = (level - 1) % AppData.unitLevels;
     final explicitTerms = unitTerms
         .where((term) => term.lessonNumber == localLevel + 1)
         .toList();
 
-    // Each unit has a complete six-level ladder:
-    // levels 1-2 use the easy band, 3-4 use mid, and 5-6 use hard. The second
-    // level in each band starts later in the same band so learners see a fresh
-    // set without pulling content from another unit.
+    // Each grade file owns the content pool. Levels rotate through that pool
+    // so the unit stays grade-appropriate.
     final selected = <LessonTerm>[...explicitTerms];
-    final dataset = datasetForLevel(level);
-    final localInBand = localLevel.isEven ? 1 : 0;
-    final bandSize = (unitTerms.length / 3)
-        .ceil()
-        .clamp(1, unitTerms.length)
-        .toInt();
-    final bandStart = switch (dataset) {
-      HomeMapDataset.easy => 0,
-      HomeMapDataset.medium => math.max(0, (unitTerms.length - bandSize) ~/ 2),
-      HomeMapDataset.hard => math.max(0, unitTerms.length - bandSize),
-    };
-    final start = (bandStart + localInBand * (bandSize ~/ 2)).clamp(
-      0,
-      unitTerms.length - 1,
-    );
+    final start = (localLevel * 4).clamp(0, unitTerms.length - 1);
     for (var offset = 0; offset < unitTerms.length; offset++) {
       final term = unitTerms[(start + offset) % unitTerms.length];
       if (term.lessonNumber != null && term.lessonNumber != localLevel + 1) {
@@ -1794,7 +1908,10 @@ class LessonBank {
 
   static List<LessonTerm> _termsForUnitLessonScope(int level) {
     final localLesson = ((level - 1) % AppData.unitLevels) + 1;
-    return termsForUnit(unitForLevel(level)).where((term) {
+    final allUnitTerms = termsForUnit(unitForLevel(level));
+    var unitTerms = allUnitTerms.where(_activeGradeDataset.includes).toList();
+    if (unitTerms.length < 4) unitTerms = allUnitTerms;
+    return unitTerms.where((term) {
       return term.lessonNumber == null || term.lessonNumber == localLesson;
     }).toList();
   }
@@ -2049,23 +2166,6 @@ class LessonBank {
     );
   }
 
-  static LessonQuestion _typedTranslationQuestion(
-    int level,
-    List<LessonTerm> unitTerms,
-  ) {
-    final practiceTerms = _nonScenarioTerms(unitTerms);
-    final sentences = practiceTerms.where(_isSentenceTerm).toList();
-    final source = sentences.isEmpty ? unitTerms : sentences;
-    final term = source[(level - 1) % source.length];
-    return LessonQuestion.typedTranslation(
-      prompt: 'Translate: "${term.eng}"',
-      answer: term.hil,
-      targetPhrase: term.eng,
-      targetMeaning: term.hil,
-      directionLabel: 'English to Hiligaynon',
-    );
-  }
-
   static LessonQuestion? _imageChoiceQuestion(
     List<LessonTerm> unitTerms,
     math.Random rng, {
@@ -2114,11 +2214,10 @@ class LessonBank {
     required math.Random rng,
   }) {
     const targets = {
-      QuestionType.translationChoice: 4,
-      QuestionType.typedTranslation: 2,
+      QuestionType.translationChoice: 3,
       QuestionType.arrangeWords: 2,
-      QuestionType.matching: 2,
-      QuestionType.fillBlank: 3,
+      QuestionType.matching: 1,
+      QuestionType.fillBlank: 2,
       QuestionType.imageChoice: 2,
     };
     final completed = <LessonQuestion>[];
@@ -2148,10 +2247,6 @@ class LessonBank {
           englishToHiligaynon: cursor.isEven,
           pool: levelTerms,
           rng: rng,
-        ),
-        QuestionType.typedTranslation => _typedTranslationQuestion(
-          level + cursor,
-          levelTerms,
         ),
         QuestionType.arrangeWords => _arrangeWordsQuestion(
           level + cursor,
@@ -2208,11 +2303,10 @@ class LessonBank {
     required math.Random rng,
   }) {
     const targets = {
-      QuestionType.translationChoice: 4,
-      QuestionType.typedTranslation: 2,
+      QuestionType.translationChoice: 3,
       QuestionType.arrangeWords: 2,
-      QuestionType.matching: 2,
-      QuestionType.fillBlank: 3,
+      QuestionType.matching: 1,
+      QuestionType.fillBlank: 2,
       QuestionType.imageChoice: 2,
     };
     final completed = <LessonQuestion>[];
@@ -2242,10 +2336,6 @@ class LessonBank {
           englishToHiligaynon: cursor.isEven,
           pool: levelTerms,
           rng: rng,
-        ),
-        QuestionType.typedTranslation => _typedTranslationQuestion(
-          level + cursor,
-          levelTerms,
         ),
         QuestionType.arrangeWords => _arrangeWordsQuestion(
           level + cursor,
@@ -2301,6 +2391,31 @@ class LessonBank {
       question.leftItems.join('|').toLowerCase(),
       question.imageChoices.map((term) => term.hil).join('|').toLowerCase(),
     ].join('::');
+  }
+
+  static GradeLessonDataset get _activeGradeDataset {
+    return gradeDatasets[AppData.selectedGradeLevel] ?? grade1LessonDataset;
+  }
+
+  static String _applyGradeTemplate(
+    String template, {
+    required String unitTitle,
+    required String focusWords,
+  }) {
+    return template
+        .replaceAll('{unitTitle}', unitTitle)
+        .replaceAll('{focusWords}', focusWords);
+  }
+
+  static String _joinQuoted(List<String> values) {
+    final cleaned = values.where((value) => value.trim().isNotEmpty).toList();
+    if (cleaned.isEmpty) return 'from this lesson';
+    if (cleaned.length == 1) return '"${cleaned.first}"';
+    if (cleaned.length == 2) {
+      return '"${cleaned.first}" and "${cleaned.last}"';
+    }
+    final head = cleaned.take(cleaned.length - 1).map((value) => '"$value"');
+    return '${head.join(', ')}, and "${cleaned.last}"';
   }
 
   static bool _isImageChoiceTerm(LessonTerm term) {
@@ -2378,18 +2493,6 @@ class LessonBank {
       options.add(value);
     }
     return options.toList()..shuffle(rng);
-  }
-
-  static LessonTerm _nextUnusedTerm(
-    List<LessonTerm> pool,
-    Set<String> usedConcepts,
-    int cursor,
-  ) {
-    for (var offset = 0; offset < pool.length; offset++) {
-      final term = pool[(cursor + offset) % pool.length];
-      if (!usedConcepts.contains(_conceptKey(term))) return term;
-    }
-    return pool[cursor % pool.length];
   }
 
   static List<LessonTerm> _takeUniqueTerms(

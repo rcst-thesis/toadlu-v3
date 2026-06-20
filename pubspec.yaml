@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   web: ^1.1.1
-  hive_ce: ^2.19.3
+  flutter_tts: ^4.2.5
   shared_preferences: ^2.5.5
 
 dev_dependencies:
@@ -64,15 +64,18 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/images/dialogue/
     - assets/images/game_map/
+    - assets/images/onbaording/
+    - assets/images/profile/
     - assets/images/level_game/action/
     - assets/images/level_game/animal/
     - assets/images/level_game/unit 1/arrange-words/
     - assets/images/level_game/unit 1/complete_the_sentence/
     - assets/images/level_game/unit 1/image_choice/people/
     - assets/images/level_game/unit 1/image_choice/transportation/
+    - assets/images/level_game/yunit1/
     - assets/images/level_game/fruits/
-    - assets/images/pet/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

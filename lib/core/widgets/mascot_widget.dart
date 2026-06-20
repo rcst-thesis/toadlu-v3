@@ -12,7 +12,7 @@ class TudloMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageAsset = asset ?? 'assets/images/mascot1.png';
+    final imageAsset = asset ?? 'assets/images/dialogue/mascot1.png';
     return Image.asset(
       imageAsset,
       width: size,

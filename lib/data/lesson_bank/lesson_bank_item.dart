@@ -1,7 +1,7 @@
 /// High-level content type for lesson bank entries.
 ///
 /// LessonBank can hold words, phrases, and full sentences because it powers
-/// games, map previews, tests, and evaluation activities.
+/// games, map previews, and tests.
 enum LessonContentType { word, phrase, sentence }
 
 /// One unit-based lesson item used by lessons, previews, and tests.
@@ -10,7 +10,7 @@ enum LessonContentType { word, phrase, sentence }
 class LessonTerm {
   final int unitNumber;
   final String unitTitle;
-  final int difficulty;
+  final int gradeLevel;
   final LessonContentType? type;
   final String hil;
   final String eng;
@@ -29,7 +29,7 @@ class LessonTerm {
   const LessonTerm({
     required this.unitNumber,
     required this.unitTitle,
-    required this.difficulty,
+    required this.gradeLevel,
     this.type,
     required this.hil,
     required this.eng,

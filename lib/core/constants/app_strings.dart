@@ -6,8 +6,7 @@ class AppStrings {
 
   static const navMap = 'Map';
   static const navTranslate = 'Translate';
+  static const navDaily = 'Daily';
   static const navDictionary = 'Dictionary';
-  static const navPet = 'Pet';
-  static const navTest = 'Test';
   static const navProfile = 'Profile';
 }

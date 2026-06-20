@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tudloapp/core/state/app_state.dart';
-import 'package:tudloapp/features/navigation/app_shell.dart';
+import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/features/onboarding/screens/username_screen.dart';
 
 class MascotScreen extends StatefulWidget {
@@ -33,13 +33,9 @@ class _MascotScreenState extends State<MascotScreen>
 
     Future.delayed(const Duration(milliseconds: 2300), () {
       if (!mounted) return;
-      final isReturning = AppStateScope.of(context).onboardingComplete;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) =>
-              isReturning ? const AppShell() : const UsernameScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const UsernameScreen()),
       );
     });
   }
@@ -53,29 +49,47 @@ class _MascotScreenState extends State<MascotScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0CC66A),
+      backgroundColor: TudloColors.meadow,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: 190,
+                height: 190,
+                decoration: BoxDecoration(
+                  color: TudloColors.softGreen,
+                  borderRadius: BorderRadius.circular(54),
+                  border: Border.all(color: Colors.white, width: 6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: TudloColors.blue.withValues(alpha: .26),
+                      blurRadius: 26,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: const Center(child: TudloMascot(size: 158)),
+              ),
+              const SizedBox(height: 22),
               const Text(
                 'Tudlo',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
+                  color: TudloColors.ink,
+                  fontSize: 52,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Container(
-                width: 54,
-                height: 4,
+                width: 92,
+                height: 10,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
+                  color: TudloColors.gold,
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
             ],

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 
 enum _DictionaryMode { englishToHiligaynon, hiligaynonToEnglish }
 
 /// Dictionary screen built from word-based DictionaryData entries.
 ///
-/// It supports language direction switching, search, audio placeholders, and
+/// It supports language direction switching, search, voice playback, and
 /// the fixed A-Z index on the right side.
 class DictionaryPage extends StatefulWidget {
   const DictionaryPage({super.key});
@@ -101,23 +102,6 @@ class _DictionaryPageState extends State<DictionaryPage> {
     );
   }
 
-  void _showAudioMessage() {
-    // Audio paths can be wired here later. For now the speaker icon stays
-    // visible and gives friendly feedback.
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text('Audio coming soon'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: TudloColors.forest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      );
-  }
-
   @override
   Widget build(BuildContext context) {
     final sections = _sections;
@@ -186,7 +170,6 @@ class _DictionaryPageState extends State<DictionaryPage> {
                             key: key,
                             section: section,
                             englishMode: _englishMode,
-                            onAudio: _showAudioMessage,
                           );
                         }).toList(),
                       ),
@@ -357,13 +340,11 @@ class _ModePill extends StatelessWidget {
 class _DictionarySectionView extends StatelessWidget {
   final _DictionarySection section;
   final bool englishMode;
-  final VoidCallback onAudio;
 
   const _DictionarySectionView({
     super.key,
     required this.section,
     required this.englishMode,
-    required this.onAudio,
   });
 
   @override
@@ -385,11 +366,7 @@ class _DictionarySectionView extends StatelessWidget {
         ...section.terms.map((term) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _DictionaryCard(
-              term: term,
-              englishMode: englishMode,
-              onAudio: onAudio,
-            ),
+            child: _DictionaryCard(term: term, englishMode: englishMode),
           );
         }),
       ],
@@ -402,13 +379,8 @@ class _DictionarySectionView extends StatelessWidget {
 class _DictionaryCard extends StatelessWidget {
   final DictionaryEntry term;
   final bool englishMode;
-  final VoidCallback onAudio;
 
-  const _DictionaryCard({
-    required this.term,
-    required this.englishMode,
-    required this.onAudio,
-  });
+  const _DictionaryCard({required this.term, required this.englishMode});
 
   @override
   Widget build(BuildContext context) {
@@ -455,13 +427,10 @@ class _DictionaryCard extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
+          TudloVoiceButton(
+            message: mainWord,
             tooltip: 'Play pronunciation',
-            // Audio files can be connected here later.
-            // For now, the parent shows a small "Audio coming soon" message.
-            onPressed: onAudio,
-            icon: const Icon(Icons.volume_up_rounded),
-            color: TudloColors.green,
+            size: 48,
           ),
         ],
       ),

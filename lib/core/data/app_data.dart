@@ -1,28 +1,27 @@
 import 'package:flutter/foundation.dart';
-import 'package:tudloapp/core/services/app_storage.dart';
+import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/core/models/learner_profile.dart';
 import 'package:tudloapp/features/energy/services/energy_storage.dart';
 
 /// Shared in-app progress and energy state.
 ///
-/// Energy is the only mechanic that gates lesson access. Koka reads from this
-/// same state for mood and has no separate care-needs data.
+/// Energy is the only mechanic that gates lesson access.
 class AppData {
-  /// Tutorial flags prevent one-time helper overlays from showing repeatedly.
-  static bool translateTutorialDone = false;
-  static bool mapTutorialDone = false;
-  static bool testTutorialDone = false;
+  /// Helper overlay flags prevent one-time tips from showing repeatedly.
+  static bool translateHelpDone = false;
+  static bool mapHelpDone = false;
 
   static const int maxLevel = 36;
   static const unitLevels = 6;
 
   /// Duolingo-style energy rules.
   ///
-  /// A full unit/lesson has 15 questions, so starting requires 15 energy and
+  /// A full unit/lesson has 10 questions, so starting requires 10 energy and
   /// each checked question deducts 1 energy.
   static const int maxEnergy = 30;
   static const int energyPerQuestion = 1;
-  static const int questionsPerUnit = 15;
-  static const int minimumEnergyToStartUnit = 15;
+  static const int questionsPerUnit = 10;
+  static const int minimumEnergyToStartUnit = 10;
   static const Duration rechargeInterval = Duration(minutes: 24);
   static const Duration fullRechargeTime = Duration(hours: 12);
 
@@ -36,43 +35,71 @@ class AppData {
 
   static int streakDays = 0;
   static int unlockedLevel = 1;
-  static Map<int, int> levelStars = {};
-  static Map<int, int> bestTestScores = {};
-  static Set<int> completedLevels = {};
+  static GradeLevel selectedGradeLevel = GradeLevel.grade1;
+  static final Map<int, int> levelStars = {};
+  static final Set<int> completedLevels = {};
 
-  /// Home Map unit definitions shared by the Map, Test, and Profile screens.
+  /// Home Map unit definitions shared by the Map and Profile screens.
   static const units = [
-    AppUnit(number: 1, startLevel: 1, title: 'Everyday Conversation'),
-    AppUnit(number: 2, startLevel: 7, title: 'Talk to Locals'),
-    AppUnit(number: 3, startLevel: 13, title: 'Conversation with Friends'),
-    AppUnit(number: 4, startLevel: 19, title: 'Family is Love'),
-    AppUnit(number: 5, startLevel: 25, title: 'Daily Life'),
-    AppUnit(number: 6, startLevel: 31, title: 'Community'),
+    AppUnit(
+      number: 1,
+      startLevel: 1,
+      title: 'Pagkilala sa Akon Kaugalingon kag Pamilya',
+    ),
+    AppUnit(number: 2, startLevel: 7, title: 'Pakig-istorya sa Palibot'),
+    AppUnit(number: 3, startLevel: 13, title: 'Ako kag Akon mga Abyan'),
+    AppUnit(number: 4, startLevel: 19, title: 'Palangga Ko ang Pamilya'),
+    AppUnit(number: 5, startLevel: 25, title: 'Adlaw-adlaw nga Kabuhi'),
+    AppUnit(number: 6, startLevel: 31, title: 'Akon Komunidad'),
   ];
 
+  /// Loads energy from storage, then immediately applies real-time recharge.
+  /// This is called before runApp so all screens see restored energy.
   static Future<void> initialize() async {
-    final energyValues = await EnergyStorage.read();
+    final values = await EnergyStorage.read();
     currentEnergy =
         int.tryParse(
-          energyValues['currentEnergy'] ?? '',
+          values['currentEnergy'] ?? '',
         )?.clamp(0, maxEnergy).toInt() ??
         maxEnergy;
     _lastEnergyAt =
-        DateTime.tryParse(energyValues['lastEnergyAt'] ?? '') ?? DateTime.now();
+        DateTime.tryParse(values['lastEnergyAt'] ?? '') ?? DateTime.now();
     await refreshEnergy(save: true);
+  }
 
-    final data = await AppStorage.readAppState();
-    streakDays = data['streakDays'] ?? 1;
-    unlockedLevel = data['unlockedLevel'] ?? 1;
+  static void applyProfile(LearnerProfile profile) {
+    streakDays = profile.streakDays;
+    unlockedLevel = profile.unlockedLevel.clamp(1, maxLevel);
+    selectedGradeLevel = profile.parsedGrade;
+    currentEnergy = profile.currentEnergy.clamp(0, maxEnergy).toInt();
+    _lastEnergyAt = DateTime.now();
     levelStars
       ..clear()
-      ..addAll(AppStorage.parseIntPairMap(data['levelStars'] ?? ''));
-    bestTestScores
-      ..clear()
-      ..addAll(AppStorage.parseIntPairMap(data['bestTestScores'] ?? ''));
+      ..addAll(profile.levelStars);
     completedLevels
       ..clear()
-      ..addAll(AppStorage.parseIntSet(data['completedLevels'] ?? ''));
+      ..addAll(profile.completedLevels);
+    energyRevision.value++;
+  }
+
+  static LearnerProfile snapshotForProfile(LearnerProfile profile) {
+    return profile.copyWith(
+      unlockedLevel: unlockedLevel,
+      streakDays: streakDays,
+      currentEnergy: currentEnergy,
+      levelStars: Map<int, int>.from(levelStars),
+      completedLevels: Set<int>.from(completedLevels),
+    );
+  }
+
+  static void clearLearningProgress() {
+    streakDays = 0;
+    unlockedLevel = 1;
+    currentEnergy = maxEnergy;
+    _lastEnergyAt = DateTime.now();
+    levelStars.clear();
+    completedLevels.clear();
+    energyRevision.value++;
   }
 
   /// Recharges energy based on elapsed real time.
@@ -161,25 +188,6 @@ class AppData {
     return '${minutes}m';
   }
 
-  static String get kokaMoodLabel {
-    if (currentEnergy >= 20) return 'Full Energy Koka';
-    if (currentEnergy >= 10) return 'Half Energy Koka';
-    return 'Low Energy Koka';
-  }
-
-  static String get kokaPetAsset {
-    // Koka uses dedicated pet-state art, not the shared mascot. These ranges
-    // match the provided asset names and keep mood selection tied only to
-    // current energy.
-    if (currentEnergy >= 20) {
-      return 'assets/images/pet/full energy 20-30 energy.png';
-    }
-    if (currentEnergy >= 10) {
-      return 'assets/images/pet/half energy - 10 to 14.png';
-    }
-    return 'assets/images/pet/low energy - less than 10 energy.png';
-  }
-
   static bool isUnitStartLevel(int level) {
     return level >= 1 && level <= maxLevel && (level - 1) % unitLevels == 0;
   }
@@ -198,22 +206,8 @@ class AppData {
     return levelStars[level] ?? 0;
   }
 
-  static int bestScoreForTest(int test) {
-    return bestTestScores[test] ?? 0;
-  }
-
   static AppUnit unitForNumber(int number) {
     return units.firstWhere((unit) => unit.number == number);
-  }
-
-  static Future<void> saveProgressState() {
-    return AppStorage.writeAppData(
-      streakDays: streakDays,
-      unlockedLevel: unlockedLevel,
-      levelStars: levelStars,
-      bestTestScores: bestTestScores,
-      completedLevels: completedLevels,
-    );
   }
 
   /// Converts a lesson score into 0-3 stars and keeps the best result.
@@ -228,16 +222,9 @@ class AppData {
         ? 1
         : 0;
     final previous = levelStars[level] ?? 0;
-    if (stars > previous) levelStars[level] = stars;
-
-    saveProgressState();
-  }
-
-  static void saveTestScore(int test, int score) {
-    final previous = bestTestScores[test] ?? 0;
-    if (score > previous) bestTestScores[test] = score;
-
-    saveProgressState();
+    if (stars > previous) {
+      levelStars[level] = stars;
+    }
   }
 }
 

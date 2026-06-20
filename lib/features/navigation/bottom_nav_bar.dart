@@ -20,8 +20,6 @@ class TudloBottomNavBar extends StatelessWidget {
     Icons.home,
     Icons.translate,
     Icons.menu_book_rounded,
-    Icons.pets_rounded,
-    Icons.fact_check,
     Icons.person,
   ];
 
@@ -29,8 +27,6 @@ class TudloBottomNavBar extends StatelessWidget {
     AppStrings.navMap,
     AppStrings.navTranslate,
     AppStrings.navDictionary,
-    AppStrings.navPet,
-    AppStrings.navTest,
     AppStrings.navProfile,
   ];
 

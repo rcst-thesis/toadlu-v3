@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/features/dictionary/screens/dictionary_page.dart';
-import 'package:tudloapp/features/test/screens/test_page.dart';
 import 'package:tudloapp/features/translation/screens/translation_page.dart';
 import 'package:tudloapp/features/home_map/screens/home_map_page.dart';
-import 'package:tudloapp/features/pet/screens/pet_page.dart';
 import 'package:tudloapp/features/profile/screens/profile_page.dart';
 import 'package:tudloapp/features/navigation/bottom_nav_bar.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 
 /// Main app container after onboarding.
 ///
@@ -31,9 +31,9 @@ class AppShellState extends State<AppShell> {
   }
 
   void switchTo(int index) {
-    // Called by the bottom navigation bar and by child pages that need to jump
-    // back to another tab, such as Test returning to Map.
+    // Called by the bottom navigation bar.
     setState(() {
+      if (index != 0) AppData.mapHelpDone = true;
       _selectedIndex = index;
     });
   }
@@ -49,10 +49,6 @@ class AppShellState extends State<AppShell> {
       const TranslationPage(),
       // Opens the searchable vocabulary dictionary.
       const DictionaryPage(),
-      // Opens Koka's energy companion page.
-      const PetPage(),
-      // Opens the unit test page. Its back button returns to the Map tab.
-      TestPage(onBack: () => switchTo(0)),
       // Opens the user's profile, streak, and progress page.
       const ProfilePage(),
     ];
@@ -61,6 +57,12 @@ class AppShellState extends State<AppShell> {
       body: Stack(
         children: [
           pages[_selectedIndex],
+          if (_selectedIndex == 0)
+            const Positioned(
+              top: 12,
+              left: 16,
+              child: SafeArea(child: TudloLanguageToggle()),
+            ),
           // Floating navbar stays above the current page instead of being part
           // of each screen, so tab styling is consistent everywhere.
           Positioned(
