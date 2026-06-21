@@ -48,8 +48,9 @@ class DailyWordsPage extends StatelessWidget {
                           onPressed: () => Navigator.maybePop(context),
                           icon: const Icon(
                             Icons.arrow_back_rounded,
-                            color: TudloColors.blue,
-                            size: 36,
+                            color: TudloColors.forest,
+                            size: 48,
+                            weight: 900,
                           ),
                         ),
                         const Spacer(),
@@ -75,10 +76,18 @@ class DailyWordsPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(34),
-                        border: Border.all(color: TudloColors.sky, width: 4),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 12, 105, 37),
+                          width: 4,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: TudloColors.blue.withValues(alpha: .16),
+                            color: const Color.fromARGB(
+                              255,
+                              15,
+                              119,
+                              22,
+                            ).withValues(alpha: .16),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),

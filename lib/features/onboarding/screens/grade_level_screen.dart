@@ -13,15 +13,17 @@ class GradeLevelScreen extends StatefulWidget {
 }
 
 class _GradeLevelScreenState extends State<GradeLevelScreen> {
-  GradeOption selected = gradeOptions.first;
+  GradeOption? selected;
 
   Future<void> _continue() async {
+    final selectedGrade = selected;
+    if (selectedGrade == null) return;
     final appState = AppStateScope.of(context);
     final name = widget.learnerName?.trim();
     if (name != null && name.isNotEmpty) {
-      await appState.addProfile(name: name, grade: selected.label);
+      await appState.addProfile(name: name, grade: selectedGrade.label);
     } else {
-      appState.setGradeLevel(selected.label);
+      appState.setGradeLevel(selectedGrade.label);
     }
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
@@ -87,7 +89,11 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
                           SizedBox(height: buttonGap),
                         ],
                         SizedBox(height: compact ? 32 : 50),
-                        _RoundNextButton(size: arrowSize, onTap: _continue),
+                        _RoundNextButton(
+                          size: arrowSize,
+                          enabled: selected != null,
+                          onTap: _continue,
+                        ),
                       ],
                     ),
                   ),
@@ -128,16 +134,12 @@ class _GradeButtonState extends State<_GradeButton> {
 
   @override
   Widget build(BuildContext context) {
-    final glowing = widget.selected || _pressed;
+    final glowing = _pressed || widget.selected;
     final width =
         (MediaQuery.sizeOf(context).width * (widget.compact ? .76 : .70))
             .clamp(230.0, 380.0)
             .toDouble();
-    final borderColor = _pressed
-        ? const Color(0xFFFFE45C)
-        : widget.selected
-        ? const Color(0xFFFFD029)
-        : Colors.white;
+    final borderColor = glowing ? const Color(0xFFFFE45C) : Colors.white;
 
     return AnimatedScale(
       duration: const Duration(milliseconds: 110),
@@ -164,7 +166,7 @@ class _GradeButtonState extends State<_GradeButton> {
                 ? [
                     BoxShadow(
                       color: const Color(0xFFFFF06A).withValues(alpha: .95),
-                      blurRadius: _pressed ? 34 : 24,
+                      blurRadius: _pressed ? 34 : 26,
                       spreadRadius: _pressed ? 8 : 5,
                     ),
                     BoxShadow(
@@ -186,7 +188,7 @@ class _GradeButtonState extends State<_GradeButton> {
             child: Text(
               widget.label,
               style: TextStyle(
-                color: _pressed
+                color: glowing
                     ? const Color(0xFF0B7F18)
                     : const Color(0xFF237915),
                 fontSize: widget.compact ? 35 : 44,
@@ -202,27 +204,36 @@ class _GradeButtonState extends State<_GradeButton> {
 
 class _RoundNextButton extends StatelessWidget {
   final double size;
+  final bool enabled;
   final VoidCallback onTap;
 
-  const _RoundNextButton({required this.size, required this.onTap});
+  const _RoundNextButton({
+    required this.size,
+    required this.enabled,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 3,
-      shadowColor: Colors.black38,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Icon(
-            Icons.chevron_right_rounded,
-            color: const Color(0xFF237915),
-            size: size * .70,
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 160),
+      opacity: enabled ? 1 : .42,
+      child: Material(
+        color: Colors.white,
+        shape: const CircleBorder(),
+        elevation: enabled ? 3 : 0,
+        shadowColor: Colors.black38,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: enabled ? onTap : null,
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(
+              Icons.chevron_right_rounded,
+              color: const Color(0xFF237915),
+              size: size * .70,
+            ),
           ),
         ),
       ),

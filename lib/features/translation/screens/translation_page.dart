@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 
 class _TranslateStyle {
-  static const green = TudloColors.brightGreen;
-  static const darkGreen = TudloColors.forest;
   static const softBg = TudloColors.paper;
-  static const softGreen = TudloColors.softGreen;
-  static const cardShadow = Color(0x2608C66B);
 }
 
 /// Simple local translation screen.
@@ -145,13 +141,6 @@ class _TranslationPageState extends State<TranslationPage> {
     });
   }
 
-  void _useQuickPhrase(String phrase) {
-    // Quick phrase chips simply fill the input field; the listener performs the
-    // translation.
-    topController.text = phrase;
-    topController.selection = TextSelection.collapsed(offset: phrase.length);
-  }
-
   @override
   void dispose() {
     topController.dispose();
@@ -180,36 +169,30 @@ class _TranslationPageState extends State<TranslationPage> {
                         'Translate',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.archivoBlack(
-                          color: TudloColors.green,
-                          fontSize: 26,
+                          color: TudloColors.forest,
+                          fontSize: 52,
                           letterSpacing: 0,
                         ),
                       ),
-                      const SizedBox(height: 26),
-                      _LanguageBar(
-                        fromLanguage: fromLanguage,
-                        toLanguage: toLanguage,
-                        onSwap: swapLanguages,
-                      ),
-                      const SizedBox(height: 18),
-                      _QuickPhraseChips(onSelected: _useQuickPhrase),
-                      const SizedBox(height: 16),
-                      _TranslationCard(
-                        title: 'Input',
+                      const SizedBox(height: 38),
+                      _TranslationLanguageCard(
+                        language: fromLanguage,
                         controller: topController,
                         hint: fromLanguage == 'Hiligaynon'
-                            ? 'Type Hiligaynon here...'
-                            : 'Type English here...',
+                            ? 'Type Hiligaynon'
+                            : 'Type English',
                         readOnly: false,
-                        minLines: 4,
                       ),
-                      const SizedBox(height: 18),
-                      _TranslationCard(
-                        title: 'Translation',
+                      const SizedBox(height: 14),
+                      Center(child: _VerticalSwapButton(onTap: swapLanguages)),
+                      const SizedBox(height: 14),
+                      _TranslationLanguageCard(
+                        language: toLanguage,
                         controller: bottomController,
-                        hint: 'Translation appears here...',
+                        hint: toLanguage == 'Hiligaynon'
+                            ? 'Hiligaynon translation'
+                            : 'English translation',
                         readOnly: true,
-                        minLines: 4,
                       ),
                     ],
                   ),
@@ -384,66 +367,127 @@ class _TranslationResult {
   );
 }
 
-class _LanguageBar extends StatelessWidget {
-  final String fromLanguage;
-  final String toLanguage;
-  final VoidCallback onSwap;
+class _TranslationLanguageCard extends StatelessWidget {
+  final String language;
+  final TextEditingController controller;
+  final String hint;
+  final bool readOnly;
 
-  const _LanguageBar({
-    required this.fromLanguage,
-    required this.toLanguage,
-    required this.onSwap,
+  const _TranslationLanguageCard({
+    required this.language,
+    required this.controller,
+    required this.hint,
+    required this.readOnly,
   });
 
   @override
   Widget build(BuildContext context) {
+    final text = controller.text.trim();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      constraints: const BoxConstraints(minHeight: 176),
+      padding: const EdgeInsets.fromLTRB(20, 18, 16, 22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: TudloColors.forest.withValues(alpha: .07),
-            blurRadius: 26,
-            offset: const Offset(0, 12),
-          ),
-          const BoxShadow(
-            color: _TranslateStyle.cardShadow,
+            color: Colors.black.withValues(alpha: .13),
             blurRadius: 18,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: _LanguageChoice(label: fromLanguage)),
-          // Swap button:
-          // Reverses the source and target languages, then recalculates the
-          // current translation.
-          _SwapButton(onTap: onSwap),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _LanguageChoice(label: toLanguage, alignRight: true),
-            ),
+          Row(
+            children: [
+              Text(_flagFor(language), style: const TextStyle(fontSize: 30)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  language,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.nunito(
+                    color: const Color(0xFF6B86A8),
+                    fontSize: 26,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Listen',
+                onPressed: text.isEmpty
+                    ? null
+                    : () => TudloVoiceButton.speak(context, text),
+                icon: Icon(
+                  Icons.volume_up_rounded,
+                  color: text.isEmpty
+                      ? TudloColors.muted.withValues(alpha: .35)
+                      : const Color(0xFF5576A3),
+                  size: 24,
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 22),
+          readOnly
+              ? Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
+                  child: Text(
+                    text.isEmpty ? hint : controller.text,
+                    style: GoogleFonts.nunito(
+                      color: text.isEmpty
+                          ? TudloColors.muted.withValues(alpha: .60)
+                          : Colors.black,
+                      fontSize: 34,
+                      height: 1.14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                )
+              : TextField(
+                  controller: controller,
+                  maxLines: null,
+                  minLines: 1,
+                  style: GoogleFonts.nunito(
+                    color: Colors.black,
+                    fontSize: 34,
+                    height: 1.14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: GoogleFonts.nunito(
+                      color: TudloColors.muted.withValues(alpha: .58),
+                      fontWeight: FontWeight.w900,
+                    ),
+                    contentPadding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
+                    border: InputBorder.none,
+                  ),
+                ),
         ],
       ),
     );
   }
+
+  String _flagFor(String language) {
+    return language == 'English' ? '🇺🇸' : '🇵🇭';
+  }
 }
 
-class _SwapButton extends StatefulWidget {
+class _VerticalSwapButton extends StatefulWidget {
   final VoidCallback onTap;
 
-  const _SwapButton({required this.onTap});
+  const _VerticalSwapButton({required this.onTap});
 
   @override
-  State<_SwapButton> createState() => _SwapButtonState();
+  State<_VerticalSwapButton> createState() => _VerticalSwapButtonState();
 }
 
-class _SwapButtonState extends State<_SwapButton> {
+class _VerticalSwapButtonState extends State<_VerticalSwapButton> {
   bool _pressed = false;
 
   @override
@@ -452,373 +496,39 @@ class _SwapButtonState extends State<_SwapButton> {
       scale: _pressed ? .92 : 1,
       duration: const Duration(milliseconds: 90),
       curve: Curves.easeOut,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        // Tapping this calls back to TranslationPage.swapLanguages().
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTapUp: (_) => setState(() => _pressed = false),
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: _TranslateStyle.green,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: _TranslateStyle.green.withValues(alpha: .34),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.white.withValues(alpha: .90),
-                blurRadius: 9,
-                offset: const Offset(-2, -2),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: TudloColors.forest.withValues(alpha: .42),
+              blurRadius: 24,
+              spreadRadius: 4,
+            ),
+            BoxShadow(
+              color: TudloColors.forest.withValues(alpha: .28),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-class _LanguageChoice extends StatelessWidget {
-  final String label;
-  final bool alignRight;
-
-  const _LanguageChoice({required this.label, this.alignRight = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final short = label == 'English' ? 'EN' : 'HI';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: alignRight
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: const BoxDecoration(
-              color: _TranslateStyle.softGreen,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                short,
-                style: const TextStyle(
-                  color: _TranslateStyle.darkGreen,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                ),
+        child: Material(
+          color: TudloColors.forest,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: widget.onTap,
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapCancel: () => setState(() => _pressed = false),
+            onTapUp: (_) => setState(() => _pressed = false),
+            child: const SizedBox(
+              width: 52,
+              height: 52,
+              child: Icon(
+                Icons.swap_vert_rounded,
+                color: Colors.white,
+                size: 38,
               ),
-            ),
-          ),
-          const SizedBox(width: 9),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: TudloColors.ink,
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 2),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: TudloColors.muted,
-            size: 18,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickPhraseChips extends StatelessWidget {
-  final ValueChanged<String> onSelected;
-
-  const _QuickPhraseChips({required this.onSelected});
-
-  static const phrases = ['Hello', 'Thank you', 'Good morning'];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 38,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: phrases.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 9),
-        itemBuilder: (context, index) {
-          return _QuickPhraseChip(
-            label: phrases[index],
-            onTap: () => onSelected(phrases[index]),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _QuickPhraseChip extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _QuickPhraseChip({required this.label, required this.onTap});
-
-  @override
-  State<_QuickPhraseChip> createState() => _QuickPhraseChipState();
-}
-
-class _QuickPhraseChipState extends State<_QuickPhraseChip> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedScale(
-      scale: _pressed ? .96 : 1,
-      duration: const Duration(milliseconds: 90),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTapUp: (_) => setState(() => _pressed = false),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: TudloColors.line),
-            boxShadow: [
-              BoxShadow(
-                color: TudloColors.forest.withValues(alpha: .06),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Text(
-            widget.label,
-            style: GoogleFonts.nunito(
-              color: TudloColors.forest,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TranslationCard extends StatelessWidget {
-  final String title;
-  final TextEditingController controller;
-  final String hint;
-  final bool readOnly;
-  final int minLines;
-
-  const _TranslationCard({
-    required this.title,
-    required this.controller,
-    required this.hint,
-    required this.readOnly,
-    required this.minLines,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white),
-        boxShadow: [
-          BoxShadow(
-            color: TudloColors.forest.withValues(alpha: .06),
-            blurRadius: 30,
-            offset: const Offset(0, 16),
-          ),
-          const BoxShadow(
-            color: _TranslateStyle.cardShadow,
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: const BoxDecoration(
-                  color: TudloColors.softGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  readOnly ? Icons.check_rounded : Icons.edit_note_rounded,
-                  color: TudloColors.forest,
-                  size: 19,
-                ),
-              ),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.nunito(
-                    color: TudloColors.forest,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              if (!readOnly)
-                const Text(
-                  'Try a word or phrase',
-                  style: TextStyle(
-                    color: TudloColors.muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            decoration: BoxDecoration(
-              color: TudloColors.paper,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: TudloColors.line),
-            ),
-            padding: const EdgeInsets.fromLTRB(14, 12, 10, 4),
-            child: Column(
-              children: [
-                TextField(
-                  controller: controller,
-                  readOnly: readOnly,
-                  enableInteractiveSelection: true,
-                  maxLines: minLines,
-                  minLines: minLines,
-                  style: const TextStyle(
-                    color: TudloColors.ink,
-                    fontSize: 18,
-                    height: 1.32,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    hintStyle: const TextStyle(
-                      color: TudloColors.muted,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Divider(color: TudloColors.line, thickness: 1.5),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _ActionIconButton(
-                      tooltip: 'Copy',
-                      icon: Icons.copy_rounded,
-                      enabled: controller.text.trim().isNotEmpty,
-                      onTap: () {
-                        Clipboard.setData(ClipboardData(text: controller.text));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Copied text')),
-                        );
-                      },
-                    ),
-                    _ActionIconButton(
-                      tooltip: 'Listen',
-                      icon: Icons.volume_up_rounded,
-                      enabled: controller.text.trim().isNotEmpty,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Audio playback coming soon'),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionIconButton extends StatefulWidget {
-  final String tooltip;
-  final IconData icon;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  const _ActionIconButton({
-    required this.tooltip,
-    required this.icon,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  @override
-  State<_ActionIconButton> createState() => _ActionIconButtonState();
-}
-
-class _ActionIconButtonState extends State<_ActionIconButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = widget.enabled ? TudloColors.forest : TudloColors.muted;
-
-    return AnimatedScale(
-      scale: _pressed ? .88 : 1,
-      duration: const Duration(milliseconds: 90),
-      child: Tooltip(
-        message: widget.tooltip,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: widget.enabled ? widget.onTap : null,
-          onTapDown: widget.enabled
-              ? (_) => setState(() => _pressed = true)
-              : null,
-          onTapCancel: widget.enabled
-              ? () => setState(() => _pressed = false)
-              : null,
-          onTapUp: widget.enabled
-              ? (_) => setState(() => _pressed = false)
-              : null,
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(
-              widget.icon,
-              color: widget.enabled
-                  ? color
-                  : TudloColors.muted.withValues(alpha: .45),
             ),
           ),
         ),

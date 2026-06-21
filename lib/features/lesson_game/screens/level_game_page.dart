@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
@@ -595,6 +596,27 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
   }
 
   Widget _questionContentArea(LessonQuestion question) {
+    if (_usesChoiceActivityCard(question.type)) {
+      return _ChoiceActivityCard(
+        title: _titleFor(question.type),
+        question: question,
+        choices: question.choices,
+        selected: selectedAnswer,
+        checked: checked,
+        answer: question.answer,
+        feedbackAttempt: answerFeedbackAttempt,
+        choiceMeanings: {
+          for (final choice in question.choices)
+            choice: translatedMeaningFor(choice),
+        },
+        onSelected: (value) {
+          if (checked) return;
+          TudloVoiceButton.speak(context, value);
+          setState(() => selectedAnswer = value);
+        },
+      );
+    }
+
     if (question.type == QuestionType.matching ||
         question.type == QuestionType.imageChoice ||
         question.type == QuestionType.fillBlank) {
@@ -623,16 +645,22 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
     );
   }
 
+  bool _usesChoiceActivityCard(QuestionType type) {
+    return type == QuestionType.choice ||
+        type == QuestionType.translationChoice ||
+        type == QuestionType.completeSentence;
+  }
+
   String _expectedMatch(String left) {
     const hiligaynonMatches = {
       'Pangalan': 'ngalan',
       'Katawhan': 'mga karakter',
       'Halamtangan': 'lugar kag tion',
       'Hinabo': 'natabo',
-      'Rina': 'bata',
-      'Nanay Rowena': 'nanay',
-      'Iloilo River': 'suba',
-      'Plaza Libertad': 'parke',
+      'Rina': 'Child',
+      'Nanay Rowena': 'Mother',
+      'Iloilo River': 'River',
+      'Plaza Libertad': 'Park',
     };
     final hiligaynonMatch = hiligaynonMatches[left];
     if (hiligaynonMatch != null) return hiligaynonMatch;
@@ -730,6 +758,7 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
     final feedbackPhrase = _feedbackPhraseFor(question);
     final feedbackMeaning = _feedbackMeaningFor(question);
     final showMeaning = question.type != QuestionType.matching;
+    final usesChoiceActivityCard = _usesChoiceActivityCard(question.type);
 
     return Container(
       width: double.infinity,
@@ -751,30 +780,32 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _QuestionNumberBadge(number: widget.number),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  question.type == QuestionType.imageChoice
-                      ? question.prompt
-                      : _titleFor(question.type),
-                  textAlign: question.type == QuestionType.fillBlank
-                      ? TextAlign.left
-                      : TextAlign.center,
-                  style: const TextStyle(
-                    color: TudloColors.ink,
-                    fontSize: 29,
-                    fontWeight: FontWeight.w900,
-                    height: 1.08,
+          if (!usesChoiceActivityCard) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _QuestionNumberBadge(number: widget.number),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    question.type == QuestionType.imageChoice
+                        ? question.prompt
+                        : _titleFor(question.type),
+                    textAlign: question.type == QuestionType.fillBlank
+                        ? TextAlign.left
+                        : TextAlign.center,
+                    style: const TextStyle(
+                      color: TudloColors.ink,
+                      fontSize: 29,
+                      fontWeight: FontWeight.w900,
+                      height: 1.08,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 22),
+              ],
+            ),
+            const SizedBox(height: 22),
+          ],
           _questionContentArea(question),
           if (checked) ...[
             const SizedBox(height: 18),
@@ -1724,6 +1755,294 @@ class _Sparkle extends StatelessWidget {
   }
 }
 
+class _ChoiceActivityCard extends StatelessWidget {
+  final String title;
+  final LessonQuestion question;
+  final List<String> choices;
+  final String? selected;
+  final bool checked;
+  final String answer;
+  final int feedbackAttempt;
+  final Map<String, String> choiceMeanings;
+  final ValueChanged<String> onSelected;
+
+  const _ChoiceActivityCard({
+    required this.title,
+    required this.question,
+    required this.choices,
+    required this.selected,
+    required this.checked,
+    required this.answer,
+    required this.feedbackAttempt,
+    required this.choiceMeanings,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final mascotSize = constraints.maxWidth < 380 ? 112.0 : 132.0;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: mascotSize + 18,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: 8,
+                    bottom: 0,
+                    child: TudloMascot(size: mascotSize),
+                  ),
+                  Positioned(
+                    left: mascotSize * .70,
+                    right: 6,
+                    top: 8,
+                    child: _ChoiceTitleBubble(title: title),
+                  ),
+                ],
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -2),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF78EA86),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(color: TudloColors.forest, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _choicePromptText(question.prompt),
+                      textAlign: TextAlign.left,
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 23,
+                        height: 1.12,
+                        fontWeight: FontWeight.w900,
+                        shadows: const [
+                          Shadow(
+                            color: TudloColors.forest,
+                            offset: Offset(1, 1.4),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    _ChoiceGrid(
+                      choices: choices,
+                      selected: selected,
+                      checked: checked,
+                      answer: answer,
+                      feedbackAttempt: feedbackAttempt,
+                      choiceMeanings: choiceMeanings,
+                      onSelected: onSelected,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _choicePromptText(String prompt) {
+    final match = RegExp(r'"([^"]+)"').firstMatch(prompt);
+    final text = (match?.group(1) ?? prompt).trim();
+    if (text.startsWith('"') && text.endsWith('"')) return text;
+    return '"$text"';
+  }
+}
+
+class _ChoiceTitleBubble extends StatelessWidget {
+  final String title;
+
+  const _ChoiceTitleBubble({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: const _ChoiceTitleBubbleTailPainter(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: TudloColors.ink, width: 2.5),
+        ),
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.nunito(
+            color: TudloColors.ink,
+            fontSize: 22,
+            height: 1.05,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChoiceTitleBubbleTailPainter extends CustomPainter {
+  const _ChoiceTitleBubbleTailPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final border = Paint()
+      ..color = TudloColors.ink
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
+    final path = Path()
+      ..moveTo(24, size.height - 2)
+      ..lineTo(10, size.height + 14)
+      ..lineTo(42, size.height - 2)
+      ..close();
+    canvas.drawPath(path, paint);
+    canvas.drawPath(path, border);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ChoiceGrid extends StatelessWidget {
+  final List<String> choices;
+  final String? selected;
+  final bool checked;
+  final String answer;
+  final int feedbackAttempt;
+  final Map<String, String> choiceMeanings;
+  final ValueChanged<String> onSelected;
+
+  const _ChoiceGrid({
+    required this.choices,
+    required this.selected,
+    required this.checked,
+    required this.answer,
+    required this.feedbackAttempt,
+    required this.choiceMeanings,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tileWidth = (constraints.maxWidth - 14) / 2;
+        return Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: choices.map((choice) {
+            final active = selected == choice;
+            final correct = checked && active && choice == answer;
+            final wrong = checked && active && choice != answer;
+            return SizedBox(
+              width: tileWidth,
+              child: _ChoicePill(
+                label: choice,
+                active: active,
+                correct: correct,
+                wrong: wrong,
+                feedbackKey: active ? feedbackAttempt : 0,
+                longPressMeaning: choiceMeanings[choice] ?? choice,
+                onTap: checked ? null : () => onSelected(choice),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+class _ChoicePill extends StatelessWidget {
+  final String label;
+  final bool active;
+  final bool correct;
+  final bool wrong;
+  final int feedbackKey;
+  final String longPressMeaning;
+  final VoidCallback? onTap;
+
+  const _ChoicePill({
+    required this.label,
+    required this.active,
+    required this.correct,
+    required this.wrong,
+    required this.feedbackKey,
+    required this.longPressMeaning,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final background = correct
+        ? TudloColors.green
+        : wrong
+        ? TudloColors.coral
+        : active
+        ? const Color(0xFF2BA83A)
+        : const Color(0xFFFFF15A);
+    final foreground = (active || correct || wrong)
+        ? Colors.white
+        : TudloColors.forest;
+
+    return WordMeaningTooltipTarget(
+      meaning: longPressMeaning,
+      child: _FeedbackMotion(
+        key: ValueKey('choice-pill-$label-$feedbackKey'),
+        correct: correct,
+        wrong: wrong,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              alignment: Alignment.center,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: foreground,
+                    fontSize: 23,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PromptCard extends StatelessWidget {
   final LessonQuestion question;
 
@@ -2239,53 +2558,71 @@ class _MatchingExercise extends StatelessWidget {
         ? question.leftItems.length
         : question.rightItems.length;
 
-    return Column(
-      children: List.generate(maxRows, (index) {
-        final left = index < question.leftItems.length
-            ? question.leftItems[index]
-            : null;
-        final right = index < question.rightItems.length
-            ? question.rightItems[index]
-            : null;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rowWidth = (constraints.maxWidth * .84)
+            .clamp(280.0, 560.0)
+            .toDouble();
+        return Column(
+          children: List.generate(maxRows, (index) {
+            final left = index < question.leftItems.length
+                ? question.leftItems[index]
+                : null;
+            final right = index < question.rightItems.length
+                ? question.rightItems[index]
+                : null;
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: left == null
-                    ? const SizedBox(height: 88)
-                    : _MatchTile(
-                        label: left,
-                        selected: selectedLeft == left,
-                        matched: matches.containsKey(left),
-                        wrong: wrongLeft == left,
-                        justMatched: newMatchLeft == left,
-                        shakeKey: wrongLeft == left ? wrongAttempt : 0,
-                        jumpKey: newMatchLeft == left ? matchPulseAttempt : 0,
-                        onTap: () => onSelectLeft(left),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Center(
+                child: SizedBox(
+                  width: rowWidth,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: left == null
+                            ? const SizedBox(height: 82)
+                            : _MatchTile(
+                                label: left,
+                                selected: selectedLeft == left,
+                                matched: matches.containsKey(left),
+                                wrong: wrongLeft == left,
+                                justMatched: newMatchLeft == left,
+                                shakeKey: wrongLeft == left ? wrongAttempt : 0,
+                                jumpKey: newMatchLeft == left
+                                    ? matchPulseAttempt
+                                    : 0,
+                                onTap: () => onSelectLeft(left),
+                              ),
                       ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: right == null
-                    ? const SizedBox(height: 88)
-                    : _MatchTile(
-                        label: right,
-                        selected: false,
-                        matched: usedRight.contains(right),
-                        wrong: wrongRight == right,
-                        justMatched: newMatchRight == right,
-                        shakeKey: wrongRight == right ? wrongAttempt : 0,
-                        jumpKey: newMatchRight == right ? matchPulseAttempt : 0,
-                        onTap: () => onSelectRight(right),
-                        compact: true,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: right == null
+                            ? const SizedBox(height: 82)
+                            : _MatchTile(
+                                label: right,
+                                selected: false,
+                                matched: usedRight.contains(right),
+                                wrong: wrongRight == right,
+                                justMatched: newMatchRight == right,
+                                shakeKey: wrongRight == right
+                                    ? wrongAttempt
+                                    : 0,
+                                jumpKey: newMatchRight == right
+                                    ? matchPulseAttempt
+                                    : 0,
+                                onTap: () => onSelectRight(right),
+                                compact: true,
+                              ),
                       ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          }),
         );
-      }),
+      },
     );
   }
 }
@@ -2370,8 +2707,8 @@ class _MatchTile extends StatelessWidget {
           onTap: matched ? null : onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            height: 88,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            height: 82,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(20),
@@ -2390,12 +2727,14 @@ class _MatchTile extends StatelessWidget {
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                maxLines: compact ? 2 : 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+                softWrap: true,
                 style: TextStyle(
                   color: textColor,
-                  fontSize: compact ? 18 : 21,
+                  fontSize: compact ? 19 : 21,
+                  height: 1.05,
                   fontWeight: FontWeight.w900,
+                  letterSpacing: .1,
                 ),
               ),
             ),

@@ -66,6 +66,7 @@ flutter:
     - assets/images/
     - assets/images/dialogue/
     - assets/images/game_map/
+    - assets/images/navbar/
     - assets/images/onbaording/
     - assets/images/profile/
     - assets/images/level_game/action/

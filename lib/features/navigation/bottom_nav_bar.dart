@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tudloapp/core/constants/app_strings.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 
 /// Floating bottom navigation used by the main app shell.
@@ -16,29 +15,22 @@ class TudloBottomNavBar extends StatelessWidget {
     required this.onTap,
   });
 
-  static const icons = [
-    Icons.home,
-    Icons.translate,
-    Icons.menu_book_rounded,
-    Icons.person,
-  ];
-
-  static const labels = [
-    AppStrings.navMap,
-    AppStrings.navTranslate,
-    AppStrings.navDictionary,
-    AppStrings.navProfile,
+  static const iconAssets = [
+    'assets/images/navbar/home.png',
+    'assets/images/navbar/translate.png',
+    'assets/images/navbar/dictionary.png',
+    'assets/images/navbar/profile.png',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-      height: 78,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      height: 104,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withValues(alpha: .92)),
+        color: Colors.white.withValues(alpha: .50),
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(color: Colors.white.withValues(alpha: .58)),
         boxShadow: [
           BoxShadow(
             color: TudloColors.forest.withValues(alpha: 0.12),
@@ -53,70 +45,76 @@ class TudloBottomNavBar extends StatelessWidget {
         ],
       ),
       child: Row(
-        children: List.generate(icons.length, (index) {
+        children: List.generate(iconAssets.length, (index) {
           final isSelected = selectedIndex == index;
-
           return Expanded(
-            child: AnimatedScale(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              scale: isSelected ? 1.03 : 1,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () => onTap(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? TudloColors.softGreen
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: TudloColors.brightGreen.withValues(
-                                alpha: .10,
-                              ),
-                              blurRadius: 16,
-                              offset: const Offset(0, 7),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        icons[index],
-                        size: isSelected ? 31 : 29,
-                        color: isSelected
-                            ? TudloColors.forest
-                            : TudloColors.muted,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        labels[index],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isSelected
-                              ? TudloColors.forest
-                              : TudloColors.muted,
-                          fontSize: 11,
-                          fontWeight: isSelected
-                              ? FontWeight.w900
-                              : FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            child: _BottomNavItem(
+              asset: iconAssets[index],
+              selected: isSelected,
+              onTap: () => onTap(index),
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _BottomNavItem extends StatefulWidget {
+  final String asset;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _BottomNavItem({
+    required this.asset,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  State<_BottomNavItem> createState() => _BottomNavItemState();
+}
+
+class _BottomNavItemState extends State<_BottomNavItem> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = _pressed ? 1.12 : (widget.selected ? 1.05 : 1.0);
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutBack,
+      scale: scale,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(30),
+        onTap: widget.onTap,
+        onTapDown: (_) => _setPressed(true),
+        onTapCancel: () => _setPressed(false),
+        onTapUp: (_) => _setPressed(false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          height: 84,
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Center(
+            child: Image.asset(
+              widget.asset,
+              width: widget.selected ? 84 : 76,
+              height: widget.selected ? 84 : 76,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+        ),
       ),
     );
   }

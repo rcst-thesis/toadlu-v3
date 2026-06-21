@@ -535,6 +535,297 @@ class LessonBank {
           'assets/images/level_game/unit 1/image_choice/transportation/Traysikad.png',
       lessonNumber: 1,
     ),
+
+    // Grade 2 Unit 1: Mga Ginakawilihan Ko.
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Kasilingan',
+      eng: 'Neighbor',
+      exampleSentenceHiligaynon:
+          'Mabuot kag mabinuligon ang amon mga kasilingan.',
+      exampleSentenceEnglish: 'Our neighbors are kind and helpful.',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Pangalan',
+      eng: 'Noun',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Tawo',
+      eng: 'Person',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Butang',
+      eng: 'Thing',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Sapat',
+      eng: 'Animal',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Lugar',
+      eng: 'Place',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Hitabo',
+      eng: 'Event',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Lapis',
+      eng: 'Pencil',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Parke',
+      eng: 'Park',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Pispis',
+      eng: 'Bird',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Kuring',
+      eng: 'Cat',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Pat-od nga pangalan',
+      eng: 'Proper noun',
+      lessonNumber: 2,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Kinaandan nga pangalan',
+      eng: 'Common noun',
+      lessonNumber: 2,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Rina',
+      eng: 'Child',
+      lessonNumber: 2,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Nanay Rowena',
+      eng: 'Mother',
+      lessonNumber: 2,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Mayor Basilio',
+      eng: 'Mayor',
+      lessonNumber: 2,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Manunudlo',
+      eng: 'Teacher',
+      lessonNumber: 2,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Tanda',
+      eng: 'Sign',
+      exampleSentenceHiligaynon: 'Madamo ang tanda nga makita sa karsada.',
+      exampleSentenceEnglish: 'Many signs can be seen on the road.',
+      lessonNumber: 3,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Iloilo River',
+      eng: 'River',
+      lessonNumber: 3,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Boracay',
+      eng: 'Beach place',
+      lessonNumber: 3,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Plaza Libertad',
+      eng: 'Park',
+      lessonNumber: 3,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Merkado',
+      eng: 'Market',
+      lessonNumber: 3,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Kalendaryo',
+      eng: 'Calendar',
+      exampleSentenceHiligaynon:
+          'Tan-awa ang kalendaryo agud mahibalu-an ang adlaw.',
+      exampleSentenceEnglish: 'Look at the calendar to know the day.',
+      lessonNumber: 4,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Kahiwatan',
+      eng: 'Event or celebration',
+      lessonNumber: 4,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Bag-ong Tuig',
+      eng: 'New Year',
+      lessonNumber: 4,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Adlaw sang Kahilwayan',
+      eng: 'Independence Day',
+      lessonNumber: 4,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Rizal Day',
+      eng: 'Rizal Day',
+      lessonNumber: 4,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Baganihan',
+      eng: 'Hero',
+      exampleSentenceHiligaynon: 'Ginkilala nga isa ka baganihan si Lito.',
+      exampleSentenceEnglish: 'Lito was recognized as a hero.',
+      lessonNumber: 5,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Sakripisyo',
+      eng: 'Sacrifice',
+      lessonNumber: 5,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Dr. Jose Rizal',
+      eng: 'National hero',
+      lessonNumber: 5,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Mga Ginakawilihan Ko',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Pilipinas',
+      eng: 'Philippines',
+      lessonNumber: 5,
+    ),
     LessonTerm(
       unitNumber: 1,
       unitTitle: 'Everyday Conversation',
@@ -1397,6 +1688,10 @@ class LessonBank {
   ];
 
   static LessonLevelContent contentForLevel(int level) {
+    if (_isGradeTwoUnitOneTextbookLevel(level)) {
+      return _gradeTwoUnitOneContentForLevel(level);
+    }
+
     if (AppData.selectedGradeLevel == GradeLevel.grade3) {
       return _gradeThreePdfContentForLevel(level);
     }
@@ -1426,6 +1721,269 @@ class LessonBank {
           .map((term) => LessonExample(hiligaynon: term.hil, english: term.eng))
           .toList(),
     );
+  }
+
+  static bool _isGradeTwoUnitOneTextbookLevel(int level) {
+    if (AppData.selectedGradeLevel != GradeLevel.grade2) return false;
+    if (unitForLevel(level) != 1) return false;
+    final localLevel = ((level - 1) % AppData.unitLevels) + 1;
+    return localLevel <= 5;
+  }
+
+  static LessonLevelContent _gradeTwoUnitOneContentForLevel(int level) {
+    final localLevel = ((level - 1) % AppData.unitLevels) + 1;
+    return switch (localLevel) {
+      1 => const LessonLevelContent(
+        title: 'Pangalan',
+        storyTitle: 'Dalayawon',
+        story:
+            'Si Rina isa ka maalam nga bata. Samtang nagapauli siya, nakita niya ang iya mga kasilingan nga nagapaninlo sa Kalye Malinong, nagapananum sang bulak, kag nagabulig sa barangay nga wala sing bayad. Ginadayaw ni Rina ang ila pagbulig.',
+        shortLesson:
+            'Ang pangalan nagatuhoy sa ngalan sang tawo, butang, lugar, sapat, kag hitabo. Sa istorya, makakita kita sang mga ngalan pareho sang Rina, kasilingan, Kalye Malinong, bulak, kag pagpaninlo.',
+        concepts: [
+          LessonConceptCard(
+            title: 'Pangalan',
+            hiligaynon: 'Ngalan sang tawo, butang, lugar, sapat, ukon hitabo.',
+            english: 'A noun names a person, thing, place, animal, or event.',
+          ),
+          LessonConceptCard(
+            title: 'Tawo',
+            hiligaynon: 'Pangalan sang tawo sa istorya ukon palibot.',
+            english: 'Names a person.',
+          ),
+          LessonConceptCard(
+            title: 'Lugar',
+            hiligaynon: 'Pangalan sang lugar nga ginakadtuan ukon ginahambal.',
+            english: 'Names a place.',
+          ),
+        ],
+        examples: [
+          LessonExample(
+            category: 'Tawo',
+            hiligaynon: 'Rina',
+            english: 'child',
+            note: 'Pangalan sang tawo',
+          ),
+          LessonExample(
+            category: 'Butang',
+            hiligaynon: 'lapis',
+            english: 'pencil',
+            note: 'Pangalan sang butang',
+          ),
+          LessonExample(
+            category: 'Sapat',
+            hiligaynon: 'kuring',
+            english: 'cat',
+            note: 'Pangalan sang sapat',
+          ),
+          LessonExample(
+            category: 'Lugar',
+            hiligaynon: 'parke',
+            english: 'park',
+            note: 'Pangalan sang lugar',
+          ),
+        ],
+      ),
+      2 => const LessonLevelContent(
+        title: 'Pat-od kag Kinaandan nga Pangalan sang Tawo',
+        storyTitle: 'Masarangan Ko Man Ini!',
+        story:
+            'Aga pa nagbugtaw si Rina kag ginpangita niya si Nanay Rowena. Nakita niya ang iya iloy kag mga kasilingan nga nagahanda para sa proyekto ni Mayor Basilio. Luyag man ni Rina magbulig.',
+        shortLesson:
+            'Ang pat-od nga pangalan nagatudlo sang eksakto nga ngalan sang tawo, pareho sang Rina ukon Nanay Rowena. Ang kinaandan nga pangalan nagatudlo sang ordinaryo nga ngalan, pareho sang bata, iloy, mayor, kag manunudlo.',
+        concepts: [
+          LessonConceptCard(
+            title: 'Pat-od nga Pangalan',
+            hiligaynon: 'Pinasahi ukon eksakto nga ngalan sang tawo.',
+            english: 'A proper noun names one specific person.',
+          ),
+          LessonConceptCard(
+            title: 'Kinaandan nga Pangalan',
+            hiligaynon: 'Ordinaryo nga ngalan sang tawo.',
+            english: 'A common noun names a kind of person.',
+          ),
+        ],
+        examples: [
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Rina',
+            english: 'Rina',
+            note: 'Eksakto nga ngalan',
+          ),
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Mayor Basilio',
+            english: 'Mayor Basilio',
+            note: 'Eksakto nga ngalan',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'bata',
+            english: 'child',
+            note: 'Ordinaryo nga ngalan',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'manunudlo',
+            english: 'teacher',
+            note: 'Ordinaryo nga ngalan',
+          ),
+        ],
+      ),
+      3 => const LessonLevelContent(
+        title: 'Pat-od kag Kinaandan nga Pangalan sang Lugar',
+        storyTitle: 'Mga Lugar sa Amon Komunidad',
+        story:
+            'Gintan-aw sang klase ni Rina ang mapa sang ila lugar. Nakita nila ang mga tanda, kalye, merkado, suba, kag mga bantog nga lugar pareho sang Iloilo River, Boracay, kag Plaza Libertad.',
+        shortLesson:
+            'Ang pat-od nga pangalan sang lugar amo ang eksakto nga ngalan sang isa ka lugar kag nagasugod sa daku nga letra. Ang kinaandan nga pangalan sang lugar amo ang ordinaryo nga ngalan pareho sang merkado, suba, ospital, ukon simbahan.',
+        concepts: [
+          LessonConceptCard(
+            title: 'Pat-od nga Lugar',
+            hiligaynon: 'Eksakto nga ngalan sang lugar.',
+            english: 'A proper place noun names one specific place.',
+          ),
+          LessonConceptCard(
+            title: 'Kinaandan nga Lugar',
+            hiligaynon: 'Ordinaryo nga ngalan sang lugar.',
+            english: 'A common place noun names a kind of place.',
+          ),
+          LessonConceptCard(
+            title: 'Tanda',
+            hiligaynon: 'Direksyon ukon simbolo nga nagabulig magtultol.',
+            english: 'A sign helps people find a place.',
+          ),
+        ],
+        examples: [
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Iloilo River',
+            english: 'river',
+            note: 'Eksakto nga lugar',
+          ),
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Boracay',
+            english: 'beach place',
+            note: 'Eksakto nga lugar',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'merkado',
+            english: 'market',
+            note: 'Ordinaryo nga lugar',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'simbahan',
+            english: 'church',
+            note: 'Ordinaryo nga lugar',
+          ),
+        ],
+      ),
+      4 => const LessonLevelContent(
+        title: 'Pat-od kag Kinaandan nga Pangalan sang Hitabo',
+        storyTitle: 'Salamat sa Kalendaryo',
+        story:
+            'Ginamit ni Ayessa ang kalendaryo agud mahibalu-an ang mga importante nga adlaw kag kahiwatan sa bug-os nga tuig. Nakita niya ang Bag-ong Tuig, Adlaw sang Kahilwayan, Adlaw sang Paskwa, kag Rizal Day.',
+        shortLesson:
+            'Ang pat-od nga pangalan sang hitabo amo ang eksakto nga ngalan sang okasyon ukon adlaw. Ang kinaandan nga pangalan sang hitabo amo ang ordinaryo nga ngalan pareho sang kahiwatan, pista, ukon adlaw sang paghanduraw.',
+        concepts: [
+          LessonConceptCard(
+            title: 'Kalendaryo',
+            hiligaynon: 'Listahan sang adlaw, petsa, kag okasyon.',
+            english: 'A calendar shows days, dates, and events.',
+          ),
+          LessonConceptCard(
+            title: 'Kahiwatan',
+            hiligaynon: 'Buluhaton nga may kasadya ukon importansya.',
+            english: 'An event or celebration.',
+          ),
+          LessonConceptCard(
+            title: 'Pat-od nga Hitabo',
+            hiligaynon: 'Eksakto nga ngalan sang isa ka hitabo.',
+            english: 'A proper event noun names one specific event.',
+          ),
+        ],
+        examples: [
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Bag-ong Tuig',
+            english: 'New Year',
+            note: 'Enero 1',
+          ),
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Adlaw sang Kahilwayan',
+            english: 'Independence Day',
+            note: 'Hunyo 12',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'kahiwatan',
+            english: 'event',
+            note: 'Ordinaryo nga ngalan',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'pista',
+            english: 'festival',
+            note: 'Ordinaryo nga ngalan',
+          ),
+        ],
+      ),
+      _ => const LessonLevelContent(
+        title: 'Pagbinalaybay',
+        storyTitle: 'Baganihan sang Kabuhi Ko',
+        story:
+            'Ang binalaybay nagahambal sang handum, kapisan, kag pagserbisyo. Ginmitlang si Gat Jose Rizal bilang baganihan nga nagtinguha para sa Pilipinas, kag ginpakita man ang handum nga mangin manunudlo.',
+        shortLesson:
+            'Sa pagbinalaybay, mahimo naton makilala ang mga pangalan nga pat-od kag kinaandan. Ang Dr. Jose Rizal kag Pilipinas mga pat-od nga pangalan. Ang baganihan, manunudlo, pulis, kag pungsod mga kinaandan nga pangalan.',
+        concepts: [
+          LessonConceptCard(
+            title: 'Binalaybay',
+            hiligaynon: 'Sinulat nga may ritmo kag pagbati.',
+            english: 'A poem uses rhythm and feeling.',
+          ),
+          LessonConceptCard(
+            title: 'Baganihan',
+            hiligaynon: 'Tawo nga nagaserbisyo para sa kaayuhan sang iban.',
+            english: 'A hero serves others bravely.',
+          ),
+          LessonConceptCard(
+            title: 'Sakripisyo',
+            hiligaynon: 'Paghalad ukon pagbuhat para sa kaayuhan sang iban.',
+            english: 'A sacrifice is giving something for others.',
+          ),
+        ],
+        examples: [
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Dr. Jose Rizal',
+            english: 'national hero',
+            note: 'Eksakto nga ngalan sang tawo',
+          ),
+          LessonExample(
+            category: 'Pat-od',
+            hiligaynon: 'Pilipinas',
+            english: 'Philippines',
+            note: 'Eksakto nga ngalan sang lugar',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'baganihan',
+            english: 'hero',
+            note: 'Ordinaryo nga ngalan',
+          ),
+          LessonExample(
+            category: 'Kinaandan',
+            hiligaynon: 'manunudlo',
+            english: 'teacher',
+            note: 'Ordinaryo nga ngalan',
+          ),
+        ],
+      ),
+    };
   }
 
   static LessonLevelContent _gradeThreePdfContentForLevel(int level) {
@@ -1553,6 +2111,10 @@ class LessonBank {
     final rng = math.Random(level + AppData.selectedGradeLevel.number * 1000);
     if (AppData.selectedGradeLevel == GradeLevel.grade3 && level == 1) {
       return _gradeThreePdfQuestionSet(rng);
+    }
+
+    if (_isGradeTwoUnitOneTextbookLevel(level)) {
+      return _gradeTwoUnitOneQuestionSet(level);
     }
 
     if (level == 1) {
@@ -1779,6 +2341,525 @@ class LessonBank {
     ];
   }
 
+  static List<LessonQuestion> _gradeTwoUnitOneQuestionSet(int level) {
+    final localLevel = ((level - 1) % AppData.unitLevels) + 1;
+    List<String> shuffled(List<String> values) => values;
+
+    return switch (localLevel) {
+      1 => [
+        LessonQuestion.translationChoice(
+          prompt:
+              'Ano ang tawag sa ngalan sang tawo, butang, lugar, sapat, ukon hitabo?',
+          answer: 'Pangalan',
+          choices: shuffled(['Pangalan', 'Tanda', 'Kahiwatan', 'Sakripisyo']),
+          targetPhrase: 'Pangalan',
+          targetMeaning: 'Noun',
+          directionLabel: 'Hiligaynon concept',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Diin nga grupo nasakop ang "Rina"?',
+          answer: 'Tawo',
+          choices: shuffled(['Tawo', 'Lugar', 'Sapat', 'Hitabo']),
+          targetPhrase: 'Rina',
+          targetMeaning: 'Person',
+          directionLabel: 'Noun category',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Diin nga grupo nasakop ang "parke"?',
+          answer: 'Lugar',
+          choices: shuffled(['Butang', 'Lugar', 'Tawo', 'Sapat']),
+          targetPhrase: 'parke',
+          targetMeaning: 'Place',
+          directionLabel: 'Noun category',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang ideya.',
+          answer: 'Ang pangalan nagatudlo sang ngalan',
+          sentenceWords: shuffled([
+            'Ang',
+            'pangalan',
+            'nagatudlo',
+            'sang',
+            'ngalan',
+          ]),
+          targetPhrase: 'Ang pangalan nagatudlo sang ngalan',
+          targetMeaning: 'A noun points to a name.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang sentence.',
+          answer: 'Mabuot ang amon kasilingan',
+          sentenceWords: shuffled(['Mabuot', 'ang', 'amon', 'kasilingan']),
+          targetPhrase: 'Mabuot ang amon kasilingan',
+          targetMeaning: 'Our neighbor is kind.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang grupo sang pangalan kag kahulugan.',
+          leftItems: ['Tawo', 'Butang', 'Lugar', 'Hitabo'],
+          rightItems: shuffled(['Person', 'Thing', 'Place', 'Event']),
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang halimbawa kag kahulugan.',
+          leftItems: ['Rina', 'Lapis', 'Parke', 'Pispis'],
+          rightItems: shuffled(['Child', 'Pencil', 'Park', 'Bird']),
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ amo ang ngalan sang tawo ukon butang.',
+          answer: 'pangalan',
+          choices: shuffled(['pangalan', 'tanda', 'baganihan', 'kalendaryo']),
+          targetPhrase: 'Ang pangalan amo ang ngalan sang tawo ukon butang.',
+          targetMeaning: 'A noun is the name of a person or thing.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ isa ka pangalan sang lugar.',
+          answer: 'parke',
+          choices: shuffled(['parke', 'kuring', 'lapis', 'pispis']),
+          targetPhrase: 'Ang parke isa ka pangalan sang lugar.',
+          targetMeaning: 'Park is a place noun.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang kahulugan sang "kasilingan"?',
+          answer: 'Neighbor',
+          choices: shuffled(['Neighbor', 'Teacher', 'Calendar', 'Hero']),
+          targetPhrase: 'Kasilingan',
+          targetMeaning: 'Neighbor',
+          directionLabel: 'Hiligaynon to English',
+        ),
+      ],
+      2 => [
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang tawag sa eksakto nga ngalan sang tawo?',
+          answer: 'Pat-od nga pangalan',
+          choices: shuffled([
+            'Pat-od nga pangalan',
+            'Kinaandan nga pangalan',
+            'Lugar',
+            'Hitabo',
+          ]),
+          targetPhrase: 'Pat-od nga pangalan',
+          targetMeaning: 'Proper noun',
+          directionLabel: 'Hiligaynon concept',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang tawag sa ordinaryo nga ngalan sang tawo?',
+          answer: 'Kinaandan nga pangalan',
+          choices: shuffled([
+            'Kinaandan nga pangalan',
+            'Pat-od nga pangalan',
+            'Kalendaryo',
+            'Tanda',
+          ]),
+          targetPhrase: 'Kinaandan nga pangalan',
+          targetMeaning: 'Common noun',
+          directionLabel: 'Hiligaynon concept',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Pilion ang pat-od nga pangalan.',
+          answer: 'Mayor Basilio',
+          choices: shuffled(['Mayor Basilio', 'mayor', 'bata', 'manunudlo']),
+          targetPhrase: 'Mayor Basilio',
+          targetMeaning: 'Proper noun',
+          directionLabel: 'Proper or common',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang sentence.',
+          answer: 'Si Rina isa ka bata',
+          sentenceWords: shuffled(['Si', 'Rina', 'isa', 'ka', 'bata']),
+          targetPhrase: 'Si Rina isa ka bata',
+          targetMeaning: 'Rina is a child.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang ideya.',
+          answer: 'Mayor Basilio ang pat-od nga pangalan',
+          sentenceWords: shuffled([
+            'Mayor',
+            'Basilio',
+            'ang',
+            'pat-od',
+            'nga',
+            'pangalan',
+          ]),
+          targetPhrase: 'Mayor Basilio ang pat-od nga pangalan',
+          targetMeaning: 'Mayor Basilio is the proper noun.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang pat-od kag kinaandan nga pangalan.',
+          leftItems: ['Rina', 'Nanay Rowena', 'Mayor Basilio', 'Manunudlo'],
+          rightItems: shuffled(['Child', 'Mother', 'Mayor', 'Teacher']),
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang konsepto kag kahulugan.',
+          leftItems: [
+            'Pat-od nga pangalan',
+            'Kinaandan nga pangalan',
+            'Rina',
+            'Mayor Basilio',
+          ],
+          rightItems: shuffled([
+            'Proper noun',
+            'Common noun',
+            'Child',
+            'Mayor',
+          ]),
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ eksakto nga ngalan sang bata.',
+          answer: 'Rina',
+          choices: shuffled(['Rina', 'bata', 'mayor', 'manunudlo']),
+          targetPhrase: 'Ang Rina eksakto nga ngalan sang bata.',
+          targetMeaning: 'Rina is the exact name of the child.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ ordinaryo nga ngalan sang tawo.',
+          answer: 'bata',
+          choices: shuffled(['bata', 'Rina', 'Mayor Basilio', 'Nanay Rowena']),
+          targetPhrase: 'Ang bata ordinaryo nga ngalan sang tawo.',
+          targetMeaning: 'Child is a common noun for a person.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Which means "common noun"?',
+          answer: 'Kinaandan nga pangalan',
+          choices: shuffled([
+            'Kinaandan nga pangalan',
+            'Pat-od nga pangalan',
+            'Baganihan',
+            'Kahiwatan',
+          ]),
+          targetPhrase: 'common noun',
+          targetMeaning: 'Kinaandan nga pangalan',
+          directionLabel: 'English to Hiligaynon',
+        ),
+      ],
+      3 => [
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang tawag sa eksakto nga ngalan sang lugar?',
+          answer: 'Pat-od nga pangalan',
+          choices: shuffled([
+            'Pat-od nga pangalan',
+            'Kinaandan nga pangalan',
+            'Tanda',
+            'Kahiwatan',
+          ]),
+          targetPhrase: 'Pat-od nga pangalan sang lugar',
+          targetMeaning: 'Proper place noun',
+          directionLabel: 'Hiligaynon concept',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Pilion ang pat-od nga pangalan sang lugar.',
+          answer: 'Iloilo River',
+          choices: shuffled(['Iloilo River', 'suba', 'merkado', 'ospital']),
+          targetPhrase: 'Iloilo River',
+          targetMeaning: 'Specific place',
+          directionLabel: 'Proper or common',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Pilion ang kinaandan nga pangalan sang lugar.',
+          answer: 'merkado',
+          choices: shuffled([
+            'merkado',
+            'Boracay',
+            'Plaza Libertad',
+            'Iloilo River',
+          ]),
+          targetPhrase: 'merkado',
+          targetMeaning: 'Common place noun',
+          directionLabel: 'Proper or common',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang sentence.',
+          answer: 'Ang Boracay isa ka lugar',
+          sentenceWords: shuffled(['Ang', 'Boracay', 'isa', 'ka', 'lugar']),
+          targetPhrase: 'Ang Boracay isa ka lugar',
+          targetMeaning: 'Boracay is a place.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang ideya.',
+          answer: 'Ang tanda nagabulig magtultol',
+          sentenceWords: shuffled(['Ang', 'tanda', 'nagabulig', 'magtultol']),
+          targetPhrase: 'Ang tanda nagabulig magtultol',
+          targetMeaning: 'A sign helps give direction.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang lugar kag kahulugan.',
+          leftItems: ['Iloilo River', 'Boracay', 'Plaza Libertad', 'Merkado'],
+          rightItems: shuffled(['River', 'Beach place', 'Park', 'Market']),
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang pulong kag kahulugan.',
+          leftItems: [
+            'Tanda',
+            'Lugar',
+            'Pat-od nga pangalan',
+            'Kinaandan nga pangalan',
+          ],
+          rightItems: shuffled(['Sign', 'Place', 'Proper noun', 'Common noun']),
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ isa ka pat-od nga pangalan sang lugar.',
+          answer: 'Boracay',
+          choices: shuffled(['Boracay', 'merkado', 'ospital', 'simbahan']),
+          targetPhrase: 'Ang Boracay isa ka pat-od nga pangalan sang lugar.',
+          targetMeaning: 'Boracay is a proper place noun.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ ordinaryo nga ngalan sang lugar.',
+          answer: 'merkado',
+          choices: shuffled([
+            'merkado',
+            'Iloilo River',
+            'Boracay',
+            'Plaza Libertad',
+          ]),
+          targetPhrase: 'Ang merkado ordinaryo nga ngalan sang lugar.',
+          targetMeaning: 'Market is a common place noun.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang kahulugan sang "tanda"?',
+          answer: 'Sign',
+          choices: shuffled(['Sign', 'Hero', 'Calendar', 'Teacher']),
+          targetPhrase: 'Tanda',
+          targetMeaning: 'Sign',
+          directionLabel: 'Hiligaynon to English',
+        ),
+      ],
+      4 => [
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang gamit sang kalendaryo?',
+          answer: 'Listahan sang adlaw kag petsa',
+          choices: shuffled([
+            'Listahan sang adlaw kag petsa',
+            'Ngalan sang tawo',
+            'Ngalan sang sapat',
+            'Pulong nga nagatudlo sang lugar',
+          ]),
+          targetPhrase: 'Kalendaryo',
+          targetMeaning: 'Calendar',
+          directionLabel: 'Reading check',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Pilion ang pat-od nga pangalan sang hitabo.',
+          answer: 'Adlaw sang Kahilwayan',
+          choices: shuffled([
+            'Adlaw sang Kahilwayan',
+            'kahiwatan',
+            'pista',
+            'adlaw sang paghanduraw',
+          ]),
+          targetPhrase: 'Adlaw sang Kahilwayan',
+          targetMeaning: 'Proper event noun',
+          directionLabel: 'Proper or common',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang kahulugan sang "kahiwatan"?',
+          answer: 'Event or celebration',
+          choices: shuffled([
+            'Event or celebration',
+            'Specific person',
+            'A sign',
+            'A poem',
+          ]),
+          targetPhrase: 'Kahiwatan',
+          targetMeaning: 'Event or celebration',
+          directionLabel: 'Hiligaynon to English',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang sentence.',
+          answer: 'Tan-awa ang kalendaryo',
+          sentenceWords: shuffled(['Tan-awa', 'ang', 'kalendaryo']),
+          targetPhrase: 'Tan-awa ang kalendaryo',
+          targetMeaning: 'Look at the calendar.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang ideya.',
+          answer: 'Ang Bag-ong Tuig isa ka hitabo',
+          sentenceWords: shuffled([
+            'Ang',
+            'Bag-ong',
+            'Tuig',
+            'isa',
+            'ka',
+            'hitabo',
+          ]),
+          targetPhrase: 'Ang Bag-ong Tuig isa ka hitabo',
+          targetMeaning: 'New Year is an event.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang hitabo kag kahulugan.',
+          leftItems: [
+            'Bag-ong Tuig',
+            'Adlaw sang Kahilwayan',
+            'Rizal Day',
+            'Kahiwatan',
+          ],
+          rightItems: shuffled([
+            'New Year',
+            'Independence Day',
+            'Rizal Day',
+            'Event or celebration',
+          ]),
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang pulong kag kahulugan.',
+          leftItems: [
+            'Kalendaryo',
+            'Hitabo',
+            'Pat-od nga pangalan',
+            'Kinaandan nga pangalan',
+          ],
+          rightItems: shuffled([
+            'Calendar',
+            'Event',
+            'Proper noun',
+            'Common noun',
+          ]),
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ nagapakita sang adlaw kag petsa.',
+          answer: 'kalendaryo',
+          choices: shuffled(['kalendaryo', 'baganihan', 'tanda', 'sapat']),
+          targetPhrase: 'Ang kalendaryo nagapakita sang adlaw kag petsa.',
+          targetMeaning: 'A calendar shows days and dates.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ isa ka pat-od nga ngalan sang hitabo.',
+          answer: 'Rizal Day',
+          choices: shuffled(['Rizal Day', 'kahiwatan', 'pista', 'lugar']),
+          targetPhrase: 'Ang Rizal Day isa ka pat-od nga ngalan sang hitabo.',
+          targetMeaning: 'Rizal Day is a proper event name.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Which means "calendar"?',
+          answer: 'Kalendaryo',
+          choices: shuffled(['Kalendaryo', 'Kahiwatan', 'Baganihan', 'Tanda']),
+          targetPhrase: 'calendar',
+          targetMeaning: 'Kalendaryo',
+          directionLabel: 'English to Hiligaynon',
+        ),
+      ],
+      _ => [
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang tawag sa tawo nga nagaserbisyo para sa iban?',
+          answer: 'Baganihan',
+          choices: shuffled(['Baganihan', 'Kalendaryo', 'Tanda', 'Merkado']),
+          targetPhrase: 'Baganihan',
+          targetMeaning: 'Hero',
+          directionLabel: 'Hiligaynon concept',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Sin-o ang baganihan nga ginmitlang sa binalaybay?',
+          answer: 'Dr. Jose Rizal',
+          choices: shuffled([
+            'Dr. Jose Rizal',
+            'Rina',
+            'Mayor Basilio',
+            'Ayessa',
+          ]),
+          targetPhrase: 'Dr. Jose Rizal',
+          targetMeaning: 'National hero',
+          directionLabel: 'Reading check',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Pilion ang kinaandan nga pangalan.',
+          answer: 'manunudlo',
+          choices: shuffled([
+            'manunudlo',
+            'Pilipinas',
+            'Dr. Jose Rizal',
+            'Rina',
+          ]),
+          targetPhrase: 'manunudlo',
+          targetMeaning: 'Common noun',
+          directionLabel: 'Proper or common',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang titulo.',
+          answer: 'Baganihan sang Kabuhi Ko',
+          sentenceWords: shuffled(['Baganihan', 'sang', 'Kabuhi', 'Ko']),
+          targetPhrase: 'Baganihan sang Kabuhi Ko',
+          targetMeaning: 'Hero of My Life',
+          directionLabel: 'Poem title',
+        ),
+        LessonQuestion.arrangeWords(
+          prompt: 'Ipahamtang ang mga pulong para mahimo ang ideya.',
+          answer: 'Ako may isa ka handum',
+          sentenceWords: shuffled(['Ako', 'may', 'isa', 'ka', 'handum']),
+          targetPhrase: 'Ako may isa ka handum',
+          targetMeaning: 'I have one dream.',
+          directionLabel: 'Hiligaynon sentence',
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang pulong kag kahulugan.',
+          leftItems: ['Baganihan', 'Sakripisyo', 'Dr. Jose Rizal', 'Pilipinas'],
+          rightItems: shuffled([
+            'Hero',
+            'Sacrifice',
+            'National hero',
+            'Philippines',
+          ]),
+        ),
+        LessonQuestion.matching(
+          prompt: 'Ipares ang pangalan kag klase.',
+          leftItems: ['Dr. Jose Rizal', 'Pilipinas', 'Baganihan', 'Manunudlo'],
+          rightItems: shuffled([
+            'National hero',
+            'Philippines',
+            'Hero',
+            'Teacher',
+          ]),
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Si ___ isa ka pinasahi nga baganihan.',
+          answer: 'Dr. Jose Rizal',
+          choices: shuffled([
+            'Dr. Jose Rizal',
+            'baganihan',
+            'pungsod',
+            'pulis',
+          ]),
+          targetPhrase: 'Si Dr. Jose Rizal isa ka pinasahi nga baganihan.',
+          targetMeaning: 'Dr. Jose Rizal is a special hero.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.fillBlank(
+          prompt: 'Kompletoha: Ang ___ isa ka kinaandan nga pangalan.',
+          answer: 'baganihan',
+          choices: shuffled([
+            'baganihan',
+            'Pilipinas',
+            'Dr. Jose Rizal',
+            'Rina',
+          ]),
+          targetPhrase: 'Ang baganihan isa ka kinaandan nga pangalan.',
+          targetMeaning: 'Hero is a common noun.',
+          directionLabel: 'Fill in the blank',
+        ),
+        LessonQuestion.translationChoice(
+          prompt: 'Ano ang kahulugan sang "sakripisyo"?',
+          answer: 'Sacrifice',
+          choices: shuffled(['Sacrifice', 'Calendar', 'Market', 'Neighbor']),
+          targetPhrase: 'Sakripisyo',
+          targetMeaning: 'Sacrifice',
+          directionLabel: 'Hiligaynon to English',
+        ),
+      ],
+    };
+  }
+
   static List<LessonQuestion> _gradeThreePdfQuestionSet(math.Random rng) {
     List<String> shuffled(List<String> values) => values;
 
@@ -1845,7 +2926,7 @@ class LessonBank {
       LessonQuestion.matching(
         prompt: 'Ipares ang halimbawa kag kahulugan.',
         leftItems: ['Rina', 'Nanay Rowena', 'Iloilo River', 'Plaza Libertad'],
-        rightItems: shuffled(['bata', 'nanay', 'suba', 'parke']),
+        rightItems: shuffled(['Child', 'Mother', 'River', 'Park']),
       ),
       LessonQuestion.fillBlank(
         prompt:

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 import 'package:tudloapp/features/lesson_game/screens/level_game_page.dart';
 import 'package:tudloapp/features/profile/screens/profile_selection_screen.dart';
@@ -230,6 +231,10 @@ class _ProfileManagementRow extends StatelessWidget {
             onPressed: onSwitch,
             icon: const Icon(Icons.people_rounded),
             label: const Text('Switch'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD9A520),
+              foregroundColor: Colors.white,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -576,16 +581,20 @@ class _FavoritesCard extends StatelessWidget {
                 for (final word in sortedWords)
                   _FavoriteWordRow(
                     word: word,
-                    meaning: LessonBank.terms
-                        .firstWhere(
-                          (term) => term.hil == word,
-                          orElse: () => LessonBank.terms.first,
-                        )
-                        .eng,
+                    meaning: _favoriteMeaningFor(word),
                   ),
               ],
             ),
     );
+  }
+
+  String _favoriteMeaningFor(String word) {
+    for (final term in LessonBank.terms) {
+      if (term.hil.toLowerCase() == word.toLowerCase()) return term.eng;
+    }
+    final dictionaryMeaning = DictionaryData.meaningFor(word);
+    if (dictionaryMeaning.isEmpty) return '';
+    return dictionaryMeaning[0].toUpperCase() + dictionaryMeaning.substring(1);
   }
 }
 
@@ -620,14 +629,15 @@ class _FavoriteWordRow extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                Text(
-                  meaning,
-                  style: GoogleFonts.nunito(
-                    color: TudloColors.muted,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                if (meaning.isNotEmpty)
+                  Text(
+                    meaning,
+                    style: GoogleFonts.nunito(
+                      color: TudloColors.muted,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

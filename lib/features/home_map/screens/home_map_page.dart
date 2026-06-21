@@ -289,11 +289,12 @@ class _MapHeader extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: EnergyIndicator(light: true),
                   ),
-                  const Spacer(),
                   if (dailyWord != null) ...[
+                    const SizedBox(height: 22),
                     _HomeDailyWordCard(word: dailyWord!),
-                    const SizedBox(height: 14),
-                  ],
+                    const SizedBox(height: 12),
+                  ] else
+                    const Spacer(),
                   Text(
                     'Hello, $username!',
                     style: const TextStyle(
@@ -507,7 +508,7 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
   late final Animation<Offset> _slideAnimation;
   late final Animation<double> _nodeBounceAnimation;
 
-  static const _cardGreen = TudloColors.brightGreen;
+  static const _cardGreen = TudloColors.green;
   static const _cardDark = TudloColors.forest;
   static const _nodeSize = 98.0;
   static const _cardHeight = 190.0;
@@ -1354,17 +1355,18 @@ class _HomeDailyWordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(32);
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: radius,
         onTap: () => _showDailyWordPopup(context, word),
         child: Container(
           constraints: const BoxConstraints(minHeight: 92),
           padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
           decoration: BoxDecoration(
-            color: TudloColors.blue,
-            borderRadius: BorderRadius.circular(24),
+            color: const Color(0xFFC9F09A),
+            borderRadius: radius,
             boxShadow: [
               BoxShadow(
                 color: TudloColors.forest.withValues(alpha: .20),
@@ -1399,11 +1401,10 @@ class _HomeDailyWordCard extends StatelessWidget {
                     ),
                     Text(
                       word.hil,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                       style: GoogleFonts.nunito(
                         color: TudloColors.gold,
-                        fontSize: 38,
+                        fontSize: 34,
                         height: .95,
                         fontWeight: FontWeight.w900,
                         shadows: const [
@@ -1423,10 +1424,10 @@ class _HomeDailyWordCard extends StatelessWidget {
                 onPressed: () => _showDailyWordPopup(context, word),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.white,
-                  foregroundColor: TudloColors.blue,
-                  minimumSize: const Size(54, 54),
+                  foregroundColor: TudloColors.forest,
+                  minimumSize: const Size(58, 58),
                 ),
-                icon: const Icon(Icons.chevron_right_rounded, size: 34),
+                icon: Icon(Icons.arrow_forward_rounded, size: 50, weight: 900),
               ),
             ],
           ),
@@ -1736,8 +1737,8 @@ class _LevelPositionedButtonState extends State<_LevelPositionedButton>
         ? widget.unitColor
         : const Color(0xFFD6BA8C);
     final borderColor = widget.unlocked
-        ? Colors.white.withValues(alpha: .78)
-        : const Color(0xFFE7D2B0);
+        ? TudloColors.forest
+        : const Color(0xFF7B5F37);
     final lockedIconColor = const Color(0xFF9A7B50);
 
     return Positioned(

@@ -5,7 +5,7 @@ const grade2LessonDataset = GradeLessonDataset(
   gradeLevel: GradeLevel.grade2,
   maxTermGrade: 2,
   storyTemplate:
-      'Practice {unitTitle}. Notice how the words {focusWords} can help you answer, ask, and join simple conversations.',
+      'Use {unitTitle} in a story-based lesson. Listen for {focusWords}, then think about how each word helps name a person, place, thing, animal, or event.',
   lessonTemplate:
-      'Connect each phrase to its meaning, then watch the word order. Some quiz items ask you to choose, match, arrange, or complete a sentence.',
+      'Practice the meaning and sentence pattern together. Read the examples first, then answer each quiz item by checking the concept, translation, and word order.',
 );

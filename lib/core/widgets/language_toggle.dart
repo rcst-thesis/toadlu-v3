@@ -114,19 +114,36 @@ class TudloVoiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton.filled(
-      tooltip: tooltip,
-      style: IconButton.styleFrom(
-        backgroundColor: TudloColors.blue,
-        foregroundColor: Colors.white,
-        minimumSize: Size(size, size),
-        iconSize: size * .56,
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.forest.withValues(alpha: .40),
+            blurRadius: 22,
+            spreadRadius: 3,
+          ),
+          BoxShadow(
+            color: TudloColors.forest.withValues(alpha: .24),
+            blurRadius: 12,
+            offset: const Offset(0, 7),
+          ),
+        ],
       ),
-      onPressed: () async {
-        final appState = AppStateScope.of(context);
-        await speak(context, message, hiligaynon: appState.isHiligaynon);
-      },
-      icon: const Icon(Icons.volume_up_rounded),
+      child: IconButton.filled(
+        tooltip: tooltip,
+        style: IconButton.styleFrom(
+          backgroundColor: TudloColors.forest,
+          foregroundColor: Colors.white,
+          minimumSize: Size(size, size),
+          iconSize: size * .56,
+        ),
+        onPressed: () async {
+          final appState = AppStateScope.of(context);
+          await speak(context, message, hiligaynon: appState.isHiligaynon);
+        },
+        icon: const Icon(Icons.volume_up_rounded),
+      ),
     );
   }
 }
