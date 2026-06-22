@@ -810,6 +810,46 @@ class LessonBank {
     ),
     LessonTerm(
       unitNumber: 1,
+      unitTitle: 'Pagkilala sa Akon Kaugalingon kag Pamilya',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Dalagan',
+      eng: 'Run',
+      imagePath: 'assets/images/level_game/action/dalagan.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Pagkilala sa Akon Kaugalingon kag Pamilya',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Langoy',
+      eng: 'Swim',
+      imagePath: 'assets/images/level_game/action/langoy.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Pagkilala sa Akon Kaugalingon kag Pamilya',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Tindog',
+      eng: 'Stand',
+      imagePath: 'assets/images/level_game/action/tindog.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
+      unitTitle: 'Pagkilala sa Akon Kaugalingon kag Pamilya',
+      gradeLevel: 2,
+      type: LessonContentType.word,
+      hil: 'Tumbo',
+      eng: 'Jump',
+      imagePath: 'assets/images/level_game/action/tumbo.png',
+      lessonNumber: 1,
+    ),
+    LessonTerm(
+      unitNumber: 1,
       unitTitle: 'Everyday Conversation',
       gradeLevel: 3,
       hil: 'Pangalan',
@@ -2420,43 +2460,57 @@ class LessonBank {
     return terms.where((term) => term.unitNumber == unitNumber).toList();
   }
 
+  static List<LessonTerm> _termsForActiveGradeUnit(int unitNumber) {
+    final allUnitTerms = termsForUnit(unitNumber);
+    final gradeTerms = allUnitTerms
+        .where(_activeGradeDataset.includes)
+        .toList();
+    return gradeTerms.isEmpty ? allUnitTerms : gradeTerms;
+  }
+
   static int unitForLevel(int level) {
     final unit = ((level - 1) ~/ AppData.unitLevels) + 1;
     return unit.clamp(1, unitTitles.length);
   }
 
   static List<LessonTerm> _termsForLocalLesson(int level) {
-    final allUnitTerms = termsForUnit(unitForLevel(level));
-    final unitTerms = allUnitTerms.where(_activeGradeDataset.includes).toList();
+    final unitTerms = _termsForActiveGradeUnit(unitForLevel(level));
     if (unitTerms.isEmpty) return const [];
     final localLevel = (level - 1) % AppData.unitLevels;
     final explicitTerms = unitTerms
         .where((term) => term.lessonNumber == localLevel + 1)
         .toList();
+    final localTerms = explicitTerms.isEmpty
+        ? unitTerms
+        : unitTerms
+              .where(
+                (term) =>
+                    term.lessonNumber == null ||
+                    term.lessonNumber == localLevel + 1,
+              )
+              .toList();
 
     // Each grade file owns the content pool. Levels rotate through that pool
     // so the unit stays grade-appropriate.
     final selected = <LessonTerm>[...explicitTerms];
-    final start = (localLevel * 4).clamp(0, unitTerms.length - 1);
-    for (var offset = 0; offset < unitTerms.length; offset++) {
-      final term = unitTerms[(start + offset) % unitTerms.length];
-      if (term.lessonNumber != null && term.lessonNumber != localLevel + 1) {
-        continue;
-      }
+    final start = (localLevel * 4).clamp(0, localTerms.length - 1);
+    for (var offset = 0; offset < localTerms.length; offset++) {
+      final term = localTerms[(start + offset) % localTerms.length];
       if (selected.any((item) => item.hil == term.hil)) continue;
       selected.add(term);
-      if (selected.length >= math.min(12, unitTerms.length)) break;
+      if (selected.length >= math.min(12, localTerms.length)) break;
     }
     return selected;
   }
 
   static List<LessonTerm> _termsForUnitLessonScope(int level) {
     final localLesson = ((level - 1) % AppData.unitLevels) + 1;
-    final allUnitTerms = termsForUnit(unitForLevel(level));
-    final unitTerms = allUnitTerms.where(_activeGradeDataset.includes).toList();
-    return unitTerms.where((term) {
+    final unitTerms = _termsForActiveGradeUnit(unitForLevel(level));
+    final scoped = unitTerms.where((term) {
       return term.lessonNumber == null || term.lessonNumber == localLesson;
     }).toList();
+    if (scoped.isEmpty) return unitTerms;
+    return scoped;
   }
 
   static LessonQuestion _missingWordQuestion(
@@ -2717,17 +2771,20 @@ class LessonBank {
     bool allowGlobalFallback = false,
   }) {
     var imageTerms = unitTerms.where(_isImageChoiceTerm).toList();
+    var imageSeed = seed;
     if (imageTerms.length < 4 && allowGlobalFallback) {
+      final unitOffset = unitTerms.isEmpty ? 0 : unitTerms.first.unitNumber;
+      imageSeed += unitOffset;
       imageTerms = terms
           .where(_isImageChoiceTerm)
           .where((term) => term.lessonNumber != 1)
           .toList();
     }
-    imageTerms = _sameImageFolderTerms(imageTerms, seed);
+    imageTerms = _sameImageFolderTerms(imageTerms, imageSeed);
     if (imageTerms.length < 4) return null;
     imageTerms.shuffle(rng);
-    final selected = _takeUniqueTerms(imageTerms, 4, seed);
-    final fallbackAnswer = selected[seed.abs() % selected.length];
+    final selected = _takeUniqueTerms(imageTerms, 4, imageSeed);
+    final fallbackAnswer = selected[imageSeed.abs() % selected.length];
     final answer = avoidAnswer == null
         ? fallbackAnswer
         : selected.firstWhere(
@@ -2875,7 +2932,8 @@ class LessonBank {
     // Keep image-choice questions to the approved visual vocabulary folders.
     // Scenario images under "complete the sentence" belong exclusively to
     // fill-blank activities.
-    return imagePath.contains('/animal/') ||
+    return imagePath.contains('/image_choice/') ||
+        imagePath.contains('/animal/') ||
         imagePath.contains('/fruits/') ||
         imagePath.contains('/action/');
   }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
@@ -96,6 +98,28 @@ void main() {
     expect(stories, hasLength(GradeLevel.values.length));
     expect(lessons, hasLength(GradeLevel.values.length));
   });
+
+  test('referenced image assets exist with exact path casing', () {
+    final actualAssets = _assetFilesOnDisk();
+    final referencedAssets = _referencedAssets();
+
+    expect(
+      referencedAssets.where((asset) => asset.contains('assets/Images/')),
+      isEmpty,
+      reason: 'Asset paths must use assets/images/... exactly.',
+    );
+
+    final missing = referencedAssets
+        .where((asset) => !actualAssets.contains(asset))
+        .toList();
+
+    expect(
+      missing,
+      isEmpty,
+      reason:
+          'These asset references do not match files on disk exactly, including case.',
+    );
+  });
 }
 
 String _questionKey(LessonQuestion question) {
@@ -106,4 +130,62 @@ String _questionKey(LessonQuestion question) {
     question.leftItems.join('|').toLowerCase(),
     question.imageChoices.map((term) => term.hil).join('|').toLowerCase(),
   ].join('::');
+}
+
+Set<String> _assetFilesOnDisk() {
+  return Directory('assets')
+      .listSync(recursive: true)
+      .whereType<File>()
+      .map((file) => file.path.replaceAll(r'\', '/'))
+      .toSet();
+}
+
+Set<String> _referencedAssets() {
+  final assets = <String>{};
+  final assetLiteralPattern = RegExp(r'''assets/[^'")\s]+''');
+
+  for (final file in Directory('lib').listSync(recursive: true)) {
+    if (file is! File || !file.path.endsWith('.dart')) continue;
+    final source = file.readAsStringSync();
+    assets.addAll(
+      assetLiteralPattern
+          .allMatches(source)
+          .map((match) => match.group(0)!)
+          .where(_isImageAsset),
+    );
+  }
+
+  for (final term in LessonBank.terms) {
+    final imagePath = term.imagePath;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      assets.add(imagePath);
+    }
+  }
+
+  for (final grade in GradeLevel.values) {
+    AppData.selectedGradeLevel = grade;
+    for (var level = 1; level <= AppData.maxLevel; level++) {
+      for (final question in LessonBank.questionsForLevel(level)) {
+        if (question.imagePath.isNotEmpty) {
+          assets.add(question.imagePath);
+        }
+        for (final term in question.imageChoices) {
+          final imagePath = term.imagePath;
+          if (imagePath != null && imagePath.isNotEmpty) {
+            assets.add(imagePath);
+          }
+        }
+      }
+    }
+  }
+
+  return assets.where(_isImageAsset).toSet();
+}
+
+bool _isImageAsset(String asset) {
+  final lower = asset.toLowerCase();
+  return lower.endsWith('.png') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.webp');
 }

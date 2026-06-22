@@ -3,7 +3,7 @@ import 'package:tudloapp/data/lesson_bank/grade_lesson_dataset.dart';
 
 const grade1LessonDataset = GradeLessonDataset(
   gradeLevel: GradeLevel.grade1,
-  maxTermGrade: 1,
+  maxTermGrade: 2,
   storyTemplate:
       'You are learning {unitTitle}. Look, listen, and say the words {focusWords}. These are short words and phrases you can use right away.',
   lessonTemplate:
