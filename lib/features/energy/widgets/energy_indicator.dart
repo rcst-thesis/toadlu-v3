@@ -41,10 +41,7 @@ class _EnergyIndicatorState extends State<EnergyIndicator> {
     return ValueListenableBuilder<int>(
       valueListenable: AppData.energyRevision,
       builder: (context, _, __) {
-        final foreground = widget.light ? Colors.white : TudloColors.forest;
-        final background = widget.light
-            ? Colors.white.withValues(alpha: .18)
-            : Colors.white;
+        final foreground = TudloColors.forest;
         return Material(
           color: Colors.transparent,
           child: InkWell(
@@ -53,17 +50,19 @@ class _EnergyIndicatorState extends State<EnergyIndicator> {
             // full-screen energy status page shown in the reference.
             onTap: () => showEnergyDetails(context),
             child: Ink(
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: background,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: widget.light
-                      ? Colors.white.withValues(alpha: .35)
-                      : TudloColors.line,
-                  width: 2,
-                ),
+                border: Border.all(color: TudloColors.forest, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: TudloColors.forest.withValues(alpha: .18),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

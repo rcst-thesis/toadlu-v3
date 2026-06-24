@@ -5,6 +5,8 @@ import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
 import 'package:tudloapp/features/onboarding/screens/username_screen.dart';
 
+const _profileNotSetAsset = 'assets/images/profile/profile-notset.jpg';
+
 class ProfileSelectionScreen extends StatelessWidget {
   const ProfileSelectionScreen({super.key});
 
@@ -132,10 +134,12 @@ class _CreateAccountButton extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: TudloColors.forest, width: 3),
                 ),
-                child: const Icon(
-                  Icons.add_box_rounded,
-                  color: Color(0xFF55E65E),
-                  size: 64,
+                child: const Center(
+                  child: Icon(
+                    Icons.add_rounded,
+                    color: TudloColors.green,
+                    size: 74,
+                  ),
                 ),
               ),
             ),
@@ -219,15 +223,36 @@ class _ProfileSelectionAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (asset.trim().isEmpty) {
-      return const Center(
-        child: Icon(Icons.add_rounded, color: TudloColors.green, size: 64),
-      );
-    }
+    final avatarAsset = asset.trim().isEmpty ? _profileNotSetAsset : asset;
+    return _ProfileAvatarImage(asset: avatarAsset);
+  }
+}
 
+class _ProfileAvatarImage extends StatelessWidget {
+  final String asset;
+
+  const _ProfileAvatarImage({required this.asset});
+
+  @override
+  Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.asset(asset, fit: BoxFit.cover),
+      child: Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const ColoredBox(
+            color: Color(0xFFF6F9EA),
+            child: Center(
+              child: Icon(
+                Icons.person_rounded,
+                color: TudloColors.green,
+                size: 54,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

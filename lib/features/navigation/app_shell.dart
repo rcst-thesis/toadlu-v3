@@ -57,7 +57,7 @@ class AppShellState extends State<AppShell> {
       body: Stack(
         children: [
           pages[_selectedIndex],
-          if (_selectedIndex == 0)
+          if (_selectedIndex == 0 || _selectedIndex == 3)
             const Positioned(
               top: 12,
               left: 16,

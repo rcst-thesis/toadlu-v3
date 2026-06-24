@@ -59,7 +59,7 @@ class _TranslationPageState extends State<TranslationPage> {
   _TranslationResult _translate(String value) {
     // Detect direction by scoring both dictionaries, then use the dictionary
     // with the stronger match.
-    final clean = value.trim().toLowerCase();
+    final clean = DictionaryData.normalizeForSearch(value);
     if (clean.isEmpty) {
       return const _TranslationResult('', 'Hiligaynon', 'English');
     }
@@ -80,7 +80,12 @@ class _TranslationPageState extends State<TranslationPage> {
 
   int _score(String value, Map<String, String> dictionary) {
     // Exact phrase matches score higher than individual word matches.
-    var score = dictionary.containsKey(value) ? 5 : 0;
+    final normalized = DictionaryData.normalizeForSearch(value);
+    var score =
+        dictionary.containsKey(normalized) ||
+            DictionaryData.phraseTranslations.containsKey(normalized)
+        ? 5
+        : 0;
     final words = _words(value);
     for (final word in words) {
       if (dictionary.containsKey(word)) score++;
@@ -91,7 +96,9 @@ class _TranslationPageState extends State<TranslationPage> {
   String _lookup(String value, Map<String, String> dictionary) {
     // Try an exact phrase first. If it is missing, translate known words one by
     // one while preserving spaces and basic punctuation.
-    final exact = DictionaryData.phraseTranslations[value] ?? dictionary[value];
+    final normalized = DictionaryData.normalizeForSearch(value);
+    final exact =
+        DictionaryData.phraseTranslations[normalized] ?? dictionary[normalized];
     if (exact != null) return _matchCase(exact, value);
 
     final translatedWords = value.split(RegExp(r'(\s+)')).map((part) {
@@ -101,7 +108,7 @@ class _TranslationPageState extends State<TranslationPage> {
       final core = part
           .replaceAll(RegExp(r'^[^\w]+|[^\w]+$'), '')
           .toLowerCase();
-      final translated = dictionary[core];
+      final translated = dictionary[DictionaryData.normalizeForSearch(core)];
       if (translated == null) return part;
       return edge.startsWith(part[0]) ? '$edge$translated' : '$translated$edge';
     }).join();
@@ -112,7 +119,7 @@ class _TranslationPageState extends State<TranslationPage> {
   }
 
   List<String> _words(String value) {
-    return value
+    return DictionaryData.normalizeForSearch(value)
         .split(RegExp(r'[^a-zA-Z\-]+'))
         .where((word) => word.trim().isNotEmpty)
         .toList();

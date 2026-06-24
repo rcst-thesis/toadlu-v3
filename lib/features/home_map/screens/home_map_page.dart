@@ -23,6 +23,14 @@ class HomeMapPage extends StatefulWidget {
   State<HomeMapPage> createState() => _HomeMapPageState();
 }
 
+String _homeText(
+  BuildContext context, {
+  required String hil,
+  required String en,
+}) {
+  return AppStateScope.of(context).isHiligaynon ? hil : en;
+}
+
 class _HomeMapPageState extends State<HomeMapPage> {
   /// Vertical spacing used by both the road painter and the level nodes.
   ///
@@ -82,7 +90,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
       context: context,
       barrierColor: Colors.transparent,
       barrierDismissible: true,
-      barrierLabel: 'Close level selection',
+      barrierLabel: 'Sirad-i ang pagpili sang leksiyon',
       transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (context, animation, secondaryAnimation) =>
           _LevelStartDialog(
@@ -296,7 +304,11 @@ class _MapHeader extends StatelessWidget {
                   ] else
                     const Spacer(),
                   Text(
-                    'Hello, $username!',
+                    _homeText(
+                      context,
+                      hil: 'Kumusta, $username!',
+                      en: 'Hello, $username!',
+                    ),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 34,
@@ -305,9 +317,13 @@ class _MapHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    "Let's learn something today",
-                    style: TextStyle(
+                  Text(
+                    _homeText(
+                      context,
+                      hil: 'Magtuon kita subong',
+                      en: "Let's learn something today",
+                    ),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       height: 1.15,
@@ -355,8 +371,16 @@ class _MapDialogueOverlay extends StatelessWidget {
       size.width - bubbleWidth - 12,
     );
     final message = step == 0
-        ? 'Maayong pag-abot,\n$username!'
-        : 'Itum-ok para\nka umpisa na\nkita';
+        ? _homeText(
+            context,
+            hil: 'Maayong pag-abot,\n$username!',
+            en: 'Welcome,\n$username!',
+          )
+        : _homeText(
+            context,
+            hil: 'Itum-ok para\nmakaumpisa kita',
+            en: 'Tap so\nwe can start',
+          );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1384,7 +1408,11 @@ class _HomeDailyWordCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Word of the Day',
+                      _homeText(
+                        context,
+                        hil: 'Pulong sang Adlaw',
+                        en: 'Word of the Day',
+                      ),
                       textAlign: TextAlign.center,
                       style: GoogleFonts.nunito(
                         color: Colors.white,
@@ -1420,7 +1448,11 @@ class _HomeDailyWordCard extends StatelessWidget {
                 ),
               ),
               IconButton.filled(
-                tooltip: 'Open Word of the Day',
+                tooltip: _homeText(
+                  context,
+                  hil: 'Buksi ang Pulong sang Adlaw',
+                  en: 'Open Word of the Day',
+                ),
                 onPressed: () => _showDailyWordPopup(context, word),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -1470,7 +1502,17 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                   Row(
                     children: [
                       IconButton(
-                        tooltip: saved ? 'Remove favorite' : 'Save favorite',
+                        tooltip: saved
+                            ? _homeText(
+                                context,
+                                hil: 'Kuhaa sa paborito',
+                                en: 'Remove favorite',
+                              )
+                            : _homeText(
+                                context,
+                                hil: 'Tipigi sa paborito',
+                                en: 'Save favorite',
+                              ),
                         onPressed: () async {
                           await appState.toggleFavoriteWord(word.hil);
                           setDialogState(() {});
@@ -1483,7 +1525,11 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                       ),
                       const Spacer(),
                       IconButton(
-                        tooltip: 'Close',
+                        tooltip: _homeText(
+                          context,
+                          hil: 'Sirad-i',
+                          en: 'Close',
+                        ),
                         onPressed: () => Navigator.pop(dialogContext),
                         icon: const Icon(
                           Icons.close_rounded,
@@ -1494,7 +1540,11 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                     ],
                   ),
                   Text(
-                    'Word of the day',
+                    _homeText(
+                      context,
+                      hil: 'Pulong sang Adlaw',
+                      en: 'Word of the day',
+                    ),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.nunito(
                       color: Colors.white,
@@ -1554,7 +1604,7 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    _meaningSentenceFor(word),
+                    _meaningSentenceFor(context, word),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.nunito(
                       color: Colors.white,
@@ -1565,7 +1615,7 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                   ),
                   const SizedBox(height: 28),
                   Text(
-                    'Halimbawa:',
+                    _homeText(context, hil: 'Halimbawa:', en: 'Example:'),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.nunito(
                       color: TudloColors.forest.withValues(alpha: .62),
@@ -1584,16 +1634,17 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  Text(
-                    exampleEng,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.nunito(
-                      color: Colors.white,
-                      fontSize: 18,
-                      height: 1.18,
-                      fontWeight: FontWeight.w900,
+                  if (!appState.isHiligaynon)
+                    Text(
+                      exampleEng,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 18,
+                        height: 1.18,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
                 ],
               ),
             );
@@ -1674,11 +1725,20 @@ String _pronunciationFor(String word) {
   return '${word.substring(0, midpoint)}-${word.substring(midpoint)}';
 }
 
-String _meaningSentenceFor(LessonTerm word) {
+String _meaningSentenceFor(BuildContext context, LessonTerm word) {
   if (word.hil == 'Kaon') {
-    return 'Ang kaon nagakahulugan sang pagbutang sang pagkaon sa baba, pag-usap, kag pagtulon sini.';
+    return _homeText(
+      context,
+      hil:
+          'Ang kaon nagakahulugan sang pagbutang sang pagkaon sa baba, pag-usap, kag pagtulon sini.',
+      en: 'Kaon means to eat.',
+    );
   }
-  return 'Ang ${word.hil} nagakahulugan sang "${word.eng}".';
+  return _homeText(
+    context,
+    hil: 'Ang ${word.hil} isa ka pulong sa Hiligaynon.',
+    en: '${word.hil} means "${word.eng}".',
+  );
 }
 
 class _LevelPositionedButton extends StatefulWidget {

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
@@ -11,6 +12,7 @@ import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 import 'package:tudloapp/core/widgets/word_tooltip.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
+import 'package:tudloapp/features/lesson_game/screens/grade1_lesson1_page.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
 
 /// Main lesson gameplay screen opened from the Home Map.
@@ -51,6 +53,21 @@ class _LevelGamePageState extends State<LevelGamePage> {
     // Progress is saved only when the learner taps the completion button.
     // This prevents repeated completion interactions from saving twice.
     AppData.saveLevelScore(widget.level, score, questions.length);
+    if (AppData.unlockedLevel <= widget.level &&
+        widget.level < AppData.maxLevel) {
+      AppData.unlockedLevel = widget.level + 1;
+    }
+    AppStateScope.of(context).saveActiveProfileProgress();
+  }
+
+  void _claimSourceLessonRewardsOnce({
+    required int sourceScore,
+    required int sourceTotal,
+  }) {
+    if (_rewardsClaimed) return;
+    _rewardsClaimed = true;
+
+    AppData.saveLevelScore(widget.level, sourceScore, sourceTotal);
     if (AppData.unlockedLevel <= widget.level &&
         widget.level < AppData.maxLevel) {
       AppData.unlockedLevel = widget.level + 1;
@@ -104,6 +121,41 @@ class _LevelGamePageState extends State<LevelGamePage> {
     );
   }
 
+  void _showSourceLessonCompleteDialog(Grade1Lesson1Result result) {
+    if (_completeDialogShown) return;
+    _completeDialogShown = true;
+
+    final accuracy = result.total == 0
+        ? 0
+        : ((result.correct / result.total) * 100).round();
+    final durationLabel = _formatDuration(
+      DateTime.now().difference(_levelStartedAt),
+    );
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: TudloColors.ink.withValues(alpha: .62),
+      builder: (_) => _LessonCompleteDialog(
+        level: widget.level,
+        accuracy: accuracy,
+        mistakes: result.total - result.correct,
+        durationLabel: durationLabel,
+        onClaim: () {
+          _claimSourceLessonRewardsOnce(
+            sourceScore: result.correct,
+            sourceTotal: result.total,
+          );
+          Navigator.pop(context);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 0)),
+            (route) => false,
+          );
+        },
+      ),
+    );
+  }
+
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes.toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -140,7 +192,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                   right: -4,
                   top: -4,
                   child: IconButton(
-                    tooltip: 'Stay here',
+                    tooltip: 'Magpabilin',
                     onPressed: () => Navigator.pop(dialogContext, false),
                     icon: const Icon(
                       Icons.close_rounded,
@@ -156,7 +208,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                     const TudloMascot(size: 138),
                     const SizedBox(height: 12),
                     const Text(
-                      'Oh, you want to leave?',
+                      'Maghalin ka na?',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: TudloColors.ink,
@@ -167,7 +219,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                     ),
                     const SizedBox(height: 14),
                     const Text(
-                      'Finish your lesson, or you will lose all learning progress.',
+                      'Tapusa ang leksiyon, ukon madula ang imo progreso.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: TudloColors.muted,
@@ -200,7 +252,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              child: const Text('Leave'),
+                              child: const Text('Halin'),
                             ),
                           ),
                         ),
@@ -225,7 +277,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              child: const Text('Stay here'),
+                              child: const Text('Magpabilin'),
                             ),
                           ),
                         ),
@@ -246,6 +298,13 @@ class _LevelGamePageState extends State<LevelGamePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isGradeOneLeksyonOneLevel) {
+      return Grade1Lesson1LevelPage(
+        onBack: _showPauseMenu,
+        onFinish: _showSourceLessonCompleteDialog,
+      );
+    }
+
     final progress = questions.isEmpty ? 0.0 : checkedCount / questions.length;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final horizontalPadding = screenWidth < 380 ? 10.0 : 18.0;
@@ -319,7 +378,6 @@ class _LevelGamePageState extends State<LevelGamePage> {
                       _StoryLessonSection(content: levelContent),
                       const SizedBox(height: 14),
                       _LearningSection(
-                        icon: Icons.school_rounded,
                         title: 'Leksiyon',
                         accentColor: TudloColors.green,
                         child: Column(
@@ -335,7 +393,6 @@ class _LevelGamePageState extends State<LevelGamePage> {
                       ),
                       const SizedBox(height: 14),
                       _LearningSection(
-                        icon: Icons.grid_view_rounded,
                         title: 'Mga Halimbawa',
                         accentColor: TudloColors.blue,
                         child: _ExampleCardGrid(
@@ -367,6 +424,10 @@ class _LevelGamePageState extends State<LevelGamePage> {
         ),
       ),
     );
+  }
+
+  bool get _isGradeOneLeksyonOneLevel {
+    return AppData.selectedGradeLevel == GradeLevel.grade1 && widget.level == 1;
   }
 }
 
@@ -760,99 +821,112 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
     final showMeaning = question.type != QuestionType.matching;
     final usesChoiceActivityCard = _usesChoiceActivityCard(question.type);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: TudloColors.line, width: 4),
-        boxShadow: [
-          BoxShadow(
-            color: TudloColors.ink.withValues(alpha: .06),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: TudloColors.line, width: 4),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.ink.withValues(alpha: .06),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: question.type == QuestionType.fillBlank
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.stretch,
-        children: [
-          if (!usesChoiceActivityCard) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _QuestionNumberBadge(number: widget.number),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    question.type == QuestionType.imageChoice
-                        ? question.prompt
-                        : _titleFor(question.type),
-                    textAlign: question.type == QuestionType.fillBlank
-                        ? TextAlign.left
-                        : TextAlign.center,
-                    style: const TextStyle(
-                      color: TudloColors.ink,
-                      fontSize: 29,
-                      fontWeight: FontWeight.w900,
-                      height: 1.08,
+          child: Column(
+            crossAxisAlignment: question.type == QuestionType.fillBlank
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.stretch,
+            children: [
+              if (!usesChoiceActivityCard) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _QuestionNumberBadge(number: widget.number),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        question.type == QuestionType.imageChoice
+                            ? question.prompt
+                            : _titleFor(question.type),
+                        textAlign: question.type == QuestionType.fillBlank
+                            ? TextAlign.left
+                            : TextAlign.center,
+                        style: const TextStyle(
+                          color: TudloColors.ink,
+                          fontSize: 29,
+                          fontWeight: FontWeight.w900,
+                          height: 1.08,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+              ],
+              _questionContentArea(question),
+              if (checked && !lastCorrect) ...[
+                const SizedBox(height: 18),
+                _AnswerFeedbackPanel(
+                  correct: lastCorrect,
+                  phrase: feedbackPhrase,
+                  meaning: feedbackMeaning,
+                  showDetails: showMeaning,
+                ),
+              ],
+              if (question.type != QuestionType.matching) ...[
+                const SizedBox(height: 18),
+                _FeedbackMotion(
+                  key: ValueKey('check-$answerFeedbackAttempt'),
+                  correct: checked && lastCorrect,
+                  wrong: checked && !lastCorrect,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 68,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: checked
+                            ? lastCorrect
+                                  ? TudloColors.green
+                                  : TudloColors.coral
+                            : TudloColors.blue,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: TudloColors.line,
+                        disabledForegroundColor: TudloColors.muted,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                      ),
+                      onPressed: checked || !canCheck ? null : _checkAnswer,
+                      child: Text(
+                        checked ? 'NAPASA' : 'IPASA',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 22),
-          ],
-          _questionContentArea(question),
-          if (checked) ...[
-            const SizedBox(height: 18),
-            _AnswerFeedbackPanel(
-              correct: lastCorrect,
-              phrase: feedbackPhrase,
-              meaning: feedbackMeaning,
-              showDetails: showMeaning,
-            ),
-          ],
-          if (question.type != QuestionType.matching) ...[
-            const SizedBox(height: 18),
-            _FeedbackMotion(
-              key: ValueKey('check-$answerFeedbackAttempt'),
-              correct: checked && lastCorrect,
-              wrong: checked && !lastCorrect,
-              child: SizedBox(
-                width: double.infinity,
-                height: 68,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: checked
-                        ? lastCorrect
-                              ? TudloColors.green
-                              : TudloColors.coral
-                        : TudloColors.blue,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: TudloColors.line,
-                    disabledForegroundColor: TudloColors.muted,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                  ),
-                  onPressed: checked || !canCheck ? null : _checkAnswer,
-                  child: Text(
-                    checked ? 'NASUSI' : 'SUSIHA',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
+            ],
+          ),
+        ),
+        if (checked && lastCorrect)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: _ConfettiBurst(
+                key: ValueKey('confetti-$answerFeedbackAttempt'),
+                fill: true,
               ),
             ),
-          ],
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -903,13 +977,11 @@ class _LevelIntroHeader extends StatelessWidget {
 }
 
 class _LearningSection extends StatelessWidget {
-  final IconData icon;
   final String title;
   final Widget child;
   final Color accentColor;
 
   const _LearningSection({
-    required this.icon,
     required this.title,
     required this.child,
     this.accentColor = TudloColors.coral,
@@ -931,8 +1003,6 @@ class _LearningSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: accentColor, size: 34),
-              const SizedBox(width: 12),
               Flexible(
                 child: Text(
                   title,
@@ -963,11 +1033,11 @@ class _StoryLessonSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: TudloColors.line, width: 4),
+        border: Border.all(color: const Color(0xFFAEEBFF), width: 4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -975,44 +1045,34 @@ class _StoryLessonSection extends StatelessWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_stories_rounded,
-                    color: TudloColors.coral,
-                    size: 34,
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Istorya',
-                    style: TextStyle(
-                      color: TudloColors.forest,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
+              const Text(
+                'Istorya',
+                style: TextStyle(
+                  color: Color(0xFF259C13),
+                  fontSize: 29,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TudloVoiceButton(
                   message: '${content.storyTitle}. ${content.story}',
-                  tooltip: 'Play story',
+                  tooltip: 'Pamatii ang istorya',
                   size: 54,
+                  hiligaynon: true,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const _StoryIllustration(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
+          _StoryIllustration(imagePath: _storyImagePathForActiveGrade()),
+          const SizedBox(height: 18),
           Text(
             content.storyTitle,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: TudloColors.forest,
-              fontSize: 28,
+              color: Color(0xFF259C13),
+              fontSize: 29,
               height: 1.05,
               fontWeight: FontWeight.w900,
             ),
@@ -1026,28 +1086,56 @@ class _StoryLessonSection extends StatelessWidget {
 }
 
 class _StoryIllustration extends StatelessWidget {
-  const _StoryIllustration();
+  final String imagePath;
+
+  const _StoryIllustration({required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 210,
+      height: 214,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: TudloColors.softGreen, width: 3),
+        color: const Color(0xFFF3FFE5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: TudloColors.forest, width: 2),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/level_game/yunit1/leksyon1story.png',
+              imagePath,
               fit: BoxFit.cover,
               alignment: Alignment.center,
               filterQuality: FilterQuality.high,
+              errorBuilder: (_, __, ___) => const _StoryImageFallback(),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+String _storyImagePathForActiveGrade() {
+  return switch (AppData.selectedGradeLevel) {
+    GradeLevel.grade1 => 'assets/images/story.png',
+    GradeLevel.grade2 =>
+      'assets/images/level_game/Grade2/unit1/lesson1/story.png',
+    GradeLevel.grade3 =>
+      'assets/images/level_game/Grade3/unit1/lesson1/story.png',
+  };
+}
+
+class _StoryImageFallback extends StatelessWidget {
+  const _StoryImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF3FFE5),
+      child: const Center(
+        child: Icon(Icons.image_rounded, color: TudloColors.forest, size: 58),
       ),
     );
   }
@@ -1063,9 +1151,9 @@ class _SpeechBubble extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
-        color: TudloColors.paper,
+        color: const Color(0xFFF6FFE8),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: TudloColors.gold, width: 3),
+        border: Border.all(color: const Color(0xFFFFD21E), width: 3),
       ),
       child: Text(
         text,
@@ -1098,8 +1186,9 @@ class _VoiceMessage extends StatelessWidget {
         children: [
           TudloVoiceButton(
             message: text,
-            tooltip: 'Play voice message',
+            tooltip: 'Pamatii',
             size: 58,
+            hiligaynon: true,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1285,9 +1374,10 @@ class _ExampleCard extends StatelessWidget {
                 ),
               ),
               TudloVoiceButton(
-                message: '${example.hiligaynon}. ${example.english}',
-                tooltip: 'Play example',
+                message: example.hiligaynon,
+                tooltip: 'Pamatii ang halimbawa',
                 size: 46,
+                hiligaynon: true,
               ),
             ],
           ),
@@ -3326,5 +3416,78 @@ class _FeedbackMotion extends StatelessWidget {
       },
       child: child,
     );
+  }
+}
+
+class _ConfettiBurst extends StatelessWidget {
+  final bool fill;
+
+  const _ConfettiBurst({super.key, this.fill = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final confetti = TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 850),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, _) {
+        return CustomPaint(
+          painter: _ConfettiPainter(progress: value),
+          child: const SizedBox.expand(),
+        );
+      },
+    );
+
+    if (fill) return confetti;
+
+    return SizedBox(height: 86, child: confetti);
+  }
+}
+
+class _ConfettiPainter extends CustomPainter {
+  final double progress;
+
+  const _ConfettiPainter({required this.progress});
+
+  static const _colors = [
+    TudloColors.green,
+    TudloColors.blue,
+    TudloColors.gold,
+    TudloColors.coral,
+    Color(0xFF8B5CF6),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * .58);
+    final paint = Paint()..style = PaintingStyle.fill;
+    for (var i = 0; i < 42; i++) {
+      final angle = (-math.pi) + (math.pi * 2) * (i / 41);
+      final distance = (24 + (i % 7) * 11) * progress;
+      final fall = 34 * progress * progress;
+      final position =
+          center +
+          Offset(math.cos(angle) * distance, math.sin(angle) * distance + fall);
+      final opacity = (1 - progress).clamp(0.0, 1.0);
+      paint.color = _colors[i % _colors.length].withValues(alpha: opacity);
+      canvas.save();
+      canvas.translate(position.dx, position.dy);
+      canvas.rotate(angle + progress * math.pi);
+      final width = 7.0 + (i % 3) * 2;
+      final height = 12.0 + (i % 4);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset.zero, width: width, height: height),
+          const Radius.circular(3),
+        ),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConfettiPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }

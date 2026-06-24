@@ -70,14 +70,9 @@ flutter:
     - assets/images/navbar/
     - assets/images/onbaording/
     - assets/images/profile/
-    - assets/images/level_game/action/
-    - assets/images/level_game/animal/
-    - assets/images/level_game/unit 1/arrange-words/
-    - assets/images/level_game/unit 1/complete_the_sentence/
-    - assets/images/level_game/unit 1/image_choice/people/
-    - assets/images/level_game/unit 1/image_choice/transportation/
-    - assets/images/level_game/yunit1/
-    - assets/images/level_game/fruits/
+    - assets/images/level_game/Grade1/
+    - assets/images/level_game/Grade2/
+    - assets/images/level_game/Grade3/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

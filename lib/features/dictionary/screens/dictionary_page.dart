@@ -27,7 +27,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() => _query = _searchController.text.trim().toLowerCase());
+      setState(
+        () =>
+            _query = DictionaryData.normalizeForSearch(_searchController.text),
+      );
     });
   }
 
@@ -45,8 +48,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
     // "balay" can find the same vocabulary pair.
     final terms = DictionaryData.entries.where((entry) {
       if (_query.isEmpty) return true;
-      return entry.english.toLowerCase().contains(_query) ||
-          entry.hiligaynon.toLowerCase().contains(_query);
+      return DictionaryData.normalizeForSearch(
+            entry.english,
+          ).contains(_query) ||
+          DictionaryData.normalizeForSearch(entry.hiligaynon).contains(_query);
     }).toList();
 
     terms.sort((a, b) {
@@ -64,7 +69,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
     final grouped = <String, List<DictionaryEntry>>{};
     for (final entry in _filteredTerms) {
       final word = _englishMode ? entry.english : entry.hiligaynon;
-      final letter = word.isEmpty ? '#' : word[0].toUpperCase();
+      final normalizedWord = DictionaryData.normalizeForSearch(word);
+      final letter = normalizedWord.isEmpty
+          ? '#'
+          : normalizedWord[0].toUpperCase();
       grouped
           .putIfAbsent(RegExp(r'[A-Z]').hasMatch(letter) ? letter : '#', () {
             return [];
@@ -107,84 +115,69 @@ class _DictionaryPageState extends State<DictionaryPage> {
     final sections = _sections;
 
     return Scaffold(
-      backgroundColor: TudloColors.paper,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            CustomScrollView(
-              controller: _scrollController,
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              slivers: [
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            controller: _scrollController,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              SliverToBoxAdapter(
+                child: _DictionaryHeader(controller: _searchController),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(10, 14, 18, 10),
+                sliver: SliverToBoxAdapter(
+                  child: _ModeSwitch(
+                    mode: _mode,
+                    onChanged: (mode) => setState(() => _mode = mode),
+                  ),
+                ),
+              ),
+              if (sections.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      'No words found',
+                      style: TextStyle(
+                        color: TudloColors.muted,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                )
+              else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 12),
+                  padding: const EdgeInsets.fromLTRB(10, 0, 34, 128),
                   sliver: SliverToBoxAdapter(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Dictionary',
-                          style: TextStyle(
-                            color: TudloColors.ink,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SearchField(controller: _searchController),
-                        const SizedBox(height: 14),
-                        _ModeSwitch(
-                          mode: _mode,
-                          onChanged: (mode) => setState(() => _mode = mode),
-                        ),
-                      ],
+                      children: sections.map((section) {
+                        // All current sections are mounted so ensureVisible
+                        // can reliably scroll to any A-Z letter.
+                        final key = _letterKeys.putIfAbsent(
+                          section.letter,
+                          GlobalKey.new,
+                        );
+                        return _DictionarySectionView(
+                          key: key,
+                          section: section,
+                          englishMode: _englishMode,
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
-                if (sections.isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Text(
-                        'No words found',
-                        style: TextStyle(
-                          color: TudloColors.muted,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(22, 4, 42, 120),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        children: sections.map((section) {
-                          // All current sections are mounted so ensureVisible
-                          // can reliably scroll to any A-Z letter.
-                          final key = _letterKeys.putIfAbsent(
-                            section.letter,
-                            GlobalKey.new,
-                          );
-                          return _DictionarySectionView(
-                            key: key,
-                            section: section,
-                            englishMode: _englishMode,
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            Positioned(
-              top: 190,
-              right: 6,
-              bottom: 118,
-              child: _LetterIndex(onTap: _jumpToLetter),
-            ),
-          ],
-        ),
+            ],
+          ),
+          Positioned(
+            top: 186,
+            right: 3,
+            bottom: 118,
+            child: _LetterIndex(onTap: _jumpToLetter),
+          ),
+        ],
       ),
     );
   }
@@ -197,9 +190,49 @@ class _DictionarySection {
   const _DictionarySection(this.letter, this.terms);
 }
 
-// This search field lets the user filter dictionary words.
-// The controller is owned by the main Dictionary page so the page can rebuild
-// the visible word list whenever the search text changes.
+class _DictionaryHeader extends StatelessWidget {
+  final TextEditingController controller;
+
+  const _DictionaryHeader({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        8,
+        MediaQuery.paddingOf(context).top + 14,
+        8,
+        10,
+      ),
+      decoration: const BoxDecoration(color: Color(0xFF79AD55)),
+      child: Column(
+        children: [
+          const Text(
+            'Dictionary',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  color: Color(0x66000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          _SearchField(controller: controller),
+        ],
+      ),
+    );
+  }
+}
+
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
 
@@ -207,40 +240,39 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TextField is only responsible for the input UI.
-    // The actual search/filter logic is handled in the parent widget.
     return TextField(
       controller: controller,
-      cursorColor: TudloColors.green,
+      cursorColor: const Color(0xFF5EA832),
       style: const TextStyle(
         color: TudloColors.ink,
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: FontWeight.w800,
       ),
       decoration: InputDecoration(
         hintText: 'Search word...',
         hintStyle: const TextStyle(
-          color: TudloColors.muted,
+          color: Color(0xFF8D9690),
           fontWeight: FontWeight.w700,
         ),
-        prefixIcon: const Icon(Icons.search_rounded, color: TudloColors.forest),
+        prefixIcon: const Icon(
+          Icons.search_rounded,
+          color: Color(0xFF5EA832),
+          size: 29,
+        ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(24),
-          borderSide: const BorderSide(color: TudloColors.line, width: 2),
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(24),
-          borderSide: const BorderSide(color: TudloColors.line, width: 2),
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(24),
-          borderSide: const BorderSide(color: TudloColors.green, width: 2.5),
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
         ),
       ),
     );
@@ -259,11 +291,19 @@ class _ModeSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(5),
+      height: 44,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: TudloColors.softGreen.withValues(alpha: .78),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: TudloColors.line),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE7E9E3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -307,16 +347,11 @@ class _ModePill extends StatelessWidget {
         // Tapping the pill tells the parent Dictionary page to change modes.
         onTap: onTap,
         child: AnimatedContainer(
-          // This short animation makes switching modes feel smoother.
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected ? TudloColors.green : Colors.transparent,
-              width: 1.5,
-            ),
+            color: selected ? const Color(0xFF61A934) : Colors.transparent,
+            borderRadius: BorderRadius.circular(17),
           ),
           child: Text(
             label,
@@ -324,8 +359,8 @@ class _ModePill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: selected ? TudloColors.forest : TudloColors.muted,
-              fontSize: 17,
+              color: selected ? Colors.white : const Color(0xFF797F7A),
+              fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -353,13 +388,31 @@ class _DictionarySectionView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(2, 18, 0, 8),
-          child: Text(
-            section.letter,
-            style: const TextStyle(
-              color: TudloColors.forest,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
+          padding: const EdgeInsets.fromLTRB(2, 6, 0, 8),
+          child: Container(
+            width: 29,
+            height: 25,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5EA832),
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .12),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                section.letter,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
         ),
@@ -389,51 +442,92 @@ class _DictionaryCard extends StatelessWidget {
     final translatedWord = englishMode ? term.hiligaynon : term.english;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 12, 18),
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.fromLTRB(18, 12, 10, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: TudloColors.line, width: 1.5),
+        borderRadius: BorderRadius.circular(11),
         boxShadow: [
           BoxShadow(
-            color: TudloColors.forest.withValues(alpha: .06),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: .12),
+            blurRadius: 7,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  color: TudloColors.ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  height: 1.24,
-                ),
-                children: [
-                  TextSpan(text: mainWord),
-                  const TextSpan(
-                    text: ' = ',
-                    style: TextStyle(color: TudloColors.muted),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    style: const TextStyle(
+                      color: TudloColors.ink,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      height: 1.08,
+                    ),
+                    children: [
+                      TextSpan(text: mainWord),
+                      const TextSpan(
+                        text: ' = ',
+                        style: TextStyle(color: TudloColors.muted),
+                      ),
+                      TextSpan(
+                        text: translatedWord,
+                        style: const TextStyle(color: Color(0xFF5EA832)),
+                      ),
+                    ],
                   ),
-                  TextSpan(
-                    text: translatedWord,
-                    style: const TextStyle(color: TudloColors.forest),
+                ),
+                if (term.partOfSpeech?.trim().isNotEmpty ?? false) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    term.partOfSpeech!,
+                    style: const TextStyle(
+                      color: Color(0xFF9AA09B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
-          TudloVoiceButton(
-            message: mainWord,
-            tooltip: 'Play pronunciation',
-            size: 48,
-          ),
+          _DictionarySpeakButton(message: mainWord, hiligaynon: !englishMode),
         ],
       ),
+    );
+  }
+}
+
+class _DictionarySpeakButton extends StatelessWidget {
+  final String message;
+  final bool hiligaynon;
+
+  const _DictionarySpeakButton({
+    required this.message,
+    required this.hiligaynon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filled(
+      tooltip: 'Play pronunciation',
+      onPressed: () =>
+          TudloVoiceButton.speak(context, message, hiligaynon: hiligaynon),
+      style: IconButton.styleFrom(
+        backgroundColor: const Color(0xFFEFF8E8),
+        foregroundColor: const Color(0xFF5EA832),
+        minimumSize: const Size(40, 40),
+        iconSize: 26,
+      ),
+      icon: const Icon(Icons.volume_up_rounded),
     );
   }
 }
@@ -449,12 +543,18 @@ class _LetterIndex extends StatelessWidget {
   Widget build(BuildContext context) {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     return Container(
-      width: 28,
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      width: 23,
+      padding: const EdgeInsets.symmetric(vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .72),
+        color: Colors.white.withValues(alpha: .84),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: TudloColors.line.withValues(alpha: .72)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .10),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,
@@ -467,14 +567,14 @@ class _LetterIndex extends StatelessWidget {
               // ScrollController and the section GlobalKeys.
               onTap: () => onTap(letter),
               child: SizedBox(
-                width: 26,
-                height: 18,
+                width: 22,
+                height: 17,
                 child: Center(
                   child: Text(
                     letter,
                     style: const TextStyle(
-                      color: Color(0xFF4F5B4F),
-                      fontSize: 11,
+                      color: Color(0xFF5EA832),
+                      fontSize: 10,
                       fontWeight: FontWeight.w900,
                     ),
                   ),

@@ -104,12 +104,14 @@ class TudloVoiceButton extends StatelessWidget {
   final String message;
   final String tooltip;
   final double size;
+  final bool? hiligaynon;
 
   const TudloVoiceButton({
     super.key,
     required this.message,
     this.tooltip = 'Play voice message',
     this.size = 54,
+    this.hiligaynon,
   });
 
   @override
@@ -140,7 +142,11 @@ class TudloVoiceButton extends StatelessWidget {
         ),
         onPressed: () async {
           final appState = AppStateScope.of(context);
-          await speak(context, message, hiligaynon: appState.isHiligaynon);
+          await speak(
+            context,
+            message,
+            hiligaynon: hiligaynon ?? appState.isHiligaynon,
+          );
         },
         icon: const Icon(Icons.volume_up_rounded),
       ),

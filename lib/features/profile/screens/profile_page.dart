@@ -11,11 +11,20 @@ import 'package:tudloapp/features/streak/helpers/streak_helper.dart';
 
 enum _ProfileTab { about, streak, favorites }
 
+String _profileText(
+  BuildContext context, {
+  required String hil,
+  required String en,
+}) {
+  return AppStateScope.of(context).isHiligaynon ? hil : en;
+}
+
 const _profileAvatars = [
   'assets/images/profile/profile.jpg',
   'assets/images/profile/profile2.jpg',
   'assets/images/profile/profile3.jpg',
 ];
+const _profileNotSetAsset = 'assets/images/profile/profile-notset.jpg';
 
 /// Profile dashboard screen.
 ///
@@ -97,21 +106,32 @@ class _ProfilePageState extends State<ProfilePage> {
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Clear progress?'),
-        content: const Text(
-          'This keeps the profile but resets levels, scores, stars, and energy.',
+        title: Text(
+          _profileText(
+            context,
+            hil: 'Papas ang progreso?',
+            en: 'Clear progress?',
+          ),
+        ),
+        content: Text(
+          _profileText(
+            context,
+            hil:
+                'Magapabilin ang profile pero ma-reset ang levels, scores, stars, kag energy.',
+            en: 'This keeps the profile but resets levels, scores, stars, and energy.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_profileText(context, hil: 'Kanselahon', en: 'Cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
               await AppStateScope.of(context).clearActiveProfileData();
               if (dialogContext.mounted) Navigator.pop(dialogContext);
             },
-            child: const Text('Clear'),
+            child: Text(_profileText(context, hil: 'Papas', en: 'Clear')),
           ),
         ],
       ),
@@ -185,20 +205,28 @@ class _ProfilePageState extends State<ProfilePage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
-          title: const Text('Rename profile'),
+          title: Text(
+            _profileText(
+              context,
+              hil: 'Islan ang ngalan sang profile',
+              en: 'Rename profile',
+            ),
+          ),
           content: TextField(
             controller: controller,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Name',
+            decoration: InputDecoration(
+              labelText: _profileText(context, hil: 'Ngalan', en: 'Name'),
               border: OutlineInputBorder(),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(
+                _profileText(context, hil: 'Kanselahon', en: 'Cancel'),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -207,7 +235,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 appState.setUsername(value);
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Save'),
+              child: Text(_profileText(context, hil: 'Tipigi', en: 'Save')),
             ),
           ],
         );
@@ -230,7 +258,7 @@ class _ProfileManagementRow extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onSwitch,
             icon: const Icon(Icons.people_rounded),
-            label: const Text('Switch'),
+            label: Text(_profileText(context, hil: 'Islan', en: 'Switch')),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD9A520),
               foregroundColor: Colors.white,
@@ -242,7 +270,9 @@ class _ProfileManagementRow extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onClear,
             icon: const Icon(Icons.cleaning_services_rounded),
-            label: const Text('Clear data'),
+            label: Text(
+              _profileText(context, hil: 'Papasa ang datos', en: 'Clear data'),
+            ),
             style: ElevatedButton.styleFrom(backgroundColor: TudloColors.coral),
           ),
         ),
@@ -276,6 +306,7 @@ class _MainProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // The profile card keeps permanent user info at the top and switches the
     // lower tab content between ABOUT and Streak.
+    final gradeNumber = gradeLabel.replaceFirst('Grade ', '');
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -305,15 +336,24 @@ class _MainProfileCard extends StatelessWidget {
                           ),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: avatarAsset.trim().isEmpty
-                            ? const Center(
+                        child: Image.asset(
+                          avatarAsset.trim().isEmpty
+                              ? _profileNotSetAsset
+                              : avatarAsset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const ColoredBox(
+                              color: Color(0xFFF6F9EA),
+                              child: Center(
                                 child: Icon(
-                                  Icons.add_rounded,
+                                  Icons.person_rounded,
                                   color: TudloColors.green,
-                                  size: 62,
+                                  size: 56,
                                 ),
-                              )
-                            : Image.asset(avatarAsset, fit: BoxFit.cover),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(width: 18),
@@ -334,7 +374,11 @@ class _MainProfileCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Grade: $gradeLabel',
+                            _profileText(
+                              context,
+                              hil: 'Grado: $gradeNumber',
+                              en: 'Grade: $gradeLabel',
+                            ),
                             style: GoogleFonts.nunito(
                               color: TudloColors.forest,
                               fontSize: 18,
@@ -343,7 +387,11 @@ class _MainProfileCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Joined on ${_formatDate(joinedOn)}',
+                            _profileText(
+                              context,
+                              hil: 'Nagsugod sang ${_formatDate(joinedOn)}',
+                              en: 'Joined on ${_formatDate(joinedOn)}',
+                            ),
                             style: GoogleFonts.nunito(
                               color: TudloColors.muted,
                               fontSize: 15,
@@ -362,19 +410,31 @@ class _MainProfileCard extends StatelessWidget {
                 child: Row(
                   children: [
                     _ProfileTabButton(
-                      label: 'ABOUT',
+                      label: _profileText(
+                        context,
+                        hil: 'KAUGALINGON',
+                        en: 'ABOUT',
+                      ),
                       selected: selectedTab == _ProfileTab.about,
                       onTap: () => onTabSelected(_ProfileTab.about),
                     ),
                     const SizedBox(width: 10),
                     _ProfileTabButton(
-                      label: 'Streak',
+                      label: _profileText(
+                        context,
+                        hil: 'Sunod-sunod',
+                        en: 'Streak',
+                      ),
                       selected: selectedTab == _ProfileTab.streak,
                       onTap: () => onTabSelected(_ProfileTab.streak),
                     ),
                     const SizedBox(width: 10),
                     _ProfileTabButton(
-                      label: 'Favorites',
+                      label: _profileText(
+                        context,
+                        hil: 'Paborito',
+                        en: 'Favorites',
+                      ),
                       selected: selectedTab == _ProfileTab.favorites,
                       onTap: () => onTabSelected(_ProfileTab.favorites),
                     ),
@@ -388,7 +448,11 @@ class _MainProfileCard extends StatelessWidget {
           top: -8,
           right: -8,
           child: IconButton.filled(
-            tooltip: 'Edit profile',
+            tooltip: _profileText(
+              context,
+              hil: 'Islan ang profile',
+              en: 'Edit profile',
+            ),
             onPressed: onRename,
             style: IconButton.styleFrom(
               backgroundColor: TudloColors.gold,
@@ -453,13 +517,20 @@ class _AboutCard extends StatelessWidget {
       children: [
         Expanded(
           child: _StatSquare(
-            label: 'Levels\nComplete',
+            label: _profileText(
+              context,
+              hil: 'Natapos nga\nAntas',
+              en: 'Levels\nComplete',
+            ),
             value: '${AppData.completedLevels.length}',
           ),
         ),
         const SizedBox(width: 18),
         Expanded(
-          child: _StatSquare(label: 'Streak', value: '$streak'),
+          child: _StatSquare(
+            label: _profileText(context, hil: 'Sunod-sunod', en: 'Streak'),
+            value: '$streak',
+          ),
         ),
       ],
     );
@@ -568,7 +639,12 @@ class _FavoritesCard extends StatelessWidget {
       decoration: _softCardDecoration(radius: 24),
       child: sortedWords.isEmpty
           ? Text(
-              'Tap the heart on Daily Word to save favorite words here.',
+              _profileText(
+                context,
+                hil:
+                    'Itum-ok ang tagipusuon sa Pulong sang Adlaw para matipon diri ang paborito mo nga mga pulong.',
+                en: 'Tap the heart on Daily Word to save favorite words here.',
+              ),
               textAlign: TextAlign.center,
               style: GoogleFonts.nunito(
                 color: TudloColors.muted,
@@ -629,7 +705,8 @@ class _FavoriteWordRow extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                if (meaning.isNotEmpty)
+                if (meaning.isNotEmpty &&
+                    !AppStateScope.of(context).isHiligaynon)
                   Text(
                     meaning,
                     style: GoogleFonts.nunito(
@@ -672,7 +749,11 @@ class _ProgressSectionState extends State<_ProgressSection> {
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            "${widget.username}'s Progress",
+            _profileText(
+              context,
+              hil: 'Progreso ni ${widget.username}',
+              en: "${widget.username}'s Progress",
+            ),
             style: GoogleFonts.nunito(
               color: TudloColors.cloud,
               fontSize: 27,
@@ -736,7 +817,11 @@ class _ProgressSectionState extends State<_ProgressSection> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'View all',
+                        _profileText(
+                          context,
+                          hil: 'Tan-awa tanan',
+                          en: 'View all',
+                        ),
                         style: GoogleFonts.nunito(
                           color: TudloColors.forest,
                           fontSize: 19,
@@ -822,7 +907,11 @@ class _UnitProgressTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 7),
                 Text(
-                  '$count of ${AppData.unitLevels} leksiyon done',
+                  _profileText(
+                    context,
+                    hil: '$count sa ${AppData.unitLevels} ka leksiyon natapos',
+                    en: '$count of ${AppData.unitLevels} leksiyon done',
+                  ),
                   style: GoogleFonts.nunito(
                     color: TudloColors.muted,
                     fontSize: 14,
@@ -834,7 +923,11 @@ class _UnitProgressTile extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           IconButton.filled(
-            tooltip: 'Play next lesson',
+            tooltip: _profileText(
+              context,
+              hil: 'Sugdi ang sunod nga leksiyon',
+              en: 'Play next lesson',
+            ),
             onPressed: () {
               Navigator.push(
                 context,
