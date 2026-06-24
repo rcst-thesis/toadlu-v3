@@ -1119,7 +1119,8 @@ class _StoryIllustration extends StatelessWidget {
 
 String _storyImagePathForActiveGrade() {
   return switch (AppData.selectedGradeLevel) {
-    GradeLevel.grade1 => 'assets/images/story.png',
+    GradeLevel.grade1 =>
+      'assets/images/level_game/Grade1/unit1/lesson1/story.png',
     GradeLevel.grade2 =>
       'assets/images/level_game/Grade2/unit1/lesson1/story.png',
     GradeLevel.grade3 =>
@@ -2105,24 +2106,24 @@ class _ChoicePill extends StatelessWidget {
             onTap: onTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 140),
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              height: 76,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: background,
                 borderRadius: BorderRadius.circular(999),
               ),
               alignment: Alignment.center,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: foreground,
-                    fontSize: 23,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                  ),
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  color: foreground,
+                  fontSize: 21,
+                  height: 1.08,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),
@@ -3176,17 +3177,17 @@ class _ImageChoiceCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  term.hil,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: labelColor,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
+              Text(
+                term.hil,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: labelColor,
+                  fontSize: 20,
+                  height: 1.08,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ],

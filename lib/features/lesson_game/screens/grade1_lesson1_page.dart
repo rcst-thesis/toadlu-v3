@@ -28,20 +28,32 @@ class Grade1Lesson1Result {
 final List<SoundItem> activityAItems = [
   SoundItem(
     id: 'alarm',
-    image: 'assets/images/alarm.png',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/alarm-clock.png',
     answer: 'Kring kring!',
   ),
-  SoundItem(id: 'cow', image: 'assets/images/cow.png', answer: 'Moo moo!'),
+  SoundItem(
+    id: 'cow',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/cow.png',
+    answer: 'Moo moo!',
+  ),
   SoundItem(
     id: 'whistle',
-    image: 'assets/images/whistle.png',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/whistle.png',
     answer: 'Prit prit!',
   ),
-  SoundItem(id: 'baby', image: 'assets/images/baby.png', answer: 'Waa waa!'),
-  SoundItem(id: 'car', image: 'assets/images/car.png', answer: 'Brum brum!'),
+  SoundItem(
+    id: 'baby',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/crying-baby.png',
+    answer: 'Waa waa!',
+  ),
+  SoundItem(
+    id: 'car',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/car.png',
+    answer: 'Brum brum!',
+  ),
   SoundItem(
     id: 'camera',
-    image: 'assets/images/camera.png',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/camera.png',
     answer: 'Klik klik!',
   ),
 ];
@@ -58,22 +70,22 @@ final List<String> activityAChoices = [
 final List<SoundItem> matchingItems = [
   SoundItem(
     id: 'telephone',
-    image: 'assets/images/telephone.png',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/telephone.png',
     answer: 'krriiing! krriiing!',
   ),
   SoundItem(
     id: 'whistle',
-    image: 'assets/images/whistle.png',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/whistle.png',
     answer: 'prrt! prrt! prrt!',
   ),
   SoundItem(
     id: 'bell',
-    image: 'assets/images/bell.png',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/bell.png',
     answer: 'ting! ting! ting!',
   ),
   SoundItem(
     id: 'hammer',
-    image: 'assets/images/hammer.png',
+    image: 'assets/images/level_game/Grade1/unit1/lesson1/hammer.png',
     answer: 'pok! pok! pok!',
   ),
 ];
@@ -87,17 +99,17 @@ final List<String> matchingChoices = [
 
 final List<Map<String, dynamic>> animalQuiz = [
   {
-    'image': 'assets/images/cow.png',
+    'image': 'assets/images/level_game/Grade1/unit1/lesson1/cow.png',
     'answer': 'Moo moo!',
     'choices': ['Brum brum!', 'Moo moo!', 'Waa waa!'],
   },
   {
-    'image': 'assets/images/cat.png',
+    'image': 'assets/images/level_game/Grade1/unit1/lesson1/cat.png',
     'answer': 'Meow meow!',
     'choices': ['Prit prit!', 'Klik klik!', 'Meow meow!'],
   },
   {
-    'image': 'assets/images/dog.png',
+    'image': 'assets/images/level_game/Grade1/unit1/lesson1/dog.png',
     'answer': 'Arf arf!',
     'choices': ['Moo moo!', 'Arf arf!', 'Meow meow!'],
   },
@@ -452,7 +464,7 @@ class _StoryCard extends StatelessWidget {
               border: Border.all(color: TudloColors.forest, width: 2),
             ),
             child: const _LessonImage(
-              image: 'assets/images/story.png',
+              image: 'assets/images/level_game/Grade1/unit1/lesson1/story.png',
               semanticLabel: 'May Klase na Naman',
               fit: BoxFit.cover,
             ),
@@ -1092,56 +1104,62 @@ class _MatchingImageColumn extends StatelessWidget {
         final matched = matchedIds.contains(item.id);
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(24),
-            onTap: matched ? null : () => onSelect(item),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 140),
-              height: 92,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: matched
-                    ? const Color(0xFFE7F8EE)
-                    : selected
-                    ? const Color(0xFFD6FFF1)
-                    : Colors.white,
+          child: Align(
+            alignment: Alignment.center,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 310),
+              child: InkWell(
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: matched
-                      ? const Color(0xFF12B76A)
-                      : selected
-                      ? TudloColors.green
-                      : const Color(0xFFBDE0FE),
-                  width: 3,
-                ),
-                boxShadow: [
-                  if (selected || matched)
-                    BoxShadow(
-                      color:
-                          (matched
-                                  ? const Color(0xFF12B76A)
-                                  : TudloColors.green)
-                              .withValues(alpha: .18),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
-                    ),
-                ],
-              ),
-              child: Center(
+                onTap: matched ? null : () => onSelect(item),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 140),
-                  width: 72,
-                  height: 72,
-                  padding: const EdgeInsets.all(7),
+                  height: 104,
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: selected || matched
-                        ? const Color(0xFFCFFFD5)
-                        : const Color(0xFFF2FFF5),
-                    borderRadius: BorderRadius.circular(20),
+                    color: matched
+                        ? const Color(0xFFE7F8EE)
+                        : selected
+                        ? const Color(0xFFD6FFF1)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: matched
+                          ? const Color(0xFF12B76A)
+                          : selected
+                          ? TudloColors.green
+                          : const Color(0xFFBDE0FE),
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      if (selected || matched)
+                        BoxShadow(
+                          color:
+                              (matched
+                                      ? const Color(0xFF12B76A)
+                                      : TudloColors.green)
+                                  .withValues(alpha: .18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
+                        ),
+                    ],
                   ),
-                  child: _LessonImage(
-                    image: item.image,
-                    semanticLabel: item.id,
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 140),
+                      width: 78,
+                      height: 78,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: selected || matched
+                            ? const Color(0xFFCFFFD5)
+                            : const Color(0xFFF2FFF5),
+                        borderRadius: BorderRadius.circular(21),
+                      ),
+                      child: _LessonImage(
+                        image: item.image,
+                        semanticLabel: item.id,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1171,7 +1189,7 @@ class _MatchingSoundColumn extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 10),
           child: SizedBox(
             width: double.infinity,
-            height: 76,
+            height: 86,
             child: ElevatedButton(
               onPressed: matched ? null : () => onSelect(sound),
               style: ElevatedButton.styleFrom(
@@ -1197,7 +1215,14 @@ class _MatchingSoundColumn extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              child: Text(sound, textAlign: TextAlign.center),
+              child: Text(
+                sound,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                textAlign: TextAlign.center,
+                style: const TextStyle(height: 1.12),
+              ),
             ),
           ),
         );
@@ -1615,6 +1640,9 @@ class _ChoiceButton extends StatelessWidget {
         child: Center(
           child: Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            softWrap: true,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: textColor,
@@ -1666,18 +1694,7 @@ class _AnswerChip extends StatelessWidget {
 }
 
 String? _fallbackImagePath(String image) {
-  const base = 'assets/images/level_game/Grade1/unit1/lesson1';
-  return switch (image) {
-    'assets/images/alarm.png' => '$base/alarm-clock.png',
-    'assets/images/baby.png' => '$base/crying-baby.png',
-    'assets/images/cow.png' => '$base/cow.png',
-    'assets/images/whistle.png' => '$base/whistle.png',
-    'assets/images/car.png' => '$base/car.png',
-    'assets/images/camera.png' => '$base/camera.png',
-    'assets/images/cat.png' => '$base/cat.png',
-    'assets/images/dog.png' => '$base/dog.png',
-    _ => null,
-  };
+  return null;
 }
 
 IconData _fallbackIcon(String label) {
