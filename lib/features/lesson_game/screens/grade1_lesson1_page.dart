@@ -1084,7 +1084,7 @@ class _MatchingActivityState extends State<_MatchingActivity> {
                   ),
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE4FFC8),
                       borderRadius: BorderRadius.circular(24),
@@ -1093,32 +1093,24 @@ class _MatchingActivityState extends State<_MatchingActivity> {
                         width: 3,
                       ),
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final stacked = constraints.maxWidth < 560;
-                        final left = _MatchingImageColumn(
-                          selectedId: _selectedId,
-                          matchedIds: _matchedIds,
-                          onSelect: _selectItem,
-                        );
-                        final right = _MatchingSoundColumn(
-                          matchedSounds: _matchedSounds,
-                          onSelect: _selectSound,
-                        );
-                        if (stacked) {
-                          return Column(
-                            children: [left, const SizedBox(height: 12), right],
-                          );
-                        }
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: left),
-                            const SizedBox(width: 12),
-                            Expanded(child: right),
-                          ],
-                        );
-                      },
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _MatchingImageColumn(
+                            selectedId: _selectedId,
+                            matchedIds: _matchedIds,
+                            onSelect: _selectItem,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MatchingSoundColumn(
+                            matchedSounds: _matchedSounds,
+                            onSelect: _selectSound,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1170,62 +1162,37 @@ class _MatchingImageColumn extends StatelessWidget {
         final matched = matchedIds.contains(item.id);
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: Align(
-            alignment: Alignment.center,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 270),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(24),
-                onTap: matched ? null : () => onSelect(item),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 140),
-                  height: 118,
-                  padding: const EdgeInsets.all(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: matched ? null : () => onSelect(item),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              height: 86,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: matched
+                      ? const Color(0xFF12B76A)
+                      : selected
+                      ? TudloColors.green
+                      : const Color(0xFFBDE0FE),
+                  width: 3,
+                ),
+              ),
+              child: Center(
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
-                    color: matched
-                        ? const Color(0xFFE7F8EE)
-                        : selected
-                        ? const Color(0xFFD6FFF1)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: matched
-                          ? const Color(0xFF12B76A)
-                          : selected
-                          ? TudloColors.green
-                          : const Color(0xFFBDE0FE),
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      if (selected || matched)
-                        BoxShadow(
-                          color:
-                              (matched
-                                      ? const Color(0xFF12B76A)
-                                      : TudloColors.green)
-                                  .withValues(alpha: .18),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
-                        ),
-                    ],
+                    color: const Color(0xFFF2FFF5),
+                    borderRadius: BorderRadius.circular(17),
                   ),
-                  child: Center(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 140),
-                      width: 82,
-                      height: 82,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: selected || matched
-                            ? const Color(0xFFCFFFD5)
-                            : const Color(0xFFF2FFF5),
-                        borderRadius: BorderRadius.circular(21),
-                      ),
-                      child: _LessonImage(
-                        image: item.image,
-                        semanticLabel: item.id,
-                      ),
-                    ),
+                  child: _LessonImage(
+                    image: item.image,
+                    semanticLabel: item.id,
                   ),
                 ),
               ),
@@ -1259,20 +1226,17 @@ class _MatchingSoundColumn extends StatelessWidget {
             child: ElevatedButton(
               onPressed: matched ? null : () => onSelect(sound),
               style: ElevatedButton.styleFrom(
-                elevation: matched ? 0 : 3,
-                shadowColor: const Color(0xFFFFC857).withValues(alpha: .40),
-                backgroundColor: matched
-                    ? const Color(0xFFA0E8AF)
-                    : const Color(0xFFFFF275),
+                elevation: 0,
+                backgroundColor: Colors.white,
                 foregroundColor: TudloColors.ink,
-                disabledBackgroundColor: const Color(0xFFA0E8AF),
+                disabledBackgroundColor: Colors.white,
                 disabledForegroundColor: TudloColors.forest,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
                     color: matched
                         ? const Color(0xFF12B76A)
-                        : const Color(0xFFFFC857),
+                        : const Color(0xFFBDE0FE),
                     width: 3,
                   ),
                 ),
