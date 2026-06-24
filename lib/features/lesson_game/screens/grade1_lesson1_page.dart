@@ -767,6 +767,32 @@ class _ActivityADragDropState extends State<_ActivityADragDrop> {
   final Map<String, String> _answers = {};
   String _feedback = 'I-drag ang huni pakadto sa insakto nga laragway.';
   bool _lastDropCorrect = false;
+  bool _submitted = false;
+
+  void _submitAnswers() {
+    if (_answers.length < activityAItems.length) {
+      setState(() {
+        _submitted = false;
+        _lastDropCorrect = false;
+        _feedback = 'Kompletoha anay ang 6 ka sabat antes ipasa.';
+      });
+      widget.onCorrectCountChanged(0);
+      return;
+    }
+
+    final correctCount = activityAItems.where((item) {
+      return _answers[item.id] == item.answer;
+    }).length;
+
+    setState(() {
+      _submitted = true;
+      _lastDropCorrect = correctCount == activityAItems.length;
+      _feedback = _lastDropCorrect
+          ? ''
+          : 'Tan-awa ang pula nga sabat kag sulayi liwat.';
+    });
+    widget.onCorrectCountChanged(correctCount);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -815,21 +841,19 @@ class _ActivityADragDropState extends State<_ActivityADragDrop> {
                       return _SoundDropCard(
                         item: item,
                         answer: _answers[item.id],
+                        submitted: _submitted,
                         onDropped: (data) {
-                          if (data == item.answer) {
-                            setState(() {
-                              _answers[item.id] = data;
-                              _feedback = '';
-                              _lastDropCorrect = true;
-                            });
-                            widget.onCorrectCountChanged(_answers.length);
-                          } else {
-                            setState(() {
-                              _feedback =
-                                  'Sulayi liwat! Pili-a ang husto nga huni.';
-                              _lastDropCorrect = false;
-                            });
-                          }
+                          setState(() {
+                            _answers.removeWhere(
+                              (key, value) => key != item.id && value == data,
+                            );
+                            _answers[item.id] = data;
+                            _submitted = false;
+                            _lastDropCorrect = false;
+                            _feedback =
+                                'I-drag ang huni pakadto sa insakto nga laragway.';
+                          });
+                          widget.onCorrectCountChanged(0);
                         },
                       );
                     }).toList(),
@@ -845,6 +869,25 @@ class _ActivityADragDropState extends State<_ActivityADragDrop> {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 58,
+                    child: ElevatedButton(
+                      onPressed: _submitAnswers,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF118AB2),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      child: const Text('Ipasa'),
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -883,17 +926,22 @@ class _ActivityADragDropState extends State<_ActivityADragDrop> {
 class _SoundDropCard extends StatelessWidget {
   final SoundItem item;
   final String? answer;
+  final bool submitted;
   final ValueChanged<String> onDropped;
 
   const _SoundDropCard({
     required this.item,
     required this.answer,
+    required this.submitted,
     required this.onDropped,
   });
 
   @override
   Widget build(BuildContext context) {
     final completed = answer != null;
+    final correct = completed && answer == item.answer;
+    final wrong = completed && submitted && !correct;
+    final checkedCorrect = completed && submitted && correct;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -914,29 +962,47 @@ class _SoundDropCard extends StatelessWidget {
               height: 42,
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
-                color: completed
+                color: checkedCorrect
                     ? const Color(0xFFE7F8EE)
+                    : wrong
+                    ? const Color(0xFFFFE5EC)
                     : hovering
                     ? const Color(0xFFE0F7FA)
                     : Colors.white,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: completed ? const Color(0xFF12B76A) : TudloColors.ink,
-                  width: completed ? 3 : 2,
+                  color: checkedCorrect
+                      ? const Color(0xFF12B76A)
+                      : wrong
+                      ? const Color(0xFFEF476F)
+                      : TudloColors.ink,
+                  width: submitted && completed ? 3 : 2,
                 ),
               ),
               child: Center(
-                child: Text(
-                  answer ?? '',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: completed
-                        ? const Color(0xFF087443)
-                        : TudloColors.muted,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                child: answer == null
+                    ? const SizedBox.shrink()
+                    : Draggable<String>(
+                        data: answer!,
+                        feedback: Material(
+                          color: Colors.transparent,
+                          child: _AnswerChip(label: answer!, lifted: true),
+                        ),
+                        childWhenDragging: const SizedBox.shrink(),
+                        child: Text(
+                          answer!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: checkedCorrect
+                                ? const Color(0xFF087443)
+                                : wrong
+                                ? const Color(0xFFC9184A)
+                                : TudloColors.muted,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
               ),
             );
           },
@@ -1107,13 +1173,13 @@ class _MatchingImageColumn extends StatelessWidget {
           child: Align(
             alignment: Alignment.center,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 310),
+              constraints: const BoxConstraints(maxWidth: 270),
               child: InkWell(
                 borderRadius: BorderRadius.circular(24),
                 onTap: matched ? null : () => onSelect(item),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 140),
-                  height: 104,
+                  height: 118,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: matched
@@ -1146,8 +1212,8 @@ class _MatchingImageColumn extends StatelessWidget {
                   child: Center(
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 140),
-                      width: 78,
-                      height: 78,
+                      width: 82,
+                      height: 82,
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: selected || matched
