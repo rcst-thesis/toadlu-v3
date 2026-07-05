@@ -246,7 +246,7 @@ List<LessonQuestion> gradeThreePdfQuestionSet(math.Random rng) {
       directionLabel: 'Reading check',
     ),
     LessonQuestion.arrangeWords(
-      prompt: 'Ipahamtang ang mga pulong para mahimo ang titulo.',
+      prompt: 'Ano ini sa Hiligaynon.',
       answer: 'Mga Pangalan nga Maisip',
       sentenceWords: shuffled(['Mga', 'Pangalan', 'nga', 'Maisip']),
       targetPhrase: 'Mga Pangalan nga Maisip',
@@ -254,7 +254,7 @@ List<LessonQuestion> gradeThreePdfQuestionSet(math.Random rng) {
       directionLabel: 'Lesson title',
     ),
     LessonQuestion.arrangeWords(
-      prompt: 'Ipahamtang ang mga pulong para mahimo ang pangungusap.',
+      prompt: 'Ano ini sa Hiligaynon.',
       answer: 'May tatlo ka pinirito nga itlog',
       sentenceWords: shuffled([
         'May',
@@ -269,7 +269,7 @@ List<LessonQuestion> gradeThreePdfQuestionSet(math.Random rng) {
       directionLabel: 'Hiligaynon sentence',
     ),
     LessonQuestion.matching(
-      prompt: 'Ipares ang pulong kag kahulugan.',
+      prompt: 'Ipares ang tinaga kag kahulugan.',
       leftItems: ['estasyon', 'establisyemento', 'kamatis', 'talong'],
       rightItems: shuffled([
         'balantayan sang salakyan',

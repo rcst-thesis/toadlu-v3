@@ -64,6 +64,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/data/
     - assets/images/
     - assets/images/dialogue/
     - assets/images/game_map/
@@ -71,6 +72,7 @@ flutter:
     - assets/images/onbaording/
     - assets/images/profile/
     - assets/images/level_game/Grade1/
+    - assets/images/level_game/Grade1/unit1/
     - assets/images/level_game/Grade1/unit1/lesson1/
     - assets/images/level_game/Grade2/
     - assets/images/level_game/Grade2/unit1/lesson1/

@@ -12,7 +12,6 @@ import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 import 'package:tudloapp/core/widgets/word_tooltip.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
-import 'package:tudloapp/features/lesson_game/screens/grade1_lesson1_page.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
 
 /// Main lesson gameplay screen opened from the Home Map.
@@ -29,20 +28,31 @@ class LevelGamePage extends StatefulWidget {
 }
 
 class _LevelGamePageState extends State<LevelGamePage> {
-  late final List<LessonQuestion> questions;
-  late final LessonLevelContent levelContent;
-  int score = 0;
-  int checkedCount = 0;
+  late final Future<LevelContent> _contentFuture;
+  List<LessonQuestion> questions = const [];
+  final Map<int, String> selectedAnswers = {};
+  final Map<int, bool> checkedAnswers = {};
+  final Map<int, bool> correctAnswers = {};
+  final Map<int, List<String>> builtWords = {};
+  final Map<int, Map<String, String>> matches = {};
   late final DateTime _levelStartedAt;
   bool _rewardsClaimed = false;
   bool _completeDialogShown = false;
 
+  int get score => correctAnswers.values.where((correct) => correct).length;
+
+  int get checkedCount =>
+      checkedAnswers.values.where((checked) => checked).length;
+
   @override
   void initState() {
     super.initState();
-    // Generate questions once for this level.
-    questions = LessonBank.questionsForLevel(widget.level);
-    levelContent = LessonBank.contentForLevel(widget.level);
+    _contentFuture = LessonBank.loadLevelContentForLevel(widget.level).then((
+      content,
+    ) {
+      questions = content.quizItems.map(_questionFromQuizItem).toList();
+      return content;
+    });
     _levelStartedAt = DateTime.now();
   }
 
@@ -60,34 +70,43 @@ class _LevelGamePageState extends State<LevelGamePage> {
     AppStateScope.of(context).saveActiveProfileProgress();
   }
 
-  void _claimSourceLessonRewardsOnce({
-    required int sourceScore,
-    required int sourceTotal,
+  void _handleQuestionChecked(
+    int index,
+    bool correct, {
+    bool autoComplete = true,
   }) {
-    if (_rewardsClaimed) return;
-    _rewardsClaimed = true;
-
-    AppData.saveLevelScore(widget.level, sourceScore, sourceTotal);
-    if (AppData.unlockedLevel <= widget.level &&
-        widget.level < AppData.maxLevel) {
-      AppData.unlockedLevel = widget.level + 1;
-    }
-    AppStateScope.of(context).saveActiveProfileProgress();
-  }
-
-  void _handleQuestionChecked(bool correct) {
     if (_completeDialogShown) return;
     setState(() {
-      checkedCount++;
-      if (correct) score++;
+      checkedAnswers[index] = correct;
+      correctAnswers[index] = correct;
     });
 
-    if (checkedCount >= questions.length) {
+    final allCorrect =
+        questions.isNotEmpty &&
+        List.generate(
+          questions.length,
+          (itemIndex) => correctAnswers[itemIndex] == true,
+        ).every((correct) => correct);
+
+    if (autoComplete && allCorrect) {
       _completeDialogShown = true;
       Future<void>.delayed(const Duration(milliseconds: 350), () {
         if (mounted) _showCompleteDialog();
       });
     }
+  }
+
+  void _submitCompletedPage() {
+    if (_completeDialogShown) return;
+    final allCorrect =
+        questions.isNotEmpty &&
+        List.generate(
+          questions.length,
+          (itemIndex) => correctAnswers[itemIndex] == true,
+        ).every((correct) => correct);
+    if (!allCorrect) return;
+    _completeDialogShown = true;
+    _showCompleteDialog();
   }
 
   void _showCompleteDialog() {
@@ -110,41 +129,6 @@ class _LevelGamePageState extends State<LevelGamePage> {
         durationLabel: durationLabel,
         onClaim: () {
           _claimRewardsOnce();
-          Navigator.pop(context);
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 0)),
-            (route) => false,
-          );
-        },
-      ),
-    );
-  }
-
-  void _showSourceLessonCompleteDialog(Grade1Lesson1Result result) {
-    if (_completeDialogShown) return;
-    _completeDialogShown = true;
-
-    final accuracy = result.total == 0
-        ? 0
-        : ((result.correct / result.total) * 100).round();
-    final durationLabel = _formatDuration(
-      DateTime.now().difference(_levelStartedAt),
-    );
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: TudloColors.ink.withValues(alpha: .62),
-      builder: (_) => _LessonCompleteDialog(
-        level: widget.level,
-        accuracy: accuracy,
-        mistakes: result.total - result.correct,
-        durationLabel: durationLabel,
-        onClaim: () {
-          _claimSourceLessonRewardsOnce(
-            sourceScore: result.correct,
-            sourceTotal: result.total,
-          );
           Navigator.pop(context);
           Navigator.pushAndRemoveUntil(
             context,
@@ -208,7 +192,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                     const TudloMascot(size: 138),
                     const SizedBox(height: 12),
                     const Text(
-                      'Maghalin ka na?',
+                      'Mahalin ka na?',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: TudloColors.ink,
@@ -296,138 +280,1058 @@ class _LevelGamePageState extends State<LevelGamePage> {
     Navigator.pop(context);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isGradeOneLeksyonOneLevel) {
-      return Grade1Lesson1LevelPage(
-        onBack: _showPauseMenu,
-        onFinish: _showSourceLessonCompleteDialog,
+  LessonQuestion _questionFromQuizItem(QuizItem item) {
+    final choiceTypes = {
+      QuizType.multipleChoice,
+      QuizType.pictureChoice,
+      QuizType.listenAndChoose,
+      QuizType.tapCorrectWord,
+    };
+    if (item.type == QuizType.matching) {
+      return LessonQuestion.matching(
+        prompt: item.question,
+        leftItems: item.leftItems,
+        rightItems: item.rightItems,
+        directionLabel: item.id,
       );
     }
+    if (item.type == QuizType.fillBlankChoice) {
+      return LessonQuestion.fillBlank(
+        prompt: item.question,
+        answer: item.answer,
+        choices: item.choices,
+        imagePath: item.imageAsset ?? '',
+        targetPhrase: item.answer,
+        targetMeaning: item.answer,
+        directionLabel: item.id,
+      );
+    }
+    if (item.type == QuizType.arrangeWords) {
+      return LessonQuestion.arrangeWords(
+        prompt: item.question,
+        answer: item.answer,
+        sentenceWords: item.choices,
+        imagePath: item.imageAsset ?? '',
+        targetPhrase: item.answer,
+        targetMeaning: item.answer,
+        directionLabel: item.id,
+      );
+    }
+    if (choiceTypes.contains(item.type)) {
+      return LessonQuestion.translationChoice(
+        prompt: item.question,
+        answer: item.answer,
+        choices: item.choices,
+        imagePath: item.imageAsset ?? '',
+        targetPhrase: item.answer,
+        targetMeaning: item.answer,
+        directionLabel: item.id,
+      );
+    }
+    return LessonQuestion.choice(
+      prompt: item.question,
+      answer: item.answer,
+      choices: item.choices,
+      imagePath: item.imageAsset ?? '',
+      targetPhrase: item.answer,
+      targetMeaning: item.answer,
+      directionLabel: item.id,
+    );
+  }
 
-    final progress = questions.isEmpty ? 0.0 : checkedCount / questions.length;
+  LessonLevelContent _displayContent(LevelContent levelContent) {
+    return LessonLevelContent(
+      title: levelContent.title,
+      storyTitle: levelContent.storyTitle ?? '',
+      story: levelContent.story ?? '',
+      shortLesson: levelContent.lesson,
+      examples: levelContent.examples,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final horizontalPadding = screenWidth < 380 ? 10.0 : 18.0;
     final backButtonSize = screenWidth < 380 ? 48.0 : 56.0;
     final backIconSize = screenWidth < 380 ? 32.0 : 40.0;
     final progressHeight = screenWidth < 380 ? 14.0 : 18.0;
 
-    return Scaffold(
-      backgroundColor: TudloColors.paper,
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            horizontalPadding,
-            12,
-            horizontalPadding,
-            18,
-          ),
-          child: Column(
-            children: [
-              Row(
+    return FutureBuilder<LevelContent>(
+      future: _contentFuture,
+      builder: (context, snapshot) {
+        final loading = snapshot.connectionState != ConnectionState.done;
+        final levelContent = snapshot.data;
+        final alphabetLesson =
+            levelContent != null && _isGradeOneAlphabetContent(levelContent);
+        final progress = questions.isEmpty
+            ? 0.0
+            : checkedCount / questions.length;
+        final alphabetCanSubmit =
+            alphabetLesson &&
+            questions.isNotEmpty &&
+            List.generate(
+              questions.length,
+              (itemIndex) => correctAnswers[itemIndex] == true,
+            ).every((correct) => correct);
+
+        return Scaffold(
+          backgroundColor: TudloColors.paper,
+          body: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                12,
+                horizontalPadding,
+                18,
+              ),
+              child: Column(
                 children: [
-                  SizedBox(
-                    width: backButtonSize,
-                    height: backButtonSize,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      // Back button:
-                      // Opens the pause menu before leaving the game.
-                      onPressed: _showPauseMenu,
-                      icon: Icon(
-                        Icons.arrow_back_rounded,
-                        color: TudloColors.blue,
-                        size: backIconSize,
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: backButtonSize,
+                        height: backButtonSize,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          // Back button:
+                          // Opens the pause menu before leaving the game.
+                          onPressed: _showPauseMenu,
+                          icon: Icon(
+                            Icons.arrow_back_rounded,
+                            color: TudloColors.blue,
+                            size: backIconSize,
+                          ),
+                        ),
                       ),
-                    ),
+                      SizedBox(width: screenWidth < 380 ? 6 : 10),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: progressHeight,
+                            backgroundColor: TudloColors.line,
+                            color: TudloColors.green,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: screenWidth < 380 ? 6 : 12),
+                      SizedBox(width: screenWidth < 380 ? 6 : 12),
+                      Flexible(
+                        flex: 0,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: const EnergyIndicator(),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: screenWidth < 380 ? 6 : 10),
+                  const SizedBox(height: 26),
                   Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: progressHeight,
-                        backgroundColor: TudloColors.line,
-                        color: TudloColors.green,
-                      ),
+                    child: loading || levelContent == null
+                        ? const _LessonLoadingCard()
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _LevelIntroHeader(
+                                  level: widget.level,
+                                  title: levelContent.title,
+                                ),
+                                if (alphabetLesson) ...[
+                                  const SizedBox(height: 16),
+                                  _GradeOneAlphabetLesson(
+                                    content: levelContent,
+                                    canSubmit: alphabetCanSubmit,
+                                    onSubmit: _submitCompletedPage,
+                                    onQuizCorrect: (index) =>
+                                        _handleQuestionChecked(
+                                          index,
+                                          true,
+                                          autoComplete: false,
+                                        ),
+                                  ),
+                                ] else ...[
+                                  if (levelContent.story?.trim().isNotEmpty ==
+                                      true) ...[
+                                    const SizedBox(height: 18),
+                                    _StoryLessonSection(
+                                      content: _displayContent(levelContent),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 14),
+                                  _LearningSection(
+                                    title: 'Leksiyon',
+                                    accentColor: TudloColors.green,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _VoiceMessage(
+                                          text: levelContent.lesson,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _LearningSection(
+                                    title: 'Mga Halimbawa',
+                                    accentColor: TudloColors.blue,
+                                    child: _ExampleCardGrid(
+                                      examples: levelContent.examples,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  const _QuizSectionHeader(),
+                                  const SizedBox(height: 12),
+                                  ...questions.asMap().entries.map((entry) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 16,
+                                      ),
+                                      child: _LevelQuizCard(
+                                        key: ValueKey(
+                                          '${widget.level}-${entry.key}-${entry.value.prompt}',
+                                        ),
+                                        number: entry.key + 1,
+                                        question: entry.value,
+                                        onChecked: (correct) =>
+                                            _handleQuestionChecked(
+                                              entry.key,
+                                              correct,
+                                            ),
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ],
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _isGradeOneAlphabetContent(LevelContent content) {
+    return content.gradeLevel == 1 &&
+        content.unitNumber == 1 &&
+        content.lessonNumber <= 6 &&
+        content.title.toLowerCase().contains('letters');
+  }
+}
+
+class _LessonLoadingCard extends StatelessWidget {
+  const _LessonLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: TudloCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            TudloMascot(size: 110),
+            SizedBox(height: 14),
+            Text(
+              'Ginakuha ang leksiyon...',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: TudloColors.ink,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GradeOneAlphabetLesson extends StatelessWidget {
+  final LevelContent content;
+  final bool canSubmit;
+  final VoidCallback onSubmit;
+  final ValueChanged<int> onQuizCorrect;
+
+  const _GradeOneAlphabetLesson({
+    required this.content,
+    required this.canSubmit,
+    required this.onSubmit,
+    required this.onQuizCorrect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final anchors = _alphabetAnchorsFor(content.lessonNumber);
+    final targets = _targetLettersFor(content);
+    final quizActivities = content.quizItems.asMap().entries.map((entry) {
+      final target = _targetLetterForQuiz(entry.value, targets);
+      final anchor = _bestAnchorForTarget(
+        anchors,
+        target,
+        prompt: entry.value.question,
+      );
+      return _AlphabetMiniActivity(
+        key: ValueKey('alphabet-quiz-${content.id}-${entry.value.id}'),
+        sectionLabel: 'Pagtilaw',
+        word: anchor.word,
+        meaning: anchor.meaning,
+        imageAsset: anchor.imageAsset,
+        icon: anchor.icon,
+        targetLetters: [target],
+        instruction: _instructionForQuiz(entry.value, target),
+        mascotMessage: 'Koka: Pamatii, dayon tap-a ang husto nga letra.',
+        onCorrect: () => onQuizCorrect(entry.key),
+      );
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _AlphabetGuideCard(content: content),
+        const SizedBox(height: 14),
+        _AlphabetSectionLabel(title: 'Leksiyon'),
+        const SizedBox(height: 10),
+        for (final anchor in anchors) ...[
+          _AlphabetMiniActivity(
+            sectionLabel: 'Leksiyon',
+            word: anchor.word,
+            meaning: anchor.meaning,
+            imageAsset: anchor.imageAsset,
+            icon: anchor.icon,
+            targetLetters: anchor.targets,
+            instruction:
+                'Tap-a ang mga letra ${anchor.targets.join(", ")} sa tinaga.',
+            mascotMessage:
+                'Koka: Ini ang tinaga ${anchor.word}. Tap-a ang kada letra.',
+          ),
+          const SizedBox(height: 14),
+        ],
+        _AlphabetSectionLabel(title: 'Mga Halimbawa'),
+        const SizedBox(height: 10),
+        for (final target in targets) ...[
+          Builder(
+            builder: (context) {
+              final anchor = _bestAnchorForTarget(anchors, target);
+              return _AlphabetMiniActivity(
+                sectionLabel: 'Gamita Ini',
+                word: anchor.word,
+                meaning: anchor.meaning,
+                imageAsset: anchor.imageAsset,
+                icon: anchor.icon,
+                targetLetters: [target],
+                instruction:
+                    'May $target sa ${anchor.word}. Pamatii ang /${target.toLowerCase()}/.',
+                mascotMessage:
+                    'Koka: Ang letra $target may tingog nga /${target.toLowerCase()}/.',
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+        ],
+        _AlphabetSectionLabel(title: 'Pagtilaw'),
+        const SizedBox(height: 10),
+        ...quizActivities.expand((card) => [card, const SizedBox(height: 14)]),
+        const SizedBox(height: 8),
+        _AlphabetSubmitButton(enabled: canSubmit, onPressed: onSubmit),
+      ],
+    );
+  }
+
+  List<String> _targetLettersFor(LevelContent content) {
+    final titleTargets = RegExp(
+      r'\b[A-Z]\b',
+    ).allMatches(content.title).map((match) => match.group(0)!).toList();
+    if (titleTargets.isNotEmpty) return titleTargets;
+    return _alphabetAnchorsFor(
+      content.lessonNumber,
+    ).expand((anchor) => anchor.targets).toSet().toList();
+  }
+
+  String _targetLetterForQuiz(QuizItem item, List<String> targets) {
+    final combined = '${item.answer} ${item.question}'.toUpperCase();
+    for (final target in targets) {
+      if (RegExp('\\b$target\\b').hasMatch(combined) ||
+          combined.contains('/$target/')) {
+        return target;
+      }
+    }
+    return targets.isEmpty
+        ? item.answer.characters.first.toUpperCase()
+        : targets.first;
+  }
+
+  String _instructionForQuiz(QuizItem item, String target) {
+    final question = item.question.trim();
+    final soundMatch = RegExp(r'/([^/]+)/').firstMatch(question);
+    if (soundMatch != null) {
+      return 'Tap the letter that makes /${soundMatch.group(1)}/.';
+    }
+    if (question.toLowerCase().contains('diin')) return question;
+    return 'Pamatii ang tingog kag tap-a ang letra $target.';
+  }
+
+  _AlphabetAnchor _bestAnchorForTarget(
+    List<_AlphabetAnchor> anchors,
+    String target, {
+    String prompt = '',
+  }) {
+    final lowerPrompt = prompt.toLowerCase();
+    for (final anchor in anchors) {
+      if (lowerPrompt.contains(anchor.word.toLowerCase())) return anchor;
+    }
+    return anchors.firstWhere(
+      (anchor) => anchor.word.contains(target),
+      orElse: () => anchors.first,
+    );
+  }
+
+  List<_AlphabetAnchor> _alphabetAnchorsFor(int lessonNumber) {
+    switch (lessonNumber) {
+      case 1:
+        return const [
+          _AlphabetAnchor(
+            word: 'NANAY',
+            meaning: 'mother',
+            targets: ['N', 'A', 'Y'],
+            imageAsset: 'assets/images/level_game/Grade1/unit1/nanay.png',
+            icon: Icons.family_restroom_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'TATAY',
+            meaning: 'father',
+            targets: ['T', 'A', 'Y'],
+            imageAsset: 'assets/images/level_game/Grade1/unit1/tatay.png',
+            icon: Icons.family_restroom_rounded,
+          ),
+        ];
+      case 2:
+        return const [
+          _AlphabetAnchor(
+            word: 'IDO',
+            meaning: 'dog',
+            targets: ['I', 'D', 'O'],
+            imageAsset: 'assets/images/level_game/Grade1/unit1/lesson1/dog.png',
+            icon: Icons.pets_rounded,
+          ),
+        ];
+      case 3:
+        return const [
+          _AlphabetAnchor(
+            word: 'MANOK',
+            meaning: 'chicken',
+            targets: ['M', 'K'],
+            icon: Icons.egg_alt_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'KURING',
+            meaning: 'cat',
+            targets: ['K', 'U'],
+            imageAsset: 'assets/images/level_game/Grade1/unit1/lesson1/cat.png',
+            icon: Icons.pets_rounded,
+          ),
+        ];
+      case 4:
+        return const [
+          _AlphabetAnchor(
+            word: 'BALAY',
+            meaning: 'house',
+            targets: ['B', 'L'],
+            icon: Icons.home_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'LOLA',
+            meaning: 'grandmother',
+            targets: ['L'],
+            icon: Icons.elderly_woman_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'ISDA',
+            meaning: 'fish',
+            targets: ['S'],
+            icon: Icons.water_rounded,
+          ),
+        ];
+      case 5:
+        return const [
+          _AlphabetAnchor(
+            word: 'ESKWELAHAN',
+            meaning: 'school',
+            targets: ['E'],
+            icon: Icons.school_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'GATAS',
+            meaning: 'milk',
+            targets: ['G'],
+            icon: Icons.local_drink_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'PAMILYA',
+            meaning: 'family',
+            targets: ['P'],
+            icon: Icons.diversity_3_rounded,
+          ),
+        ];
+      case 6:
+      default:
+        return const [
+          _AlphabetAnchor(
+            word: 'DOKTOR',
+            meaning: 'doctor',
+            targets: ['R'],
+            icon: Icons.medical_services_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'HOSPITAL',
+            meaning: 'hospital',
+            targets: ['H'],
+            icon: Icons.local_hospital_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'KARBAW',
+            meaning: 'carabao',
+            targets: ['W'],
+            imageAsset: 'assets/images/level_game/Grade1/unit1/lesson1/cow.png',
+            icon: Icons.agriculture_rounded,
+          ),
+          _AlphabetAnchor(
+            word: 'CAT',
+            meaning: 'cat',
+            targets: ['C'],
+            imageAsset: 'assets/images/level_game/Grade1/unit1/lesson1/cat.png',
+            icon: Icons.pets_rounded,
+          ),
+        ];
+    }
+  }
+}
+
+class _AlphabetAnchor {
+  final String word;
+  final String meaning;
+  final List<String> targets;
+  final String? imageAsset;
+  final IconData icon;
+
+  const _AlphabetAnchor({
+    required this.word,
+    required this.meaning,
+    required this.targets,
+    required this.icon,
+    this.imageAsset,
+  });
+}
+
+class _AlphabetGuideCard extends StatelessWidget {
+  final LevelContent content;
+
+  const _AlphabetGuideCard({required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    final firstLine = content.lesson.split('\n').first.trim();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE4FFD1),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: TudloColors.green, width: 3),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const TudloMascot(size: 86),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Koka nga Manuggiya',
+                  style: TextStyle(
+                    color: TudloColors.forest,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  firstLine.isEmpty
+                      ? 'Pamatii ang tingog kag tap-a ang husto nga letra.'
+                      : firstLine,
+                  style: const TextStyle(
+                    color: TudloColors.ink,
+                    fontSize: 18,
+                    height: 1.25,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlphabetSectionLabel extends StatelessWidget {
+  final String title;
+
+  const _AlphabetSectionLabel({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: TudloColors.forest,
+        fontSize: 30,
+        height: 1,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+}
+
+class _AlphabetSubmitButton extends StatelessWidget {
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  const _AlphabetSubmitButton({required this.enabled, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 66,
+      child: ElevatedButton(
+        onPressed: enabled ? onPressed : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: TudloColors.green,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: TudloColors.line,
+          disabledForegroundColor: TudloColors.muted,
+          elevation: enabled ? 6 : 0,
+          shadowColor: TudloColors.forest.withValues(alpha: .30),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(32),
+          ),
+          textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+        ),
+        child: const Text('IPASA'),
+      ),
+    );
+  }
+}
+
+class _AlphabetMiniActivity extends StatefulWidget {
+  final String sectionLabel;
+  final String word;
+  final String meaning;
+  final String? imageAsset;
+  final IconData icon;
+  final List<String> targetLetters;
+  final String instruction;
+  final String mascotMessage;
+  final VoidCallback? onCorrect;
+
+  const _AlphabetMiniActivity({
+    super.key,
+    required this.sectionLabel,
+    required this.word,
+    required this.meaning,
+    required this.icon,
+    required this.targetLetters,
+    required this.instruction,
+    required this.mascotMessage,
+    this.imageAsset,
+    this.onCorrect,
+  });
+
+  @override
+  State<_AlphabetMiniActivity> createState() => _AlphabetMiniActivityState();
+}
+
+class _AlphabetMiniActivityState extends State<_AlphabetMiniActivity> {
+  int? _selectedIndex;
+  bool _correct = false;
+  bool _wrong = false;
+  bool _reported = false;
+  String _feedback = 'Pamatii anay, dayon tap-a ang letra.';
+  int _motionKey = 0;
+
+  Set<String> get _targets =>
+      widget.targetLetters.map((letter) => letter.toUpperCase()).toSet();
+
+  Future<void> _handleLetterTap(String letter, int index) async {
+    await TudloVoiceButton.speak(context, _soundFor(letter), hiligaynon: true);
+    final isCorrect = _targets.contains(letter.toUpperCase());
+    setState(() {
+      _selectedIndex = index;
+      _correct = isCorrect;
+      _wrong = !isCorrect;
+      _feedback = isCorrect
+          ? 'Husto! Maayo gid.'
+          : 'Sulayi liwat. Pamatii liwat ang tingog.';
+      _motionKey++;
+    });
+    if (isCorrect && !_reported) {
+      _reported = true;
+      widget.onCorrect?.call();
+    }
+    if (!isCorrect) {
+      Future<void>.delayed(const Duration(milliseconds: 760), () {
+        if (!mounted || _correct) return;
+        setState(() => _wrong = false);
+      });
+    }
+  }
+
+  String _soundFor(String letter) => '/${letter.toLowerCase()}/';
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 370),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: const Color(0xFFAEEBFF), width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: TudloColors.ink.withValues(alpha: .06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    widget.sectionLabel,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: TudloColors.forest,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  SizedBox(width: screenWidth < 380 ? 6 : 12),
-                  Flexible(
-                    flex: 0,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: const EnergyIndicator(),
+                  const SizedBox(height: 12),
+                  TappableWord(
+                    word: widget.word,
+                    targetLetters: widget.targetLetters,
+                    selectedIndex: _selectedIndex,
+                    correct: _correct,
+                    wrong: _wrong,
+                    motionKey: _motionKey,
+                    onLetterTap: _handleLetterTap,
+                  ),
+                  const SizedBox(height: 18),
+                  _AlphabetAnchorImage(
+                    imageAsset: widget.imageAsset,
+                    icon: widget.icon,
+                    word: _displayWord(widget.word),
+                    meaning: widget.meaning,
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8FFD8),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: TudloColors.green, width: 2),
+                    ),
+                    child: Row(
+                      children: [
+                        TudloVoiceButton(
+                          message: widget.instruction,
+                          tooltip: 'Pamatii ang instruksyon',
+                          size: 50,
+                          hiligaynon: true,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            widget.instruction,
+                            style: const TextStyle(
+                              color: TudloColors.ink,
+                              fontSize: 20,
+                              height: 1.2,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7C7),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: TudloColors.gold, width: 2),
+                    ),
+                    child: Text(
+                      _correct || _wrong ? _feedback : widget.mascotMessage,
+                      style: const TextStyle(
+                        color: TudloColors.ink,
+                        fontSize: 17,
+                        height: 1.2,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _LevelIntroHeader(
-                        level: widget.level,
-                        title: levelContent.title,
-                      ),
-                      const SizedBox(height: 18),
-                      _StoryLessonSection(content: levelContent),
-                      const SizedBox(height: 14),
-                      _LearningSection(
-                        title: 'Leksiyon',
-                        accentColor: TudloColors.green,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _VoiceMessage(text: levelContent.shortLesson),
-                            if (levelContent.concepts.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              _ConceptCardGrid(concepts: levelContent.concepts),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _LearningSection(
-                        title: 'Mga Halimbawa',
-                        accentColor: TudloColors.blue,
-                        child: _ExampleCardGrid(
-                          examples: levelContent.examples,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const _QuizSectionHeader(),
-                      const SizedBox(height: 12),
-                      ...questions.asMap().entries.map((entry) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _LevelQuizCard(
-                            key: ValueKey(
-                              '${widget.level}-${entry.key}-${entry.value.prompt}',
-                            ),
-                            number: entry.key + 1,
-                            question: entry.value,
-                            onChecked: _handleQuestionChecked,
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+            Positioned(
+              right: -18,
+              bottom: 20,
+              child: IgnorePointer(child: TudloMascot(size: 92)),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  bool get _isGradeOneLeksyonOneLevel {
-    return AppData.selectedGradeLevel == GradeLevel.grade1 && widget.level == 1;
+  String _displayWord(String word) {
+    return word.isEmpty
+        ? word
+        : word[0].toUpperCase() + word.substring(1).toLowerCase();
+  }
+}
+
+class TappableWord extends StatelessWidget {
+  final String word;
+  final List<String> targetLetters;
+  final int? selectedIndex;
+  final bool correct;
+  final bool wrong;
+  final int motionKey;
+  final void Function(String letter, int index) onLetterTap;
+
+  const TappableWord({
+    super.key,
+    required this.word,
+    required this.targetLetters,
+    required this.onLetterTap,
+    this.selectedIndex,
+    this.correct = false,
+    this.wrong = false,
+    this.motionKey = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final letters = word.characters.toList();
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (var index = 0; index < letters.length; index++)
+          _TappableLetterCard(
+            key: ValueKey('$word-$index-${letters[index]}-$motionKey'),
+            letter: letters[index],
+            imageAsset: _letterAssetFor(letters[index]),
+            selected: selectedIndex == index,
+            correct: selectedIndex == index && correct,
+            wrong: selectedIndex == index && wrong,
+            onTap: () => onLetterTap(letters[index], index),
+          ),
+      ],
+    );
+  }
+
+  String? _letterAssetFor(String letter) {
+    return const {
+      'A': 'assets/images/level_game/Grade1/unit1/A.png',
+      'N': 'assets/images/level_game/Grade1/unit1/N.png',
+      'T': 'assets/images/level_game/Grade1/unit1/T.png',
+      'Y': 'assets/images/level_game/Grade1/unit1/Y.png',
+    }[letter.toUpperCase()];
+  }
+}
+
+class _TappableLetterCard extends StatelessWidget {
+  final String letter;
+  final String? imageAsset;
+  final bool selected;
+  final bool correct;
+  final bool wrong;
+  final VoidCallback onTap;
+
+  const _TappableLetterCard({
+    super.key,
+    required this.letter,
+    this.imageAsset,
+    required this.selected,
+    required this.correct,
+    required this.wrong,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = correct
+        ? const Color(0xFFE7FFD9)
+        : selected
+        ? TudloColors.gold
+        : const Color(0xFFFFFBEA);
+    return _FeedbackMotion(
+      correct: correct,
+      wrong: wrong,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            width: 58,
+            height: 66,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: correct
+                    ? TudloColors.forest
+                    : selected
+                    ? TudloColors.orange
+                    : TudloColors.line,
+                width: 3,
+              ),
+              boxShadow: correct
+                  ? [
+                      BoxShadow(
+                        color: Colors.greenAccent.withValues(alpha: .72),
+                        blurRadius: 18,
+                        spreadRadius: 4,
+                      ),
+                      BoxShadow(
+                        color: TudloColors.green.withValues(alpha: .28),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: imageAsset == null
+                ? Text(
+                    letter,
+                    style: const TextStyle(
+                      color: TudloColors.ink,
+                      fontSize: 34,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: Image.asset(
+                      imageAsset!,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AlphabetAnchorImage extends StatelessWidget {
+  final String? imageAsset;
+  final IconData icon;
+  final String word;
+  final String meaning;
+
+  const _AlphabetAnchorImage({
+    required this.imageAsset,
+    required this.icon,
+    required this.word,
+    required this.meaning,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 190,
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFFFF5),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: TudloColors.green, width: 2),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Expanded(
+            child: imageAsset == null
+                ? _AlphabetIconArt(icon: icon)
+                : Image.asset(
+                    imageAsset!,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, __, ___) => _AlphabetIconArt(icon: icon),
+                  ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            word,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: TudloColors.ink,
+              fontSize: 22,
+              height: 1,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            meaning,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: TudloColors.muted,
+              fontSize: 15,
+              height: 1.1,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlphabetIconArt extends StatelessWidget {
+  final IconData icon;
+
+  const _AlphabetIconArt({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Icon(icon, color: TudloColors.forest, size: 74));
   }
 }
 
@@ -475,7 +1379,7 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
 
   bool get canCheck {
     return switch (question.type) {
-      QuestionType.matching => false,
+      QuestionType.matching => matches.length == question.leftItems.length,
       QuestionType.fillBlank =>
         builtWords.length >= question.answer.split(' ').length,
       QuestionType.arrangeWords =>
@@ -517,37 +1421,27 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
       lastCorrect = correct;
       answerFeedbackAttempt++;
     });
-    widget.onChecked(correct);
-  }
-
-  Future<void> _autoCheckMatchingIfComplete() async {
-    if (checked || question.type != QuestionType.matching) return;
-    if (matches.length != question.leftItems.length) return;
-
-    final spent = await AppData.spendQuestionEnergy();
-    if (!spent) {
-      if (mounted) await showLowEnergyDialog(context);
+    if (correct) {
+      widget.onChecked(true);
       return;
     }
-
-    if (!mounted || checked) return;
-    setState(() {
-      checked = true;
-      lastCorrect = true;
-      answerFeedbackAttempt++;
+    Future<void>.delayed(const Duration(milliseconds: 900), () {
+      if (!mounted || lastCorrect) return;
+      setState(() {
+        checked = false;
+      });
     });
-    widget.onChecked(true);
   }
 
   String _titleFor(QuestionType type) {
     return switch (type) {
-      QuestionType.translationChoice => 'Pili-a ang Sakto',
-      QuestionType.arrangeWords => 'Ipahamtang ang Pulong',
+      QuestionType.translationChoice => 'Pili-a ang Husto nga Sabat',
+      QuestionType.arrangeWords => 'Ano ini sa Hiligaynon',
       QuestionType.fillBlank => 'Kompletoha',
-      QuestionType.choice => 'Pili-a ang Sakto',
-      QuestionType.matching => 'Ipares ang Pulong',
-      QuestionType.completeSentence => 'Pili-a ang Sakto',
-      QuestionType.buildSentence => 'Ipahamtang ang Pulong',
+      QuestionType.choice => 'Pili-a ang Husto nga Sabat',
+      QuestionType.matching => 'Ipares ang Tinaga',
+      QuestionType.completeSentence => 'Pili-a ang Husto nga Sabat',
+      QuestionType.buildSentence => 'Ano ini sa Hiligaynon',
       QuestionType.imageChoice => 'Pili-a ang Laragway',
     };
   }
@@ -581,9 +1475,12 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
           for (final choice in q.choices) choice: translatedMeaningFor(choice),
         },
         onSelected: (value) {
-          if (checked) return;
+          if (checked && lastCorrect) return;
           TudloVoiceButton.speak(context, value);
-          setState(() => selectedAnswer = value);
+          setState(() {
+            selectedAnswer = value;
+            if (!lastCorrect) checked = false;
+          });
         },
       ),
       QuestionType.matching => _MatchingExercise(
@@ -618,10 +1515,6 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
               newMatchRight = right;
               matchPulseAttempt++;
               _scheduleMatchedPulseClear(matchPulseAttempt);
-              Future<void>.delayed(
-                const Duration(milliseconds: 260),
-                _autoCheckMatchingIfComplete,
-              );
             } else {
               // Wrong pairs shake red, then return to normal after one second.
               wrongMatchLeft = left;
@@ -671,9 +1564,12 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
             choice: translatedMeaningFor(choice),
         },
         onSelected: (value) {
-          if (checked) return;
+          if (checked && lastCorrect) return;
           TudloVoiceButton.speak(context, value);
-          setState(() => selectedAnswer = value);
+          setState(() {
+            selectedAnswer = value;
+            if (!lastCorrect) checked = false;
+          });
         },
       );
     }
@@ -879,41 +1775,39 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
                   showDetails: showMeaning,
                 ),
               ],
-              if (question.type != QuestionType.matching) ...[
-                const SizedBox(height: 18),
-                _FeedbackMotion(
-                  key: ValueKey('check-$answerFeedbackAttempt'),
-                  correct: checked && lastCorrect,
-                  wrong: checked && !lastCorrect,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 68,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: checked
-                            ? lastCorrect
-                                  ? TudloColors.green
-                                  : TudloColors.coral
-                            : TudloColors.blue,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: TudloColors.line,
-                        disabledForegroundColor: TudloColors.muted,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
-                        ),
+              const SizedBox(height: 18),
+              _FeedbackMotion(
+                key: ValueKey('check-$answerFeedbackAttempt'),
+                correct: checked && lastCorrect,
+                wrong: checked && !lastCorrect,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 68,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: checked
+                          ? lastCorrect
+                                ? TudloColors.green
+                                : TudloColors.coral
+                          : TudloColors.blue,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: TudloColors.line,
+                      disabledForegroundColor: TudloColors.muted,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32),
                       ),
-                      onPressed: checked || !canCheck ? null : _checkAnswer,
-                      child: Text(
-                        checked ? 'NAPASA' : 'IPASA',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
+                    ),
+                    onPressed: checked || !canCheck ? null : _checkAnswer,
+                    child: Text(
+                      checked ? 'NAPASA' : 'IPASA',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -941,34 +1835,27 @@ class _LevelIntroHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final localLevel = ((level - 1) % AppData.unitLevels) + 1;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const TudloMascot(size: 92),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Leksiyon $localLevel',
-                style: const TextStyle(
-                  color: TudloColors.blue,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: TudloColors.ink,
-                  fontSize: 30,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
+        Text(
+          'Leksiyon $localLevel',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: TudloColors.blue,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: TudloColors.ink,
+            fontSize: 30,
+            height: 1.05,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ],
@@ -1209,81 +2096,6 @@ class _VoiceMessage extends StatelessWidget {
   }
 }
 
-class _ConceptCardGrid extends StatelessWidget {
-  final List<LessonConceptCard> concepts;
-
-  const _ConceptCardGrid({required this.concepts});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final twoColumns = constraints.maxWidth > 430;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: concepts.asMap().entries.map((entry) {
-            final width = twoColumns
-                ? (constraints.maxWidth - 12) / 2
-                : constraints.maxWidth;
-            return SizedBox(
-              width: width,
-              child: _ConceptCard(
-                concept: entry.value,
-                color: _lessonPalette(entry.key),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-}
-
-class _ConceptCard extends StatelessWidget {
-  final LessonConceptCard concept;
-  final Color color;
-
-  const _ConceptCard({required this.concept, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .18),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color, width: 3),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            concept.title,
-            style: TextStyle(
-              color: color,
-              fontSize: 25,
-              height: 1,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            concept.hiligaynon,
-            style: const TextStyle(
-              color: TudloColors.ink,
-              fontSize: 17,
-              height: 1.2,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
-      ),
-    );
-  }
-}
-
 class _ExampleCardGrid extends StatelessWidget {
   final List<LessonExample> examples;
 
@@ -1422,7 +2234,7 @@ class _QuizSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      'Pagsulay',
+      'Short Quiz',
       style: TextStyle(
         color: TudloColors.ink,
         fontSize: 34,
@@ -1925,6 +2737,27 @@ class _ChoiceActivityCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (question.imagePath.trim().isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      Center(
+                        child: Container(
+                          width: 138,
+                          height: 138,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFFFF5),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Image.asset(
+                            question.imagePath,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                            errorBuilder: (_, __, ___) =>
+                                const _ImageChoiceFallback(),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 22),
                     _ChoiceGrid(
                       choices: choices,
@@ -3230,7 +4063,7 @@ class _AnswerFeedbackPanel extends StatelessWidget {
     final accent = correct ? TudloColors.green : TudloColors.coral;
     final title = correct ? 'Maayo gid!' : 'Sulayi liwat!';
     final subtitle = correct
-        ? 'Sakto ang imo sabat.'
+        ? 'Husto ang imo sabat.'
         : 'Tan-awa liwat ang sabat.';
 
     // Feedback panel shown after checking an answer. Correct answers use a

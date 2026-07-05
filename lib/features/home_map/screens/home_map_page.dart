@@ -9,7 +9,7 @@ import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
-import 'package:tudloapp/features/lesson_game/screens/level_game_page.dart';
+import 'package:tudloapp/features/lesson_game/screens/lesson_intro_page.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 
 /// Interactive Home Map screen.
@@ -108,11 +108,14 @@ class _HomeMapPageState extends State<HomeMapPage> {
                 await showLowEnergyDialog(rootContext);
                 return;
               }
-              // Enough energy: close the popup, then open LevelGamePage.
+              // Enough energy: close the popup, then open the animated
+              // lesson intro before the game screen.
               Navigator.pop(context);
               Navigator.push(
                 rootContext,
-                MaterialPageRoute(builder: (_) => LevelGamePage(level: level)),
+                MaterialPageRoute(
+                  builder: (_) => LessonIntroPage(level: level),
+                ),
               );
             },
           ),
@@ -810,7 +813,7 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
                 letterSpacing: 0,
               ),
             ),
-            child: const Text('SUGDI!'),
+            child: const Text('Sugudi'),
           ),
         ),
       ),
@@ -1410,7 +1413,7 @@ class _HomeDailyWordCard extends StatelessWidget {
                     Text(
                       _homeText(
                         context,
-                        hil: 'Pulong sang Adlaw',
+                        hil: 'Tinaga subong nga adlaw',
                         en: 'Word of the Day',
                       ),
                       textAlign: TextAlign.center,
@@ -1450,7 +1453,7 @@ class _HomeDailyWordCard extends StatelessWidget {
               IconButton.filled(
                 tooltip: _homeText(
                   context,
-                  hil: 'Buksi ang Pulong sang Adlaw',
+                  hil: 'Buksi ang Tinaga subong nga adlaw',
                   en: 'Open Word of the Day',
                 ),
                 onPressed: () => _showDailyWordPopup(context, word),
@@ -1542,7 +1545,7 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                   Text(
                     _homeText(
                       context,
-                      hil: 'Pulong sang Adlaw',
+                      hil: 'Tinaga subong nga adlaw',
                       en: 'Word of the day',
                     ),
                     textAlign: TextAlign.center,
@@ -1736,7 +1739,7 @@ String _meaningSentenceFor(BuildContext context, LessonTerm word) {
   }
   return _homeText(
     context,
-    hil: 'Ang ${word.hil} isa ka pulong sa Hiligaynon.',
+    hil: 'Ang ${word.hil} isa ka tinaga sa Hiligaynon.',
     en: '${word.hil} means "${word.eng}".',
   );
 }

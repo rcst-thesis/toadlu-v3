@@ -63,19 +63,19 @@ LessonLevelContent gradeTwoUnitOneContentForLevel(int level) {
           category: 'Pat-od',
           hiligaynon: 'Rina',
           english: 'Child',
-          note: 'Eksakto nga ngalan',
+          note: 'Pat-od nga ngalan',
         ),
         LessonExample(
           category: 'Pat-od',
           hiligaynon: 'Nanay Rowena',
           english: 'Mother',
-          note: 'Eksakto nga ngalan',
+          note: 'Pat-od nga ngalan',
         ),
         LessonExample(
           category: 'Pat-od',
           hiligaynon: 'Mayor Basilio',
           english: 'Mayor',
-          note: 'Eksakto nga ngalan',
+          note: 'Pat-od nga ngalan',
         ),
         LessonExample(
           category: 'Kinaandan',
@@ -190,7 +190,7 @@ List<LessonQuestion> gradeTwoUnitOneQuestionSet(int level) {
         directionLabel: 'Vocabulary',
       ),
       LessonQuestion.arrangeWords(
-        prompt: 'Ipahamtang ang mga pulong para mahimo ang ideya.',
+        prompt: 'Ano ini sa Hiligaynon.',
         answer: 'Ang pangalan nagatuhoy sa ngalan sang tawo',
         sentenceWords: shuffled([
           'Ang',
@@ -206,7 +206,7 @@ List<LessonQuestion> gradeTwoUnitOneQuestionSet(int level) {
         directionLabel: 'Hiligaynon sentence',
       ),
       LessonQuestion.arrangeWords(
-        prompt: 'Ipahamtang ang mga pulong para mahimo ang sentence.',
+        prompt: 'Ano ini sa Hiligaynon.',
         answer: 'Mabuot kag mabinuligon ang amon mga kasilingan',
         sentenceWords: shuffled([
           'Mabuot',
@@ -269,7 +269,7 @@ List<LessonQuestion> gradeTwoUnitOneQuestionSet(int level) {
       ),
       LessonQuestion.translationChoice(
         prompt:
-            'Ano ang tawag sa pangalan nga nagatudlo sang eksakto nga ngalan?',
+            'Ano ang tawag sa pangalan nga nagatudlo sang pat-od nga ngalan?',
         answer: 'Pat-od nga pangalan',
         choices: shuffled([
           'Pat-od nga pangalan',
@@ -304,7 +304,7 @@ List<LessonQuestion> gradeTwoUnitOneQuestionSet(int level) {
         directionLabel: 'Proper or common',
       ),
       LessonQuestion.arrangeWords(
-        prompt: 'Ipahamtang ang mga pulong para mahimo ang sentence.',
+        prompt: 'Ano ini sa Hiligaynon.',
         answer: 'Si Rina isa ka bata',
         sentenceWords: shuffled(['Si', 'Rina', 'isa', 'ka', 'bata']),
         targetPhrase: 'Si Rina isa ka bata',
@@ -312,7 +312,7 @@ List<LessonQuestion> gradeTwoUnitOneQuestionSet(int level) {
         directionLabel: 'Hiligaynon sentence',
       ),
       LessonQuestion.arrangeWords(
-        prompt: 'Ipahamtang ang mga pulong para mahimo ang ideya.',
+        prompt: 'Ano ini sa Hiligaynon.',
         answer: 'Mayor Basilio ang pat-od nga pangalan',
         sentenceWords: shuffled([
           'Mayor',

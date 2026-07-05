@@ -238,12 +238,16 @@ class LessonExample {
   final String hiligaynon;
   final String english;
   final String note;
+  final String? imageAsset;
+  final String? audioAsset;
 
   const LessonExample({
     this.category = '',
     required this.hiligaynon,
     required this.english,
     this.note = '',
+    this.imageAsset,
+    this.audioAsset,
   });
 }
 
@@ -256,6 +260,70 @@ class LessonConceptCard {
     required this.title,
     required this.hiligaynon,
     required this.english,
+  });
+}
+
+class LevelContent {
+  final String id;
+  final int gradeLevel;
+  final int unitNumber;
+  final int lessonNumber;
+  final String title;
+  final String? storyTitle;
+  final String? story;
+  final String lesson;
+  final List<LessonExample> examples;
+  final List<QuizItem> quizItems;
+  final String? storyImageAsset;
+
+  const LevelContent({
+    required this.id,
+    required this.gradeLevel,
+    required this.unitNumber,
+    required this.lessonNumber,
+    required this.title,
+    this.storyTitle,
+    this.story,
+    required this.lesson,
+    required this.examples,
+    required this.quizItems,
+    this.storyImageAsset,
+  });
+}
+
+enum QuizType {
+  multipleChoice,
+  pictureChoice,
+  matching,
+  arrangeWords,
+  fillBlankChoice,
+  listenAndChoose,
+  tapCorrectWord,
+}
+
+class QuizItem {
+  final String id;
+  final QuizType type;
+  final String question;
+  final List<String> choices;
+  final String answer;
+  final String? audioAsset;
+  final String? imageAsset;
+  final List<String> leftItems;
+  final List<String> rightItems;
+  final Map<String, String> matchingPairs;
+
+  const QuizItem({
+    required this.id,
+    required this.type,
+    required this.question,
+    required this.choices,
+    required this.answer,
+    this.audioAsset,
+    this.imageAsset,
+    this.leftItems = const [],
+    this.rightItems = const [],
+    this.matchingPairs = const {},
   });
 }
 

@@ -40,18 +40,33 @@ class AppData {
   static final Set<int> completedLevels = {};
 
   /// Home Map unit definitions shared by the Map and Profile screens.
-  static const units = [
-    AppUnit(
-      number: 1,
-      startLevel: 1,
-      title: 'Pagkilala sa Akon Kaugalingon kag Pamilya',
-    ),
-    AppUnit(number: 2, startLevel: 7, title: 'Pakig-istorya sa Palibot'),
-    AppUnit(number: 3, startLevel: 13, title: 'Ako kag Akon mga Abyan'),
-    AppUnit(number: 4, startLevel: 19, title: 'Palangga Ko ang Pamilya'),
-    AppUnit(number: 5, startLevel: 25, title: 'Adlaw-adlaw nga Kabuhi'),
-    AppUnit(number: 6, startLevel: 31, title: 'Akon Komunidad'),
-  ];
+  ///
+  /// These titles mirror `assets/data/tudlo_updated_lesson_dataset.json`.
+  static List<AppUnit> get units => _unitsByGrade[selectedGradeLevel]!;
+
+  static const Map<GradeLevel, List<AppUnit>> _unitsByGrade = {
+    GradeLevel.grade1: [
+      AppUnit(number: 1, startLevel: 1, title: 'ALPHABETO KAG NUMERO'),
+      AppUnit(number: 2, startLevel: 7, title: 'MIYEMBRO SANG PAMILYA'),
+      AppUnit(number: 3, startLevel: 13, title: 'MGA COMMUNITY'),
+      AppUnit(number: 4, startLevel: 19, title: 'MGA SAPAT SA PALIBOT'),
+      AppUnit(number: 5, startLevel: 25, title: 'MGA LUGAR SA PALIBOT'),
+    ],
+    GradeLevel.grade2: [
+      AppUnit(number: 1, startLevel: 1, title: 'PAGPAKILALA'),
+      AppUnit(number: 2, startLevel: 7, title: 'GREETINGS AND POLITE'),
+      AppUnit(number: 3, startLevel: 13, title: 'PANGALAN'),
+      AppUnit(number: 4, startLevel: 19, title: 'SONGS AND RIDDLES'),
+      AppUnit(number: 5, startLevel: 25, title: 'POEMS'),
+    ],
+    GradeLevel.grade3: [
+      AppUnit(number: 1, startLevel: 1, title: 'NUMBERS'),
+      AppUnit(number: 2, startLevel: 7, title: 'STORIES'),
+      AppUnit(number: 3, startLevel: 13, title: 'FABLES'),
+      AppUnit(number: 4, startLevel: 19, title: 'STORY DETECTIVES'),
+      AppUnit(number: 5, startLevel: 25, title: 'WORD POWER'),
+    ],
+  };
 
   /// Loads energy from storage, then immediately applies real-time recharge.
   /// This is called before runApp so all screens see restored energy.

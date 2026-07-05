@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/services.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/data/lesson_bank/grade1/lessonBank/lesson_bank.dart';
@@ -14,6 +16,9 @@ export 'package:tudloapp/data/lesson_bank/lesson_bank_item.dart';
 /// Level Game questions use only the current unit's terms. Unit Content Preview
 /// also reads from this same bank, so editing content here updates both places.
 class LessonBank {
+  static const _jsonDatasetAsset =
+      'assets/data/tudlo_updated_lesson_dataset.json';
+
   static const gradeDatasets = {
     GradeLevel.grade1: grade1LessonDataset,
     GradeLevel.grade2: grade2LessonDataset,
@@ -25,6 +30,504 @@ class LessonBank {
     ...grade2LessonTerms,
     ...grade3LessonTerms,
   ];
+
+  static Future<LevelContent> loadLevelContentForLevel(int level) async {
+    try {
+      final raw = await rootBundle.loadString(_jsonDatasetAsset);
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      return _levelContentFromJson(data, level);
+    } catch (_) {
+      return levelContentForLevel(level);
+    }
+  }
+
+  static LevelContent _levelContentFromJson(
+    Map<String, dynamic> data,
+    int level,
+  ) {
+    final grade = AppData.selectedGradeLevel.number;
+    final unit = unitForLevel(level);
+    final lesson = ((level - 1) % AppData.unitLevels) + 1;
+    final grades = _jsonList(data['grades']);
+    final gradeData = grades.cast<Map<String, dynamic>>().firstWhere(
+      (item) => item['gradeLevel'] == grade,
+      orElse: () => throw StateError('Grade $grade not found in lesson JSON.'),
+    );
+    final unitData = _jsonList(gradeData['units'])
+        .cast<Map<String, dynamic>>()
+        .firstWhere(
+          (item) => item['unitNumber'] == unit,
+          orElse: () =>
+              throw StateError('Grade $grade unit $unit not found in JSON.'),
+        );
+    final lessonData = _jsonList(unitData['lessons'])
+        .cast<Map<String, dynamic>>()
+        .firstWhere(
+          (item) => item['lessonNumber'] == lesson,
+          orElse: () => throw StateError(
+            'Grade $grade unit $unit lesson $lesson not found in JSON.',
+          ),
+        );
+
+    return LevelContent(
+      id: _jsonString(lessonData['id'], 'g${grade}_u${unit}_l$lesson'),
+      gradeLevel: grade,
+      unitNumber: unit,
+      lessonNumber: lesson,
+      title: _jsonString(lessonData['title'], 'Leksyon $lesson'),
+      storyTitle: _storyTitleFromJson(lessonData),
+      story: _nullableJsonString(lessonData['story']),
+      storyImageAsset: _nullableJsonString(lessonData['storyImageAsset']),
+      lesson: _jsonString(lessonData['lesson'], ''),
+      examples: _jsonList(
+        lessonData['examples'],
+      ).cast<Map<String, dynamic>>().map(_lessonExampleFromJson).toList(),
+      quizItems: _jsonList(lessonData['shortQuiz'])
+          .cast<Map<String, dynamic>>()
+          .map((item) => _quizItemFromJson(item, grade, unit, lesson))
+          .toList(),
+    );
+  }
+
+  static LessonExample _lessonExampleFromJson(Map<String, dynamic> data) {
+    return LessonExample(
+      category: _jsonString(data['category'], 'Example'),
+      hiligaynon: _jsonString(data['hiligaynon'], ''),
+      english: _jsonString(data['english'], ''),
+      note: _jsonString(data['note'], ''),
+      imageAsset: _nullableJsonString(data['imageAsset']),
+      audioAsset: _nullableJsonString(data['audioAsset']),
+    );
+  }
+
+  static QuizItem _quizItemFromJson(
+    Map<String, dynamic> data,
+    int grade,
+    int unit,
+    int lesson,
+  ) {
+    final choices = _jsonList(data['choices']).map((item) => '$item').toList();
+    final answer = _nullableJsonString(data['answer']);
+    final fallbackAnswer = choices.isEmpty ? 'Natapos ko ini' : choices.first;
+    final normalizedChoices = choices.isEmpty ? [fallbackAnswer] : choices;
+    final pairs = _jsonMap(
+      data['pairs'],
+    ).map((key, value) => MapEntry(key, '$value'));
+    final leftItems = pairs.isEmpty
+        ? _jsonList(data['leftItems']).map((item) => '$item').toList()
+        : pairs.keys.toList();
+    final rightItems = pairs.isEmpty
+        ? _jsonList(data['rightItems']).map((item) => '$item').toList()
+        : pairs.values.toList();
+
+    return QuizItem(
+      id: _jsonString(data['id'], 'g${grade}_u${unit}_l${lesson}_quiz'),
+      type: _quizTypeFromJson(_jsonString(data['type'], 'tapChoice'), pairs),
+      question: _jsonString(data['question'], _jsonString(data['raw'], '')),
+      choices: normalizedChoices,
+      answer: answer ?? fallbackAnswer,
+      audioAsset: _nullableJsonString(data['audioAsset']),
+      imageAsset: _nullableJsonString(data['imageAsset']),
+      leftItems: leftItems,
+      rightItems: rightItems,
+      matchingPairs: pairs,
+    );
+  }
+
+  static QuizType _quizTypeFromJson(String type, Map<String, String> pairs) {
+    if (pairs.isNotEmpty) return QuizType.matching;
+    return switch (type.trim()) {
+      'activity' => QuizType.tapCorrectWord,
+      'tapChoice' => QuizType.multipleChoice,
+      'pictureChoice' => QuizType.pictureChoice,
+      'matching' => QuizType.matching,
+      'arrangeWords' => QuizType.arrangeWords,
+      'fillBlankChoice' => QuizType.fillBlankChoice,
+      'listenAndChoose' => QuizType.listenAndChoose,
+      _ => QuizType.multipleChoice,
+    };
+  }
+
+  static List<dynamic> _jsonList(Object? value) {
+    return value is List ? value : const [];
+  }
+
+  static Map<String, dynamic> _jsonMap(Object? value) {
+    return value is Map<String, dynamic> ? value : const {};
+  }
+
+  static String _jsonString(Object? value, String fallback) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? fallback : text;
+  }
+
+  static String? _nullableJsonString(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty || text == 'null' ? null : text;
+  }
+
+  static String? _storyTitleFromJson(Map<String, dynamic> data) {
+    final title = _nullableJsonString(data['storyTitle']);
+    if (title != null) return title;
+    final story = _nullableJsonString(data['story']);
+    return story == null ? null : _jsonString(data['title'], 'Istorya');
+  }
+
+  static LevelContent levelContentForLevel(int level) {
+    final grade = AppData.selectedGradeLevel;
+    final unit = unitForLevel(level);
+    final lesson = ((level - 1) % AppData.unitLevels) + 1;
+    final source = _sourceFor(grade: grade, unit: unit, lesson: lesson);
+    if (source != null) {
+      return _levelContentFromSource(
+        grade: grade,
+        unit: unit,
+        lesson: lesson,
+        source: source,
+        terms: _termsForLocalLesson(level),
+      );
+    }
+
+    final legacy = contentForLevel(level);
+    final focusTerms = _nonScenarioTerms(_termsForLocalLesson(level)).take(4);
+    return LevelContent(
+      id: 'grade${grade.number}-unit$unit-lesson$lesson',
+      gradeLevel: grade.number,
+      unitNumber: unit,
+      lessonNumber: lesson,
+      title: legacy.title,
+      storyTitle: grade == GradeLevel.grade3 ? legacy.storyTitle : null,
+      story: grade == GradeLevel.grade3 ? legacy.story : null,
+      storyImageAsset: grade == GradeLevel.grade3
+          ? _storyImageAsset(grade: grade, unit: unit, lesson: lesson)
+          : null,
+      lesson: legacy.shortLesson,
+      examples: legacy.examples,
+      quizItems: [
+        for (final term in focusTerms)
+          QuizItem(
+            id: '${term.hil}-choice',
+            type: QuizType.multipleChoice,
+            question: 'Ano ang kahulugan sang "${term.hil}"?',
+            choices: _choicePoolFor(term, _termsForLocalLesson(level)),
+            answer: term.eng,
+            imageAsset: term.imagePath,
+            audioAsset: term.audioPath,
+          ),
+      ],
+    );
+  }
+
+  static GradeLessonSource? _sourceFor({
+    required GradeLevel grade,
+    required int unit,
+    required int lesson,
+  }) {
+    if (unit != 1) return null;
+    final sources = switch (grade) {
+      GradeLevel.grade1 => grade1Unit1SourceLessons,
+      GradeLevel.grade2 => grade2Unit1SourceLessons,
+      GradeLevel.grade3 => grade3Unit1SourceLessons,
+    };
+    if (lesson < 1 || lesson > sources.length) return null;
+    return sources[lesson - 1];
+  }
+
+  static LevelContent _levelContentFromSource({
+    required GradeLevel grade,
+    required int unit,
+    required int lesson,
+    required GradeLessonSource source,
+    required List<LessonTerm> terms,
+  }) {
+    final reading = source.readingText;
+    final hasGradeThreeStory = grade == GradeLevel.grade3 && reading.length > 1;
+    return LevelContent(
+      id: 'grade${grade.number}-unit$unit-lesson$lesson',
+      gradeLevel: grade.number,
+      unitNumber: unit,
+      lessonNumber: lesson,
+      title: 'Leksyon ${source.lessonNumber}: ${source.lessonTitle}',
+      storyTitle: hasGradeThreeStory ? reading.first : null,
+      story: hasGradeThreeStory ? reading.skip(1).join('\n\n') : null,
+      storyImageAsset: hasGradeThreeStory
+          ? _storyImageAsset(grade: grade, unit: unit, lesson: lesson)
+          : null,
+      lesson: source.paminsaraIni.join('\n\n'),
+      examples: _examplesFromSource(source, terms),
+      quizItems: _quizItemsFromSource(grade, source),
+    );
+  }
+
+  static List<LessonExample> _examplesFromSource(
+    GradeLessonSource source,
+    List<LessonTerm> terms,
+  ) {
+    final examples = <LessonExample>[];
+    for (var index = 0; index < source.pasanyugaIni.length; index += 2) {
+      final vocabulary = source.pasanyugaIni[index];
+      final parts = vocabulary.split(' - ');
+      examples.add(
+        LessonExample(
+          category: 'Gamita Ini',
+          hiligaynon: parts.first.trim(),
+          english: parts.length > 1 ? parts.sublist(1).join(' - ').trim() : '',
+          note: index + 1 < source.pasanyugaIni.length
+              ? source.pasanyugaIni[index + 1]
+              : '',
+        ),
+      );
+    }
+    for (final term in terms.take(8)) {
+      if (examples.any((example) => example.hiligaynon == term.hil)) continue;
+      examples.add(
+        LessonExample(
+          category: term.type == LessonContentType.sentence
+              ? 'Pangungusap'
+              : 'Halimbawa',
+          hiligaynon: term.hil,
+          english: term.eng,
+          note: term.exampleSentenceHiligaynon ?? '',
+          imageAsset: term.imagePath,
+          audioAsset: term.audioPath,
+        ),
+      );
+    }
+    return examples;
+  }
+
+  static List<QuizItem> _quizItemsFromSource(
+    GradeLevel grade,
+    GradeLessonSource source,
+  ) {
+    if (grade == GradeLevel.grade1 && source.lessonNumber == 1) {
+      const choices = [
+        'Brum brum!',
+        'Moo moo!',
+        'Waa waa!',
+        'Prit prit!',
+        'Klik klik!',
+        'Kring kring!',
+      ];
+      return const [
+        QuizItem(
+          id: 'alarm-sound',
+          type: QuizType.pictureChoice,
+          question: 'Pili-a ang huni sang alarm clock.',
+          choices: choices,
+          answer: 'Kring kring!',
+          imageAsset:
+              'assets/images/level_game/Grade1/unit1/lesson1/alarm-clock.png',
+        ),
+        QuizItem(
+          id: 'cow-sound',
+          type: QuizType.pictureChoice,
+          question: 'Pili-a ang huni sang baka.',
+          choices: choices,
+          answer: 'Moo moo!',
+          imageAsset: 'assets/images/level_game/Grade1/unit1/lesson1/cow.png',
+        ),
+        QuizItem(
+          id: 'whistle-sound',
+          type: QuizType.pictureChoice,
+          question: 'Pili-a ang huni sang pito.',
+          choices: choices,
+          answer: 'Prit prit!',
+          imageAsset:
+              'assets/images/level_game/Grade1/unit1/lesson1/whistle.png',
+        ),
+        QuizItem(
+          id: 'baby-sound',
+          type: QuizType.pictureChoice,
+          question: 'Pili-a ang huni sang lapsag.',
+          choices: choices,
+          answer: 'Waa waa!',
+          imageAsset:
+              'assets/images/level_game/Grade1/unit1/lesson1/crying-baby.png',
+        ),
+        QuizItem(
+          id: 'car-sound',
+          type: QuizType.pictureChoice,
+          question: 'Pili-a ang huni sang salakyan.',
+          choices: choices,
+          answer: 'Brum brum!',
+          imageAsset: 'assets/images/level_game/Grade1/unit1/lesson1/car.png',
+        ),
+        QuizItem(
+          id: 'camera-sound',
+          type: QuizType.pictureChoice,
+          question: 'Pili-a ang huni sang kamera.',
+          choices: choices,
+          answer: 'Klik klik!',
+          imageAsset:
+              'assets/images/level_game/Grade1/unit1/lesson1/camera.png',
+        ),
+      ];
+    }
+
+    if (grade == GradeLevel.grade2 && source.lessonNumber == 1) {
+      return const [
+        QuizItem(
+          id: 'g2-noun-definition',
+          type: QuizType.multipleChoice,
+          question:
+              'Ano ang tawag sa ngalan sang tawo, butang, sapat, lugar kag hitabo?',
+          choices: ['Pangalan', 'Kasilingan', 'Buluthuan', 'Barangay'],
+          answer: 'Pangalan',
+        ),
+        QuizItem(
+          id: 'g2-story-child',
+          type: QuizType.multipleChoice,
+          question: 'Sin-o ang bata sa istorya nga "Dalayawon"?',
+          choices: ['Rina', 'Nanay Rowena', 'Mayor Basilio', 'Gg. Ramos'],
+          answer: 'Rina',
+        ),
+        QuizItem(
+          id: 'g2-project',
+          type: QuizType.multipleChoice,
+          question: 'Ano nga proyekto ang ginahimo sa barangay?',
+          choices: [
+            'Matinlo kag Berde nga Barangay',
+            'Brigada Eskwela',
+            'Adlaw sang Kahilwayan',
+            'Lakbay Aral',
+          ],
+          answer: 'Matinlo kag Berde nga Barangay',
+        ),
+        QuizItem(
+          id: 'g2-neighbor',
+          type: QuizType.fillBlankChoice,
+          question:
+              'Kompletoha: Naagyan niya ang iya mga ___ sa Kalye Malinong.',
+          choices: ['kasilingan', 'lapis', 'kuring', 'bulak'],
+          answer: 'kasilingan',
+        ),
+        QuizItem(
+          id: 'g2-category-match',
+          type: QuizType.matching,
+          question: 'Ipares ang grupo sang pangalan kag kahulugan.',
+          choices: [],
+          answer: '',
+          leftItems: ['Tawo', 'Butang', 'Sapat', 'Lugar'],
+          rightItems: ['Person', 'Thing', 'Animal', 'Place'],
+          matchingPairs: {
+            'Tawo': 'Person',
+            'Butang': 'Thing',
+            'Sapat': 'Animal',
+            'Lugar': 'Place',
+          },
+        ),
+      ];
+    }
+
+    if (grade == GradeLevel.grade3 && source.lessonNumber == 1) {
+      return const [
+        QuizItem(
+          id: 'g3-count-noun',
+          type: QuizType.multipleChoice,
+          question:
+              'Ano ang tawag sa mga pangalan nga pareho sang luto nga kamatis, prutas, kag tatlo ka adlaw?',
+          choices: [
+            'Pangalan nga pang-isip',
+            'Pangalan nga indi maisip',
+            'Katawhan',
+            'Hinabo',
+          ],
+          answer: 'Pangalan nga pang-isip',
+        ),
+        QuizItem(
+          id: 'g3-station',
+          type: QuizType.multipleChoice,
+          question: 'Ano ang kahulugan sang "estasyon"?',
+          choices: [
+            'balantayan sang salakyan',
+            'dalagku nga mga edipisyo',
+            'talamnan sang ulutanon',
+            'bandehado nga kan-on',
+          ],
+          answer: 'balantayan sang salakyan',
+        ),
+        QuizItem(
+          id: 'g3-establishment',
+          type: QuizType.multipleChoice,
+          question: 'Ano ang kahulugan sang "establisyemento"?',
+          choices: [
+            'dalagku nga mga edipisyo ukon building',
+            'balantayan sang salakyan',
+            'ulutanon sa talamnan',
+            'pinirito nga isda',
+          ],
+          answer: 'dalagku nga mga edipisyo ukon building',
+        ),
+        QuizItem(
+          id: 'g3-why-early',
+          type: QuizType.multipleChoice,
+          question:
+              'Ngaa aga pa ginpukaw ni Nanay Rowena ang iya pamilya kag si Rina?',
+          choices: [
+            'Makadto sila sa lugar sang tatay ni Rina.',
+            'May klase si Rina.',
+            'Magbakal sila sa merkado.',
+            'Magpaninlo sila sang barangay.',
+          ],
+          answer: 'Makadto sila sa lugar sang tatay ni Rina.',
+        ),
+        QuizItem(
+          id: 'g3-word-match',
+          type: QuizType.matching,
+          question: 'Ipares ang tinaga kag kahulugan.',
+          choices: [],
+          answer: '',
+          leftItems: ['estasyon', 'establisyemento', 'kamatis', 'talong'],
+          rightItems: [
+            'balantayan sang salakyan',
+            'dalagku nga mga edipisyo ukon building',
+            'tomato',
+            'eggplant',
+          ],
+          matchingPairs: {
+            'estasyon': 'balantayan sang salakyan',
+            'establisyemento': 'dalagku nga mga edipisyo ukon building',
+            'kamatis': 'tomato',
+            'talong': 'eggplant',
+          },
+        ),
+      ];
+    }
+
+    return const [
+      QuizItem(
+        id: 'source-check',
+        type: QuizType.multipleChoice,
+        question: 'Ano ang leksiyon nga ginatun-an naton?',
+        choices: ['Leksiyon', 'Dula', 'Mapa', 'Profile'],
+        answer: 'Leksiyon',
+      ),
+    ];
+  }
+
+  static List<String> _choicePoolFor(LessonTerm answer, List<LessonTerm> pool) {
+    final choices = <String>[answer.eng];
+    for (final term in pool) {
+      if (term.eng == answer.eng || choices.contains(term.eng)) continue;
+      choices.add(term.eng);
+      if (choices.length == 4) break;
+    }
+    while (choices.length < 4) {
+      choices.add('Pamati-i liwat');
+    }
+    return choices;
+  }
+
+  static String _storyImageAsset({
+    required GradeLevel grade,
+    required int unit,
+    required int lesson,
+  }) {
+    const root = 'assets';
+    return '$root/images/level_game/Grade${grade.number}/unit$unit/lesson$lesson/story.png';
+  }
+
   static LessonLevelContent contentForLevel(int level) {
     if (_isGradeTwoUnitOneTextbookLevel(level)) {
       return gradeTwoUnitOneContentForLevel(level);
