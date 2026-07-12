@@ -14,6 +14,14 @@ import 'package:tudloapp/core/widgets/word_tooltip.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
 
+Map<String, String> _matchingPairsFromItemOrder(QuizItem item) {
+  if (item.leftItems.length != item.rightItems.length) return const {};
+  return {
+    for (var index = 0; index < item.leftItems.length; index++)
+      item.leftItems[index]: item.rightItems[index],
+  };
+}
+
 /// Main lesson gameplay screen opened from the Home Map.
 ///
 /// A level receives grade-based content and generated questions from
@@ -288,10 +296,14 @@ class _LevelGamePageState extends State<LevelGamePage> {
       QuizType.tapCorrectWord,
     };
     if (item.type == QuizType.matching) {
+      final matchingPairs = item.matchingPairs.isNotEmpty
+          ? item.matchingPairs
+          : _matchingPairsFromItemOrder(item);
       return LessonQuestion.matching(
         prompt: item.question,
         leftItems: item.leftItems,
         rightItems: item.rightItems,
+        matchingPairs: matchingPairs,
         directionLabel: item.id,
       );
     }
@@ -1143,22 +1155,28 @@ class TappableWord extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final letters = word.characters.toList();
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (var index = 0; index < letters.length; index++)
-          _TappableLetterCard(
-            key: ValueKey('$word-$index-${letters[index]}-$motionKey'),
-            letter: letters[index],
-            imageAsset: _letterAssetFor(letters[index]),
-            selected: selectedIndex == index,
-            correct: selectedIndex == index && correct,
-            wrong: selectedIndex == index && wrong,
-            onTap: () => onLetterTap(letters[index], index),
-          ),
-      ],
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var index = 0; index < letters.length; index++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: _TappableLetterCard(
+                  key: ValueKey('$word-$index-${letters[index]}-$motionKey'),
+                  letter: letters[index],
+                  imageAsset: _letterAssetFor(letters[index]),
+                  selected: selectedIndex == index,
+                  correct: selectedIndex == index && correct,
+                  wrong: selectedIndex == index && wrong,
+                  onTap: () => onLetterTap(letters[index], index),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1241,7 +1259,7 @@ class _TappableLetterCard extends StatelessWidget {
                     letter,
                     style: const TextStyle(
                       color: TudloColors.ink,
-                      fontSize: 34,
+                      fontSize: 52,
                       height: 1,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1279,11 +1297,7 @@ class _AlphabetAnchorImage extends StatelessWidget {
     return Container(
       height: 190,
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFFFF5),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: TudloColors.green, width: 2),
-      ),
+      color: Colors.transparent,
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
@@ -1297,25 +1311,15 @@ class _AlphabetAnchorImage extends StatelessWidget {
                     errorBuilder: (_, __, ___) => _AlphabetIconArt(icon: icon),
                   ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            word,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: TudloColors.ink,
-              fontSize: 22,
-              height: 1,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          const SizedBox(height: 8),
           Text(
             meaning,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: TudloColors.muted,
-              fontSize: 15,
+              fontSize: 18,
               height: 1.1,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -1505,7 +1509,7 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
             return;
           }
           final left = selectedMatchLeft!;
-          final expected = _expectedMatch(left);
+          final expected = _expectedMatch(q, left);
           setState(() {
             if (expected == right) {
               // Correct pairs are stored permanently and briefly pulse green.
@@ -1608,7 +1612,10 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
         type == QuestionType.completeSentence;
   }
 
-  String _expectedMatch(String left) {
+  String _expectedMatch(LessonQuestion question, String left) {
+    final pair = question.matchingPairs[left];
+    if (pair != null) return pair;
+
     const hiligaynonMatches = {
       'Pangalan': 'ngalan',
       'Katawhan': 'mga karakter',
@@ -1622,7 +1629,7 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
     final hiligaynonMatch = hiligaynonMatches[left];
     if (hiligaynonMatch != null) return hiligaynonMatch;
 
-    return LessonBank.terms.firstWhere((term) => term.hil == left).eng;
+    return translatedMeaningFor(left);
   }
 
   void _clearWrongMatch() {
@@ -1667,7 +1674,7 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
 
   bool _matchingCorrect(LessonQuestion q) {
     for (final left in q.leftItems) {
-      if (matches[left] != _expectedMatch(left)) return false;
+      if (matches[left] != _expectedMatch(q, left)) return false;
     }
     return true;
   }

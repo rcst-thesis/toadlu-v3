@@ -3,7 +3,7 @@ import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
-import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
+import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 
 class DailyWordsPage extends StatelessWidget {
   const DailyWordsPage({super.key});
@@ -12,12 +12,9 @@ class DailyWordsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
     final word = _dailyWord();
-    final saved = appState.isFavoriteWord(word.hil);
-    final exampleHil =
-        word.exampleSentenceHiligaynon ??
-        word.missingSentence?.replaceAll('___', word.missingAnswer ?? '') ??
-        'Ang ${word.hil} nami.';
-    final exampleEng = word.exampleSentenceEnglish ?? word.eng;
+    final saved = appState.isFavoriteWord(word.hiligaynon);
+    final exampleHil = word.exampleSentence ?? 'Ang ${word.hiligaynon} nami.';
+    final exampleEng = word.english;
 
     return Scaffold(
       backgroundColor: TudloColors.meadow,
@@ -103,7 +100,7 @@ class DailyWordsPage extends StatelessWidget {
                                   ? 'Remove favorite'
                                   : 'Save favorite',
                               onPressed: () =>
-                                  appState.toggleFavoriteWord(word.hil),
+                                  appState.toggleFavoriteWord(word.hiligaynon),
                               style: IconButton.styleFrom(
                                 backgroundColor: saved
                                     ? TudloColors.coral
@@ -135,7 +132,7 @@ class DailyWordsPage extends StatelessWidget {
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              word.hil,
+                              word.hiligaynon,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: TudloColors.ink,
@@ -157,7 +154,7 @@ class DailyWordsPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            word.eng,
+                            word.english,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: TudloColors.blue,
@@ -167,7 +164,7 @@ class DailyWordsPage extends StatelessWidget {
                           ),
                           SizedBox(height: compact ? 14 : 18),
                           TudloVoiceButton(
-                            message: '${word.hil}. ${word.eng}',
+                            message: '${word.hiligaynon}. ${word.english}',
                             tooltip: 'Play daily word',
                             size: compact ? 56 : 64,
                           ),
@@ -189,9 +186,9 @@ class DailyWordsPage extends StatelessWidget {
     );
   }
 
-  LessonTerm _dailyWord() {
-    final terms = LessonBank.terms
-        .where((term) => term.hil.split(' ').length <= 3)
+  DictionaryEntry _dailyWord() {
+    final terms = DictionaryData.entries
+        .where((term) => term.hiligaynon.split(' ').length <= 3)
         .toList();
     final day = DateTime.now().difference(DateTime(2026, 1, 1)).inDays;
     return terms[day.abs() % terms.length];
