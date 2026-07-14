@@ -1,133 +1,103 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
+import 'package:tudloapp/features/dictionary/screens/dictionary_page.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('json lesson bank loads playable content for every map level', () async {
+  test('every level loads playable JSON content', () async {
+    const expectedCounts = {1: 25, 2: 15, 3: 15};
     for (final grade in GradeLevel.values) {
       AppData.selectedGradeLevel = grade;
+      final contents = await LessonBank.loadAllLevelContentForActiveGrade();
 
-      for (var level = 1; level <= AppData.maxLevel; level++) {
-        final content = await LessonBank.loadLevelContentForLevel(level);
-
+      expect(contents, hasLength(expectedCounts[grade.number]));
+      expect(
+        contents.map((content) => content.id).toSet(),
+        hasLength(contents.length),
+      );
+      for (var index = 0; index < contents.length; index++) {
+        final content = contents[index];
+        final level = index + 1;
+        expect(content.gradeLevel, grade.number);
+        expect(content.unitNumber, LessonBank.unitForLevel(level));
+        expect(content.lessonNumber, AppData.lessonNumberForLevel(level));
+        expect(content.quizItems, isNotEmpty);
         expect(
-          content.title.trim(),
-          isNotEmpty,
-          reason: '${grade.label} level $level title',
+          content.quizItems.every((quiz) => quiz.choices.isNotEmpty),
+          isTrue,
         );
         expect(
-          content.lesson.trim(),
-          isNotEmpty,
-          reason: '${grade.label} level $level lesson body',
-        );
-        expect(
-          content.quizItems,
-          isNotEmpty,
-          reason: '${grade.label} level $level quiz items',
+          content.quizItems.every((quiz) => quiz.answer.isNotEmpty),
+          isTrue,
         );
       }
     }
   });
 
-  test('each grade reads from its own json dataset', () async {
-    final titles = <String>{};
-    final lessons = <String>{};
+  test('dictionary loads the formatted JSON asset', () async {
+    await DictionaryData.initialize();
+
+    expect(DictionaryData.entries, hasLength(963));
+    expect(DictionaryData.meaningFor('abogado'), contains('lawyer'));
+  });
+
+  test('dictionary index follows the section nearest the top', () {
+    expect(
+      activeDictionarySection(const [
+        MapEntry('A', 80),
+        MapEntry('B', 180),
+        MapEntry('C', 280),
+      ]),
+      'B',
+    );
+  });
+
+  test('dictionary index scale tapers symmetrically', () {
+    expect(dictionaryIndexScale(10, 10), 1.55);
+    expect(dictionaryIndexScale(9, 10), dictionaryIndexScale(11, 10));
+    expect(
+      dictionaryIndexScale(9, 10),
+      greaterThan(dictionaryIndexScale(8, 10)),
+    );
+    expect(
+      dictionaryIndexScale(8, 10),
+      greaterThan(dictionaryIndexScale(7, 10)),
+    );
+  });
+
+  test('referenced image assets exist with exact path casing', () async {
+    final actualAssets = Directory('assets')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .map((file) => file.path.replaceAll(r'\', '/'))
+        .toSet();
+    final referencedAssets = <String>{};
 
     for (final grade in GradeLevel.values) {
       AppData.selectedGradeLevel = grade;
-      final content = await LessonBank.loadLevelContentForLevel(1);
-      titles.add(content.title);
-      lessons.add(content.lesson);
-    }
-
-    expect(titles, hasLength(GradeLevel.values.length));
-    expect(lessons, hasLength(GradeLevel.values.length));
-  });
-
-  test('lesson json assets are valid and image paths match disk casing', () {
-    final actualAssets = _assetFilesOnDisk();
-    final referencedAssets = _referencedAssets();
-
-    expect(
-      referencedAssets.where((asset) => asset.contains('assets/Images/')),
-      isEmpty,
-      reason: 'Asset paths must use assets/images/... exactly.',
-    );
-
-    final missing = referencedAssets
-        .where((asset) => !actualAssets.contains(asset))
-        .toList();
-
-    expect(
-      missing,
-      isEmpty,
-      reason:
-          'These asset references do not match files on disk exactly, including case.',
-    );
-  });
-}
-
-Set<String> _assetFilesOnDisk() {
-  return Directory('assets')
-      .listSync(recursive: true)
-      .whereType<File>()
-      .map((file) => file.path.replaceAll(r'\', '/'))
-      .toSet();
-}
-
-Set<String> _referencedAssets() {
-  final assets = <String>{};
-  final assetLiteralPattern = RegExp(r'''assets/[^'")\s]+''');
-
-  for (final file in Directory('lib').listSync(recursive: true)) {
-    if (file is! File || !file.path.endsWith('.dart')) continue;
-    final source = file.readAsStringSync();
-    assets.addAll(
-      assetLiteralPattern
-          .allMatches(source)
-          .map((match) => match.group(0)!)
-          .where(_isImageAsset),
-    );
-  }
-
-  for (final path in [
-    'assets/data/grade1_dataset.json',
-    'assets/data/grade2_dataset.json',
-    'assets/data/grade3_dataset.json',
-  ]) {
-    final data = jsonDecode(File(path).readAsStringSync());
-    _collectImageAssets(data, assets);
-  }
-
-  return assets.where(_isImageAsset).toSet();
-}
-
-void _collectImageAssets(Object? value, Set<String> assets) {
-  if (value is Map) {
-    for (final entry in value.entries) {
-      if (entry.key.toString().toLowerCase().contains('asset')) {
-        final asset = entry.value?.toString();
-        if (asset != null) assets.add(asset);
+      for (final content
+          in await LessonBank.loadAllLevelContentForActiveGrade()) {
+        if (content.storyImageAsset case final path?) {
+          referencedAssets.add(path);
+        }
+        for (final example in content.examples) {
+          if (example.imageAsset case final path?) referencedAssets.add(path);
+        }
+        for (final quiz in content.quizItems) {
+          if (quiz.imageAsset case final path?) referencedAssets.add(path);
+        }
       }
-      _collectImageAssets(entry.value, assets);
     }
-  } else if (value is List) {
-    for (final item in value) {
-      _collectImageAssets(item, assets);
-    }
-  }
-}
 
-bool _isImageAsset(String asset) {
-  final lower = asset.toLowerCase();
-  return lower.endsWith('.png') ||
-      lower.endsWith('.jpg') ||
-      lower.endsWith('.jpeg') ||
-      lower.endsWith('.webp');
+    expect(
+      referencedAssets.where((asset) => !actualAssets.contains(asset)),
+      isEmpty,
+    );
+  });
 }

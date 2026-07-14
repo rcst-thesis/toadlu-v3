@@ -1,22 +1,22 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
+import 'package:tudloapp/core/data/content_repository.dart';
+import 'package:tudloapp/core/models/language_dictionary.dart' as formatted;
 import 'package:tudloapp/data/dictionary/dictionary_item.dart';
 
 export 'package:tudloapp/data/dictionary/dictionary_item.dart';
 
 /// JSON-backed lookup data for Dictionary, Translation, and word tooltips.
 ///
-/// The data is bundled from `assets/data/ilonggo_dictionary_dataset.json`.
-/// Call [initialize] during app startup before dictionary lookups are used.
+/// The data is bundled from `assets/data/ilonggo-dictionary-formatted.json`.
+/// [initialize] loads it once, on first use.
 class DictionaryData {
+  static final _repository = ContentRepository();
   static const _jsonDatasetAsset =
-      'assets/data/ilonggo_dictionary_dataset.json';
+      'assets/data/ilonggo-dictionary-formatted.json';
 
   static List<DictionaryEntry> entries = const [];
   static Map<String, String> hiligaynonToEnglish = const {};
   static Map<String, String> englishToHiligaynon = const {};
-  static bool _initialized = false;
+  static Future<void>? _initialization;
 
   /// Small phrase support for the Translation page. Full lesson sentences
   /// should remain in LessonBank instead of becoming dictionary entries.
@@ -32,16 +32,18 @@ class DictionaryData {
     'can you help me': 'pwede mo ako buligan',
   };
 
-  static Future<void> initialize() async {
-    if (_initialized) return;
-    final raw = await rootBundle.loadString(_jsonDatasetAsset);
-    final data = jsonDecode(raw) as Map<String, dynamic>;
-    final abbreviations = _abbreviationMap(data['abbreviations']);
+  static Future<void> initialize() => _initialization ??= _load();
+
+  static Future<void> _load() async {
+    final dictionary = formatted.LanguageDictionary.fromJson(
+      await _repository.loadMap(_jsonDatasetAsset),
+    );
     final parsedEntries = <DictionaryEntry>[
-      for (final item in _jsonList(data['dictionary']))
-        _entryFromDictionaryJson(item, abbreviations),
-      for (final item in _jsonList(data['verb_list']))
-        _entryFromVerbJson(item, abbreviations),
+      for (var index = 0; index < dictionary.length; index++)
+        _entryFromFormatted(
+          dictionary.getEntryAt(index),
+          dictionary.abbreviations,
+        ),
     ].where((entry) => entry.hiligaynon.trim().isNotEmpty).toList();
 
     entries = _deduplicate(parsedEntries)
@@ -58,7 +60,6 @@ class DictionaryData {
         for (final meaning in _englishMeanings(entry.english))
           _normalize(meaning): entry.hiligaynon,
     };
-    _initialized = true;
   }
 
   static String meaningFor(String value) {
@@ -72,36 +73,18 @@ class DictionaryData {
 
   static String normalizeForSearch(String value) => _normalize(value);
 
-  static Map<String, String> _abbreviationMap(Object? value) {
-    return {
-      for (final item in _jsonList(value))
-        if (item is Map<String, dynamic>)
-          _jsonString(item['code'], ''): _jsonString(item['meaning'], ''),
-    };
-  }
-
-  static DictionaryEntry _entryFromDictionaryJson(
-    Object? value,
+  static DictionaryEntry _entryFromFormatted(
+    formatted.DictionaryEntry entry,
     Map<String, String> abbreviations,
   ) {
-    final item = value is Map<String, dynamic> ? value : const {};
-    final partCode = _jsonString(item['part_of_speech'], '');
+    final definitions = [
+      for (final meaning in entry.meanings) ...meaning.definition,
+    ].where((value) => value.trim().isNotEmpty).join('; ');
     return DictionaryEntry(
-      hiligaynon: _jsonString(item['ilonggo_word'], ''),
-      english: _jsonString(item['english_definition'], ''),
-      partOfSpeech: abbreviations[partCode] ?? partCode,
-    );
-  }
-
-  static DictionaryEntry _entryFromVerbJson(
-    Object? value,
-    Map<String, String> abbreviations,
-  ) {
-    final item = value is Map<String, dynamic> ? value : const {};
-    return DictionaryEntry(
-      hiligaynon: _jsonString(item['ilonggo_verb'], ''),
-      english: _jsonString(item['english_meaning'], ''),
-      partOfSpeech: abbreviations['V'] ?? 'Verb',
+      hiligaynon: entry.word,
+      english: definitions,
+      partOfSpeech:
+          abbreviations[entry.partOfSpeech] ?? entry.partOfSpeech ?? '',
     );
   }
 
@@ -159,14 +142,5 @@ class DictionaryData {
         .map((part) => part.trim())
         .where((part) => part.isNotEmpty && part.length <= 48)
         .toList();
-  }
-
-  static List<dynamic> _jsonList(Object? value) {
-    return value is List ? value : const [];
-  }
-
-  static String _jsonString(Object? value, String fallback) {
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? fallback : text;
   }
 }

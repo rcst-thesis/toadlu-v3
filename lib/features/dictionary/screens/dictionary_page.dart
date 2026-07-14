@@ -1,9 +1,29 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 
 enum _DictionaryMode { englishToHiligaynon, hiligaynonToEnglish }
+
+String? activeDictionarySection(
+  List<MapEntry<String, double>> positions, {
+  double threshold = 210,
+}) {
+  String? active;
+  for (final position in positions) {
+    if (position.value > threshold) break;
+    active = position.key;
+  }
+  return active ?? positions.firstOrNull?.key;
+}
+
+double dictionaryIndexScale(int index, int activeIndex) {
+  if (activeIndex < 0) return 1;
+  final distance = (index - activeIndex).toDouble();
+  return 1 + .55 * math.exp(-(distance * distance) / 4.5);
+}
 
 /// Dictionary screen built from word-based DictionaryData entries.
 ///
@@ -17,21 +37,54 @@ class DictionaryPage extends StatefulWidget {
 }
 
 class _DictionaryPageState extends State<DictionaryPage> {
+  static const _pageSize = 80;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final Map<String, GlobalKey> _letterKeys = {};
   _DictionaryMode _mode = _DictionaryMode.englishToHiligaynon;
   String _query = '';
+  String? _activeLetter;
+  int _visibleCount = _pageSize;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScroll);
     _searchController.addListener(() {
-      setState(
-        () =>
-            _query = DictionaryData.normalizeForSearch(_searchController.text),
-      );
+      setState(() {
+        _query = DictionaryData.normalizeForSearch(_searchController.text);
+        _visibleCount = _pageSize;
+        _activeLetter = null;
+        _letterKeys.clear();
+      });
     });
+  }
+
+  void _handleScroll() {
+    _loadMore();
+    _updateActiveLetter();
+  }
+
+  void _updateActiveLetter() {
+    final positions = <MapEntry<String, double>>[];
+    for (final entry in _letterKeys.entries) {
+      final box = entry.value.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null) continue;
+      positions.add(MapEntry(entry.key, box.localToGlobal(Offset.zero).dy));
+    }
+    final active = activeDictionarySection(positions);
+    if (active == _activeLetter) return;
+    setState(() => _activeLetter = active);
+  }
+
+  void _loadMore() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.extentAfter > 600) {
+      return;
+    }
+    final total = _filteredTerms.length;
+    if (_visibleCount >= total) return;
+    setState(() => _visibleCount = (_visibleCount + _pageSize).clamp(0, total));
   }
 
   @override
@@ -63,11 +116,15 @@ class _DictionaryPageState extends State<DictionaryPage> {
   }
 
   List<_DictionarySection> get _sections {
+    return _sectionsFor(_filteredTerms.take(_visibleCount));
+  }
+
+  List<_DictionarySection> _sectionsFor(Iterable<DictionaryEntry> terms) {
     // Group the filtered results by first letter based on the selected
     // language mode. English mode groups by English; Hiligaynon mode groups by
     // Hiligaynon.
     final grouped = <String, List<DictionaryEntry>>{};
-    for (final entry in _filteredTerms) {
+    for (final entry in terms) {
       final word = _englishMode ? entry.english : entry.hiligaynon;
       final normalizedWord = DictionaryData.normalizeForSearch(word);
       final letter = normalizedWord.isEmpty
@@ -90,7 +147,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
     // The A-Z index scrolls to the requested section. If that letter is not in
     // the current filtered results, it jumps to the nearest next available
     // section, or the last section as a fallback.
-    final sectionLetters = _sections.map((section) => section.letter).toList();
+    final allSections = _sectionsFor(_filteredTerms);
+    final sectionLetters = allSections
+        .map((section) => section.letter)
+        .toList();
     if (sectionLetters.isEmpty) return;
 
     final targetLetter = sectionLetters.contains(letter)
@@ -99,7 +159,25 @@ class _DictionaryPageState extends State<DictionaryPage> {
             (sectionLetter) => sectionLetter.compareTo(letter) > 0,
             orElse: () => sectionLetters.last,
           );
-    final key = _letterKeys[targetLetter];
+    final needed = allSections
+        .takeWhile((section) => section.letter.compareTo(targetLetter) <= 0)
+        .fold<int>(0, (count, section) => count + section.terms.length);
+    if (needed > _visibleCount) {
+      setState(() {
+        _visibleCount = needed;
+        _activeLetter = targetLetter;
+      });
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _scrollToLetter(targetLetter),
+      );
+      return;
+    }
+    setState(() => _activeLetter = targetLetter);
+    _scrollToLetter(targetLetter);
+  }
+
+  void _scrollToLetter(String letter) {
+    final key = _letterKeys[letter];
     final context = key?.currentContext;
     if (context == null) return;
     Scrollable.ensureVisible(
@@ -130,7 +208,12 @@ class _DictionaryPageState extends State<DictionaryPage> {
                 sliver: SliverToBoxAdapter(
                   child: _ModeSwitch(
                     mode: _mode,
-                    onChanged: (mode) => setState(() => _mode = mode),
+                    onChanged: (mode) => setState(() {
+                      _mode = mode;
+                      _visibleCount = _pageSize;
+                      _activeLetter = null;
+                      _letterKeys.clear();
+                    }),
                   ),
                 ),
               ),
@@ -175,7 +258,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
             top: 186,
             right: 3,
             bottom: 118,
-            child: _LetterIndex(onTap: _jumpToLetter),
+            child: _LetterIndex(
+              activeLetter: _activeLetter ?? sections.firstOrNull?.letter,
+              onTap: _jumpToLetter,
+            ),
           ),
         ],
       ),
@@ -535,13 +621,17 @@ class _DictionarySpeakButton extends StatelessWidget {
 // Fixed A-Z index on the right side of the Dictionary page.
 // Tapping a letter asks the parent page to scroll to that letter section.
 class _LetterIndex extends StatelessWidget {
+  final String? activeLetter;
   final ValueChanged<String> onTap;
 
-  const _LetterIndex({required this.onTap});
+  const _LetterIndex({required this.activeLetter, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    final activeIndex = activeLetter == null
+        ? -1
+        : letters.indexOf(activeLetter!);
     return Container(
       width: 23,
       padding: const EdgeInsets.symmetric(vertical: 5),
@@ -560,7 +650,9 @@ class _LetterIndex extends StatelessWidget {
         fit: BoxFit.scaleDown,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: letters.split('').map((letter) {
+          children: letters.split('').indexed.map((entry) {
+            final (index, letter) = entry;
+            final active = index == activeIndex;
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
               // The parent handles the scroll target because it owns the
@@ -570,12 +662,20 @@ class _LetterIndex extends StatelessWidget {
                 width: 22,
                 height: 17,
                 child: Center(
-                  child: Text(
-                    letter,
-                    style: const TextStyle(
-                      color: Color(0xFF5EA832),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                  child: AnimatedScale(
+                    key: ValueKey('dictionary-index-$letter'),
+                    scale: dictionaryIndexScale(index, activeIndex),
+                    duration: const Duration(milliseconds: 140),
+                    curve: Curves.easeOutBack,
+                    child: Text(
+                      letter,
+                      style: TextStyle(
+                        color: active
+                            ? TudloColors.forest
+                            : const Color(0xFF5EA832),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
