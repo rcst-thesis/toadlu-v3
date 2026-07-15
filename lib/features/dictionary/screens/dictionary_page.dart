@@ -38,11 +38,13 @@ class DictionaryPage extends StatefulWidget {
 
 class _DictionaryPageState extends State<DictionaryPage> {
   static const _pageSize = 80;
+  static const _allPartsFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final Map<String, GlobalKey> _letterKeys = {};
   _DictionaryMode _mode = _DictionaryMode.englishToHiligaynon;
   String _query = '';
+  String _selectedPartOfSpeech = _allPartsFilter;
   String? _activeLetter;
   int _visibleCount = _pageSize;
 
@@ -100,6 +102,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
     // Search checks both languages and is case-insensitive, so "house" and
     // "balay" can find the same vocabulary pair.
     final terms = DictionaryData.entries.where((entry) {
+      final partMatches =
+          _selectedPartOfSpeech == _allPartsFilter ||
+          entry.partOfSpeech?.trim() == _selectedPartOfSpeech;
+      if (!partMatches) return false;
       if (_query.isEmpty) return true;
       return DictionaryData.normalizeForSearch(
             entry.english,
@@ -113,6 +119,34 @@ class _DictionaryPageState extends State<DictionaryPage> {
       return first.toLowerCase().compareTo(second.toLowerCase());
     });
     return terms;
+  }
+
+  List<String> get _partOfSpeechOptions {
+    const preferredOrder = [
+      _allPartsFilter,
+      'Noun',
+      'Verb',
+      'Adjective',
+      'Adverb',
+      'Pronoun',
+      'Preposition',
+      'Conjunction/Connector',
+      'Question Word',
+      'Particle',
+      'Expression',
+      'Pseudo Verb',
+    ];
+    final available = {
+      for (final entry in DictionaryData.entries)
+        if ((entry.partOfSpeech?.trim().isNotEmpty ?? false) &&
+            entry.partOfSpeech!.trim().length > 2)
+          entry.partOfSpeech!.trim(),
+    };
+    return [
+      for (final part in preferredOrder)
+        if (part == _allPartsFilter || available.remove(part)) part,
+      ...available.toList()..sort(),
+    ];
   }
 
   List<_DictionarySection> get _sections {
@@ -201,7 +235,17 @@ class _DictionaryPageState extends State<DictionaryPage> {
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SliverToBoxAdapter(
-                child: _DictionaryHeader(controller: _searchController),
+                child: _DictionaryHeader(
+                  controller: _searchController,
+                  selectedPartOfSpeech: _selectedPartOfSpeech,
+                  partOfSpeechOptions: _partOfSpeechOptions,
+                  onPartOfSpeechChanged: (part) => setState(() {
+                    _selectedPartOfSpeech = part;
+                    _visibleCount = _pageSize;
+                    _activeLetter = null;
+                    _letterKeys.clear();
+                  }),
+                ),
               ),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(10, 14, 18, 10),
@@ -278,8 +322,16 @@ class _DictionarySection {
 
 class _DictionaryHeader extends StatelessWidget {
   final TextEditingController controller;
+  final String selectedPartOfSpeech;
+  final List<String> partOfSpeechOptions;
+  final ValueChanged<String> onPartOfSpeechChanged;
 
-  const _DictionaryHeader({required this.controller});
+  const _DictionaryHeader({
+    required this.controller,
+    required this.selectedPartOfSpeech,
+    required this.partOfSpeechOptions,
+    required this.onPartOfSpeechChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -312,7 +364,17 @@ class _DictionaryHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          _SearchField(controller: controller),
+          Row(
+            children: [
+              Expanded(child: _SearchField(controller: controller)),
+              const SizedBox(width: 8),
+              _PartOfSpeechFilterButton(
+                selected: selectedPartOfSpeech,
+                options: partOfSpeechOptions,
+                onChanged: onPartOfSpeechChanged,
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -359,6 +421,104 @@ class _SearchField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+class _PartOfSpeechFilterButton extends StatelessWidget {
+  final String selected;
+  final List<String> options;
+  final ValueChanged<String> onChanged;
+
+  const _PartOfSpeechFilterButton({
+    required this.selected,
+    required this.options,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final active = selected != _DictionaryPageState._allPartsFilter;
+    return PopupMenuButton<String>(
+      tooltip: 'Filter part of speech',
+      initialValue: selected,
+      onSelected: onChanged,
+      position: PopupMenuPosition.under,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      itemBuilder: (context) {
+        return [
+          for (final option in options)
+            PopupMenuItem<String>(
+              value: option,
+              child: Row(
+                children: [
+                  Icon(
+                    option == selected
+                        ? Icons.check_circle_rounded
+                        : Icons.circle_outlined,
+                    color: option == selected
+                        ? const Color(0xFF5EA832)
+                        : TudloColors.muted,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      option,
+                      style: const TextStyle(
+                        color: TudloColors.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ];
+      },
+      child: Container(
+        height: 52,
+        constraints: const BoxConstraints(minWidth: 54, maxWidth: 126),
+        padding: const EdgeInsets.symmetric(horizontal: 13),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFF5EA832) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.filter_list_rounded,
+              color: active ? Colors.white : const Color(0xFF5EA832),
+              size: 28,
+            ),
+            if (active) ...[
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  selected,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -524,8 +684,13 @@ class _DictionaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // The displayed order changes based on the selected dictionary mode.
-    final mainWord = englishMode ? term.english : term.hiligaynon;
-    final translatedWord = englishMode ? term.hiligaynon : term.english;
+    final mainWord = englishMode
+        ? term.english
+        : _capitalizeDictionaryWord(term.hiligaynon);
+    final translatedWord = englishMode
+        ? _capitalizeDictionaryWord(term.hiligaynon)
+        : term.english;
+    final spokenWord = englishMode ? term.english : term.hiligaynon;
 
     return Container(
       constraints: const BoxConstraints(minHeight: 58),
@@ -585,11 +750,17 @@ class _DictionaryCard extends StatelessWidget {
               ],
             ),
           ),
-          _DictionarySpeakButton(message: mainWord, hiligaynon: !englishMode),
+          _DictionarySpeakButton(message: spokenWord, hiligaynon: !englishMode),
         ],
       ),
     );
   }
+}
+
+String _capitalizeDictionaryWord(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return trimmed;
+  return trimmed[0].toUpperCase() + trimmed.substring(1);
 }
 
 class _DictionarySpeakButton extends StatelessWidget {

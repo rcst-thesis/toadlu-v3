@@ -246,6 +246,22 @@ class _AnimatedLessonIntroContentState
       ];
     }
 
+    if (content.gradeLevel == 1 && content.unitNumber == 4) {
+      return _animalIntroItemsFor(content.lessonNumber);
+    }
+
+    if (content.gradeLevel == 1 && content.unitNumber == 3) {
+      return _helperIntroItemsFor(content.lessonNumber);
+    }
+
+    if (content.gradeLevel == 1 && content.unitNumber == 5) {
+      return _placeIntroItemsFor(content.lessonNumber);
+    }
+
+    if (content.gradeLevel == 2) {
+      return _gradeTwoIntroItemsFor(content.unitNumber, content.lessonNumber);
+    }
+
     final titleLetters = RegExp(
       r'\b[A-Z]\b',
     ).allMatches(content.title).map((match) => match.group(0)!).toList();
@@ -273,11 +289,444 @@ class _AnimatedLessonIntroContentState
       label: letter,
       asset: const {
         'A': 'assets/images/level_game/Grade1/unit1/A.png',
+        'B': 'assets/images/level_game/Grade1/unit1/B.png',
+        'C': 'assets/images/level_game/Grade1/unit1/C.png',
+        'D': 'assets/images/level_game/Grade1/unit1/D.png',
+        'E': 'assets/images/level_game/Grade1/unit1/E.png',
+        'F': 'assets/images/level_game/Grade1/unit1/F.png',
+        'G': 'assets/images/level_game/Grade1/unit1/G.png',
+        'H': 'assets/images/level_game/Grade1/unit1/H.png',
+        'I': 'assets/images/level_game/Grade1/unit1/I.png',
         'N': 'assets/images/level_game/Grade1/unit1/N.png',
+        'O': 'assets/images/level_game/Grade1/unit1/O.png',
         'T': 'assets/images/level_game/Grade1/unit1/T.png',
         'Y': 'assets/images/level_game/Grade1/unit1/Y.png',
       }[letter.toUpperCase()],
+      pictureOnly: true,
     );
+  }
+
+  List<_IntroLetterItem> _animalIntroItemsFor(int lessonNumber) {
+    const dog = _IntroLetterItem(
+      label: 'ido',
+      asset: 'assets/images/level_game/Grade1/unit1/dog.png',
+      pictureOnly: true,
+    );
+    const cat = _IntroLetterItem(
+      label: 'kuring',
+      asset: 'assets/images/level_game/Grade1/unit1/cat.png',
+      pictureOnly: true,
+    );
+    const chicken = _IntroLetterItem(
+      label: 'manok',
+      icon: Icons.egg_alt_rounded,
+      color: TudloColors.gold,
+      pictureOnly: true,
+    );
+    const pig = _IntroLetterItem(
+      label: 'baboy',
+      icon: Icons.pets_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const cow = _IntroLetterItem(
+      label: 'baka',
+      asset: 'assets/images/level_game/Grade1/unit1/lesson1/cow.png',
+      pictureOnly: true,
+    );
+    const carabao = _IntroLetterItem(
+      label: 'karbaw',
+      icon: Icons.agriculture_rounded,
+      color: TudloColors.forest,
+      pictureOnly: true,
+    );
+    const fish = _IntroLetterItem(
+      label: 'isda',
+      icon: Icons.water_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const bird = _IntroLetterItem(
+      label: 'pispis',
+      icon: Icons.flutter_dash_rounded,
+      color: TudloColors.green,
+      pictureOnly: true,
+    );
+    const goat = _IntroLetterItem(
+      label: 'kanding',
+      icon: Icons.pets_rounded,
+      color: TudloColors.meadow,
+      pictureOnly: true,
+    );
+
+    return switch (lessonNumber) {
+      1 => const [dog, cat, chicken],
+      2 => const [pig, cow, carabao],
+      3 => const [fish, bird, goat],
+      _ => const [dog, cat, chicken],
+    };
+  }
+
+  List<_IntroLetterItem> _helperIntroItemsFor(int lessonNumber) {
+    const teacher = _IntroLetterItem(
+      label: 'manunudlo',
+      asset: 'assets/images/level_game/Grade1/unit1/manunudlo.png',
+      icon: Icons.school_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const doctor = _IntroLetterItem(
+      label: 'doktor',
+      asset: 'assets/images/level_game/Grade1/unit1/doktor.png',
+      icon: Icons.medical_services_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const nurse = _IntroLetterItem(
+      label: 'nars',
+      asset: 'assets/images/level_game/Grade1/unit1/nars.png',
+      icon: Icons.medical_information_rounded,
+      color: TudloColors.orange,
+      pictureOnly: true,
+    );
+    const police = _IntroLetterItem(
+      label: 'pulis',
+      asset: 'assets/images/level_game/Grade1/unit1/pulis.png',
+      icon: Icons.local_police_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const firefighter = _IntroLetterItem(
+      label: 'bumbero',
+      asset: 'assets/images/level_game/Grade1/unit1/bumbero.png',
+      icon: Icons.local_fire_department_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const vendor = _IntroLetterItem(
+      label: 'tindera',
+      asset: 'assets/images/level_game/Grade1/unit1/tindera.png',
+      icon: Icons.storefront_rounded,
+      color: TudloColors.gold,
+      pictureOnly: true,
+    );
+    const farmer = _IntroLetterItem(
+      label: 'mangunguma',
+      asset: 'assets/images/level_game/Grade1/unit1/mangunguma.png',
+      icon: Icons.agriculture_rounded,
+      color: TudloColors.forest,
+      pictureOnly: true,
+    );
+    const fisher = _IntroLetterItem(
+      label: 'mangingisda',
+      asset: 'assets/images/level_game/Grade1/unit1/mangingisda.png',
+      icon: Icons.sailing_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+
+    return switch (lessonNumber) {
+      1 => const [teacher, doctor, nurse],
+      2 => const [police, firefighter, vendor],
+      3 => const [farmer, fisher],
+      _ => const [teacher, doctor, nurse],
+    };
+  }
+
+  List<_IntroLetterItem> _placeIntroItemsFor(int lessonNumber) {
+    const house = _IntroLetterItem(
+      label: 'balay',
+      asset: 'assets/images/level_game/Grade1/unit1/house.png',
+      icon: Icons.home_rounded,
+      color: TudloColors.green,
+      pictureOnly: true,
+    );
+    const school = _IntroLetterItem(
+      label: 'eskwelahan',
+      asset: 'assets/images/level_game/Grade1/unit1/eskwelahan.png',
+      icon: Icons.school_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const church = _IntroLetterItem(
+      label: 'simbahan',
+      asset: 'assets/images/level_game/Grade1/unit1/simbahan.png',
+      icon: Icons.church_rounded,
+      color: TudloColors.forest,
+      pictureOnly: true,
+    );
+    const market = _IntroLetterItem(
+      label: 'tinda',
+      asset: 'assets/images/level_game/Grade1/unit1/tinda.png',
+      icon: Icons.storefront_rounded,
+      color: TudloColors.gold,
+      pictureOnly: true,
+    );
+    const plaza = _IntroLetterItem(
+      label: 'plasa',
+      asset: 'assets/images/level_game/Grade1/unit1/plaza.png',
+      icon: Icons.park_rounded,
+      color: TudloColors.green,
+      pictureOnly: true,
+    );
+    const hospital = _IntroLetterItem(
+      label: 'ospital',
+      asset: 'assets/images/level_game/Grade1/unit1/ospital.png',
+      icon: Icons.local_hospital_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const farm = _IntroLetterItem(
+      label: 'uma',
+      asset: 'assets/images/level_game/Grade1/unit1/uma.png',
+      icon: Icons.agriculture_rounded,
+      color: TudloColors.forest,
+      pictureOnly: true,
+    );
+    const beach = _IntroLetterItem(
+      label: 'baybay',
+      asset: 'assets/images/level_game/Grade1/unit1/baybay.png',
+      icon: Icons.beach_access_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+
+    return switch (lessonNumber) {
+      1 => const [house, school, church],
+      2 => const [market, plaza, hospital],
+      3 => const [farm, beach],
+      _ => const [house, school, market, hospital],
+    };
+  }
+
+  List<_IntroLetterItem> _gradeTwoIntroItemsFor(
+    int unitNumber,
+    int lessonNumber,
+  ) {
+    const grade2 = 'assets/images/level_game/Grade2';
+    const grade1 = 'assets/images/level_game/Grade1/unit1';
+
+    const school = _IntroLetterItem(
+      label: 'school',
+      asset: '$grade2/school-entrance.png',
+      icon: Icons.school_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const juan = _IntroLetterItem(
+      label: 'Juan',
+      asset: '$grade2/boy-juan.png',
+      icon: Icons.face_rounded,
+      color: TudloColors.green,
+      pictureOnly: true,
+    );
+    const ana = _IntroLetterItem(
+      label: 'Ana',
+      asset: '$grade2/girl-ana.png',
+      icon: Icons.face_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const cake = _IntroLetterItem(
+      label: 'keyk',
+      asset: '$grade2/cake.png',
+      icon: Icons.cake_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const balloons = _IntroLetterItem(
+      label: 'lobo',
+      asset: '$grade2/ballons.png',
+      icon: Icons.celebration_rounded,
+      color: TudloColors.gold,
+      pictureOnly: true,
+    );
+    const family = _IntroLetterItem(
+      label: 'pamilya',
+      asset: '$grade1/pamilya.png',
+      icon: Icons.family_restroom_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const mango = _IntroLetterItem(
+      label: 'mangga',
+      asset: '$grade2/mango.png',
+      icon: Icons.storefront_rounded,
+      color: TudloColors.orange,
+      pictureOnly: true,
+    );
+    const book = _IntroLetterItem(
+      label: 'libro',
+      asset: '$grade2/book.png',
+      icon: Icons.menu_book_rounded,
+      color: TudloColors.green,
+      pictureOnly: true,
+    );
+    const pencil = _IntroLetterItem(
+      label: 'lapis',
+      asset: '$grade2/pencil.png',
+      icon: Icons.edit_rounded,
+      color: TudloColors.gold,
+      pictureOnly: true,
+    );
+    const bag = _IntroLetterItem(
+      label: 'bag',
+      asset: '$grade2/bag.png',
+      icon: Icons.backpack_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const chair = _IntroLetterItem(
+      label: 'pulungkuan',
+      asset: '$grade2/chair.png',
+      icon: Icons.chair_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const table = _IntroLetterItem(
+      label: 'lamesa',
+      asset: '$grade2/table.png',
+      icon: Icons.table_restaurant_rounded,
+      color: TudloColors.green,
+      pictureOnly: true,
+    );
+    const plate = _IntroLetterItem(
+      label: 'plato',
+      asset: '$grade2/plate.png',
+      icon: Icons.dinner_dining_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const glass = _IntroLetterItem(
+      label: 'baso',
+      asset: '$grade2/glass.png',
+      icon: Icons.local_drink_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+    const spoon = _IntroLetterItem(
+      label: 'kutsara',
+      asset: '$grade2/spoon.png',
+      icon: Icons.restaurant_rounded,
+      color: TudloColors.orange,
+      pictureOnly: true,
+    );
+    const microphone = _IntroLetterItem(
+      label: 'kanta',
+      asset: '$grade2/microphone.png',
+      icon: Icons.mic_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
+    const stage = _IntroLetterItem(
+      label: 'entablado',
+      asset: '$grade2/school-stage.png',
+      icon: Icons.theater_comedy_rounded,
+      color: TudloColors.green,
+      pictureOnly: true,
+    );
+    const dog = _IntroLetterItem(
+      label: 'ido',
+      asset: '$grade1/dog.png',
+      icon: Icons.pets_rounded,
+      color: TudloColors.orange,
+      pictureOnly: true,
+    );
+    const cat = _IntroLetterItem(
+      label: 'kuring',
+      asset: '$grade1/cat.png',
+      icon: Icons.pets_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
+
+    return switch ((unitNumber, lessonNumber)) {
+      (1, 1) => const [school, juan, ana],
+      (1, 2) => const [cake, balloons],
+      (1, 3) => const [family],
+      (2, 1) => const [
+        _IntroLetterItem(
+          label: 'aga',
+          icon: Icons.wb_sunny_rounded,
+          color: TudloColors.gold,
+          pictureOnly: true,
+        ),
+        _IntroLetterItem(
+          label: 'hapon',
+          icon: Icons.light_mode_rounded,
+          color: TudloColors.orange,
+          pictureOnly: true,
+        ),
+        _IntroLetterItem(
+          label: 'gab-i',
+          icon: Icons.dark_mode_rounded,
+          color: TudloColors.blue,
+          pictureOnly: true,
+        ),
+      ],
+      (2, 2) => const [
+        _IntroLetterItem(
+          label: 'malipayon',
+          icon: Icons.mood_rounded,
+          color: TudloColors.green,
+          pictureOnly: true,
+        ),
+        _IntroLetterItem(
+          label: 'masubo',
+          icon: Icons.sentiment_dissatisfied_rounded,
+          color: TudloColors.coral,
+          pictureOnly: true,
+        ),
+        _IntroLetterItem(
+          label: 'paalam',
+          icon: Icons.waving_hand_rounded,
+          color: TudloColors.gold,
+          pictureOnly: true,
+        ),
+      ],
+      (2, 3) => const [mango],
+      (3, 1) => const [book, pencil, bag, chair],
+      (3, 2) => const [table, plate, glass, spoon],
+      (3, 3) => const [
+        _IntroLetterItem(
+          label: 'kahoy',
+          icon: Icons.park_rounded,
+          color: TudloColors.forest,
+          pictureOnly: true,
+        ),
+        _IntroLetterItem(
+          label: 'bulak',
+          icon: Icons.local_florist_rounded,
+          color: TudloColors.coral,
+          pictureOnly: true,
+        ),
+        _IntroLetterItem(
+          label: 'adlaw',
+          icon: Icons.wb_sunny_rounded,
+          color: TudloColors.gold,
+          pictureOnly: true,
+        ),
+      ],
+      (4, 1) => const [microphone],
+      (4, 2) => const [dog, cat],
+      (4, 3) => const [stage, microphone],
+      (5, 1) => const [cat, dog],
+      (5, 2) => const [
+        _IntroLetterItem(
+          label: 'lumpat',
+          icon: Icons.keyboard_arrow_up_rounded,
+          color: TudloColors.green,
+          pictureOnly: true,
+        ),
+        _IntroLetterItem(
+          label: 'paypay',
+          icon: Icons.waving_hand_rounded,
+          color: TudloColors.gold,
+          pictureOnly: true,
+        ),
+      ],
+      _ => const [dog, cat, microphone],
+    };
   }
 
   List<String> _plainIntroLabelsFor(String title) {
@@ -317,9 +766,19 @@ class _TuonTaHeading extends StatelessWidget {
 class _IntroLetterItem {
   final String label;
   final String? asset;
+  final IconData? icon;
+  final Color color;
   final bool large;
+  final bool pictureOnly;
 
-  const _IntroLetterItem({required this.label, this.asset, this.large = false});
+  const _IntroLetterItem({
+    required this.label,
+    this.asset,
+    this.icon,
+    this.color = TudloColors.green,
+    this.large = false,
+    this.pictureOnly = false,
+  });
 }
 
 class _IntroLetterGrid extends StatelessWidget {
@@ -376,8 +835,16 @@ class _AnimatedIntroLetterCard extends StatelessWidget {
       Color(0xFFFFD6E8),
     ];
     final color = colors[index % colors.length];
-    final cardSize = item.large ? 330.0 : 172.0;
-    final imageSize = item.large ? 330.0 : 166.0;
+    final cardSize = item.large
+        ? 330.0
+        : item.pictureOnly
+        ? 184.0
+        : 172.0;
+    final imageSize = item.large
+        ? 330.0
+        : item.pictureOnly
+        ? 184.0
+        : 166.0;
 
     return SizedBox(
       width: cardSize,
@@ -394,7 +861,9 @@ class _AnimatedIntroLetterCard extends StatelessWidget {
             return Transform.scale(scale: scale, child: child);
           },
           child: Center(
-            child: item.asset == null
+            child: item.pictureOnly
+                ? _IntroPictureArt(item: item, size: imageSize)
+                : item.asset == null
                 ? Container(
                     alignment: Alignment.center,
                     padding: const EdgeInsets.all(14),
@@ -442,6 +911,59 @@ class _AnimatedIntroLetterCard extends StatelessWidget {
                   ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _IntroPictureArt extends StatelessWidget {
+  final _IntroLetterItem item;
+  final double size;
+
+  const _IntroPictureArt({required this.item, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    if (item.asset != null) {
+      return Image.asset(
+        item.asset!,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) => _IntroIconArt(item: item, size: size),
+      );
+    }
+    return _IntroIconArt(item: item, size: size);
+  }
+}
+
+class _IntroIconArt extends StatelessWidget {
+  final _IntroLetterItem item;
+  final double size;
+
+  const _IntroIconArt({required this.item, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: item.color.withValues(alpha: .14),
+        boxShadow: [
+          BoxShadow(
+            color: item.color.withValues(alpha: .16),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Icon(
+        item.icon ?? Icons.pets_rounded,
+        color: item.color,
+        size: size * .58,
       ),
     );
   }

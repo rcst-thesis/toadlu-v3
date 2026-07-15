@@ -44,7 +44,7 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
             final eyesWidth = (constraints.maxWidth * (compact ? .62 : .78))
                 .clamp(200.0, 360.0);
             final titleGap = compact ? 30.0 : 50.0;
-            final buttonGap = compact ? 13.0 : 22.0;
+            final buttonGap = compact ? 12.0 : 18.0;
             final arrowSize = compact ? 82.0 : 106.0;
 
             return Padding(
@@ -135,70 +135,130 @@ class _GradeButtonState extends State<_GradeButton> {
   @override
   Widget build(BuildContext context) {
     final glowing = _pressed || widget.selected;
+    final buttonHeight = widget.compact ? 68.0 : 86.0;
     final width =
         (MediaQuery.sizeOf(context).width * (widget.compact ? .76 : .70))
             .clamp(230.0, 380.0)
             .toDouble();
     final borderColor = glowing ? const Color(0xFFFFE45C) : Colors.white;
 
-    return AnimatedScale(
-      duration: const Duration(milliseconds: 110),
-      curve: Curves.easeOut,
-      scale: _pressed ? .96 : 1,
-      child: GestureDetector(
-        onTapDown: (_) => _setPressed(true),
-        onTapCancel: () => _setPressed(false),
-        onTapUp: (_) => _setPressed(false),
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          width: width,
-          padding: EdgeInsets.symmetric(
-            horizontal: 26,
-            vertical: widget.compact ? 10 : 15,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: borderColor, width: glowing ? 6 : 4),
-            boxShadow: glowing
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFFFFF06A).withValues(alpha: .95),
-                      blurRadius: _pressed ? 34 : 26,
-                      spreadRadius: _pressed ? 8 : 5,
+    return SizedBox(
+      width: width,
+      height: buttonHeight,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        scale: _pressed ? .96 : 1,
+        child: GestureDetector(
+          onTapDown: (_) => _setPressed(true),
+          onTapCancel: () => _setPressed(false),
+          onTapUp: (_) => _setPressed(false),
+          onTap: widget.onTap,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: glowing ? 1 : 0,
+                    child: OverflowBox(
+                      maxWidth: width + 96,
+                      maxHeight: buttonHeight + 72,
+                      child: CustomPaint(
+                        size: Size(width + 96, buttonHeight + 72),
+                        painter: _PillGlowPainter(
+                          pressed: _pressed,
+                          buttonSize: Size(width, buttonHeight),
+                        ),
+                      ),
                     ),
-                    BoxShadow(
-                      color: const Color(0xFF0B7F18).withValues(alpha: .32),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
-                    ),
-                  ]
-                : [
+                  ),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                width: width,
+                height: buttonHeight,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 26,
+                  vertical: widget.compact ? 10 : 15,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: borderColor,
+                    width: glowing ? 6 : 4,
+                  ),
+                  boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: .10),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
                   ],
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                color: glowing
-                    ? const Color(0xFF0B7F18)
-                    : const Color(0xFF237915),
-                fontSize: widget.compact ? 35 : 44,
-                fontWeight: FontWeight.w900,
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.label,
+                    style: TextStyle(
+                      color: glowing
+                          ? const Color(0xFF0B7F18)
+                          : const Color(0xFF237915),
+                      fontSize: widget.compact ? 35 : 44,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
+  }
+}
+
+class _PillGlowPainter extends CustomPainter {
+  final bool pressed;
+  final Size buttonSize;
+
+  const _PillGlowPainter({required this.pressed, required this.buttonSize});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final rect = Rect.fromCenter(
+      center: center,
+      width: buttonSize.width + (pressed ? 28 : 22),
+      height: buttonSize.height + (pressed ? 18 : 14),
+    );
+    final radius = Radius.circular(rect.height / 2);
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+
+    final outer = Paint()
+      ..color = const Color(0xFFFFF06A).withValues(alpha: .34)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = pressed ? 26 : 22
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+    canvas.drawRRect(rrect, outer);
+
+    final inner = Paint()
+      ..color = const Color(0xFFFFF06A).withValues(alpha: .58)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = pressed ? 14 : 11
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+    canvas.drawRRect(rrect, inner);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PillGlowPainter oldDelegate) {
+    return oldDelegate.pressed != pressed ||
+        oldDelegate.buttonSize != buttonSize;
   }
 }
 
