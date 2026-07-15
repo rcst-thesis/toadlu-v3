@@ -197,21 +197,26 @@ class _AnimatedLessonIntroContentState
         Center(
           child: Transform.translate(
             offset: const Offset(0, -28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _IntroLetterGrid(
-                  children: [
-                    for (var index = 0; index < _letters.length; index++)
-                      _AnimatedIntroLetterCard(
-                        item: _letters[index],
-                        index: index,
-                        visible: index < _visibleLetters,
-                      ),
-                  ],
-                ),
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const _TuonTaHeading(),
+                  const SizedBox(height: 18),
+                  _IntroLetterGrid(
+                    children: [
+                      for (var index = 0; index < _letters.length; index++)
+                        _AnimatedIntroLetterCard(
+                          item: _letters[index],
+                          index: index,
+                          visible: index < _visibleLetters,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -229,6 +234,18 @@ class _AnimatedLessonIntroContentState
   }
 
   List<_IntroLetterItem> _introLettersFor(LevelContent content) {
+    if (content.gradeLevel == 1 &&
+        content.unitNumber == 2 &&
+        content.lessonNumber == 1) {
+      return const [
+        _IntroLetterItem(
+          label: 'pamilya',
+          asset: 'assets/images/level_game/Grade1/unit1/pamilya.png',
+          large: true,
+        ),
+      ];
+    }
+
     final titleLetters = RegExp(
       r'\b[A-Z]\b',
     ).allMatches(content.title).map((match) => match.group(0)!).toList();
@@ -278,11 +295,31 @@ class _AnimatedLessonIntroContentState
   }
 }
 
+class _TuonTaHeading extends StatelessWidget {
+  const _TuonTaHeading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'TUON TA!',
+      textAlign: TextAlign.center,
+      style: GoogleFonts.nunito(
+        color: TudloColors.green,
+        fontSize: 45,
+        height: 1,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0,
+      ),
+    );
+  }
+}
+
 class _IntroLetterItem {
   final String label;
   final String? asset;
+  final bool large;
 
-  const _IntroLetterItem({required this.label, this.asset});
+  const _IntroLetterItem({required this.label, this.asset, this.large = false});
 }
 
 class _IntroLetterGrid extends StatelessWidget {
@@ -295,6 +332,13 @@ class _IntroLetterGrid extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final rowCount = ((children.length + 1) ~/ 2).clamp(1, 3);
     final gridWidth = math.min(380, screenWidth - 48).toDouble();
+    if (children.length == 1) {
+      return SizedBox(
+        width: gridWidth,
+        height: 360,
+        child: Center(child: children.single),
+      );
+    }
     return SizedBox(
       width: gridWidth,
       height: (rowCount * 178).toDouble(),
@@ -332,10 +376,12 @@ class _AnimatedIntroLetterCard extends StatelessWidget {
       Color(0xFFFFD6E8),
     ];
     final color = colors[index % colors.length];
+    final cardSize = item.large ? 330.0 : 172.0;
+    final imageSize = item.large ? 330.0 : 166.0;
 
     return SizedBox(
-      width: 172,
-      height: 172,
+      width: cardSize,
+      height: cardSize,
       child: AnimatedOpacity(
         opacity: visible ? 1 : 0,
         duration: const Duration(milliseconds: 160),
@@ -380,8 +426,8 @@ class _AnimatedIntroLetterCard extends StatelessWidget {
                   )
                 : Image.asset(
                     item.asset!,
-                    width: 166,
-                    height: 166,
+                    width: imageSize,
+                    height: imageSize,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.high,
                     errorBuilder: (_, __, ___) => Text(

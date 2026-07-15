@@ -77,7 +77,7 @@ void main() {
         .whereType<File>()
         .map((file) => file.path.replaceAll(r'\', '/'))
         .toSet();
-    final referencedAssets = <String>{};
+    final referencedAssets = _staticImageAssetsFromDart();
 
     for (final grade in GradeLevel.values) {
       AppData.selectedGradeLevel = grade;
@@ -100,4 +100,30 @@ void main() {
       isEmpty,
     );
   });
+}
+
+Set<String> _staticImageAssetsFromDart() {
+  final assetLiteralPattern = RegExp(r'''assets/[^'")\s]+''');
+  final assets = <String>{};
+
+  for (final file in Directory('lib').listSync(recursive: true)) {
+    if (file is! File || !file.path.endsWith('.dart')) continue;
+    final source = file.readAsStringSync();
+    assets.addAll(
+      assetLiteralPattern
+          .allMatches(source)
+          .map((match) => match.group(0)!)
+          .where(_isImageAsset),
+    );
+  }
+
+  return assets;
+}
+
+bool _isImageAsset(String asset) {
+  final lower = asset.toLowerCase();
+  return lower.endsWith('.png') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.webp');
 }
