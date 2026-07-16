@@ -36,7 +36,7 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2FAA1F),
+      backgroundColor: Color.fromARGB(255, 37, 125, 24),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

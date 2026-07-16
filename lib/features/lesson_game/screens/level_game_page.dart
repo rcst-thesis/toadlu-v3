@@ -180,13 +180,33 @@ class _LevelGamePageState extends State<LevelGamePage> {
         accuracy: accuracy,
         mistakes: questions.length - score,
         durationLabel: durationLabel,
-        onClaim: () {
+        onBackToMap: () {
           _claimRewardsOnce();
           Navigator.pop(context);
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 0)),
             (route) => false,
+          );
+        },
+        onContinue: () {
+          _claimRewardsOnce();
+          Navigator.pop(context);
+          if (widget.level >= AppData.maxLevel) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AppShell(initialIndex: 0),
+              ),
+              (route) => false,
+            );
+            return;
+          }
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LevelGamePage(level: widget.level + 1),
+            ),
           );
         },
       ),
@@ -962,7 +982,7 @@ class _Grade3IntroStep extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           _Grade3TipBubble(
-            text: 'Basaha anay. Tap-a ang speaker kon gusto mo mamati.',
+            text: 'Basaha anay. Pindoton ang speaker kon gusto mo mamati.',
           ),
           const SizedBox(height: 28),
           _Grade3PrimaryButton(label: 'Sugdi', onTap: onNext),
@@ -3442,26 +3462,31 @@ _GradeTwoTileVisual _gradeTwoTileVisualFor(String value) {
     ),
     'morning' => const _GradeTwoTileVisual(
       label: 'aga',
+      imageAsset: 'assets/images/level_game/sunrise.png',
       icon: Icons.wb_sunny_rounded,
       color: TudloColors.gold,
     ),
     'maayong aga' || 'maayong aga!' => const _GradeTwoTileVisual(
       label: 'Maayong aga',
+      imageAsset: 'assets/images/level_game/sunrise.png',
       icon: Icons.wb_sunny_rounded,
       color: TudloColors.gold,
     ),
     'good morning' => const _GradeTwoTileVisual(
       label: 'Maayong aga',
+      imageAsset: 'assets/images/level_game/sunrise.png',
       icon: Icons.wb_sunny_rounded,
       color: TudloColors.gold,
     ),
     'evening' => const _GradeTwoTileVisual(
       label: 'gab-i',
+      imageAsset: 'assets/images/level_game/moon.png',
       icon: Icons.dark_mode_rounded,
       color: TudloColors.blue,
     ),
     'maayong gab-i' || 'maayong gab-i!' => const _GradeTwoTileVisual(
       label: 'Maayong gab-i',
+      imageAsset: 'assets/images/level_game/moon.png',
       icon: Icons.dark_mode_rounded,
       color: TudloColors.blue,
     ),
@@ -3494,6 +3519,7 @@ _GradeTwoTileVisual _gradeTwoTileVisualFor(String value) {
     ),
     'pig' || 'baboy' => const _GradeTwoTileVisual(
       label: 'baboy',
+      imageAsset: 'assets/images/level_game/animals/pig.png',
       icon: Icons.pets_rounded,
       color: TudloColors.coral,
     ),
@@ -3510,6 +3536,7 @@ _GradeTwoTileVisual _gradeTwoTileVisualFor(String value) {
     ),
     'sun' || 'adlaw' => const _GradeTwoTileVisual(
       label: 'adlaw',
+      imageAsset: 'assets/images/level_game/sun.png',
       icon: Icons.wb_sunny_rounded,
       color: TudloColors.gold,
     ),
@@ -3560,6 +3587,7 @@ _GradeTwoTileVisual _gradeTwoTileVisualFor(String value) {
     ),
     'merkado' => const _GradeTwoTileVisual(
       label: 'merkado',
+      imageAsset: 'assets/images/level_game/tinda.png',
       icon: Icons.storefront_rounded,
       color: TudloColors.orange,
     ),
@@ -3986,7 +4014,11 @@ _GradeTwoPlan _gradeTwoPlanFor(LevelContent content) {
           imageAsset: 'assets/images/level_game/animals/cat.png',
           icon: Icons.pets,
         ),
-        _GradeTwoMissionChoice(label: 'baboy', icon: Icons.pets),
+        _GradeTwoMissionChoice(
+          label: 'baboy',
+          imageAsset: 'assets/images/level_game/animals/pig.png',
+          icon: Icons.pets,
+        ),
       ],
       missionAnswer: 'ido',
       reward: 'Nasabat mo ang paktakon.',
@@ -4016,8 +4048,16 @@ _GradeTwoPlan _gradeTwoPlanFor(LevelContent content) {
           imageAsset: '$grade2/microphone.png',
           icon: Icons.mic_rounded,
         ),
-        _GradeTwoMissionChoice(label: 'libro', icon: Icons.menu_book),
-        _GradeTwoMissionChoice(label: 'mangga', icon: Icons.storefront),
+        _GradeTwoMissionChoice(
+          label: 'libro',
+          imageAsset: '$grade2/book.png',
+          icon: Icons.menu_book,
+        ),
+        _GradeTwoMissionChoice(
+          label: 'mangga',
+          imageAsset: '$grade2/mango.png',
+          icon: Icons.storefront,
+        ),
       ],
       missionAnswer: 'manugkanta',
       reward: 'Nagpalakpak ang klase.',
@@ -4048,7 +4088,11 @@ _GradeTwoPlan _gradeTwoPlanFor(LevelContent content) {
           imageAsset: 'assets/images/level_game/animals/fish.png',
           icon: Icons.water,
         ),
-        _GradeTwoMissionChoice(label: 'adlaw', icon: Icons.wb_sunny),
+        _GradeTwoMissionChoice(
+          label: 'adlaw',
+          imageAsset: '$grade2/sun.png',
+          icon: Icons.wb_sunny,
+        ),
       ],
       missionAnswer: 'banig',
       reward: 'Pareho ang tunog.',
@@ -4156,6 +4200,17 @@ class _GradeOneAlphabetLesson extends StatefulWidget {
 
 class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
   int _stepIndex = 0;
+  late final List<String> _quizTargets;
+
+  @override
+  void initState() {
+    super.initState();
+    _quizTargets = _shuffledChoices(
+      _targetLettersFor(
+        widget.content,
+      ).map((target) => target.toUpperCase()).toSet(),
+    );
+  }
 
   void _goToStep(int index, int maxIndex) {
     final next = index.clamp(0, maxIndex);
@@ -4176,27 +4231,37 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
     final anchors = _alphabetAnchorsFor(widget.content.lessonNumber);
     final targets = _targetLettersFor(widget.content);
     var maxIndex = 0;
-    final quizActivities = widget.content.quizItems.asMap().entries.map((
-      entry,
-    ) {
-      final target = _targetLetterForQuiz(entry.value, targets);
+    final quizActivities = _quizTargets.asMap().entries.map((entry) {
+      final target = entry.value;
+      final quizItem = widget.content.quizItems.isEmpty
+          ? null
+          : widget.content.quizItems[entry.key %
+                widget.content.quizItems.length];
       final anchor = _bestAnchorForTarget(
         anchors,
         target,
-        prompt: entry.value.question,
+        prompt: quizItem?.question ?? '',
       );
       return _AlphabetMiniActivity(
-        key: ValueKey('alphabet-quiz-${widget.content.id}-${entry.value.id}'),
+        key: ValueKey('alphabet-quiz-${widget.content.id}-$target'),
         word: anchor.word,
         meaning: anchor.meaning,
         imageAsset: anchor.imageAsset,
         icon: anchor.icon,
         targetLetters: [target],
-        instruction: _instructionForQuiz(entry.value, target),
-        mascotMessage: 'Koka: Pamatii, dayon tap-a ang husto nga letra.',
+        instruction: _instructionForQuiz(quizItem, target),
+        mascotMessage: 'Koka: Pamatii, dayon pindoton ang husto nga letra.',
         spendEnergy: true,
         onCorrect: () {
-          widget.onQuizCorrect(entry.key);
+          if (entry.key == _quizTargets.length - 1) {
+            for (
+              var index = 0;
+              index < widget.content.quizItems.length;
+              index++
+            ) {
+              widget.onQuizCorrect(index);
+            }
+          }
           _advanceAfterCorrect(maxIndex);
         },
       );
@@ -4232,9 +4297,9 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
             icon: anchor.icon,
             targetLetters: anchor.targets,
             instruction:
-                'Tap-a ang tagsa ka letra ${anchor.targets.join(", ")} sa tinaga.',
+                'Pindoton ang tagsa ka letra ${anchor.targets.join(", ")} sa tinaga.',
             mascotMessage:
-                'Koka: Ini ang tinaga ${anchor.word}. Tap-a ang tagsa ka letra.',
+                'Koka: Ini ang tinaga ${anchor.word}. Pindoton ang tagsa ka letra.',
             onCorrect: () => _advanceAfterCorrect(maxIndex),
           ),
         ),
@@ -4322,27 +4387,14 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
     ).expand((anchor) => anchor.targets).toSet().toList();
   }
 
-  String _targetLetterForQuiz(QuizItem item, List<String> targets) {
-    final combined = '${item.answer} ${item.question}'.toUpperCase();
-    for (final target in targets) {
-      if (RegExp('\\b$target\\b').hasMatch(combined) ||
-          combined.contains('/$target/')) {
-        return target;
-      }
-    }
-    return targets.isEmpty
-        ? item.answer.characters.first.toUpperCase()
-        : targets.first;
-  }
-
-  String _instructionForQuiz(QuizItem item, String target) {
-    final question = item.question.trim();
+  String _instructionForQuiz(QuizItem? item, String target) {
+    final question = item?.question.trim() ?? '';
     final soundMatch = RegExp(r'/([^/]+)/').firstMatch(question);
     if (soundMatch != null) {
-      return 'Tap-a ang letra nga may tingog nga ${_letterSoundText(soundMatch.group(1)!)}.';
+      return 'Pindoton ang letra nga may tingog nga ${_letterSoundText(target)}.';
     }
     if (question.toLowerCase().contains('diin')) return question;
-    return 'Pamatii ang tingog kag tap-a ang letra $target.';
+    return 'Pamatii ang tingog kag pindoton ang letra $target.';
   }
 
   _AlphabetAnchor _bestAnchorForTarget(
@@ -4395,6 +4447,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
             word: 'MANOK',
             meaning: 'manok',
             targets: ['M', 'K'],
+            imageAsset: 'assets/images/level_game/animals/chicken.png',
             icon: Icons.egg_alt_rounded,
           ),
           _AlphabetAnchor(
@@ -4411,6 +4464,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
             word: 'BALAY',
             meaning: 'balay',
             targets: ['B', 'L'],
+            imageAsset: 'assets/images/level_game/house.png',
             icon: Icons.home_rounded,
           ),
           _AlphabetAnchor(
@@ -4423,6 +4477,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
             word: 'ISDA',
             meaning: 'isda',
             targets: ['S'],
+            imageAsset: 'assets/images/level_game/animals/fish.png',
             icon: Icons.water_rounded,
           ),
         ];
@@ -4432,18 +4487,21 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
             word: 'ESKWELAHAN',
             meaning: 'eskwelahan',
             targets: ['E'],
+            imageAsset: 'assets/images/level_game/eskwelahan.png',
             icon: Icons.school_rounded,
           ),
           _AlphabetAnchor(
             word: 'GATAS',
             meaning: 'gatas',
             targets: ['G'],
+            imageAsset: 'assets/images/level_game/milk.png',
             icon: Icons.local_drink_rounded,
           ),
           _AlphabetAnchor(
             word: 'PAMILYA',
             meaning: 'pamilya',
             targets: ['P'],
+            imageAsset: 'assets/images/level_game/people/pamilya.png',
             icon: Icons.diversity_3_rounded,
           ),
         ];
@@ -4454,19 +4512,21 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
             word: 'DOKTOR',
             meaning: 'doktor',
             targets: ['R'],
+            imageAsset: 'assets/images/level_game/people/doktor.png',
             icon: Icons.medical_services_rounded,
           ),
           _AlphabetAnchor(
             word: 'HOSPITAL',
             meaning: 'ospital',
             targets: ['H'],
+            imageAsset: 'assets/images/level_game/ospital.png',
             icon: Icons.local_hospital_rounded,
           ),
           _AlphabetAnchor(
             word: 'KARBAW',
             meaning: 'karbaw',
             targets: ['W'],
-            imageAsset: 'assets/images/level_game/animals/cow.png',
+            imageAsset: 'assets/images/level_game/animals/carabao.png',
             icon: Icons.agriculture_rounded,
           ),
         ];
@@ -4588,6 +4648,20 @@ class _AlphabetMiniActivityState extends State<_AlphabetMiniActivity> {
   Set<String> get _targets =>
       widget.targetLetters.map((letter) => letter.toUpperCase()).toSet();
 
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.spendEnergy) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 450), () {
+        if (!mounted) return;
+        unawaited(
+          TudloVoiceButton.speak(context, _voiceMessage, hiligaynon: true),
+        );
+      });
+    });
+  }
+
   Future<void> _handleLetterTap(String letter, int index) async {
     if (_reported) return;
     if (widget.spendEnergy) {
@@ -4637,7 +4711,6 @@ class _AlphabetMiniActivityState extends State<_AlphabetMiniActivity> {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final stageHeight = screenHeight.clamp(620.0, 820.0);
     final assetTop = (stageHeight * .22).clamp(118.0, 176.0).toDouble();
-    final speakerTop = (assetTop - 76).clamp(110.0, 170.0).toDouble();
     final mascotTop = (stageHeight - 260).clamp(430.0, 540.0).toDouble();
 
     return Center(
@@ -4662,22 +4735,6 @@ class _AlphabetMiniActivityState extends State<_AlphabetMiniActivity> {
                   onLetterTap: _handleLetterTap,
                 ),
               ),
-              if (widget.spendEnergy)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: speakerTop,
-                  child: Center(
-                    child: TudloVoiceButton(
-                      message: _voiceMessage,
-                      tooltip: 'Pamatii ang tingog',
-                      size: 58,
-                      hiligaynon: true,
-                      backgroundColor: Colors.white,
-                      foregroundColor: TudloColors.green,
-                    ),
-                  ),
-                ),
               Positioned(
                 left: 0,
                 right: 0,
@@ -4689,7 +4746,8 @@ class _AlphabetMiniActivityState extends State<_AlphabetMiniActivity> {
                   meaning: widget.meaning,
                   voiceMessage: _voiceMessage,
                   height: 410,
-                  showVoiceButton: !widget.spendEnergy,
+                  showVoiceButton: true,
+                  voiceButtonSize: widget.spendEnergy ? 72 : null,
                 ),
               ),
               Positioned(
@@ -4792,9 +4850,17 @@ class TappableWord extends StatelessWidget {
       'G': 'assets/images/level_game/letters/G.png',
       'H': 'assets/images/level_game/letters/H.png',
       'I': 'assets/images/level_game/letters/I.png',
+      'K': 'assets/images/level_game/letters/K.png',
+      'L': 'assets/images/level_game/letters/L.png',
+      'M': 'assets/images/level_game/letters/M.png',
       'N': 'assets/images/level_game/letters/N.png',
       'O': 'assets/images/level_game/letters/O.png',
+      'P': 'assets/images/level_game/letters/P-stage.png',
+      'R': 'assets/images/level_game/letters/R.png',
+      'S': 'assets/images/level_game/letters/S.png',
       'T': 'assets/images/level_game/letters/T.png',
+      'U': 'assets/images/level_game/letters/U.png',
+      'W': 'assets/images/level_game/letters/W.png',
       'Y': 'assets/images/level_game/letters/Y.png',
     }[letter.toUpperCase()];
   }
@@ -4829,7 +4895,7 @@ class _AlphabetLetterIntroCardState extends State<_AlphabetLetterIntroCard> {
       unawaited(
         TudloVoiceButton.speak(
           context,
-          'Pamati! ${_letterSoundText(widget.letter)}...',
+          'Pamatii ang tingog sang ${widget.letter.toUpperCase()}. Pindoton ang ${widget.letter.toUpperCase()}.',
           hiligaynon: true,
         ),
       );
@@ -4929,7 +4995,7 @@ class _AlphabetLetterIntroCardState extends State<_AlphabetLetterIntroCard> {
                   child: _AlphabetMascotBubble(
                     message: _revealed
                         ? 'Koka: May $letter sa ${widget.anchor.word}!'
-                        : 'Koka: Pamati! ${_letterSoundText(letter)}... Tap-a ang $letter.',
+                        : 'Koka: Pamatii ang tingog. Pindoton ang $letter.',
                   ),
                 ),
               ),
@@ -5002,9 +5068,17 @@ class _IntroLetterArt extends StatelessWidget {
       'G': 'assets/images/level_game/letters/G.png',
       'H': 'assets/images/level_game/letters/H.png',
       'I': 'assets/images/level_game/letters/I.png',
+      'K': 'assets/images/level_game/letters/K.png',
+      'L': 'assets/images/level_game/letters/L.png',
+      'M': 'assets/images/level_game/letters/M.png',
       'N': 'assets/images/level_game/letters/N.png',
       'O': 'assets/images/level_game/letters/O.png',
+      'P': 'assets/images/level_game/letters/P-stage.png',
+      'R': 'assets/images/level_game/letters/R.png',
+      'S': 'assets/images/level_game/letters/S.png',
       'T': 'assets/images/level_game/letters/T.png',
+      'U': 'assets/images/level_game/letters/U.png',
+      'W': 'assets/images/level_game/letters/W.png',
       'Y': 'assets/images/level_game/letters/Y.png',
     }[letter.toUpperCase()];
     if (asset == null) {
@@ -5263,6 +5337,7 @@ class _AlphabetAnchorImage extends StatelessWidget {
   final bool compact;
   final double? height;
   final bool showVoiceButton;
+  final double? voiceButtonSize;
 
   const _AlphabetAnchorImage({
     required this.imageAsset,
@@ -5273,6 +5348,7 @@ class _AlphabetAnchorImage extends StatelessWidget {
     this.compact = false,
     this.height,
     this.showVoiceButton = true,
+    this.voiceButtonSize,
   });
 
   @override
@@ -5284,47 +5360,24 @@ class _AlphabetAnchorImage extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                Positioned.fill(
-                  child: imageAsset == null
-                      ? _AlphabetIconArt(icon: icon)
-                      : Image.asset(
-                          imageAsset!,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.high,
-                          errorBuilder: (_, __, ___) =>
-                              _AlphabetIconArt(icon: icon),
-                        ),
-                ),
-                if (showVoiceButton)
-                  Positioned(
-                    bottom: 2,
-                    child: TudloVoiceButton(
-                      message: voiceMessage,
-                      tooltip: 'Pamatii ang tingog',
-                      size: compact ? 54 : 62,
-                      hiligaynon: true,
-                      backgroundColor: Colors.white,
-                      foregroundColor: TudloColors.green,
-                    ),
+            child: imageAsset == null
+                ? _AlphabetIconArt(icon: icon)
+                : Image.asset(
+                    imageAsset!,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, __, ___) => _AlphabetIconArt(icon: icon),
                   ),
-              ],
-            ),
           ),
-          if (!compact) ...[
-            const SizedBox(height: 14),
-            Text(
-              meaning,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: TudloColors.muted,
-                fontSize: 19,
-                height: 1.1,
-                fontWeight: FontWeight.w900,
-              ),
+          if (showVoiceButton) ...[
+            const SizedBox(height: 8),
+            TudloVoiceButton(
+              message: voiceMessage,
+              tooltip: 'Pamatii ang tingog',
+              size: voiceButtonSize ?? (compact ? 60 : 70),
+              hiligaynon: true,
+              backgroundColor: Colors.white,
+              foregroundColor: TudloColors.green,
             ),
           ],
         ],
@@ -5513,7 +5566,7 @@ class _FamilyExploreCard extends StatefulWidget {
 
 class _FamilyExploreCardState extends State<_FamilyExploreCard> {
   final Set<String> _tapped = {};
-  String _message = 'Koka: Tan-awa ang pamilya. Tap-a sila.';
+  String _message = 'Koka: Tan-awa ang pamilya. Pindoton sila.';
   bool _reported = false;
 
   @override
@@ -5524,7 +5577,7 @@ class _FamilyExploreCardState extends State<_FamilyExploreCard> {
       unawaited(
         TudloVoiceButton.speak(
           context,
-          'Tan-awa ang pamilya. Tap-a sila.',
+          'Tan-awa ang pamilya. Pindoton sila.',
           hiligaynon: true,
         ),
       );
@@ -5622,30 +5675,82 @@ class _FamilyExplorePerson extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 180),
-        scale: tapped ? 1.08 : 1,
-        child: Container(
-          width: 126,
-          height: 190,
-          decoration: BoxDecoration(
-            boxShadow: tapped
-                ? [
-                    BoxShadow(
-                      color: TudloColors.green.withValues(alpha: .36),
-                      blurRadius: 28,
-                      spreadRadius: 8,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Image.asset(
-            word.imageAsset,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (_, __, ___) =>
-                Icon(word.icon, color: TudloColors.forest, size: 96),
-          ),
+      child: SizedBox(
+        width: 126,
+        height: 218,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                );
+              },
+              child: tapped
+                  ? Container(
+                      key: ValueKey('name-${word.hil}'),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: TudloColors.green, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: TudloColors.forest.withValues(alpha: .16),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        _titleCase(word.hil),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.forest,
+                          fontSize: 19,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(key: ValueKey('empty-name'), height: 41),
+            ),
+            AnimatedScale(
+              duration: const Duration(milliseconds: 180),
+              scale: tapped ? 1.08 : 1,
+              child: Container(
+                width: 126,
+                height: 169,
+                decoration: BoxDecoration(
+                  boxShadow: tapped
+                      ? [
+                          BoxShadow(
+                            color: TudloColors.green.withValues(alpha: .36),
+                            blurRadius: 28,
+                            spreadRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Image.asset(
+                  word.imageAsset,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(word.icon, color: TudloColors.forest, size: 96),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -5821,11 +5926,13 @@ class _HelperTool {
   final String hil;
   final IconData icon;
   final Color color;
+  final String? imageAsset;
 
   const _HelperTool({
     required this.hil,
     required this.icon,
     required this.color,
+    this.imageAsset,
   });
 }
 
@@ -6278,35 +6385,64 @@ class _HelperReviewCardState extends State<_HelperReviewCard> {
             ),
           ),
           const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              for (final helper in widget.helpers)
-                _HelperReviewWorkplace(
-                  helper: helper,
-                  matched: _matched.contains(helper.hil),
-                  onDrop: (dragged) => _handleDrop(helper, dragged),
-                ),
-            ],
-          ),
-          const SizedBox(height: 34),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              for (final helper in widget.helpers)
-                _matched.contains(helper.hil)
-                    ? const SizedBox(width: 126, height: 126)
-                    : _HelperDraggable(
-                        helper: helper,
-                        size: 126,
-                        onMissed: () {
-                          setState(() {
-                            _message =
-                                'Koka: Guyoda ang ${helper.hil} pakadto sa iya ginatrabahuan.';
-                          });
-                        },
-                      ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemCount = widget.helpers.length;
+              final gap = itemCount > 2 ? 8.0 : 16.0;
+              final itemSize = itemCount == 0
+                  ? 0.0
+                  : math
+                        .min(
+                          126.0,
+                          (constraints.maxWidth - gap * (itemCount - 1)) /
+                              itemCount,
+                        )
+                        .clamp(0.0, 126.0)
+                        .toDouble();
+              final dragSize = math.min(126.0, itemSize);
+
+              return Column(
+                children: [
+                  _AnimalReviewRow(
+                    gap: gap,
+                    children: [
+                      for (final helper in widget.helpers)
+                        _AnimalReviewSizedSlot(
+                          size: itemSize,
+                          child: _HelperReviewWorkplace(
+                            helper: helper,
+                            size: itemSize,
+                            matched: _matched.contains(helper.hil),
+                            onDrop: (dragged) => _handleDrop(helper, dragged),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 34),
+                  _AnimalReviewRow(
+                    gap: gap,
+                    children: [
+                      for (final helper in widget.helpers)
+                        _AnimalReviewSizedSlot(
+                          size: itemSize,
+                          child: _matched.contains(helper.hil)
+                              ? SizedBox.square(dimension: dragSize)
+                              : _HelperDraggable(
+                                  helper: helper,
+                                  size: dragSize,
+                                  onMissed: () {
+                                    setState(() {
+                                      _message =
+                                          'Koka: Guyoda ang ${helper.hil} pakadto sa iya ginatrabahuan.';
+                                    });
+                                  },
+                                ),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -6416,11 +6552,13 @@ class _HelperWorkplaceTarget extends StatelessWidget {
 
 class _HelperReviewWorkplace extends StatelessWidget {
   final _HelperWord helper;
+  final double size;
   final bool matched;
   final ValueChanged<_HelperWord> onDrop;
 
   const _HelperReviewWorkplace({
     required this.helper,
+    required this.size,
     required this.matched,
     required this.onDrop,
   });
@@ -6433,7 +6571,7 @@ class _HelperReviewWorkplace extends StatelessWidget {
       builder: (context, candidates, rejected) {
         return _HelperWorkplaceArt(
           helper: helper,
-          size: 126,
+          size: size,
           active: candidates.isNotEmpty,
           matched: matched,
         );
@@ -6575,7 +6713,20 @@ class _ToolArt extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(tool.icon, color: tool.color, size: size * .54),
+      child: tool.imageAsset == null
+          ? Icon(tool.icon, color: tool.color, size: size * .54)
+          : Padding(
+              padding: EdgeInsets.all(size * .1),
+              child: Image.asset(
+                tool.imageAsset!,
+                width: size * .8,
+                height: size * .8,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (_, __, ___) =>
+                    Icon(tool.icon, color: tool.color, size: size * .54),
+              ),
+            ),
     );
   }
 }
@@ -6604,16 +6755,19 @@ List<_HelperWord> _helpersForLesson(int lessonNumber) {
     hil: 'libro',
     icon: Icons.menu_book_rounded,
     color: TudloColors.blue,
+    imageAsset: 'assets/images/level_game/book.png',
   );
   const doctorTool = _HelperTool(
     hil: 'stethoscope',
     icon: Icons.health_and_safety_rounded,
     color: TudloColors.coral,
+    imageAsset: 'assets/images/level_game/stetoscope.png',
   );
   const nurseTool = _HelperTool(
     hil: 'thermometer',
     icon: Icons.thermostat_rounded,
     color: TudloColors.orange,
+    imageAsset: 'assets/images/level_game/thermometer.png',
   );
   const policeTool = _HelperTool(
     hil: 'whistle',
@@ -6629,6 +6783,7 @@ List<_HelperWord> _helpersForLesson(int lessonNumber) {
     hil: 'basket sang prutas',
     icon: Icons.shopping_basket_rounded,
     color: TudloColors.gold,
+    imageAsset: 'assets/images/level_game/fruits.png',
   );
   const farmerTool = _HelperTool(
     hil: 'gamit pang-uma',
@@ -6674,7 +6829,7 @@ List<_HelperWord> _helpersForLesson(int lessonNumber) {
     workplaceLabel: 'ospital',
     workplaceSpeech: 'Husto! Ang nars nagatrabaho sa ospital.',
     imageAsset: 'assets/images/level_game/people/nars.png',
-    workplaceAsset: 'assets/images/level_game/ospital.png',
+    workplaceAsset: 'assets/images/level_game/nursing-station.png',
     tool: nurseTool,
     icon: Icons.medical_information_rounded,
     workplaceIcon: Icons.local_hospital_rounded,
@@ -6957,7 +7112,7 @@ class _PlaceOpeningCardState extends State<_PlaceOpeningCard> {
             Positioned(
               top: 38,
               child: Image.asset(
-                'assets/images/level_game/road.png',
+                'assets/images/level_game/road2.png',
                 width: 350,
                 height: 270,
                 fit: BoxFit.contain,
@@ -7157,7 +7312,7 @@ class _KokaTravelCardState extends State<_KokaTravelCard> {
               right: 6,
               bottom: 88,
               child: Image.asset(
-                'assets/images/level_game/road.png',
+                'assets/images/level_game/road2.png',
                 height: 170,
                 fit: BoxFit.fill,
                 filterQuality: FilterQuality.high,
@@ -7244,6 +7399,18 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
   bool _reported = false;
 
   _PlaceWord get _target => widget.places[_targetIndex];
+  String get _targetPrompt => 'Buligi ako. Pindoton ang ${_target.hil}.';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        TudloVoiceButton.speak(context, _targetPrompt, hiligaynon: true),
+      );
+    });
+  }
 
   Future<void> _tapPlace(_PlaceWord place) async {
     if (_reported) return;
@@ -7272,6 +7439,9 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
           _targetIndex++;
           _arrivedHil = null;
         });
+        unawaited(
+          TudloVoiceButton.speak(context, _targetPrompt, hiligaynon: true),
+        );
       }
     });
   }
@@ -7279,7 +7449,7 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
   @override
   Widget build(BuildContext context) {
     return _AnimalStage(
-      mascotMessage: 'Koka: Buligi ako magkadto sa ${_target.hil}.',
+      mascotMessage: 'Koka: $_targetPrompt',
       child: Column(
         children: [
           Text(
@@ -7293,17 +7463,27 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
               letterSpacing: 0,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           SizedBox(
-            height: 430,
+            height: 448,
             child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                Positioned.fill(
+                Positioned(
+                  left: 22,
+                  right: 22,
+                  top: 58,
+                  bottom: 0,
                   child: Image.asset(
-                    'assets/images/level_game/road.png',
-                    fit: BoxFit.cover,
+                    'assets/images/level_game/road2.png',
+                    fit: BoxFit.fill,
                     filterQuality: FilterQuality.high,
                   ),
+                ),
+                const Positioned(
+                  left: 142,
+                  bottom: 16,
+                  child: TudloMascot(size: 78),
                 ),
                 for (var index = 0; index < widget.places.length; index++)
                   Positioned(
@@ -7316,16 +7496,14 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
                         children: [
                           _PlaceArt(
                             place: widget.places[index],
-                            size: 112,
-                            glow:
-                                _arrivedHil == widget.places[index].hil ||
-                                _target.hil == widget.places[index].hil,
+                            size: 124,
+                            glow: _arrivedHil == widget.places[index].hil,
                           ),
                           if (_arrivedHil == widget.places[index].hil)
                             const Positioned(
-                              right: -18,
-                              bottom: -10,
-                              child: TudloMascot(size: 58),
+                              right: -10,
+                              bottom: -8,
+                              child: TudloMascot(size: 54),
                             ),
                         ],
                       ),
@@ -7341,11 +7519,11 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
 
   Offset _mapOffset(int index, int count) {
     final offsets = const [
-      Offset(18, 40),
-      Offset(220, 38),
-      Offset(108, 172),
-      Offset(28, 284),
-      Offset(224, 284),
+      Offset(16, 58),
+      Offset(238, 58),
+      Offset(118, 208),
+      Offset(24, 286),
+      Offset(232, 286),
     ];
     return offsets[index % offsets.length];
   }
@@ -7372,18 +7550,21 @@ class _PlaceSituationGameCardState extends State<_PlaceSituationGameCard> {
       prompt: 'May bata nga masakit.',
       answerHil: 'ospital',
       choices: ['ospital', 'eskwelahan', 'uma'],
+      imageAsset: 'assets/images/level_game/sick-kid.png',
       icon: Icons.sick_rounded,
     ),
     _PlaceSituation(
       prompt: 'Gutom ang karbaw.',
       answerHil: 'uma',
       choices: ['uma', 'baybay', 'ospital'],
+      imageAsset: 'assets/images/level_game/animals/carabao.png',
       icon: Icons.agriculture_rounded,
     ),
     _PlaceSituation(
       prompt: 'Oras na magtuon.',
       answerHil: 'eskwelahan',
       choices: ['eskwelahan', 'baybay', 'tinda'],
+      imageAsset: 'assets/images/level_game/book.png',
       icon: Icons.menu_book_rounded,
     ),
   ];
@@ -7447,7 +7628,7 @@ class _PlaceSituationGameCardState extends State<_PlaceSituationGameCard> {
       mascotMessage: 'Koka: Diin kita makadto?',
       child: Column(
         children: [
-          Icon(_current.icon, color: TudloColors.green, size: 78),
+          _PlaceSituationArt(situation: _current, size: 96),
           const SizedBox(height: 8),
           Text(
             _current.prompt,
@@ -7486,14 +7667,39 @@ class _PlaceSituation {
   final String prompt;
   final String answerHil;
   final List<String> choices;
+  final String? imageAsset;
   final IconData icon;
 
   const _PlaceSituation({
     required this.prompt,
     required this.answerHil,
     required this.choices,
+    this.imageAsset,
     required this.icon,
   });
+}
+
+class _PlaceSituationArt extends StatelessWidget {
+  final _PlaceSituation situation;
+  final double size;
+
+  const _PlaceSituationArt({required this.situation, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    if (situation.imageAsset == null) {
+      return Icon(situation.icon, color: TudloColors.green, size: size * .82);
+    }
+    return Image.asset(
+      situation.imageAsset!,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (_, __, ___) =>
+          Icon(situation.icon, color: TudloColors.green, size: size * .82),
+    );
+  }
 }
 
 class _PlaceArt extends StatelessWidget {
@@ -7679,7 +7885,7 @@ class _FamilyWordLessonCard extends StatelessWidget {
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            height: 390,
+            height: 458,
             child: Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
@@ -7694,7 +7900,7 @@ class _FamilyWordLessonCard extends StatelessWidget {
                 ),
                 Positioned(
                   left: 0,
-                  top: 148,
+                  top: 184,
                   child: _PictureArrow(
                     icon: Icons.chevron_left_rounded,
                     enabled: canGoBack,
@@ -7703,7 +7909,7 @@ class _FamilyWordLessonCard extends StatelessWidget {
                 ),
                 Positioned(
                   right: 0,
-                  top: 148,
+                  top: 184,
                   child: _PictureArrow(
                     icon: Icons.chevron_right_rounded,
                     enabled: true,
@@ -7795,6 +8001,14 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
   void initState() {
     super.initState();
     _choices = _shuffledChoices(widget.choices);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 450), () {
+        if (!mounted) return;
+        unawaited(
+          TudloVoiceButton.speak(context, widget.target.hil, hiligaynon: true),
+        );
+      });
+    });
   }
 
   Future<void> _choose(_FamilyWord choice) async {
@@ -7832,25 +8046,33 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
       mascotMessage: _checked
           ? (_correct ? 'Husto! Maayo gid.' : 'Sulayi liwat.')
           : _cleanFamilyPrompt('Koka: Pili-a ang sakto nga sabat.'),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 0),
-          _FamilyImage(
-            word: widget.target,
-            size: 292,
-            voiceMessage: widget.target.hil,
-          ),
-          const SizedBox(height: 14),
-          _FamilyChoiceGrid(
-            choices: _choices,
-            selected: _selected,
-            checked: _checked,
-            answer: widget.target.hil,
-            feedbackKey: _feedbackKey,
-            onChoose: _choose,
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight < 560;
+          final imageSize = compact ? 238.0 : 258.0;
+          final imageGap = compact ? 8.0 : 12.0;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _FamilyImage(
+                word: widget.target,
+                size: imageSize,
+                voiceMessage: widget.target.hil,
+                voiceButtonSize: compact ? 60 : 64,
+              ),
+              SizedBox(height: imageGap),
+              _FamilyChoiceGrid(
+                choices: _choices,
+                selected: _selected,
+                checked: _checked,
+                answer: widget.target.hil,
+                feedbackKey: _feedbackKey,
+                onChoose: _choose,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -8085,7 +8307,7 @@ class _FamilyStage extends StatelessWidget {
                 height: 555,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                  child: Align(alignment: Alignment.topCenter, child: child),
+                  child: _StageContentScaler(child: child),
                 ),
               ),
               Positioned(
@@ -8103,27 +8325,52 @@ class _FamilyStage extends StatelessWidget {
   }
 }
 
+class _StageContentScaler extends StatelessWidget {
+  final Widget child;
+
+  const _StageContentScaler({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Align(
+          alignment: Alignment.topCenter,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.topCenter,
+            child: SizedBox(width: constraints.maxWidth, child: child),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _FamilyImage extends StatelessWidget {
   final _FamilyWord word;
   final double size;
   final String voiceMessage;
+  final double voiceButtonSize;
 
   const _FamilyImage({
     required this.word,
     required this.size,
     required this.voiceMessage,
+    this.voiceButtonSize = 70,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
+      height: size + 78,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Positioned.fill(
+          SizedBox(
+            width: size,
+            height: size,
             child: Image.asset(
               word.imageAsset,
               fit: BoxFit.contain,
@@ -8132,14 +8379,12 @@ class _FamilyImage extends StatelessWidget {
                   Icon(word.icon, color: TudloColors.forest, size: size * .56),
             ),
           ),
-          Positioned(
-            bottom: 0,
-            child: TudloVoiceButton(
-              message: voiceMessage,
-              tooltip: 'Pamatii',
-              size: 58,
-              hiligaynon: true,
-            ),
+          const SizedBox(height: 8),
+          TudloVoiceButton(
+            message: voiceMessage,
+            tooltip: 'Pamatii',
+            size: voiceButtonSize,
+            hiligaynon: true,
           ),
         ],
       ),
@@ -8169,26 +8414,39 @@ class _FamilyChoiceGrid extends StatelessWidget {
     final visibleChoices = choices.take(3).toList();
     final topChoices = visibleChoices.take(2).toList();
     final bottomChoice = visibleChoices.length > 2 ? visibleChoices[2] : null;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gap = constraints.maxWidth < 360 ? 10.0 : 14.0;
+        final buttonHeight = constraints.maxWidth < 360 ? 64.0 : 68.0;
+        final bottomWidth = math.min(188.0, constraints.maxWidth * .54);
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            for (var index = 0; index < topChoices.length; index++) ...[
-              Expanded(child: _button(topChoices[index])),
-              if (index == 0) const SizedBox(width: 14),
+            Row(
+              children: [
+                for (var index = 0; index < topChoices.length; index++) ...[
+                  Expanded(
+                    child: _button(topChoices[index], height: buttonHeight),
+                  ),
+                  if (index == 0) SizedBox(width: gap),
+                ],
+              ],
+            ),
+            if (bottomChoice != null) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: bottomWidth,
+                child: _button(bottomChoice, height: buttonHeight),
+              ),
             ],
           ],
-        ),
-        if (bottomChoice != null) ...[
-          const SizedBox(height: 10),
-          SizedBox(width: 190, child: _button(bottomChoice)),
-        ],
-      ],
+        );
+      },
     );
   }
 
-  Widget _button(_FamilyWord choice) {
+  Widget _button(_FamilyWord choice, {required double height}) {
     final active = selected == choice.hil;
     final correct = checked && active && choice.hil == answer;
     final wrong = checked && active && choice.hil != answer;
@@ -8197,7 +8455,7 @@ class _FamilyChoiceGrid extends StatelessWidget {
       correct: correct,
       wrong: wrong,
       child: SizedBox(
-        height: 74,
+        height: height,
         child: ElevatedButton(
           onPressed: () => onChoose(choice),
           style: ElevatedButton.styleFrom(
@@ -8997,7 +9255,7 @@ class _AnimalStage extends StatelessWidget {
                 height: 550,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                  child: Align(alignment: Alignment.topCenter, child: child),
+                  child: _StageContentScaler(child: child),
                 ),
               ),
               Positioned(
@@ -9370,6 +9628,7 @@ List<_AnimalWord> _animalsForLesson(int lessonNumber) {
     soundText: 'oynk oynk',
     tapSpeech: 'Baboy. Ang baboy naga-ukoy.',
     dragHomeLabel: 'iya kulungan',
+    imageAsset: 'assets/images/level_game/animals/pig.png',
     icon: Icons.pets_rounded,
     homeIcon: Icons.home_work_rounded,
     color: TudloColors.coral,
@@ -9391,6 +9650,7 @@ List<_AnimalWord> _animalsForLesson(int lessonNumber) {
     soundText: 'ngaa',
     tapSpeech: 'Karbaw. Ang karbaw nagahuni.',
     dragHomeLabel: 'palayan',
+    imageAsset: 'assets/images/level_game/animals/carabao.png',
     icon: Icons.agriculture_rounded,
     homeIcon: Icons.agriculture_rounded,
     color: TudloColors.forest,
@@ -9401,6 +9661,7 @@ List<_AnimalWord> _animalsForLesson(int lessonNumber) {
     soundText: 'bulubula',
     tapSpeech: 'Isda. Ang isda nagalangoy.',
     dragHomeLabel: 'tubig',
+    imageAsset: 'assets/images/level_game/animals/fish.png',
     icon: Icons.water_rounded,
     homeIcon: Icons.water_rounded,
     color: TudloColors.blue,
@@ -9411,6 +9672,7 @@ List<_AnimalWord> _animalsForLesson(int lessonNumber) {
     soundText: 'tsirit tsirit',
     tapSpeech: 'Pispis. Ang pispis nagahuni.',
     dragHomeLabel: 'iya pugad',
+    imageAsset: 'assets/images/level_game/animals/bird.png',
     icon: Icons.flutter_dash_rounded,
     homeIcon: Icons.park_rounded,
     color: TudloColors.green,
@@ -9421,6 +9683,7 @@ List<_AnimalWord> _animalsForLesson(int lessonNumber) {
     soundText: 'mee mee',
     tapSpeech: 'Kanding. Ang kanding nagame.',
     dragHomeLabel: 'hilamunan',
+    imageAsset: 'assets/images/level_game/animals/goat.png',
     icon: Icons.pets_rounded,
     homeIcon: Icons.park_rounded,
     color: TudloColors.meadow,
@@ -10317,14 +10580,16 @@ class _LessonCompleteDialog extends StatelessWidget {
   final int accuracy;
   final int mistakes;
   final String durationLabel;
-  final VoidCallback onClaim;
+  final VoidCallback onBackToMap;
+  final VoidCallback onContinue;
 
   const _LessonCompleteDialog({
     required this.level,
     required this.accuracy,
     required this.mistakes,
     required this.durationLabel,
-    required this.onClaim,
+    required this.onBackToMap,
+    required this.onContinue,
   });
 
   /// Star count is based on accuracy so the reward screen reflects performance.
@@ -10438,27 +10703,27 @@ class _LessonCompleteDialog extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: TudloColors.green,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: .3,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _RewardActionButton(
+                                label: 'BALIK SA MAPA',
+                                onPressed: onBackToMap,
+                                backgroundColor: Colors.white,
+                                foregroundColor: TudloColors.forest,
+                                borderColor: TudloColors.green,
                               ),
                             ),
-                            onPressed: onClaim,
-                            child: const Text('BALIK SA MAPA'),
-                          ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _RewardActionButton(
+                                label: 'PADAYON',
+                                onPressed: onContinue,
+                                backgroundColor: TudloColors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -10472,6 +10737,54 @@ class _LessonCompleteDialog extends StatelessWidget {
               Positioned(top: 0, child: _RewardStars(count: starCount)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RewardActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color? borderColor;
+
+  const _RewardActionButton({
+    required this.label,
+    required this.onPressed,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    this.borderColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+            side: borderColor == null
+                ? BorderSide.none
+                : BorderSide(color: borderColor!, width: 3),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .2,
+          ),
+        ),
+        onPressed: onPressed,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(label, maxLines: 1),
         ),
       ),
     );

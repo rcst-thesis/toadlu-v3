@@ -13,7 +13,7 @@ class OnboardingColors {
   static const border = Color(0xFF83DEFF);
   static const text = Color(0xFF17324D);
   static const muted = Color(0xFF32607A);
-  static const green = Color(0xFF79D900);
+  static const green = Color.fromARGB(255, 37, 125, 24);   
   static const blue = Color(0xFF18A8FF);
   static const yellow = Color(0xFFFFD429);
   static const orange = Color(0xFFFF8A00);

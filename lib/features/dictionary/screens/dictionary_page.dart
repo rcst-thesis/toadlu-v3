@@ -3,8 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
-import 'package:tudloapp/core/widgets/dialogue_assets.dart';
-import 'package:tudloapp/core/widgets/language_toggle.dart';
 
 enum _DictionaryMode { englishToHiligaynon, hiligaynonToEnglish }
 
@@ -674,8 +672,6 @@ class _DictionarySectionView extends StatelessWidget {
   }
 }
 
-// A single dictionary word card.
-// It shows the main word, its translation, and a speaker button for audio.
 class _DictionaryCard extends StatelessWidget {
   final DictionaryEntry term;
   final bool englishMode;
@@ -691,11 +687,9 @@ class _DictionaryCard extends StatelessWidget {
     final translatedWord = englishMode
         ? _capitalizeDictionaryWord(term.hiligaynon)
         : term.english;
-    final spokenWord = englishMode ? term.english : term.hiligaynon;
-
     return Container(
       constraints: const BoxConstraints(minHeight: 58),
-      padding: const EdgeInsets.fromLTRB(18, 12, 10, 12),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(11),
@@ -751,7 +745,6 @@ class _DictionaryCard extends StatelessWidget {
               ],
             ),
           ),
-          _DictionarySpeakButton(message: spokenWord, hiligaynon: !englishMode),
         ],
       ),
     );
@@ -762,32 +755,6 @@ String _capitalizeDictionaryWord(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) return trimmed;
   return trimmed[0].toUpperCase() + trimmed.substring(1);
-}
-
-class _DictionarySpeakButton extends StatelessWidget {
-  final String message;
-  final bool hiligaynon;
-
-  const _DictionarySpeakButton({
-    required this.message,
-    required this.hiligaynon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filled(
-      tooltip: 'Play pronunciation',
-      onPressed: () =>
-          TudloVoiceButton.speak(context, message, hiligaynon: hiligaynon),
-      style: IconButton.styleFrom(
-        backgroundColor: const Color(0xFFEFF8E8),
-        foregroundColor: const Color(0xFF5EA832),
-        minimumSize: const Size(40, 40),
-        iconSize: 26,
-      ),
-      icon: const TudloSpeakerIcon(size: 24),
-    );
-  }
 }
 
 // Fixed A-Z index on the right side of the Dictionary page.

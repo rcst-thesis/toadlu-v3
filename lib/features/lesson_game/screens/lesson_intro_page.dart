@@ -273,6 +273,17 @@ class _AnimatedLessonIntroContentState
       return _gradeTwoIntroItemsFor(content.unitNumber, content.lessonNumber);
     }
 
+    if (content.gradeLevel == 1 &&
+        content.unitNumber == 1 &&
+        content.lessonNumber >= 7) {
+      final numberItems = switch (content.lessonNumber) {
+        7 => const ['1', '2', '3', '4', '5'],
+        8 => const ['6', '7', '8', '9', '0'],
+        _ => const ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      };
+      return numberItems.map(_letterItem).toList();
+    }
+
     final titleLetters = RegExp(
       r'\b[A-Z]\b',
     ).allMatches(content.title).map((match) => match.group(0)!).toList();
@@ -308,10 +319,28 @@ class _AnimatedLessonIntroContentState
         'G': 'assets/images/level_game/letters/G.png',
         'H': 'assets/images/level_game/letters/H.png',
         'I': 'assets/images/level_game/letters/I.png',
+        'K': 'assets/images/level_game/letters/K.png',
+        'L': 'assets/images/level_game/letters/L.png',
+        'M': 'assets/images/level_game/letters/M.png',
         'N': 'assets/images/level_game/letters/N.png',
         'O': 'assets/images/level_game/letters/O.png',
+        'P': 'assets/images/level_game/letters/P-stage.png',
+        'R': 'assets/images/level_game/letters/R.png',
+        'S': 'assets/images/level_game/letters/S.png',
         'T': 'assets/images/level_game/letters/T.png',
+        'U': 'assets/images/level_game/letters/U.png',
+        'W': 'assets/images/level_game/letters/W.png',
         'Y': 'assets/images/level_game/letters/Y.png',
+        '0': 'assets/images/level_game/numbers/0.png',
+        '1': 'assets/images/level_game/numbers/1.png',
+        '2': 'assets/images/level_game/numbers/2.png',
+        '3': 'assets/images/level_game/numbers/3.png',
+        '4': 'assets/images/level_game/numbers/4.png',
+        '5': 'assets/images/level_game/numbers/5.png',
+        '6': 'assets/images/level_game/numbers/6.png',
+        '7': 'assets/images/level_game/numbers/7.png',
+        '8': 'assets/images/level_game/numbers/8.png',
+        '9': 'assets/images/level_game/numbers/9.png',
       }[letter.toUpperCase()],
       pictureOnly: true,
     );
@@ -335,6 +364,7 @@ class _AnimatedLessonIntroContentState
     );
     const pig = _IntroLetterItem(
       label: 'baboy',
+      asset: 'assets/images/level_game/animals/pig.png',
       icon: Icons.pets_rounded,
       color: TudloColors.coral,
       pictureOnly: true,
@@ -346,24 +376,28 @@ class _AnimatedLessonIntroContentState
     );
     const carabao = _IntroLetterItem(
       label: 'karbaw',
+      asset: 'assets/images/level_game/animals/carabao.png',
       icon: Icons.agriculture_rounded,
       color: TudloColors.forest,
       pictureOnly: true,
     );
     const fish = _IntroLetterItem(
       label: 'isda',
+      asset: 'assets/images/level_game/animals/fish.png',
       icon: Icons.water_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
     );
     const bird = _IntroLetterItem(
       label: 'pispis',
+      asset: 'assets/images/level_game/animals/bird.png',
       icon: Icons.flutter_dash_rounded,
       color: TudloColors.green,
       pictureOnly: true,
     );
     const goat = _IntroLetterItem(
       label: 'kanding',
+      asset: 'assets/images/level_game/animals/goat.png',
       icon: Icons.pets_rounded,
       color: TudloColors.meadow,
       pictureOnly: true,
@@ -549,6 +583,13 @@ class _AnimatedLessonIntroContentState
       color: TudloColors.gold,
       pictureOnly: true,
     );
+    const birthdayParty = _IntroLetterItem(
+      label: 'kaadlawan',
+      asset: '$grade2/birthday-party.png',
+      icon: Icons.celebration_rounded,
+      color: TudloColors.coral,
+      pictureOnly: true,
+    );
     const family = _IntroLetterItem(
       label: 'pamilya',
       asset: 'assets/images/level_game/people/pamilya.png',
@@ -647,14 +688,22 @@ class _AnimatedLessonIntroContentState
       color: TudloColors.blue,
       pictureOnly: true,
     );
+    const jeepney = _IntroLetterItem(
+      label: 'paalam',
+      asset: '$grade2/jeepney.png',
+      icon: Icons.directions_bus_rounded,
+      color: TudloColors.blue,
+      pictureOnly: true,
+    );
 
     return switch ((unitNumber, lessonNumber)) {
       (1, 1) => const [school, juan, ana],
-      (1, 2) => const [cake, balloons],
+      (1, 2) => const [birthdayParty, cake, balloons],
       (1, 3) => const [family],
       (2, 1) => const [
         _IntroLetterItem(
           label: 'aga',
+          asset: 'assets/images/level_game/sunrise.png',
           icon: Icons.wb_sunny_rounded,
           color: TudloColors.gold,
           pictureOnly: true,
@@ -667,6 +716,7 @@ class _AnimatedLessonIntroContentState
         ),
         _IntroLetterItem(
           label: 'gab-i',
+          asset: 'assets/images/level_game/moon.png',
           icon: Icons.dark_mode_rounded,
           color: TudloColors.blue,
           pictureOnly: true,
@@ -685,12 +735,7 @@ class _AnimatedLessonIntroContentState
           color: TudloColors.coral,
           pictureOnly: true,
         ),
-        _IntroLetterItem(
-          label: 'paalam',
-          icon: Icons.waving_hand_rounded,
-          color: TudloColors.gold,
-          pictureOnly: true,
-        ),
+        jeepney,
       ],
       (2, 3) => const [mango],
       (3, 1) => const [book, pencil, bag, chair],
@@ -698,20 +743,23 @@ class _AnimatedLessonIntroContentState
       (3, 3) => const [
         _IntroLetterItem(
           label: 'kahoy',
+          asset: 'assets/images/level_game/forest.png',
           icon: Icons.park_rounded,
           color: TudloColors.forest,
           pictureOnly: true,
         ),
         _IntroLetterItem(
-          label: 'bulak',
-          icon: Icons.local_florist_rounded,
-          color: TudloColors.coral,
+          label: 'saging',
+          asset: 'assets/images/level_game/banana.png',
+          icon: Icons.eco_rounded,
+          color: TudloColors.gold,
           pictureOnly: true,
         ),
         _IntroLetterItem(
-          label: 'adlaw',
-          icon: Icons.wb_sunny_rounded,
-          color: TudloColors.gold,
+          label: 'suba',
+          asset: 'assets/images/level_game/river.png',
+          icon: Icons.water_rounded,
+          color: TudloColors.blue,
           pictureOnly: true,
         ),
       ],

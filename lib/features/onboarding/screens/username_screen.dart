@@ -165,7 +165,7 @@ class _RoundNextButton extends StatelessWidget {
             height: size,
             child: Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF237915),
+              color: Color.fromARGB(255, 37, 125, 24),
               size: size * .70,
             ),
           ),

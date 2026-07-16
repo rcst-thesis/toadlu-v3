@@ -865,7 +865,7 @@ class _FavoritesCard extends StatelessWidget {
                 context,
                 hil:
                     'Itum-ok ang tagipusuon sa Tinaga subong nga adlaw para matipon diri ang paborito mo nga mga tinaga.',
-                en: 'Tap the heart on Daily Word to save favorite words here.',
+                en: 'Press the heart on Daily Word to save favorite words here.',
               ),
               textAlign: TextAlign.center,
               style: GoogleFonts.nunito(

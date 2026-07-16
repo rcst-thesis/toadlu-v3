@@ -4,14 +4,16 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
-import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
 import 'package:tudloapp/features/lesson_game/screens/lesson_intro_page.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
+
+const double _mapHeaderHeight = 340;
 
 /// Interactive Home Map screen.
 ///
@@ -30,6 +32,110 @@ String _homeText(
   required String en,
 }) {
   return AppStateScope.of(context).isHiligaynon ? hil : en;
+}
+
+String _joinLessonPreview(List<String> items) {
+  final cleaned = items
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .toList();
+  if (cleaned.isEmpty) return '';
+  if (cleaned.length == 1) return cleaned.first;
+  if (cleaned.length == 2) return '${cleaned.first} kag ${cleaned.last}';
+  return '${cleaned.take(cleaned.length - 1).join(', ')}, kag ${cleaned.last}';
+}
+
+String _lessonPreviewForLevel(int level) {
+  final unit = AppData.unitForLevel(level);
+  final lesson = AppData.lessonNumberForLevel(level);
+
+  final preview = switch ((AppData.selectedGradeLevel, unit.number, lesson)) {
+    (GradeLevel.grade1, 1, 1) => _joinLessonPreview(['A', 'N', 'T', 'Y']),
+    (GradeLevel.grade1, 1, 2) => _joinLessonPreview(['I', 'D', 'O']),
+    (GradeLevel.grade1, 1, 3) => _joinLessonPreview(['M', 'K', 'U']),
+    (GradeLevel.grade1, 1, 4) => _joinLessonPreview(['B', 'L', 'S']),
+    (GradeLevel.grade1, 1, 5) => _joinLessonPreview(['E', 'G', 'P']),
+    (GradeLevel.grade1, 1, _) => _joinLessonPreview(['R', 'H', 'W', 'C']),
+    (GradeLevel.grade1, 2, 1) => 'Pamilya',
+    (GradeLevel.grade1, 2, 2) => _joinLessonPreview(['Lola', 'Lolo', 'Nanay']),
+    (GradeLevel.grade1, 2, _) => _joinLessonPreview([
+      'Magulang',
+      'Manghod',
+      'Lola',
+      'Tatay',
+    ]),
+    (GradeLevel.grade1, 3, 1) => _joinLessonPreview([
+      'Manunudlo',
+      'Doktor',
+      'Nars',
+    ]),
+    (GradeLevel.grade1, 3, 2) => _joinLessonPreview([
+      'Pulis',
+      'Bumbero',
+      'Tindera',
+    ]),
+    (GradeLevel.grade1, 3, _) => _joinLessonPreview([
+      'Mangunguma',
+      'Mangingisda',
+    ]),
+    (GradeLevel.grade1, 4, 1) => _joinLessonPreview(['Ido', 'Kuring', 'Manok']),
+    (GradeLevel.grade1, 4, 2) => _joinLessonPreview([
+      'Baboy',
+      'Baka',
+      'Karbaw',
+    ]),
+    (GradeLevel.grade1, 4, _) => _joinLessonPreview([
+      'Isda',
+      'Pispis',
+      'Kanding',
+    ]),
+    (GradeLevel.grade1, 5, 1) => _joinLessonPreview([
+      'Balay',
+      'Eskwelahan',
+      'Simbahan',
+    ]),
+    (GradeLevel.grade1, 5, 2) => _joinLessonPreview([
+      'Tinda',
+      'Plasa',
+      'Ospital',
+    ]),
+    (GradeLevel.grade1, 5, _) => _joinLessonPreview(['Uma', 'Baybay']),
+    (GradeLevel.grade2, 1, 1) => _joinLessonPreview(['School', 'Juan', 'Ana']),
+    (GradeLevel.grade2, 1, 2) => _joinLessonPreview(['Keyk', 'Lobo']),
+    (GradeLevel.grade2, 1, _) => 'Pamilya',
+    (GradeLevel.grade2, 2, 1) => _joinLessonPreview(['Aga', 'Hapon', 'Gab-i']),
+    (GradeLevel.grade2, 2, 2) => _joinLessonPreview([
+      'Malipayon',
+      'Masubo',
+      'Paalam',
+    ]),
+    (GradeLevel.grade2, 2, _) => 'Mangga',
+    (GradeLevel.grade2, 3, 1) => _joinLessonPreview([
+      'Libro',
+      'Lapis',
+      'Bag',
+      'Pulungkuan',
+    ]),
+    (GradeLevel.grade2, 3, 2) => _joinLessonPreview([
+      'Lamesa',
+      'Plato',
+      'Baso',
+      'Kutsara',
+    ]),
+    (GradeLevel.grade2, 3, _) => _joinLessonPreview([
+      'Kahoy',
+      'Bulak',
+      'Adlaw',
+    ]),
+    (GradeLevel.grade2, 4, 1) => 'Kanta',
+    (GradeLevel.grade2, 4, 2) => _joinLessonPreview(['Ido', 'Kuring']),
+    (GradeLevel.grade2, 4, _) => _joinLessonPreview(['Entablado', 'Kanta']),
+    (GradeLevel.grade2, 5, 1) => _joinLessonPreview(['Kuring', 'Ido']),
+    (GradeLevel.grade2, 5, _) => _joinLessonPreview(['Lumpat', 'Paypay']),
+    _ => '',
+  };
+
+  return preview.isEmpty ? LessonBank.lessonTitleForLevel(level) : preview;
 }
 
 class _HomeMapPageState extends State<HomeMapPage> {
@@ -60,6 +166,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 
   void _handleScroll() {
+    if (!_scrollController.hasClients) return;
     final shouldShow = _scrollController.offset > 360;
     if (shouldShow == _showScrollTopButton) return;
     setState(() => _showScrollTopButton = shouldShow);
@@ -75,6 +182,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
 
   void _scrollToTop() {
     // Floating up-arrow button uses this to return the map to the top.
+    if (!_scrollController.hasClients) return;
     _scrollController.animateTo(
       0,
       duration: const Duration(milliseconds: 520),
@@ -96,7 +204,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
       pageBuilder: (context, animation, secondaryAnimation) =>
           _LevelStartDialog(
             level: level,
-            title: LessonBank.lessonTitleForLevel(level),
+            title: _lessonPreviewForLevel(level),
             nodeCenter: nodeCenter,
             onStart: () async {
               // Start button in the level popup:
@@ -139,6 +247,21 @@ class _HomeMapPageState extends State<HomeMapPage> {
         40 +
         _bottomPad;
     final username = AppStateScope.of(context).displayUsername;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final helpRoad = _RoadGeometry(
+      width: screenWidth,
+      topPad: _topPad,
+      levelGap: _levelGap,
+      unitMessageGap: _unitMessageGap,
+    );
+    final helpTarget = helpRoad.pointForLevel(currentLevel);
+    final scrollOffset = _scrollController.hasClients
+        ? _scrollController.offset
+        : 0.0;
+    final helpTargetInViewport = Offset(
+      helpTarget.dx,
+      _mapHeaderHeight + helpTarget.dy - scrollOffset,
+    );
 
     return Scaffold(
       body: Stack(
@@ -244,6 +367,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
                 child: _MapDialogueOverlay(
                   step: _mapHelpStep,
                   username: username,
+                  levelButtonTarget: helpTargetInViewport,
                   onTap: _dismissMapHelp,
                 ),
               ),
@@ -270,7 +394,7 @@ class _MapHeader extends StatelessWidget {
     // Header uses a real image asset instead of painted shapes so it can be
     // easily swapped by replacing the game_map header asset.
     return Container(
-      height: 340,
+      height: _mapHeaderHeight,
       width: double.infinity,
       decoration: const BoxDecoration(
         color: TudloColors.green,
@@ -352,11 +476,13 @@ class _MapHeader extends StatelessWidget {
 class _MapDialogueOverlay extends StatelessWidget {
   final int step;
   final String username;
+  final Offset levelButtonTarget;
   final VoidCallback onTap;
 
   const _MapDialogueOverlay({
     required this.step,
     required this.username,
+    required this.levelButtonTarget,
     required this.onTap,
   });
 
@@ -378,6 +504,23 @@ class _MapDialogueOverlay extends StatelessWidget {
       12.0,
       size.width - bubbleWidth - 12,
     );
+    final arrowSize = (size.width * .19).clamp(72.0, 88.0).toDouble();
+    final levelButtonRadius = (size.width < 380 ? 50.0 : 56.0);
+    final arrowTip = Offset(
+      levelButtonTarget.dx,
+      levelButtonTarget.dy - levelButtonRadius + 8,
+    );
+    final arrowLeft = (arrowTip.dx - arrowSize / 2).clamp(
+      14.0,
+      size.width - arrowSize - 14,
+    );
+    final bubbleBottom = bubbleTop + bubbleWidth * 1.02;
+    final arrowMinTop = bubbleBottom + 8;
+    final arrowMaxTop = math.max(arrowMinTop, size.height - arrowSize - 132);
+    final arrowTop = (arrowTip.dy - arrowSize + 8).clamp(
+      arrowMinTop,
+      arrowMaxTop,
+    );
     final message = step == 0
         ? _homeText(
             context,
@@ -387,7 +530,7 @@ class _MapDialogueOverlay extends StatelessWidget {
         : _homeText(
             context,
             hil: 'Itum-ok para\nmakaumpisa kita',
-            en: 'Tap so\nwe can start',
+            en: 'Press so\nwe can start',
           );
 
     return GestureDetector(
@@ -413,10 +556,12 @@ class _MapDialogueOverlay extends StatelessWidget {
               child: _DialogueBubbleImage(width: bubbleWidth, message: message),
             ),
             if (step == 1)
-              const Align(
-                alignment: Alignment(.33, .18),
+              Positioned(
+                left: arrowLeft,
+                top: arrowTop,
                 child: _JumpingMapArrow(
                   asset: 'assets/images/game_map/arrow.png',
+                  size: arrowSize,
                 ),
               ),
           ],
@@ -471,8 +616,9 @@ class _DialogueBubbleImage extends StatelessWidget {
 
 class _JumpingMapArrow extends StatefulWidget {
   final String asset;
+  final double size;
 
-  const _JumpingMapArrow({required this.asset});
+  const _JumpingMapArrow({required this.asset, required this.size});
 
   @override
   State<_JumpingMapArrow> createState() => _JumpingMapArrowState();
@@ -507,7 +653,7 @@ class _JumpingMapArrowState extends State<_JumpingMapArrow>
       },
       child: Image.asset(
         widget.asset,
-        width: 78,
+        width: widget.size,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
       ),
@@ -1598,24 +1744,14 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        pronunciation,
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontSize: 23,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(999),
-                        onTap: () => TudloVoiceButton.speak(context, word.hil),
-                        child: const TudloSpeakerIcon(size: 34),
-                      ),
-                    ],
+                  Text(
+                    pronunciation,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontSize: 23,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
