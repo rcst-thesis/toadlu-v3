@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
@@ -312,6 +313,8 @@ class _MapHeader extends StatelessWidget {
                       hil: 'Kumusta, $username!',
                       en: 'Hello, $username!',
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 34,
@@ -326,6 +329,8 @@ class _MapHeader extends StatelessWidget {
                       hil: 'Magtuon kita subong',
                       en: "Let's learn something today",
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -396,7 +401,7 @@ class _MapDialogueOverlay extends StatelessWidget {
               left: mascotLeft,
               bottom: mascotBottom,
               child: Image.asset(
-                'assets/images/dialogue/mascot1.png',
+                TudloDialogueAssets.mascotPrimary,
                 width: mascotWidth,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
@@ -435,7 +440,7 @@ class _DialogueBubbleImage extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Image.asset(
-            'assets/images/dialogue/dialoguebox.png',
+            TudloDialogueAssets.dialogueBox,
             width: width,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
@@ -565,7 +570,7 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
     _nodeBounceAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween<double>(begin: 1, end: 1.12), weight: 45),
       TweenSequenceItem(tween: Tween<double>(begin: 1.12, end: 1), weight: 55),
-    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
   }
 
@@ -1416,6 +1421,8 @@ class _HomeDailyWordCard extends StatelessWidget {
                         en: 'Word of the Day',
                       ),
                       textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.nunito(
                         color: Colors.white,
                         fontSize: 21,
@@ -1431,7 +1438,9 @@ class _HomeDailyWordCard extends StatelessWidget {
                     ),
                     Text(
                       word.hil,
+                      textAlign: TextAlign.center,
                       maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.nunito(
                         color: TudloColors.gold,
                         fontSize: 34,
@@ -1596,11 +1605,7 @@ Future<void> _showDailyWordPopup(BuildContext context, LessonTerm word) {
                       InkWell(
                         borderRadius: BorderRadius.circular(999),
                         onTap: () => TudloVoiceButton.speak(context, word.hil),
-                        child: const Icon(
-                          Icons.volume_up_rounded,
-                          color: Colors.white,
-                          size: 34,
-                        ),
+                        child: const TudloSpeakerIcon(size: 34),
                       ),
                     ],
                   ),

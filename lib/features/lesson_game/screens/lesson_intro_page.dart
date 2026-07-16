@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 import 'package:tudloapp/features/lesson_game/screens/level_game_page.dart';
@@ -39,8 +40,10 @@ class _LessonIntroPageState extends State<LessonIntroPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screen = MediaQuery.sizeOf(context);
+    final screenWidth = screen.width;
     final horizontalPadding = screenWidth < 380 ? 22.0 : 30.0;
+    final topContentGap = (screen.height * .035).clamp(14.0, 36.0).toDouble();
 
     return Scaffold(
       backgroundColor: TudloColors.paper,
@@ -58,7 +61,7 @@ class _LessonIntroPageState extends State<LessonIntroPage> {
                 lessonNumber: _localLessonNumber,
                 onBack: () => Navigator.pop(context),
               ),
-              const SizedBox(height: 46),
+              SizedBox(height: topContentGap),
               Expanded(
                 child: FutureBuilder<LevelContent>(
                   future: _contentFuture,
@@ -192,44 +195,52 @@ class _AnimatedLessonIntroContentState
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: Transform.translate(
-            offset: const Offset(0, -28),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactHeight = constraints.maxHeight < 690;
+        final buttonHeight = compactHeight ? 62.0 : 72.0;
+        final buttonGap = compactHeight ? 10.0 : 18.0;
+        final headingHeight = (constraints.maxHeight * .24)
+            .clamp(118.0, 184.0)
+            .toDouble();
+        final headingWidth = headingHeight * 260 / 184;
+
+        return Column(
+          children: [
+            Expanded(
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const _TuonTaHeading(),
-                  const SizedBox(height: 18),
-                  _IntroLetterGrid(
-                    children: [
-                      for (var index = 0; index < _letters.length; index++)
-                        _AnimatedIntroLetterCard(
-                          item: _letters[index],
-                          index: index,
-                          visible: index < _visibleLetters,
-                        ),
-                    ],
+                  _TuonTaHeading(width: headingWidth, height: headingHeight),
+                  SizedBox(height: compactHeight ? 6 : 12),
+                  Expanded(
+                    child: _IntroLetterGrid(
+                      children: [
+                        for (var index = 0; index < _letters.length; index++)
+                          _AnimatedIntroLetterCard(
+                            item: _letters[index],
+                            index: index,
+                            visible: index < _visibleLetters,
+                          ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
-            child: _showStart
-                ? _IntroStartButton(onPressed: widget.onStart)
-                : const SizedBox(height: 72),
-          ),
-        ),
-      ],
+            SizedBox(height: buttonGap),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              child: _showStart
+                  ? _IntroStartButton(
+                      height: buttonHeight,
+                      onPressed: widget.onStart,
+                    )
+                  : SizedBox(height: buttonHeight),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -240,7 +251,7 @@ class _AnimatedLessonIntroContentState
       return const [
         _IntroLetterItem(
           label: 'pamilya',
-          asset: 'assets/images/level_game/Grade1/unit1/pamilya.png',
+          asset: 'assets/images/level_game/people/pamilya.png',
           large: true,
         ),
       ];
@@ -288,19 +299,19 @@ class _AnimatedLessonIntroContentState
     return _IntroLetterItem(
       label: letter,
       asset: const {
-        'A': 'assets/images/level_game/Grade1/unit1/A.png',
-        'B': 'assets/images/level_game/Grade1/unit1/B.png',
-        'C': 'assets/images/level_game/Grade1/unit1/C.png',
-        'D': 'assets/images/level_game/Grade1/unit1/D.png',
-        'E': 'assets/images/level_game/Grade1/unit1/E.png',
-        'F': 'assets/images/level_game/Grade1/unit1/F.png',
-        'G': 'assets/images/level_game/Grade1/unit1/G.png',
-        'H': 'assets/images/level_game/Grade1/unit1/H.png',
-        'I': 'assets/images/level_game/Grade1/unit1/I.png',
-        'N': 'assets/images/level_game/Grade1/unit1/N.png',
-        'O': 'assets/images/level_game/Grade1/unit1/O.png',
-        'T': 'assets/images/level_game/Grade1/unit1/T.png',
-        'Y': 'assets/images/level_game/Grade1/unit1/Y.png',
+        'A': 'assets/images/level_game/letters/A.png',
+        'B': 'assets/images/level_game/letters/B.png',
+        'C': 'assets/images/level_game/letters/C.png',
+        'D': 'assets/images/level_game/letters/D.png',
+        'E': 'assets/images/level_game/letters/E.png',
+        'F': 'assets/images/level_game/letters/F.png',
+        'G': 'assets/images/level_game/letters/G.png',
+        'H': 'assets/images/level_game/letters/H.png',
+        'I': 'assets/images/level_game/letters/I.png',
+        'N': 'assets/images/level_game/letters/N.png',
+        'O': 'assets/images/level_game/letters/O.png',
+        'T': 'assets/images/level_game/letters/T.png',
+        'Y': 'assets/images/level_game/letters/Y.png',
       }[letter.toUpperCase()],
       pictureOnly: true,
     );
@@ -309,18 +320,17 @@ class _AnimatedLessonIntroContentState
   List<_IntroLetterItem> _animalIntroItemsFor(int lessonNumber) {
     const dog = _IntroLetterItem(
       label: 'ido',
-      asset: 'assets/images/level_game/Grade1/unit1/dog.png',
+      asset: 'assets/images/level_game/animals/dog.png',
       pictureOnly: true,
     );
     const cat = _IntroLetterItem(
       label: 'kuring',
-      asset: 'assets/images/level_game/Grade1/unit1/cat.png',
+      asset: 'assets/images/level_game/animals/cat.png',
       pictureOnly: true,
     );
     const chicken = _IntroLetterItem(
       label: 'manok',
-      icon: Icons.egg_alt_rounded,
-      color: TudloColors.gold,
+      asset: 'assets/images/level_game/animals/chicken.png',
       pictureOnly: true,
     );
     const pig = _IntroLetterItem(
@@ -331,7 +341,7 @@ class _AnimatedLessonIntroContentState
     );
     const cow = _IntroLetterItem(
       label: 'baka',
-      asset: 'assets/images/level_game/Grade1/unit1/lesson1/cow.png',
+      asset: 'assets/images/level_game/animals/cow.png',
       pictureOnly: true,
     );
     const carabao = _IntroLetterItem(
@@ -370,56 +380,56 @@ class _AnimatedLessonIntroContentState
   List<_IntroLetterItem> _helperIntroItemsFor(int lessonNumber) {
     const teacher = _IntroLetterItem(
       label: 'manunudlo',
-      asset: 'assets/images/level_game/Grade1/unit1/manunudlo.png',
+      asset: 'assets/images/level_game/people/manunudlo.png',
       icon: Icons.school_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
     );
     const doctor = _IntroLetterItem(
       label: 'doktor',
-      asset: 'assets/images/level_game/Grade1/unit1/doktor.png',
+      asset: 'assets/images/level_game/people/doktor.png',
       icon: Icons.medical_services_rounded,
       color: TudloColors.coral,
       pictureOnly: true,
     );
     const nurse = _IntroLetterItem(
       label: 'nars',
-      asset: 'assets/images/level_game/Grade1/unit1/nars.png',
+      asset: 'assets/images/level_game/people/nars.png',
       icon: Icons.medical_information_rounded,
       color: TudloColors.orange,
       pictureOnly: true,
     );
     const police = _IntroLetterItem(
       label: 'pulis',
-      asset: 'assets/images/level_game/Grade1/unit1/pulis.png',
+      asset: 'assets/images/level_game/people/pulis.png',
       icon: Icons.local_police_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
     );
     const firefighter = _IntroLetterItem(
       label: 'bumbero',
-      asset: 'assets/images/level_game/Grade1/unit1/bumbero.png',
+      asset: 'assets/images/level_game/people/bumbero.png',
       icon: Icons.local_fire_department_rounded,
       color: TudloColors.coral,
       pictureOnly: true,
     );
     const vendor = _IntroLetterItem(
       label: 'tindera',
-      asset: 'assets/images/level_game/Grade1/unit1/tindera.png',
+      asset: 'assets/images/level_game/tindera.png',
       icon: Icons.storefront_rounded,
       color: TudloColors.gold,
       pictureOnly: true,
     );
     const farmer = _IntroLetterItem(
       label: 'mangunguma',
-      asset: 'assets/images/level_game/Grade1/unit1/mangunguma.png',
+      asset: 'assets/images/level_game/people/mangunguma.png',
       icon: Icons.agriculture_rounded,
       color: TudloColors.forest,
       pictureOnly: true,
     );
     const fisher = _IntroLetterItem(
       label: 'mangingisda',
-      asset: 'assets/images/level_game/Grade1/unit1/mangingisda.png',
+      asset: 'assets/images/level_game/people/mangingisda.png',
       icon: Icons.sailing_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
@@ -436,56 +446,56 @@ class _AnimatedLessonIntroContentState
   List<_IntroLetterItem> _placeIntroItemsFor(int lessonNumber) {
     const house = _IntroLetterItem(
       label: 'balay',
-      asset: 'assets/images/level_game/Grade1/unit1/house.png',
+      asset: 'assets/images/level_game/house.png',
       icon: Icons.home_rounded,
       color: TudloColors.green,
       pictureOnly: true,
     );
     const school = _IntroLetterItem(
       label: 'eskwelahan',
-      asset: 'assets/images/level_game/Grade1/unit1/eskwelahan.png',
+      asset: 'assets/images/level_game/eskwelahan.png',
       icon: Icons.school_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
     );
     const church = _IntroLetterItem(
       label: 'simbahan',
-      asset: 'assets/images/level_game/Grade1/unit1/simbahan.png',
+      asset: 'assets/images/level_game/simbahan.png',
       icon: Icons.church_rounded,
       color: TudloColors.forest,
       pictureOnly: true,
     );
     const market = _IntroLetterItem(
       label: 'tinda',
-      asset: 'assets/images/level_game/Grade1/unit1/tinda.png',
+      asset: 'assets/images/level_game/tinda.png',
       icon: Icons.storefront_rounded,
       color: TudloColors.gold,
       pictureOnly: true,
     );
     const plaza = _IntroLetterItem(
       label: 'plasa',
-      asset: 'assets/images/level_game/Grade1/unit1/plaza.png',
+      asset: 'assets/images/level_game/plaza.png',
       icon: Icons.park_rounded,
       color: TudloColors.green,
       pictureOnly: true,
     );
     const hospital = _IntroLetterItem(
       label: 'ospital',
-      asset: 'assets/images/level_game/Grade1/unit1/ospital.png',
+      asset: 'assets/images/level_game/ospital.png',
       icon: Icons.local_hospital_rounded,
       color: TudloColors.coral,
       pictureOnly: true,
     );
     const farm = _IntroLetterItem(
       label: 'uma',
-      asset: 'assets/images/level_game/Grade1/unit1/uma.png',
+      asset: 'assets/images/level_game/uma.png',
       icon: Icons.agriculture_rounded,
       color: TudloColors.forest,
       pictureOnly: true,
     );
     const beach = _IntroLetterItem(
       label: 'baybay',
-      asset: 'assets/images/level_game/Grade1/unit1/baybay.png',
+      asset: 'assets/images/level_game/baybay.png',
       icon: Icons.beach_access_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
@@ -503,9 +513,7 @@ class _AnimatedLessonIntroContentState
     int unitNumber,
     int lessonNumber,
   ) {
-    const grade2 = 'assets/images/level_game/Grade2';
-    const grade1 = 'assets/images/level_game/Grade1/unit1';
-
+    const grade2 = 'assets/images/level_game';
     const school = _IntroLetterItem(
       label: 'school',
       asset: '$grade2/school-entrance.png',
@@ -515,14 +523,14 @@ class _AnimatedLessonIntroContentState
     );
     const juan = _IntroLetterItem(
       label: 'Juan',
-      asset: '$grade2/boy-juan.png',
+      asset: 'assets/images/level_game/people/boy-juan.png',
       icon: Icons.face_rounded,
       color: TudloColors.green,
       pictureOnly: true,
     );
     const ana = _IntroLetterItem(
       label: 'Ana',
-      asset: '$grade2/girl-ana.png',
+      asset: 'assets/images/level_game/people/girl-ana.png',
       icon: Icons.face_rounded,
       color: TudloColors.coral,
       pictureOnly: true,
@@ -543,7 +551,7 @@ class _AnimatedLessonIntroContentState
     );
     const family = _IntroLetterItem(
       label: 'pamilya',
-      asset: '$grade1/pamilya.png',
+      asset: 'assets/images/level_game/people/pamilya.png',
       icon: Icons.family_restroom_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
@@ -627,14 +635,14 @@ class _AnimatedLessonIntroContentState
     );
     const dog = _IntroLetterItem(
       label: 'ido',
-      asset: '$grade1/dog.png',
+      asset: 'assets/images/level_game/animals/dog.png',
       icon: Icons.pets_rounded,
       color: TudloColors.orange,
       pictureOnly: true,
     );
     const cat = _IntroLetterItem(
       label: 'kuring',
-      asset: '$grade1/cat.png',
+      asset: 'assets/images/level_game/animals/cat.png',
       icon: Icons.pets_rounded,
       color: TudloColors.blue,
       pictureOnly: true,
@@ -745,19 +753,23 @@ class _AnimatedLessonIntroContentState
 }
 
 class _TuonTaHeading extends StatelessWidget {
-  const _TuonTaHeading();
+  final double width;
+  final double height;
+
+  const _TuonTaHeading({required this.width, required this.height});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'TUON TA!',
-      textAlign: TextAlign.center,
-      style: GoogleFonts.nunito(
-        color: TudloColors.green,
-        fontSize: 45,
-        height: 1,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 0,
+    return ClipRect(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Image.asset(
+          TudloDialogueAssets.tuonTa,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          filterQuality: FilterQuality.high,
+        ),
       ),
     );
   }
@@ -788,28 +800,93 @@ class _IntroLetterGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final rowCount = ((children.length + 1) ~/ 2).clamp(1, 3);
-    final gridWidth = math.min(380, screenWidth - 48).toDouble();
-    if (children.length == 1) {
-      return SizedBox(
-        width: gridWidth,
-        height: 360,
-        child: Center(child: children.single),
-      );
-    }
-    return SizedBox(
-      width: gridWidth,
-      height: (rowCount * 178).toDouble(),
-      child: GridView.count(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
-        crossAxisCount: 2,
-        mainAxisSpacing: 24,
-        crossAxisSpacing: 26,
-        childAspectRatio: 1,
-        children: children,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final gridWidth = math
+            .max(
+              0.0,
+              math.min(380.0, math.min(screenWidth - 44, constraints.maxWidth)),
+            )
+            .toDouble();
+        final columnGap = screenWidth < 380 ? 12.0 : 18.0;
+        final rowGap = screenWidth < 380 ? 8.0 : 14.0;
+
+        if (children.length == 1) {
+          final itemSize = math.min(
+            330.0,
+            math.min(gridWidth, constraints.maxHeight),
+          );
+          return SizedBox(
+            width: gridWidth,
+            height: constraints.maxHeight,
+            child: Center(
+              child: _ScaledIntroChild(size: itemSize, child: children.single),
+            ),
+          );
+        }
+
+        final rows = <List<Widget>>[];
+        for (var index = 0; index < children.length; index += 2) {
+          rows.add(
+            children.sublist(index, math.min(index + 2, children.length)),
+          );
+        }
+
+        final maxItemWidth = (gridWidth - columnGap) / 2;
+        final maxItemHeight =
+            math.max(0.0, constraints.maxHeight - (rows.length - 1) * rowGap) /
+            rows.length;
+        final itemSize = math
+            .min(184.0, math.min(maxItemWidth, maxItemHeight))
+            .clamp(0.0, 184.0)
+            .toDouble();
+
+        return SizedBox(
+          width: gridWidth,
+          height: constraints.maxHeight,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (
+                      var childIndex = 0;
+                      childIndex < rows[rowIndex].length;
+                      childIndex++
+                    ) ...[
+                      _ScaledIntroChild(
+                        size: itemSize,
+                        child: rows[rowIndex][childIndex],
+                      ),
+                      if (childIndex != rows[rowIndex].length - 1)
+                        SizedBox(width: columnGap),
+                    ],
+                  ],
+                ),
+                if (rowIndex != rows.length - 1) SizedBox(height: rowGap),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ScaledIntroChild extends StatelessWidget {
+  final double size;
+  final Widget child;
+
+  const _ScaledIntroChild({required this.size, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: FittedBox(fit: BoxFit.scaleDown, child: child),
     );
   }
 }
@@ -970,15 +1047,16 @@ class _IntroIconArt extends StatelessWidget {
 }
 
 class _IntroStartButton extends StatelessWidget {
+  final double height;
   final VoidCallback onPressed;
 
-  const _IntroStartButton({required this.onPressed});
+  const _IntroStartButton({required this.height, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 72,
+      height: height,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
