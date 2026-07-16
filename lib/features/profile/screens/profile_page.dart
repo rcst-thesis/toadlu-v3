@@ -193,52 +193,261 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showRenameDialog(BuildContext context) {
+  Future<void> _showRenameDialog(BuildContext context) async {
     final appState = AppStateScope.of(context);
-    final controller = TextEditingController(text: appState.username);
-
-    showDialog<void>(
+    final isHiligaynon = appState.isHiligaynon;
+    final updatedName = await showDialog<String>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          title: Text(
-            _profileText(
-              context,
-              hil: 'Islan ang ngalan sang profile',
-              en: 'Rename profile',
-            ),
-          ),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              labelText: _profileText(context, hil: 'Ngalan', en: 'Name'),
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(
-                _profileText(context, hil: 'Kanselahon', en: 'Cancel'),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final value = controller.text.trim();
-                if (value.isEmpty) return;
-                appState.setUsername(value);
-                Navigator.pop(dialogContext);
-              },
-              child: Text(_profileText(context, hil: 'Tipigi', en: 'Save')),
-            ),
-          ],
+      builder: (_) {
+        return _RenameProfileDialog(
+          initialName: appState.username,
+          title: isHiligaynon ? 'Islan ang ngalan' : 'Rename profile',
+          subtitle: isHiligaynon
+              ? 'Ibutang ang bag-o nga ngalan sang profile.'
+              : 'Enter the new profile name.',
+          nameLabel: isHiligaynon ? 'Ngalan' : 'Name',
+          cancelLabel: isHiligaynon ? 'Kanselahon' : 'Cancel',
+          saveLabel: isHiligaynon ? 'Tipigi' : 'Save',
         );
       },
+    );
+    if (!mounted || updatedName == null || updatedName.trim().isEmpty) return;
+    appState.setUsername(updatedName);
+  }
+}
+
+class _RenameProfileDialog extends StatefulWidget {
+  final String initialName;
+  final String title;
+  final String subtitle;
+  final String nameLabel;
+  final String cancelLabel;
+  final String saveLabel;
+
+  const _RenameProfileDialog({
+    required this.initialName,
+    required this.title,
+    required this.subtitle,
+    required this.nameLabel,
+    required this.cancelLabel,
+    required this.saveLabel,
+  });
+
+  @override
+  State<_RenameProfileDialog> createState() => _RenameProfileDialogState();
+}
+
+class _RenameProfileDialogState extends State<_RenameProfileDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) return;
+    Navigator.pop(context, value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 390),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: TudloColors.green.withValues(alpha: .18),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.forest.withValues(alpha: .18),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.title,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.ink,
+                  fontSize: 28,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                widget.subtitle,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.muted,
+                  fontSize: 15,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.done,
+                cursorColor: TudloColors.green,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+                decoration: InputDecoration(
+                  labelText: widget.nameLabel,
+                  labelStyle: GoogleFonts.nunito(
+                    color: TudloColors.blue,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  filled: true,
+                  fillColor: TudloColors.cloud,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 17,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide(
+                      color: TudloColors.blue.withValues(alpha: .45),
+                      width: 2,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: const BorderSide(
+                      color: TudloColors.blue,
+                      width: 3,
+                    ),
+                  ),
+                ),
+                onSubmitted: (_) => _save(),
+              ),
+              const SizedBox(height: 20),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _controller,
+                builder: (context, value, _) {
+                  final canSave = value.text.trim().isNotEmpty;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _ProfileAssetActionButton(
+                        asset: 'assets/images/profile/cancel.png',
+                        fallbackIcon: Icons.close_rounded,
+                        tooltip: widget.cancelLabel,
+                        foregroundColor: const Color(0xFFE91B2D),
+                        backgroundColor: const Color(
+                          0xFFFFE7E7,
+                        ).withValues(alpha: .95),
+                        onTap: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 22),
+                      _ProfileAssetActionButton(
+                        asset: 'assets/images/profile/check.png',
+                        fallbackIcon: Icons.check_rounded,
+                        tooltip: widget.saveLabel,
+                        enabled: canSave,
+                        foregroundColor: Colors.white,
+                        backgroundColor: TudloColors.green,
+                        onTap: _save,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileAssetActionButton extends StatelessWidget {
+  final String asset;
+  final IconData fallbackIcon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final Color foregroundColor;
+  final Color backgroundColor;
+  final bool enabled;
+
+  const _ProfileAssetActionButton({
+    required this.asset,
+    required this.fallbackIcon,
+    required this.tooltip,
+    required this.onTap,
+    required this.foregroundColor,
+    required this.backgroundColor,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 70.0;
+    const iconSize = 48.0;
+
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        enabled: enabled,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 140),
+          opacity: enabled ? 1 : .42,
+          child: Material(
+            color: backgroundColor,
+            shape: const CircleBorder(),
+            elevation: enabled ? 5 : 0,
+            shadowColor: TudloColors.forest.withValues(alpha: .24),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: enabled ? onTap : null,
+              child: SizedBox.square(
+                dimension: size,
+                child: Center(
+                  child: Image.asset(
+                    asset,
+                    width: iconSize,
+                    height: iconSize,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, __, ___) => Icon(
+                      fallbackIcon,
+                      color: foregroundColor,
+                      size: iconSize,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -257,7 +466,10 @@ class _ProfileManagementRow extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onSwitch,
             icon: const Icon(Icons.people_rounded),
-            label: Text(_profileText(context, hil: 'Islan', en: 'Switch')),
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(_profileText(context, hil: 'Islan', en: 'Switch')),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD9A520),
               foregroundColor: Colors.white,
@@ -269,8 +481,15 @@ class _ProfileManagementRow extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onClear,
             icon: const Icon(Icons.cleaning_services_rounded),
-            label: Text(
-              _profileText(context, hil: 'Papasa ang datos', en: 'Clear data'),
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _profileText(
+                  context,
+                  hil: 'Papasa ang datos',
+                  en: 'Clear data',
+                ),
+              ),
             ),
             style: ElevatedButton.styleFrom(backgroundColor: TudloColors.coral),
           ),
@@ -491,13 +710,17 @@ class _ProfileTabButton extends StatelessWidget {
             color: selected ? TudloColors.softGreen : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
-              color: selected ? TudloColors.forest : TudloColors.ink,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              style: GoogleFonts.nunito(
+                color: selected ? TudloColors.forest : TudloColors.ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ),

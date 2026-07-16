@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 
 enum _DictionaryMode { englishToHiligaynon, hiligaynonToEnglish }
@@ -784,7 +785,7 @@ class _DictionarySpeakButton extends StatelessWidget {
         minimumSize: const Size(40, 40),
         iconSize: 26,
       ),
-      icon: const Icon(Icons.volume_up_rounded),
+      icon: const TudloSpeakerIcon(size: 24),
     );
   }
 }

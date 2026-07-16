@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 
 /// Shared mascot image wrapper.
 ///
@@ -12,7 +13,7 @@ class TudloMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageAsset = asset ?? 'assets/images/dialogue/mascot1.png';
+    final imageAsset = asset ?? TudloDialogueAssets.mascotPrimary;
     return Image.asset(
       imageAsset,
       width: size,

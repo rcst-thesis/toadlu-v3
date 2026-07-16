@@ -41,8 +41,8 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxHeight < 720;
-            final eyesWidth = (constraints.maxWidth * (compact ? .62 : .78))
-                .clamp(200.0, 360.0);
+            final eyesWidth = (constraints.maxWidth * (compact ? .78 : .92))
+                .clamp(260.0, 430.0);
             final titleGap = compact ? 30.0 : 50.0;
             final buttonGap = compact ? 12.0 : 18.0;
             final arrowSize = compact ? 82.0 : 106.0;
@@ -164,10 +164,10 @@ class _GradeButtonState extends State<_GradeButton> {
                     duration: const Duration(milliseconds: 150),
                     opacity: glowing ? 1 : 0,
                     child: OverflowBox(
-                      maxWidth: width + 96,
-                      maxHeight: buttonHeight + 72,
+                      maxWidth: width + 180,
+                      maxHeight: buttonHeight + 150,
                       child: CustomPaint(
-                        size: Size(width + 96, buttonHeight + 72),
+                        size: Size(width + 180, buttonHeight + 150),
                         painter: _PillGlowPainter(
                           pressed: _pressed,
                           buttonSize: Size(width, buttonHeight),

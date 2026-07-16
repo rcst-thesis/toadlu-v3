@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 
 class _TranslateStyle {
@@ -172,13 +173,17 @@ class _TranslationPageState extends State<TranslationPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Translate',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.archivoBlack(
-                          color: TudloColors.forest,
-                          fontSize: 52,
-                          letterSpacing: 0,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Translate',
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          style: GoogleFonts.archivoBlack(
+                            color: TudloColors.forest,
+                            fontSize: 52,
+                            letterSpacing: 0,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 38),
@@ -254,7 +259,7 @@ class _TranslateHelpOverlay extends StatelessWidget {
               left: mascotLeft,
               bottom: mascotBottom,
               child: Image.asset(
-                'assets/images/dialogue/mascot2.png',
+                TudloDialogueAssets.mascotGuide,
                 width: mascotWidth,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
@@ -291,7 +296,7 @@ class _TranslateDialogueBubble extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/dialogue/dialoguebox.png',
+              TudloDialogueAssets.dialogueBox,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
             ),
@@ -429,12 +434,9 @@ class _TranslationLanguageCard extends StatelessWidget {
                 onPressed: text.isEmpty
                     ? null
                     : () => TudloVoiceButton.speak(context, text),
-                icon: Icon(
-                  Icons.volume_up_rounded,
-                  color: text.isEmpty
-                      ? TudloColors.muted.withValues(alpha: .35)
-                      : const Color(0xFF5576A3),
-                  size: 24,
+                icon: Opacity(
+                  opacity: text.isEmpty ? .35 : 1,
+                  child: const TudloSpeakerIcon(size: 24),
                 ),
               ),
             ],
@@ -445,6 +447,7 @@ class _TranslationLanguageCard extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
                   child: Text(
                     text.isEmpty ? hint : controller.text,
+                    softWrap: true,
                     style: GoogleFonts.nunito(
                       color: text.isEmpty
                           ? TudloColors.muted.withValues(alpha: .60)

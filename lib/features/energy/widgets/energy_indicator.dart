@@ -162,83 +162,119 @@ class _EnergyScreenState extends State<_EnergyScreen> {
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 22, 28, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    height: 64,
-                    child: Stack(
-                      alignment: Alignment.center,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compactHeight = constraints.maxHeight < 620;
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    28,
+                    compactHeight ? 18 : 22,
+                    28,
+                    compactHeight ? 18 : 28,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight:
+                          (constraints.maxHeight - (compactHeight ? 36 : 50))
+                              .clamp(0, double.infinity),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Positioned(
-                          left: -8,
-                          child: IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              color: TudloColors.muted,
-                              size: 52,
+                        SizedBox(
+                          height: 64,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Positioned(
+                                left: -8,
+                                child: IconButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(
+                                    Icons.close_rounded,
+                                    color: TudloColors.muted,
+                                    size: 52,
+                                  ),
+                                ),
+                              ),
+                              const Text(
+                                'Energy',
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: TudloColors.ink,
+                                  fontSize: 31,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: compactHeight ? 30 : 52),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FittedBox(
+                                alignment: Alignment.centerLeft,
+                                fit: BoxFit.scaleDown,
+                                child: const Text(
+                                  'CHARGING',
+                                  style: TextStyle(
+                                    color: TudloColors.muted,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 2.2,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              child: FittedBox(
+                                alignment: Alignment.centerRight,
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.bolt_rounded,
+                                      color: TudloColors.green,
+                                      size: 28,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      chargingTime.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: TudloColors.muted,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const Text(
-                          'Energy',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: TudloColors.ink,
-                            fontSize: 31,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        SizedBox(height: compactHeight ? 24 : 34),
+                        _EnergyChargeBar(
+                          current: AppData.currentEnergy,
+                          max: AppData.maxEnergy,
                         ),
+                        if (widget.lowEnergy) ...[
+                          SizedBox(height: compactHeight ? 22 : 28),
+                          _LowEnergyMessage(
+                            nextEnergyIn: AppData.formatDurationShort(next),
+                          ),
+                        ],
+                        SizedBox(height: compactHeight ? 24 : 80),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 52),
-                  Row(
-                    children: [
-                      const Text(
-                        'CHARGING',
-                        style: TextStyle(
-                          color: TudloColors.muted,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2.2,
-                        ),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        Icons.bolt_rounded,
-                        color: TudloColors.green,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        chargingTime.toUpperCase(),
-                        style: const TextStyle(
-                          color: TudloColors.muted,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 34),
-                  _EnergyChargeBar(
-                    current: AppData.currentEnergy,
-                    max: AppData.maxEnergy,
-                  ),
-                  if (widget.lowEnergy) ...[
-                    const SizedBox(height: 28),
-                    _LowEnergyMessage(
-                      nextEnergyIn: AppData.formatDurationShort(next),
-                    ),
-                  ],
-                  const Spacer(),
-                ],
-              ),
+                );
+              },
             ),
           ),
         );

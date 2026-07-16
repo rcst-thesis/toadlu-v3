@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 
 class TudloLanguageToggle extends StatelessWidget {
   const TudloLanguageToggle({super.key});
@@ -181,6 +182,8 @@ class TudloVoiceButton extends StatelessWidget {
   final String tooltip;
   final double size;
   final bool? hiligaynon;
+  final Color backgroundColor;
+  final Color foregroundColor;
 
   const TudloVoiceButton({
     super.key,
@@ -188,21 +191,26 @@ class TudloVoiceButton extends StatelessWidget {
     this.tooltip = 'Play voice message',
     this.size = 54,
     this.hiligaynon,
+    this.backgroundColor = TudloColors.forest,
+    this.foregroundColor = Colors.white,
   });
 
   @override
   Widget build(BuildContext context) {
+    final glowColor = backgroundColor == Colors.white
+        ? TudloColors.green
+        : backgroundColor;
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: TudloColors.forest.withValues(alpha: .40),
+            color: glowColor.withValues(alpha: .40),
             blurRadius: 22,
             spreadRadius: 3,
           ),
           BoxShadow(
-            color: TudloColors.forest.withValues(alpha: .24),
+            color: TudloColors.forest.withValues(alpha: .18),
             blurRadius: 12,
             offset: const Offset(0, 7),
           ),
@@ -211,8 +219,8 @@ class TudloVoiceButton extends StatelessWidget {
       child: IconButton.filled(
         tooltip: tooltip,
         style: IconButton.styleFrom(
-          backgroundColor: TudloColors.forest,
-          foregroundColor: Colors.white,
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
           minimumSize: Size(size, size),
           iconSize: size * .56,
         ),
@@ -224,7 +232,7 @@ class TudloVoiceButton extends StatelessWidget {
             hiligaynon: hiligaynon ?? appState.isHiligaynon,
           );
         },
-        icon: const Icon(Icons.volume_up_rounded),
+        icon: TudloSpeakerIcon(size: size * .54),
       ),
     );
   }

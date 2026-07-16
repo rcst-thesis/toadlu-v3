@@ -24,6 +24,21 @@ Map<String, String> _matchingPairsFromItemOrder(QuizItem item) {
   };
 }
 
+List<T> _shuffledChoices<T>(Iterable<T> choices) {
+  final original = choices.toList();
+  if (original.length < 2) return original;
+  final shuffled = [...original]..shuffle(math.Random());
+  final sameOrder = List.generate(
+    shuffled.length,
+    (index) => shuffled[index] == original[index],
+  ).every((same) => same);
+  if (sameOrder) {
+    final first = shuffled.removeAt(0);
+    shuffled.add(first);
+  }
+  return shuffled;
+}
+
 /// Main lesson gameplay screen opened from the Home Map.
 ///
 /// A level receives grade-based content and generated questions from
@@ -332,7 +347,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       return LessonQuestion.matching(
         prompt: item.question,
         leftItems: item.leftItems,
-        rightItems: item.rightItems,
+        rightItems: _shuffledChoices(item.rightItems),
         matchingPairs: matchingPairs,
         directionLabel: item.id,
       );
@@ -341,7 +356,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       return LessonQuestion.fillBlank(
         prompt: item.question,
         answer: item.answer,
-        choices: item.choices,
+        choices: _shuffledChoices(item.choices),
         imagePath: item.imageAsset ?? '',
         targetPhrase: item.answer,
         targetMeaning: item.answer,
@@ -352,7 +367,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       return LessonQuestion.arrangeWords(
         prompt: item.question,
         answer: item.answer,
-        sentenceWords: item.choices,
+        sentenceWords: _shuffledChoices(item.choices),
         imagePath: item.imageAsset ?? '',
         targetPhrase: item.answer,
         targetMeaning: item.answer,
@@ -363,7 +378,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       return LessonQuestion.translationChoice(
         prompt: item.question,
         answer: item.answer,
-        choices: item.choices,
+        choices: _shuffledChoices(item.choices),
         imagePath: item.imageAsset ?? '',
         targetPhrase: item.answer,
         targetMeaning: item.answer,
@@ -373,7 +388,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
     return LessonQuestion.choice(
       prompt: item.question,
       answer: item.answer,
-      choices: item.choices,
+      choices: _shuffledChoices(item.choices),
       imagePath: item.imageAsset ?? '',
       targetPhrase: item.answer,
       targetMeaning: item.answer,
@@ -7350,6 +7365,7 @@ class _PlaceSituationGameCardState extends State<_PlaceSituationGameCard> {
   int _index = 0;
   String? _arrivedHil;
   bool _reported = false;
+  late final List<List<String>> _choiceOrders;
 
   final List<_PlaceSituation> _situations = [
     _PlaceSituation(
@@ -7373,6 +7389,14 @@ class _PlaceSituationGameCardState extends State<_PlaceSituationGameCard> {
   ];
 
   _PlaceSituation get _current => _situations[_index];
+
+  @override
+  void initState() {
+    super.initState();
+    _choiceOrders = [
+      for (final situation in _situations) _shuffledChoices(situation.choices),
+    ];
+  }
 
   Future<void> _tapChoice(_PlaceWord place) async {
     if (_reported) return;
@@ -7415,7 +7439,7 @@ class _PlaceSituationGameCardState extends State<_PlaceSituationGameCard> {
 
   @override
   Widget build(BuildContext context) {
-    final choices = _current.choices
+    final choices = _choiceOrders[_index]
         .map(_placeByHil)
         .whereType<_PlaceWord>()
         .toList();
@@ -7765,6 +7789,13 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
   bool _checked = false;
   bool _correct = false;
   int _feedbackKey = 0;
+  late final List<_FamilyWord> _choices;
+
+  @override
+  void initState() {
+    super.initState();
+    _choices = _shuffledChoices(widget.choices);
+  }
 
   Future<void> _choose(_FamilyWord choice) async {
     if (_checked && _correct) return;
@@ -7812,7 +7843,7 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
           ),
           const SizedBox(height: 14),
           _FamilyChoiceGrid(
-            choices: widget.choices,
+            choices: _choices,
             selected: _selected,
             checked: _checked,
             answer: widget.target.hil,
@@ -7846,6 +7877,13 @@ class _FamilyMatchingCardState extends State<_FamilyMatchingCard> {
   final Set<String> _matched = {};
   bool _reported = false;
   int _feedbackKey = 0;
+  late final List<_FamilyWord> _imageOrder;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageOrder = _shuffledChoices(widget.words);
+  }
 
   Future<void> _selectWord(_FamilyWord word) async {
     if (_matched.contains(word.hil) || _reported) return;
@@ -7926,9 +7964,9 @@ class _FamilyMatchingCardState extends State<_FamilyMatchingCard> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final word in widget.words) ...[
+                  for (final word in _imageOrder) ...[
                     _matchImageButton(word),
-                    if (word != widget.words.last) const SizedBox(height: 18),
+                    if (word != _imageOrder.last) const SizedBox(height: 18),
                   ],
                 ],
               ),
@@ -8421,6 +8459,48 @@ class _AnimalWord {
   String get successSpeech => 'Husto! Ara na ang $hil sa $dragHomeLabel.';
 }
 
+class _SpacedLessonWord extends StatelessWidget {
+  final String word;
+  final Color color;
+  final double fontSize;
+  final double spacing;
+
+  const _SpacedLessonWord({
+    required this.word,
+    required this.color,
+    required this.fontSize,
+    required this.spacing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final letters = word.characters.toList();
+
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var index = 0; index < letters.length; index++) ...[
+            Text(
+              letters[index],
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: color,
+                fontSize: fontSize,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+            if (index != letters.length - 1) SizedBox(width: spacing),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _AnimalTapCard extends StatefulWidget {
   final _AnimalWord animal;
   final VoidCallback onDone;
@@ -8472,16 +8552,11 @@ class _AnimalTapCardState extends State<_AnimalTapCard> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            widget.animal.upperName,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
-              color: TudloColors.forest,
-              fontSize: 48,
-              height: 1,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-            ),
+          _SpacedLessonWord(
+            word: widget.animal.upperName,
+            color: TudloColors.forest,
+            fontSize: 48,
+            spacing: 10,
           ),
           const SizedBox(height: 42),
           GestureDetector(
@@ -10287,8 +10362,8 @@ class _LessonCompleteDialog extends StatelessWidget {
             alignment: Alignment.topCenter,
             children: [
               Container(
-                margin: const EdgeInsets.only(top: 92),
-                padding: const EdgeInsets.fromLTRB(18, 74, 18, 18),
+                margin: const EdgeInsets.only(top: 98),
+                padding: const EdgeInsets.fromLTRB(18, 64, 18, 18),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFFCF2),
                   borderRadius: BorderRadius.circular(32),
@@ -10315,54 +10390,52 @@ class _LessonCompleteDialog extends StatelessWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'TAPOS NA',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: TudloColors.forest,
-                            fontSize: 29,
-                            height: 1,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .4,
+                        Transform.translate(
+                          offset: Offset(0, -8),
+                          child: Text(
+                            'TAPOS NA',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: TudloColors.forest,
+                              fontSize: 38,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: .4,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        const TudloMascot(size: 74),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
+                        const TudloMascot(size: 104),
+                        const SizedBox(height: 8),
                         const Text(
                           'Maayo gid!',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: TudloColors.forest,
-                            fontSize: 32,
+                            fontSize: 36,
                             height: 1,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          mistakes == 0
-                              ? 'Himpit ang imo leksiyon!'
-                              : 'Natapos mo ang leksiyon!',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: TudloColors.muted,
-                            fontSize: 15,
-                            height: 1.2,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
                         const SizedBox(height: 14),
-                        _RewardStatRow(
-                          label: 'ORAS',
-                          value: durationLabel,
-                          icon: Icons.timer_rounded,
-                        ),
-                        const SizedBox(height: 10),
-                        _RewardStatRow(
-                          label: 'ISKOR',
-                          value: '$accuracy%',
-                          icon: Icons.track_changes_rounded,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _RewardStatTile(
+                                label: 'ORAS',
+                                value: durationLabel,
+                                icon: Icons.timer_rounded,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _RewardStatTile(
+                                label: 'ISKOR',
+                                value: '$accuracy%',
+                                icon: Icons.track_changes_rounded,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 14),
                         SizedBox(
@@ -10457,32 +10530,33 @@ class _RewardStars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 162,
-      height: 84,
+      width: 258,
+      height: 154,
       child: Stack(
         alignment: Alignment.center,
+        clipBehavior: Clip.none,
         children: [
           Positioned(
-            left: 6,
-            top: 27,
+            left: 10,
+            top: 58,
             child: Transform.rotate(
               angle: -.18,
-              child: _RewardStar(active: count >= 1, size: 70),
+              child: _RewardStar(active: count >= 1, size: 84),
             ),
           ),
           Positioned(
-            right: 6,
-            top: 27,
+            right: 10,
+            top: 58,
             child: Transform.rotate(
               angle: .18,
-              child: _RewardStar(active: count >= 3, size: 70),
+              child: _RewardStar(active: count >= 3, size: 84),
             ),
           ),
           Positioned(
-            top: 0,
+            top: 8,
             child: Transform.rotate(
               angle: .05,
-              child: _RewardStar(active: count >= 2, size: 90),
+              child: _RewardStar(active: count >= 2, size: 108),
             ),
           ),
         ],
@@ -10500,47 +10574,139 @@ class _RewardStar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = active ? const Color(0xFFFFD84D) : TudloColors.line;
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: const Color(0xFFFFD84D).withValues(alpha: .42),
-                  blurRadius: 18,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
       child: Stack(
+        clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          Icon(Icons.star_rounded, color: color, size: size),
           if (active)
-            Positioned(
-              top: size * .23,
-              right: size * .27,
-              child: Icon(
-                Icons.circle,
-                color: Colors.white.withValues(alpha: .72),
-                size: size * .12,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: OverflowBox(
+                  maxWidth: size + 76,
+                  maxHeight: size + 76,
+                  child: _RewardStarGlow(size: size + 76),
+                ),
               ),
             ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(Icons.star_rounded, color: color, size: size),
+              if (active)
+                Positioned(
+                  top: size * .23,
+                  right: size * .27,
+                  child: Icon(
+                    Icons.circle,
+                    color: Colors.white.withValues(alpha: .72),
+                    size: size * .12,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _RewardStatRow extends StatelessWidget {
+class _RewardStarGlow extends StatelessWidget {
+  final double size;
+
+  const _RewardStarGlow({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          _RewardStarRays(size: size),
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFFFFF176).withValues(alpha: .54),
+                  const Color(0xFFFFD84D).withValues(alpha: .26),
+                  const Color(0xFFFFD84D).withValues(alpha: 0),
+                ],
+                stops: const [0, .42, 1],
+              ),
+            ),
+          ),
+          Container(
+            width: size * .58,
+            height: size * .58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withValues(alpha: .40),
+                  const Color(0xFFFFF176).withValues(alpha: .32),
+                  const Color(0xFFFFF176).withValues(alpha: 0),
+                ],
+                stops: const [0, .50, 1],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardStarRays extends StatelessWidget {
+  final double size;
+
+  const _RewardStarRays({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: CustomPaint(painter: _RewardStarRaysPainter()),
+    );
+  }
+}
+
+class _RewardStarRaysPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..color = const Color(0xFFFFF176).withValues(alpha: .34)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    for (var index = 0; index < 12; index++) {
+      final angle = (math.pi * 2 / 12) * index;
+      final inner = size.width * .34;
+      final outer = size.width * .47;
+      canvas.drawLine(
+        center + Offset(math.cos(angle) * inner, math.sin(angle) * inner),
+        center + Offset(math.cos(angle) * outer, math.sin(angle) * outer),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RewardStarRaysPainter oldDelegate) => false;
+}
+
+class _RewardStatTile extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
 
-  const _RewardStatRow({
+  const _RewardStatTile({
     required this.label,
     required this.value,
     required this.icon,
@@ -10549,47 +10715,53 @@ class _RewardStatRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      height: 104,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: .76),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
       ),
-      child: Row(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: TudloColors.green.withValues(alpha: .14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: TudloColors.green, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: TudloColors.muted,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .5,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: TudloColors.green.withValues(alpha: .14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: TudloColors.green, size: 23),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
+              const SizedBox(width: 8),
+              Text(
+                label,
                 style: const TextStyle(
-                  color: TudloColors.forest,
-                  fontSize: 24,
-                  height: 1,
+                  color: TudloColors.muted,
+                  fontSize: 12,
                   fontWeight: FontWeight.w900,
+                  letterSpacing: .5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: TudloColors.forest,
+                    fontSize: 30,
+                    height: .95,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),

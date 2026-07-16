@@ -38,7 +38,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
   /// Keeping these constants shared prevents the buttons from drifting away
   /// from the path when the map height changes.
   static const double _levelGap = 148;
-  static const double _unitMessageGap = 142;
+  static const double _unitMessageGap = 230;
   static const double _topPad = 250;
   static const double _bottomPad = 330;
   final ScrollController _scrollController = ScrollController();
@@ -567,10 +567,18 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
       begin: const Offset(0, .08),
       end: Offset.zero,
     ).animate(curved);
-    _nodeBounceAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 1, end: 1.12), weight: 45),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.12, end: 1), weight: 55),
-    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _nodeBounceAnimation = TweenSequence<double>(
+      [
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 1, end: 1.12),
+          weight: 45,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 1.12, end: 1),
+          weight: 55,
+        ),
+      ],
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
   }
 
@@ -2150,31 +2158,59 @@ class _RoadGeometry {
         AppData.units.where((unit) => unit.startLevel <= level).length *
             unitMessageGap -
         unitMessageGap;
-    return Offset(xForLevel(level.toDouble()), y);
+    final unit = AppData.unitForLevel(level);
+    final localLevel = (level - unit.startLevel + 1).toDouble();
+    return Offset(xForUnitLocal(unit, localLevel), y);
   }
 
   Offset pointForUnitStart(int level) {
     final levelPoint = pointForLevel(level);
-    final offset = level == 1 ? 166.0 : 226.0;
+    final offset = level == 1 ? 176.0 : 224.0;
     return Offset(levelPoint.dx, levelPoint.dy - offset);
   }
 
+  Offset pointForUnitPathStart(AppUnit unit) {
+    final firstPoint = pointForLevel(unit.startLevel);
+    return Offset(xForUnitLocal(unit, .38), firstPoint.dy - 82);
+  }
+
+  Offset pointForUnitPathEnd(AppUnit unit) {
+    final lastPoint = pointForLevel(unit.endLevel);
+    return Offset(
+      xForUnitLocal(unit, unit.lessonCount + .62),
+      lastPoint.dy + 96,
+    );
+  }
+
   double xForLevel(double level) {
+    final approximateLevel = level.round().clamp(1, AppData.maxLevel);
+    final unit = AppData.unitForLevel(approximateLevel);
+    final localLevel = level - unit.startLevel + 1;
+    return xForUnitLocal(unit, localLevel);
+  }
+
+  double xForUnitLocal(AppUnit unit, double localLevel) {
     final center = width / 2;
     final amplitude = math.max(76.0, width * .22);
-    final broad = math.sin((level - 1) * .86 + .40) * amplitude;
-    final drift = math.sin((level - 1) * .24 + 1.4) * amplitude * .12;
+    final phase = unit.number * .72;
+    final broad = math.sin((localLevel - 1) * .90 + .40 + phase) * amplitude;
+    final drift =
+        math.sin((localLevel - 1) * .32 + 1.4 + phase) * amplitude * .12;
     final x = center + broad + drift;
     return x.clamp(104.0, width - 104.0);
   }
 
-  List<Offset> anchors(Size size) {
+  List<Offset> anchorsForUnit(AppUnit unit) {
     return [
-      Offset(xForLevel(1.0), topPad - 38),
-      for (var level = 1; level <= AppData.maxLevel; level++)
+      pointForUnitPathStart(unit),
+      for (var level = unit.startLevel; level <= unit.endLevel; level++)
         pointForLevel(level),
-      Offset(xForLevel(AppData.maxLevel.toDouble()), size.height + 95),
+      pointForUnitPathEnd(unit),
     ];
+  }
+
+  List<List<Offset>> unitAnchors() {
+    return [for (final unit in AppData.units) anchorsForUnit(unit)];
   }
 }
 
@@ -2189,37 +2225,39 @@ class _ScrollableMapPainter extends CustomPainter {
     // effect under the level buttons.
     _paintBackground(canvas, size);
 
-    final path = _smoothPath(road.anchors(size));
+    for (final anchors in road.unitAnchors()) {
+      final path = _smoothPath(anchors);
 
-    canvas.drawPath(
-      path.shift(const Offset(0, 10)),
-      Paint()
-        ..color = TudloColors.forest.withValues(alpha: .12)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 110
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
+      canvas.drawPath(
+        path.shift(const Offset(0, 10)),
+        Paint()
+          ..color = TudloColors.forest.withValues(alpha: .12)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 110
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
 
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = const Color(0xFFF9F1D1)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 96
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = const Color(0xFFF9F1D1)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 96
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
 
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = const Color(0xFFFFF8DE)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 76
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = const Color(0xFFFFF8DE)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 76
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+    }
   }
 
   Path _smoothPath(List<Offset> points) {

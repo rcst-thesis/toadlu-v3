@@ -40,7 +40,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxHeight < 680;
-          final eyesWidth = (constraints.maxWidth * .78).clamp(220.0, 360.0);
+          final eyesWidth = (constraints.maxWidth * .92).clamp(280.0, 430.0);
           final fieldWidth = (constraints.maxWidth * .76).clamp(230.0, 360.0);
           final nextSize = compact ? 82.0 : 100.0;
 
