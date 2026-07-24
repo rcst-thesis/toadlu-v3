@@ -64,6 +64,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
   late final DateTime _levelStartedAt;
   bool _rewardsClaimed = false;
   bool _completeDialogShown = false;
+  bool _alphabetPresentationChrome = false;
 
   int get score => correctAnswers.values.where((correct) => correct).length;
 
@@ -160,6 +161,11 @@ class _LevelGamePageState extends State<LevelGamePage> {
     if (!allCompleted) return;
     _completeDialogShown = true;
     _showCompleteDialog();
+  }
+
+  void _setAlphabetPresentationChrome(bool value) {
+    if (_alphabetPresentationChrome == value) return;
+    setState(() => _alphabetPresentationChrome = value);
   }
 
   void _showCompleteDialog() {
@@ -456,79 +462,85 @@ class _LevelGamePageState extends State<LevelGamePage> {
         final progress = questions.isEmpty
             ? 0.0
             : checkedCount / questions.length;
+        final hideStandardChrome =
+            alphabetLesson && _alphabetPresentationChrome;
         return Scaffold(
-          backgroundColor: TudloColors.paper,
+          backgroundColor: hideStandardChrome
+              ? const Color(0xFFAEEAB3)
+              : TudloColors.paper,
           body: SafeArea(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
-                12,
+                hideStandardChrome ? 0 : 12,
                 horizontalPadding,
                 18,
               ),
               child: Column(
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: backButtonSize,
-                        height: backButtonSize,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          // Back button:
-                          // Opens the pause menu before leaving the game.
-                          onPressed: _showPauseMenu,
-                          icon: Icon(
-                            Icons.arrow_back_rounded,
-                            color: TudloColors.blue,
-                            size: backIconSize,
+                  if (!hideStandardChrome) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: backButtonSize,
+                          height: backButtonSize,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            // Back button:
+                            // Opens the pause menu before leaving the game.
+                            onPressed: _showPauseMenu,
+                            icon: Icon(
+                              Icons.arrow_back_rounded,
+                              color: TudloColors.blue,
+                              size: backIconSize,
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: screenWidth < 380 ? 6 : 10),
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                'Leksiyon ${AppData.lessonNumberForLevel(widget.level)}',
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                style: const TextStyle(
-                                  color: TudloColors.blue,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+                        SizedBox(width: screenWidth < 380 ? 6 : 10),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'Leksiyon ${AppData.lessonNumberForLevel(widget.level)}',
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    color: TudloColors.blue,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(999),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                minHeight: progressHeight,
-                                backgroundColor: TudloColors.line,
-                                color: TudloColors.green,
+                              const SizedBox(height: 4),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(999),
+                                child: LinearProgressIndicator(
+                                  value: progress,
+                                  minHeight: progressHeight,
+                                  backgroundColor: TudloColors.line,
+                                  color: TudloColors.green,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      SizedBox(width: screenWidth < 380 ? 6 : 12),
-                      SizedBox(width: screenWidth < 380 ? 6 : 12),
-                      Flexible(
-                        flex: 0,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: const EnergyIndicator(),
+                        SizedBox(width: screenWidth < 380 ? 6 : 12),
+                        SizedBox(width: screenWidth < 380 ? 6 : 12),
+                        Flexible(
+                          flex: 0,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: const EnergyIndicator(),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Expanded(
                     child: loading || levelContent == null
                         ? const _LessonLoadingCard()
@@ -546,6 +558,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                 child: alphabetLesson
                                     ? _GradeOneAlphabetLesson(
                                         content: levelContent,
+                                        onExit: _showPauseMenu,
+                                        onPresentationChromeChanged:
+                                            _setAlphabetPresentationChrome,
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
                                       )
@@ -2008,6 +2023,11 @@ class _GradeTwoTileVisual {
   });
 }
 
+bool _isKokaMascotAsset(String? asset) {
+  return asset == TudloDialogueAssets.mascotPrimary ||
+      asset == TudloDialogueAssets.mascotGuide;
+}
+
 class _GradeTwoSceneCard extends StatefulWidget {
   final _GradeTwoPlan plan;
   final VoidCallback onDone;
@@ -2782,15 +2802,17 @@ class _GradeTwoFocusPicture extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (visual.imageAsset != null)
-            Image.asset(
-              visual.imageAsset!,
-              width: 166,
-              height: 126,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (_, __, ___) =>
-                  Icon(visual.icon, color: color, size: 96),
-            )
+            _isKokaMascotAsset(visual.imageAsset)
+                ? const TudloMascot(size: 132)
+                : Image.asset(
+                    visual.imageAsset!,
+                    width: 166,
+                    height: 126,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, __, ___) =>
+                        Icon(visual.icon, color: color, size: 96),
+                  )
           else
             Icon(visual.icon, color: visual.color, size: 80),
           const SizedBox(height: 6),
@@ -2913,15 +2935,17 @@ class _GradeTwoTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (visual.imageAsset != null) ...[
-                Image.asset(
-                  visual.imageAsset!,
-                  width: 72,
-                  height: 82,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(visual.icon, color: Colors.white, size: 44),
-                ),
+                _isKokaMascotAsset(visual.imageAsset)
+                    ? const TudloMascot(size: 82)
+                    : Image.asset(
+                        visual.imageAsset!,
+                        width: 72,
+                        height: 82,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(visual.icon, color: Colors.white, size: 44),
+                      ),
                 const SizedBox(height: 6),
               ] else if (visual.icon != Icons.text_fields_rounded) ...[
                 Icon(visual.icon, color: Colors.white, size: 38),
@@ -3037,15 +3061,20 @@ class _GradeTwoChoiceButton extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (visual.imageAsset != null)
-                      Image.asset(
-                        visual.imageAsset!,
-                        width: 58,
-                        height: 58,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.high,
-                        errorBuilder: (_, __, ___) =>
-                            Icon(visual.icon, color: Colors.white, size: 44),
-                      )
+                      _isKokaMascotAsset(visual.imageAsset)
+                          ? const TudloMascot(size: 58)
+                          : Image.asset(
+                              visual.imageAsset!,
+                              width: 58,
+                              height: 58,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
+                              errorBuilder: (_, __, ___) => Icon(
+                                visual.icon,
+                                color: Colors.white,
+                                size: 44,
+                              ),
+                            )
                     else
                       Icon(visual.icon, color: Colors.white, size: 42),
                     const SizedBox(width: 14),
@@ -3155,6 +3184,9 @@ class _GradeTwoMissionArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (choice.imageAsset != null) {
+      if (_isKokaMascotAsset(choice.imageAsset)) {
+        return TudloMascot(size: size);
+      }
       return Image.asset(
         choice.imageAsset!,
         width: size,
@@ -4186,10 +4218,14 @@ String _letterSoundText(String letter) {
 
 class _GradeOneAlphabetLesson extends StatefulWidget {
   final LevelContent content;
+  final VoidCallback onExit;
+  final ValueChanged<bool> onPresentationChromeChanged;
   final ValueChanged<int> onQuizCorrect;
 
   const _GradeOneAlphabetLesson({
     required this.content,
+    required this.onExit,
+    required this.onPresentationChromeChanged,
     required this.onQuizCorrect,
   });
 
@@ -4201,6 +4237,8 @@ class _GradeOneAlphabetLesson extends StatefulWidget {
 class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
   int _stepIndex = 0;
   late final List<String> _quizTargets;
+  int _presentationStepCount = 0;
+  bool? _lastPresentationChrome;
 
   @override
   void initState() {
@@ -4216,6 +4254,25 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
     final next = index.clamp(0, maxIndex);
     if (next == _stepIndex) return;
     setState(() => _stepIndex = next);
+    _notifyPresentationChrome(next);
+  }
+
+  void _notifyPresentationChrome([int? stepIndex]) {
+    final activeIndex = stepIndex ?? _stepIndex;
+    final shouldShow = activeIndex < _presentationStepCount;
+    if (_lastPresentationChrome == shouldShow) return;
+    _lastPresentationChrome = shouldShow;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onPresentationChromeChanged(shouldShow);
+    });
+  }
+
+  @override
+  void dispose() {
+    _lastPresentationChrome = false;
+    widget.onPresentationChromeChanged(false);
+    super.dispose();
   }
 
   void _advanceAfterCorrect(int maxIndex) {
@@ -4275,53 +4332,50 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
         )
         .toList();
 
-    final steps = [
-      for (final entry in introTargets)
-        _AlphabetFadeStep(
-          child: _AlphabetLetterIntroCard(
-            key: ValueKey('alphabet-intro-${widget.content.id}-${entry.key}'),
+    final presentationTargets = introTargets
+        .map(
+          (entry) => _AlphabetPresentationTarget.fromAnchor(
             letter: entry.key,
-            anchor: entry.value,
-            onDone: () => _advanceAfterCorrect(maxIndex),
+            anchor: _presentationAnchorForTarget(entry.key, entry.value),
           ),
+        )
+        .toList();
+    final presentationSlides = [
+      for (final target in presentationTargets) ...[
+        _AlphabetPresentationSlideData(
+          target: target,
+          type: _AlphabetPresentationSlideType.letter,
         ),
-      for (final anchor in anchors)
-        _AlphabetFadeStep(
-          child: _AlphabetMiniActivity(
-            key: ValueKey(
-              'alphabet-lesson-${widget.content.id}-${anchor.word}',
-            ),
-            word: anchor.word,
-            meaning: anchor.meaning,
-            imageAsset: anchor.imageAsset,
-            icon: anchor.icon,
-            targetLetters: anchor.targets,
-            instruction:
-                'Pindoton ang tagsa ka letra ${anchor.targets.join(", ")} sa tinaga.',
-            mascotMessage:
-                'Koka: Ini ang tinaga ${anchor.word}. Pindoton ang tagsa ka letra.',
-            onCorrect: () => _advanceAfterCorrect(maxIndex),
-          ),
+        _AlphabetPresentationSlideData(
+          target: target,
+          type: _AlphabetPresentationSlideType.word,
         ),
-      for (final target in targets)
+        _AlphabetPresentationSlideData(
+          target: target,
+          type: _AlphabetPresentationSlideType.highlight,
+        ),
+        _AlphabetPresentationSlideData(
+          target: target,
+          type: _AlphabetPresentationSlideType.continuePrompt,
+        ),
+      ],
+    ];
+
+    _presentationStepCount = presentationSlides.length;
+    _notifyPresentationChrome();
+
+    final steps = [
+      for (var index = 0; index < presentationSlides.length; index++)
         _AlphabetFadeStep(
-          child: Builder(
-            builder: (context) {
-              final anchor = _bestAnchorForTarget(anchors, target);
-              return _AlphabetMiniActivity(
-                key: ValueKey('alphabet-example-${widget.content.id}-$target'),
-                word: anchor.word,
-                meaning: anchor.meaning,
-                imageAsset: anchor.imageAsset,
-                icon: anchor.icon,
-                targetLetters: [target],
-                instruction:
-                    'May $target sa ${anchor.word}. Pamatii ang tingog sang $target.',
-                mascotMessage:
-                    'Koka: Ang letra $target may tingog nga ${_letterSoundText(target)}.',
-                onCorrect: () => _advanceAfterCorrect(maxIndex),
-              );
-            },
+          child: _AlphabetPresentationSlide(
+            key: ValueKey('alphabet-presentation-${widget.content.id}-$index'),
+            data: presentationSlides[index],
+            stepNumber: index + 1,
+            totalSteps: presentationSlides.length,
+            canGoBack: index > 0,
+            onExit: widget.onExit,
+            onBack: () => _goToStep(_stepIndex - 1, maxIndex),
+            onNext: () => _goToStep(_stepIndex + 1, maxIndex),
           ),
         ),
       _AlphabetFadeStep(
@@ -4375,6 +4429,26 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
         ),
       ],
     );
+  }
+
+  _AlphabetAnchor _presentationAnchorForTarget(
+    String target,
+    _AlphabetAnchor fallback,
+  ) {
+    if (widget.content.lessonNumber == 1 && target.toUpperCase() == 'Y') {
+      return const _AlphabetAnchor(
+        word: 'NANAY KAG TATAY',
+        meaning: 'nanay kag tatay',
+        targets: ['Y'],
+        imageAsset: null,
+        imageAssets: [
+          'assets/images/level_game/people/tatay.png',
+          'assets/images/level_game/people/nanay.png',
+        ],
+        icon: Icons.family_restroom_rounded,
+      );
+    }
+    return fallback;
   }
 
   List<String> _targetLettersFor(LevelContent content) {
@@ -4539,6 +4613,7 @@ class _AlphabetAnchor {
   final String meaning;
   final List<String> targets;
   final String? imageAsset;
+  final List<String> imageAssets;
   final IconData icon;
 
   const _AlphabetAnchor({
@@ -4547,6 +4622,7 @@ class _AlphabetAnchor {
     required this.targets,
     required this.icon,
     this.imageAsset,
+    this.imageAssets = const [],
   });
 }
 
@@ -4554,6 +4630,740 @@ class _AlphabetFadeStep {
   final Widget child;
 
   const _AlphabetFadeStep({required this.child});
+}
+
+enum _AlphabetPresentationSlideType { letter, word, highlight, continuePrompt }
+
+class _AlphabetPresentationTarget {
+  final String letter;
+  final String word;
+  final String meaning;
+  final List<String> imageAssets;
+  final IconData icon;
+
+  const _AlphabetPresentationTarget({
+    required this.letter,
+    required this.word,
+    required this.meaning,
+    required this.imageAssets,
+    required this.icon,
+  });
+
+  factory _AlphabetPresentationTarget.fromAnchor({
+    required String letter,
+    required _AlphabetAnchor anchor,
+  }) {
+    final imageAssets = anchor.imageAssets.isNotEmpty
+        ? anchor.imageAssets
+        : [if (anchor.imageAsset != null) anchor.imageAsset!];
+    return _AlphabetPresentationTarget(
+      letter: letter.toUpperCase(),
+      word: anchor.word,
+      meaning: anchor.meaning,
+      imageAssets: imageAssets,
+      icon: anchor.icon,
+    );
+  }
+
+  String get displayWord => _titleCase(word);
+  String get speechWord => meaning.isEmpty ? word.toLowerCase() : meaning;
+}
+
+class _AlphabetPresentationSlideData {
+  final _AlphabetPresentationTarget target;
+  final _AlphabetPresentationSlideType type;
+
+  const _AlphabetPresentationSlideData({
+    required this.target,
+    required this.type,
+  });
+
+  String get voiceText {
+    final letter = target.letter;
+    final word = target.speechWord;
+    return switch (type) {
+      _AlphabetPresentationSlideType.letter =>
+        'Ang tunog sang letra nga $letter ay ${_letterSoundText(letter)}.',
+      _AlphabetPresentationSlideType.word =>
+        'Abyan, kilala mo kung sino ini? Ini ang $word.',
+      _AlphabetPresentationSlideType.highlight =>
+        'May ara letra nga $letter sa may $word.',
+      _AlphabetPresentationSlideType.continuePrompt =>
+        'Alright abyan, lets padayon kita.',
+    };
+  }
+
+  String get dialogueText {
+    final letter = target.letter;
+    final word = target.speechWord;
+    return switch (type) {
+      _AlphabetPresentationSlideType.letter =>
+        'Ang tunog sang letra nga "$letter" ay...',
+      _AlphabetPresentationSlideType.word => 'Abyan, kilala mo kung sino ini?',
+      _AlphabetPresentationSlideType.highlight =>
+        'May ara letra nga "$letter" sa may $word',
+      _AlphabetPresentationSlideType.continuePrompt =>
+        'Alright abyan, lets padayon kita',
+    };
+  }
+
+  String get soundText {
+    return switch (type) {
+      _AlphabetPresentationSlideType.letter => _letterSoundText(target.letter),
+      _AlphabetPresentationSlideType.word ||
+      _AlphabetPresentationSlideType.highlight => target.speechWord,
+      _AlphabetPresentationSlideType.continuePrompt => voiceText,
+    };
+  }
+
+  bool get darkenCard => type == _AlphabetPresentationSlideType.highlight;
+  bool get showWord => type != _AlphabetPresentationSlideType.letter;
+  bool get showLetter => type == _AlphabetPresentationSlideType.letter;
+  bool get showTapHint => type == _AlphabetPresentationSlideType.highlight;
+}
+
+class _AlphabetPresentationSlide extends StatefulWidget {
+  final _AlphabetPresentationSlideData data;
+  final int stepNumber;
+  final int totalSteps;
+  final bool canGoBack;
+  final VoidCallback onExit;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+
+  const _AlphabetPresentationSlide({
+    super.key,
+    required this.data,
+    required this.stepNumber,
+    required this.totalSteps,
+    required this.canGoBack,
+    required this.onExit,
+    required this.onBack,
+    required this.onNext,
+  });
+
+  @override
+  State<_AlphabetPresentationSlide> createState() =>
+      _AlphabetPresentationSlideState();
+}
+
+class _AlphabetPresentationSlideState
+    extends State<_AlphabetPresentationSlide> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Future<void>.delayed(const Duration(milliseconds: 260), () {
+        if (mounted) unawaited(_speak());
+      });
+    });
+  }
+
+  Future<void> _speak() async {
+    await TudloVoiceButton.speak(
+      context,
+      widget.data.voiceText,
+      hiligaynon: true,
+      waitForCompletion: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.data;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 318),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final screenHeight = MediaQuery.sizeOf(context).height;
+            final cardHeight = (screenHeight * .54)
+                .clamp(388.0, 430.0)
+                .toDouble();
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _PresentationTopControls(
+                  width: width,
+                  progress: widget.totalSteps == 0
+                      ? 0
+                      : widget.stepNumber / widget.totalSteps,
+                  onBack: widget.onExit,
+                ),
+                const SizedBox(height: 28),
+                _AlphabetPresentationBoard(
+                  data: data,
+                  width: width,
+                  height: cardHeight,
+                  canGoBack: widget.canGoBack,
+                  onBack: widget.onBack,
+                  onNext: widget.onNext,
+                ),
+                const SizedBox(height: 24),
+                _PresentationDialogueStrip(
+                  message: data.dialogueText,
+                  onReplay: _speak,
+                ),
+                const SizedBox(height: 2),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TudloMascot(size: 74, mood: KokaMood.curious),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _PresentationTopControls extends StatelessWidget {
+  final double width;
+  final double progress;
+  final VoidCallback onBack;
+
+  const _PresentationTopControls({
+    required this.width,
+    required this.progress,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 38,
+            child: ElevatedButton(
+              onPressed: onBack,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3E9D3A),
+                foregroundColor: Colors.white,
+                elevation: 4,
+                shadowColor: const Color(0xFF1F6F28),
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                minimumSize: const Size(0, 34),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                textStyle: GoogleFonts.nunito(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              child: const Text('back'),
+            ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 10,
+                    backgroundColor: Colors.white.withValues(alpha: .86),
+                    color: TudloColors.forest,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              const TudloMascot(size: 38, mood: KokaMood.curious),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlphabetPresentationBoard extends StatelessWidget {
+  final _AlphabetPresentationSlideData data;
+  final double width;
+  final double height;
+  final bool canGoBack;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+
+  const _AlphabetPresentationBoard({
+    required this.data,
+    required this.width,
+    required this.height,
+    required this.canGoBack,
+    required this.onBack,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final target = data.target;
+    return Container(
+      width: width,
+      height: height,
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 14),
+      decoration: BoxDecoration(
+        color: data.darkenCard
+            ? const Color(0xFF3F705F)
+            : const Color(0xFF75C7B0),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3F8E7B).withValues(alpha: .92),
+            blurRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          if (data.showWord)
+            Positioned(
+              top: 0,
+              left: 8,
+              right: 8,
+              child: _PresentationWordTitle(
+                word: target.displayWord,
+                highlightLetter: data.showTapHint ? target.letter : null,
+              ),
+            ),
+          Center(
+            child: data.showLetter
+                ? _PresentationLetterPair(letter: target.letter)
+                : Padding(
+                    padding: EdgeInsets.only(
+                      top: target.word.length > 10 ? 44 : 30,
+                      bottom: 44,
+                    ),
+                    child: _PresentationAssetArt(
+                      target: target,
+                      size: height * .52,
+                    ),
+                  ),
+          ),
+          if (data.showTapHint)
+            Positioned(
+              top: target.word.length > 10 ? 30 : 18,
+              right: width * .18,
+              child: Transform.rotate(
+                angle: -.38,
+                child: const Icon(
+                  Icons.touch_app_rounded,
+                  color: Color(0xFFFFD193),
+                  size: 48,
+                  shadows: [
+                    Shadow(
+                      color: Colors.white,
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Positioned(
+            left: 0,
+            bottom: 0,
+            child: _PresentationArrowButton(
+              icon: Icons.arrow_back_rounded,
+              color: const Color(0xFFB36BFF),
+              enabled: canGoBack,
+              onTap: onBack,
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: _PresentationArrowButton(
+              icon: Icons.arrow_forward_rounded,
+              color: TudloColors.green,
+              enabled: true,
+              onTap: onNext,
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            child: _PresentationSpeakerHint(
+              onTap: () {
+                unawaited(
+                  TudloVoiceButton.speak(
+                    context,
+                    data.soundText,
+                    hiligaynon: true,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PresentationWordTitle extends StatelessWidget {
+  final String word;
+  final String? highlightLetter;
+
+  const _PresentationWordTitle({required this.word, this.highlightLetter});
+
+  @override
+  Widget build(BuildContext context) {
+    if (highlightLetter != null) {
+      return _PresentationOutlinedWord(
+        word: word,
+        highlightLetter: highlightLetter,
+      );
+    }
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        word,
+        maxLines: 1,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.nunito(
+          color: Colors.white.withValues(alpha: .78),
+          fontSize: word.length > 11 ? 38 : 52,
+          height: 1,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+          shadows: const [
+            Shadow(
+              color: Color(0xFF2A6655),
+              blurRadius: 0,
+              offset: Offset(2, 2),
+            ),
+            Shadow(color: Colors.white, blurRadius: 1),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PresentationOutlinedWord extends StatelessWidget {
+  final String word;
+  final String? highlightLetter;
+
+  const _PresentationOutlinedWord({
+    required this.word,
+    required this.highlightLetter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final letters = word.characters.toList();
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final letter in letters)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 1),
+              decoration: letter.toUpperCase() == highlightLetter
+                  ? BoxDecoration(
+                      color: Colors.white.withValues(alpha: .14),
+                      borderRadius: BorderRadius.circular(8),
+                    )
+                  : null,
+              child: Text(
+                letter,
+                style: GoogleFonts.nunito(
+                  color: Colors.transparent,
+                  fontSize: word.length > 11 ? 34 : 50,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                  shadows: const [
+                    Shadow(
+                      color: Colors.white,
+                      blurRadius: 0,
+                      offset: Offset(1.5, 0),
+                    ),
+                    Shadow(
+                      color: Color(0xFF285F50),
+                      blurRadius: 0,
+                      offset: Offset(3, 3),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PresentationLetterPair extends StatelessWidget {
+  final String letter;
+
+  const _PresentationLetterPair({required this.letter});
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _PresentationOutlinedLetter(letter: letter.toUpperCase(), size: 160),
+          const SizedBox(width: 18),
+          _PresentationOutlinedLetter(letter: letter.toLowerCase(), size: 160),
+        ],
+      ),
+    );
+  }
+}
+
+class _PresentationOutlinedLetter extends StatelessWidget {
+  final String letter;
+  final double size;
+
+  const _PresentationOutlinedLetter({required this.letter, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final style = GoogleFonts.nunito(
+      fontSize: size,
+      height: 1,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 0,
+    );
+    return Stack(
+      children: [
+        Text(
+          letter,
+          style: style.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 7
+              ..color = Colors.white,
+          ),
+        ),
+        Text(
+          letter,
+          style: style.copyWith(
+            color: const Color(0xFF416F61),
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: .22),
+                blurRadius: 5,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PresentationSpeakerHint extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PresentationSpeakerHint({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 112,
+        height: 90,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF2E755F),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2E755F).withValues(alpha: .30),
+                    blurRadius: 18,
+                    spreadRadius: 6,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.volume_up_rounded,
+                color: Colors.white.withValues(alpha: .78),
+                size: 32,
+              ),
+            ),
+            Positioned(
+              right: 4,
+              bottom: -2,
+              child: Transform.rotate(
+                angle: -.35,
+                child: Icon(
+                  Icons.touch_app_rounded,
+                  size: 58,
+                  color: const Color(0xFFFFD3A0),
+                  shadows: [
+                    Shadow(
+                      color: Colors.white.withValues(alpha: .92),
+                      blurRadius: 0,
+                      offset: const Offset(1.4, 0),
+                    ),
+                    Shadow(
+                      color: Colors.black.withValues(alpha: .18),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PresentationAssetArt extends StatelessWidget {
+  final _AlphabetPresentationTarget target;
+  final double size;
+
+  const _PresentationAssetArt({required this.target, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    if (target.imageAssets.length > 1) {
+      return SizedBox(
+        width: size * 1.65,
+        height: size * 1.08,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            for (var index = 0; index < target.imageAssets.length; index++)
+              Positioned(
+                left: index == 0 ? 0 : size * .56,
+                bottom: 0,
+                child: Image.asset(
+                  target.imageAssets[index],
+                  width: size,
+                  height: size,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(target.icon, color: Colors.white, size: size * .55),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+    if (target.imageAssets.isEmpty) {
+      return Icon(target.icon, color: Colors.white, size: size * .72);
+    }
+    return Image.asset(
+      target.imageAssets.first,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (_, __, ___) =>
+          Icon(target.icon, color: Colors.white, size: size * .72),
+    );
+  }
+}
+
+class _PresentationArrowButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _PresentationArrowButton({
+    required this.icon,
+    required this.color,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : .32,
+      child: IconButton(
+        tooltip: icon == Icons.arrow_back_rounded ? 'Balik' : 'Sunod',
+        onPressed: enabled ? onTap : null,
+        icon: Icon(
+          icon,
+          size: 46,
+          color: color,
+          shadows: const [
+            Shadow(color: Colors.white, blurRadius: 0, offset: Offset(1.5, 0)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PresentationDialogueStrip extends StatelessWidget {
+  final String message;
+  final VoidCallback onReplay;
+
+  const _PresentationDialogueStrip({
+    required this.message,
+    required this.onReplay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 72),
+      padding: const EdgeInsets.fromLTRB(18, 12, 8, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.nunito(
+                color: TudloColors.ink,
+                fontSize: 15,
+                height: 1.08,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Pamatii liwat',
+            onPressed: onReplay,
+            icon: const Icon(
+              Icons.volume_up_rounded,
+              color: TudloColors.muted,
+              size: 22,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _QuizTimeSplash extends StatefulWidget {
@@ -4872,7 +5682,6 @@ class _AlphabetLetterIntroCard extends StatefulWidget {
   final VoidCallback onDone;
 
   const _AlphabetLetterIntroCard({
-    super.key,
     required this.letter,
     required this.anchor,
     required this.onDone,
@@ -5321,10 +6130,24 @@ class _AlphabetMascotBubble extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(right: 0, bottom: 0, child: TudloMascot(size: mascotSize)),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: TudloMascot(
+              size: mascotSize,
+              mood: _messageLooksLikeRetry ? KokaMood.annoyed : KokaMood.hi,
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  bool get _messageLooksLikeRetry {
+    final message = _cleanMessage.toLowerCase();
+    return message.contains('sulayi liwat') ||
+        message.contains('liwata') ||
+        message.contains('indi husto');
   }
 }
 
@@ -12451,7 +13274,10 @@ class _AnswerFeedbackPanel extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const TudloMascot(size: 102),
+          TudloMascot(
+            size: 102,
+            mood: correct ? KokaMood.hi : KokaMood.annoyed,
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

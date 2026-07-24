@@ -5,6 +5,7 @@ import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
+import 'package:tudloapp/core/widgets/mascot_widget.dart';
 
 class _TranslateStyle {
   static const softBg = TudloColors.paper;
@@ -258,12 +259,7 @@ class _TranslateHelpOverlay extends StatelessWidget {
             Positioned(
               left: mascotLeft,
               bottom: mascotBottom,
-              child: Image.asset(
-                TudloDialogueAssets.mascotGuide,
-                width: mascotWidth,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              ),
+              child: TudloMascot(size: mascotWidth),
             ),
             Positioned(
               left: bubbleLeft,

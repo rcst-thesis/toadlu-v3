@@ -87,11 +87,13 @@ class TudloVoiceButton extends StatelessWidget {
     BuildContext context,
     String message, {
     bool hiligaynon = true,
+    bool waitForCompletion = false,
   }) async {
     final text = message.trim();
     if (text.isEmpty) return;
     try {
       await _tts.stop();
+      await _tts.awaitSpeakCompletion(waitForCompletion);
       await _setSpeechLanguage(hiligaynon: hiligaynon);
       await _tts.setSpeechRate(.42);
       await _tts.setPitch(1.08);
@@ -101,6 +103,14 @@ class TudloVoiceButton extends StatelessWidget {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(text)));
+    }
+  }
+
+  static Future<void> stop() async {
+    try {
+      await _tts.stop();
+    } catch (_) {
+      // Stopping narration should never block navigation.
     }
   }
 

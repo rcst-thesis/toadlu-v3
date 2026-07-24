@@ -13,7 +13,7 @@ class OnboardingColors {
   static const border = Color(0xFF83DEFF);
   static const text = Color(0xFF17324D);
   static const muted = Color(0xFF32607A);
-  static const green = Color.fromARGB(255, 37, 125, 24);   
+  static const green = Color.fromARGB(255, 37, 125, 24);
   static const blue = Color(0xFF18A8FF);
   static const yellow = Color(0xFFFFD429);
   static const orange = Color(0xFFFF8A00);
@@ -195,12 +195,6 @@ class _ScaffoldCardState extends State<ScaffoldCard>
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0,
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      TudloVoiceButton(
-                        message: widget.title,
-                        tooltip: 'Listen',
-                        size: tiny ? 48 : 54,
                       ),
                       if (widget.subtitle.isNotEmpty) ...[
                         const SizedBox(height: 10),

@@ -14,6 +14,7 @@ class LearnerProfile {
   final Set<int> completedLevels;
   final Set<String> favoriteWords;
   final String avatarAsset;
+  final bool hasSeenOnboarding;
 
   const LearnerProfile({
     required this.id,
@@ -26,6 +27,7 @@ class LearnerProfile {
     required this.completedLevels,
     required this.favoriteWords,
     required this.avatarAsset,
+    required this.hasSeenOnboarding,
   });
 
   factory LearnerProfile.newProfile({
@@ -43,6 +45,7 @@ class LearnerProfile {
       completedLevels: const {},
       favoriteWords: const {},
       avatarAsset: '',
+      hasSeenOnboarding: false,
     );
   }
 
@@ -66,6 +69,7 @@ class LearnerProfile {
           if (value is String) value,
       },
       avatarAsset: json['avatarAsset'] as String? ?? '',
+      hasSeenOnboarding: json['hasSeenOnboarding'] as bool? ?? true,
     );
   }
 
@@ -79,6 +83,7 @@ class LearnerProfile {
     Set<int>? completedLevels,
     Set<String>? favoriteWords,
     String? avatarAsset,
+    bool? hasSeenOnboarding,
   }) {
     return LearnerProfile(
       id: id,
@@ -91,6 +96,7 @@ class LearnerProfile {
       completedLevels: completedLevels ?? this.completedLevels,
       favoriteWords: favoriteWords ?? this.favoriteWords,
       avatarAsset: avatarAsset ?? this.avatarAsset,
+      hasSeenOnboarding: hasSeenOnboarding ?? this.hasSeenOnboarding,
     );
   }
 
@@ -108,6 +114,7 @@ class LearnerProfile {
       'completedLevels': completedLevels.toList()..sort(),
       'favoriteWords': favoriteWords.toList()..sort(),
       'avatarAsset': avatarAsset,
+      'hasSeenOnboarding': hasSeenOnboarding,
     };
   }
 

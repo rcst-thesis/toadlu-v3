@@ -995,6 +995,7 @@ class _ProgressSectionState extends State<_ProgressSection> {
           ),
           child: Column(
             children: [
+              const _OverallProgressSummary(),
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: const BoxDecoration(
@@ -1073,6 +1074,90 @@ class _ProgressSectionState extends State<_ProgressSection> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _OverallProgressSummary extends StatelessWidget {
+  const _OverallProgressSummary();
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = AppData.overallProgressPercent;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: TudloColors.green,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.star_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _profileText(
+                    context,
+                    hil: 'Kabug-osan nga Progreso',
+                    en: 'Overall Progress',
+                  ),
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.forest,
+                    fontSize: 21,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              Text(
+                '$percent%',
+                style: GoogleFonts.nunito(
+                  color: TudloColors.forest,
+                  fontSize: 34,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: AppData.overallProgress,
+              minHeight: 18,
+              color: TudloColors.green,
+              backgroundColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _profileText(
+              context,
+              hil:
+                  '${AppData.completedLevelCount} sa ${AppData.maxLevel} ka leksiyon natapos',
+              en: '${AppData.completedLevelCount} of ${AppData.maxLevel} lessons complete',
+            ),
+            style: GoogleFonts.nunito(
+              color: TudloColors.forest,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

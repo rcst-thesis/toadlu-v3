@@ -255,6 +255,16 @@ class AppData {
     return sameUnit && completedLevels.contains(previousLevel);
   }
 
+  static int get completedLevelCount =>
+      completedLevels.where((level) => level >= 1 && level <= maxLevel).length;
+
+  static double get overallProgress {
+    if (maxLevel <= 0) return 0;
+    return (completedLevelCount / maxLevel).clamp(0.0, 1.0);
+  }
+
+  static int get overallProgressPercent => (overallProgress * 100).round();
+
   static int starsForLevel(int level) {
     return levelStars[level] ?? 0;
   }

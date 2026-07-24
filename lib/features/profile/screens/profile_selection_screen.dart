@@ -3,12 +3,31 @@ import 'package:tudloapp/core/models/learner_profile.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
+import 'package:tudloapp/features/onboarding/screens/onboarding_screen.dart';
 import 'package:tudloapp/features/onboarding/screens/username_screen.dart';
 
 const _profileNotSetAsset = 'assets/images/profile/profile-notset.jpg';
 
 class ProfileSelectionScreen extends StatelessWidget {
   const ProfileSelectionScreen({super.key});
+
+  void _openCreateProfile(BuildContext context) {
+    final appState = AppStateScope.of(context);
+    if (!appState.canCreateProfile) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('This device can only create 4 profiles.'),
+          ),
+        );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const UsernameScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,14 +67,7 @@ class ProfileSelectionScreen extends StatelessWidget {
                   child: _ProfileGrid(
                     profiles: appState.profiles,
                     cardSize: cardSize,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const UsernameScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _openCreateProfile(context),
                   ),
                 ),
                 Positioned(
@@ -90,7 +102,10 @@ class _ProfileGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleProfiles = profiles.take(3).toList();
+    final visibleProfiles = profiles
+        .take(AppState.maxProfilesPerDevice)
+        .toList();
+    final canAdd = profiles.length < AppState.maxProfilesPerDevice;
     return Center(
       child: SingleChildScrollView(
         child: Wrap(
@@ -100,7 +115,10 @@ class _ProfileGrid extends StatelessWidget {
           children: [
             for (final profile in visibleProfiles)
               _ProfileCard(profile: profile, size: cardSize),
-            _CreateAccountButton(size: cardSize, onTap: onTap),
+            if (canAdd)
+              _CreateAccountButton(size: cardSize, onTap: onTap)
+            else
+              _ProfileLimitCard(size: cardSize),
           ],
         ),
       ),
@@ -160,6 +178,50 @@ class _CreateAccountButton extends StatelessWidget {
   }
 }
 
+class _ProfileLimitCard extends StatelessWidget {
+  final double size;
+
+  const _ProfileLimitCard({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F9EA),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: TudloColors.line, width: 3),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: TudloColors.green,
+                size: 58,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '4/4 Profiles',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileCard extends StatelessWidget {
   final LearnerProfile profile;
   final double size;
@@ -177,7 +239,11 @@ class _ProfileCard extends StatelessWidget {
           if (!context.mounted) return;
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 0)),
+            MaterialPageRoute(
+              builder: (_) => profile.hasSeenOnboarding
+                  ? const AppShell(initialIndex: 0)
+                  : const OnboardingScreen(),
+            ),
           );
         },
         child: SizedBox(

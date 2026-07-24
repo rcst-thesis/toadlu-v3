@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
+import 'package:tudloapp/features/onboarding/screens/onboarding_screen.dart';
 
 class GradeLevelScreen extends StatefulWidget {
   final String? learnerName;
@@ -21,6 +22,16 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
     final appState = AppStateScope.of(context);
     final name = widget.learnerName?.trim();
     if (name != null && name.isNotEmpty) {
+      if (!appState.canCreateProfile) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('This device can only create 4 profiles.'),
+            ),
+          );
+        return;
+      }
       await appState.addProfile(name: name, grade: selectedGrade.label);
     } else {
       appState.setGradeLevel(selectedGrade.label);
@@ -28,7 +39,11 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 0)),
+      MaterialPageRoute(
+        builder: (_) => name != null && name.isNotEmpty
+            ? const OnboardingScreen()
+            : const AppShell(initialIndex: 0),
+      ),
       (_) => false,
     );
   }
