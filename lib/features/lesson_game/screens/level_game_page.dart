@@ -7512,7 +7512,7 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer(const Duration(milliseconds: 1300), () {
+    _timer = Timer(const Duration(seconds: 5), () {
       if (mounted) widget.onDone();
     });
   }

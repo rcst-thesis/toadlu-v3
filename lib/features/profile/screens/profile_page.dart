@@ -10,8 +10,6 @@ import 'package:tudloapp/features/lesson_game/screens/level_game_page.dart';
 import 'package:tudloapp/features/profile/screens/profile_selection_screen.dart';
 import 'package:tudloapp/features/streak/helpers/streak_helper.dart';
 
-enum _ProfileTab { about, streak, favorites }
-
 String _profileText(
   BuildContext context, {
   required String hil,
@@ -39,8 +37,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  _ProfileTab _selectedTab = _ProfileTab.about;
-
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
@@ -58,27 +54,38 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _ProfileActionBar(
+                    onSwitch: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileSelectionScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    onRename: () => _showRenameDialog(context),
+                    onClear: () => _confirmClearProfile(context),
+                  ),
+                  const SizedBox(height: 10),
                   _MainProfileCard(
                     username: username,
                     gradeLabel: appState.gradeLabel,
                     joinedOn: appState.joinedOn,
                     avatarAsset: activeProfile?.avatarAsset ?? '',
-                    selectedTab: _selectedTab,
                     onRename: () => _showRenameDialog(context),
                     onAvatarTap: () => _showAvatarPicker(context),
-                    // Profile tabs switch the content below the main profile
-                    // card between About details and weekly streak details.
-                    onTabSelected: (tab) => setState(() => _selectedTab = tab),
                   ),
+                  const SizedBox(height: 16),
+                  const _ProfileProgressRail(),
+                  const SizedBox(height: 22),
+                  const _AboutCard(),
                   const SizedBox(height: 18),
-                  if (_selectedTab == _ProfileTab.about)
-                    const _AboutCard()
-                  else if (_selectedTab == _ProfileTab.streak)
-                    const _WeeklyStreakCard()
-                  else
-                    _FavoritesCard(
-                      words: activeProfile?.favoriteWords.toList() ?? const [],
-                    ),
+                  const _WeeklyStreakCard(),
+                  const SizedBox(height: 28),
+                  _FavoritesCard(
+                    words: activeProfile?.favoriteWords.toList() ?? const [],
+                  ),
                   const SizedBox(height: 28),
                   _ProgressSection(username: username),
                   const SizedBox(height: 18),
@@ -607,186 +614,207 @@ class _AudioSwitchTile extends StatelessWidget {
   }
 }
 
+class _ProfileActionBar extends StatelessWidget {
+  final VoidCallback onSwitch;
+  final VoidCallback onRename;
+  final VoidCallback onClear;
+
+  const _ProfileActionBar({
+    required this.onSwitch,
+    required this.onRename,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _ProfileTopIconButton(
+          icon: Icons.menu_rounded,
+          tooltip: _profileText(
+            context,
+            hil: 'Islan ang profile',
+            en: 'Switch profile',
+          ),
+          onTap: onSwitch,
+        ),
+        const Spacer(),
+        _ProfileTopIconButton(
+          icon: Icons.cleaning_services_rounded,
+          tooltip: _profileText(
+            context,
+            hil: 'Papasa ang datos',
+            en: 'Clear data',
+          ),
+          onTap: onClear,
+        ),
+        const SizedBox(width: 12),
+        _ProfileTopIconButton(
+          icon: Icons.edit_rounded,
+          tooltip: _profileText(
+            context,
+            hil: 'Islan ang ngalan',
+            en: 'Rename profile',
+          ),
+          onTap: onRename,
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileTopIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _ProfileTopIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: .92),
+        shape: const CircleBorder(),
+        elevation: 0,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: 48,
+            child: Icon(icon, color: TudloColors.forest, size: 28),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MainProfileCard extends StatelessWidget {
   final String username;
   final String gradeLabel;
   final DateTime joinedOn;
   final String avatarAsset;
-  final _ProfileTab selectedTab;
   final VoidCallback onRename;
   final VoidCallback onAvatarTap;
-  final ValueChanged<_ProfileTab> onTabSelected;
 
   const _MainProfileCard({
     required this.username,
     required this.gradeLabel,
     required this.joinedOn,
     required this.avatarAsset,
-    required this.selectedTab,
     required this.onRename,
     required this.onAvatarTap,
-    required this.onTabSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    // The profile card keeps permanent user info at the top and switches the
-    // lower tab content between ABOUT and Streak.
     final gradeNumber = gradeLabel.replaceFirst('Grade ', '');
-    return Stack(
-      clipBehavior: Clip.none,
+    return Column(
       children: [
-        Container(
-          decoration: _softCardDecoration(radius: 34),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
+        SizedBox(
+          width: 166,
+          height: 166,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-                child: Row(
-                  children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(28),
-                      onTap: onAvatarTap,
-                      child: Container(
-                        width: 116,
-                        height: 116,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF6F9EA),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: avatarAsset.trim().isEmpty
-                                ? TudloColors.green
-                                : Colors.transparent,
-                            width: 3,
-                          ),
+              Center(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap: onAvatarTap,
+                  child: Container(
+                    width: 150,
+                    height: 150,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: TudloColors.softGreen,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: TudloColors.forest.withValues(alpha: .18),
+                          blurRadius: 22,
+                          offset: const Offset(0, 10),
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Image.asset(
-                          avatarAsset.trim().isEmpty
-                              ? _profileNotSetAsset
-                              : avatarAsset,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const ColoredBox(
-                              color: Color(0xFFF6F9EA),
-                              child: Center(
-                                child: Icon(
-                                  Icons.person_rounded,
-                                  color: TudloColors.green,
-                                  size: 56,
-                                ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ClipOval(
+                      child: Image.asset(
+                        avatarAsset.trim().isEmpty
+                            ? _profileNotSetAsset
+                            : avatarAsset,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const ColoredBox(
+                            color: Color(0xFFF6F9EA),
+                            child: Center(
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: TudloColors.green,
+                                size: 74,
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            username,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.nunito(
-                              color: TudloColors.ink,
-                              fontSize: 31,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _profileText(
-                              context,
-                              hil: 'Grado: $gradeNumber',
-                              en: 'Grade: $gradeLabel',
-                            ),
-                            style: GoogleFonts.nunito(
-                              color: TudloColors.forest,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _profileText(
-                              context,
-                              hil: 'Nagsugod sang ${_formatDate(joinedOn)}',
-                              en: 'Joined on ${_formatDate(joinedOn)}',
-                            ),
-                            style: GoogleFonts.nunito(
-                              color: TudloColors.muted,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              Container(
-                color: const Color(0xFFF7FAEC),
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    _ProfileTabButton(
-                      label: _profileText(
-                        context,
-                        hil: 'KAUGALINGON',
-                        en: 'ABOUT',
-                      ),
-                      selected: selectedTab == _ProfileTab.about,
-                      onTap: () => onTabSelected(_ProfileTab.about),
-                    ),
-                    const SizedBox(width: 10),
-                    _ProfileTabButton(
-                      label: _profileText(
-                        context,
-                        hil: 'Sunod-sunod',
-                        en: 'Streak',
-                      ),
-                      selected: selectedTab == _ProfileTab.streak,
-                      onTap: () => onTabSelected(_ProfileTab.streak),
-                    ),
-                    const SizedBox(width: 10),
-                    _ProfileTabButton(
-                      label: _profileText(
-                        context,
-                        hil: 'Paborito',
-                        en: 'Favorites',
-                      ),
-                      selected: selectedTab == _ProfileTab.favorites,
-                      onTap: () => onTabSelected(_ProfileTab.favorites),
-                    ),
-                  ],
+              Positioned(
+                right: 8,
+                bottom: 8,
+                child: IconButton.filled(
+                  tooltip: _profileText(
+                    context,
+                    hil: 'Islan ang profile',
+                    en: 'Edit profile',
+                  ),
+                  onPressed: onRename,
+                  style: IconButton.styleFrom(
+                    backgroundColor: TudloColors.gold,
+                    foregroundColor: TudloColors.forest,
+                    side: const BorderSide(color: Colors.white, width: 4),
+                    minimumSize: const Size(52, 52),
+                  ),
+                  icon: const Icon(Icons.edit_rounded, size: 28),
                 ),
               ),
             ],
           ),
         ),
-        Positioned(
-          top: -8,
-          right: -8,
-          child: IconButton.filled(
-            tooltip: _profileText(
-              context,
-              hil: 'Islan ang profile',
-              en: 'Edit profile',
-            ),
-            onPressed: onRename,
-            style: IconButton.styleFrom(
-              backgroundColor: TudloColors.gold,
-              foregroundColor: TudloColors.forest,
-              side: const BorderSide(color: Colors.white, width: 4),
-              minimumSize: const Size(52, 52),
-            ),
-            icon: const Icon(Icons.edit_rounded, size: 28),
+        const SizedBox(height: 14),
+        Text(
+          username,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.nunito(
+            color: Colors.white,
+            fontSize: 34,
+            height: 1,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _profileText(
+            context,
+            hil: 'Grado $gradeNumber • ${_formatDate(joinedOn)}',
+            en: '$gradeLabel • ${_formatDate(joinedOn)}',
+          ),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            color: TudloColors.cloud,
+            fontSize: 16,
+            height: 1.1,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ],
@@ -794,45 +822,39 @@ class _MainProfileCard extends StatelessWidget {
   }
 }
 
-class _ProfileTabButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ProfileTabButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+class _ProfileProgressRail extends StatelessWidget {
+  const _ProfileProgressRail();
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: selected ? TudloColors.softGreen : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              style: GoogleFonts.nunito(
-                color: selected ? TudloColors.forest : TudloColors.ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: AppData.overallProgress,
+            minHeight: 18,
+            color: TudloColors.green,
+            backgroundColor: Colors.white.withValues(alpha: .55),
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Text(
+          _profileText(
+            context,
+            hil:
+                '${AppData.completedLevelCount} sa ${AppData.maxLevel} ka leksiyon natapos',
+            en: '${AppData.completedLevelCount} of ${AppData.maxLevel} lessons complete',
+          ),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            color: TudloColors.cloud,
+            fontSize: 14,
+            height: 1,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -843,23 +865,32 @@ class _AboutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final streak = StreakHelper.current().days;
+    final scores = AppData.lessonScores.values.toList();
+    final accuracy = scores.isEmpty
+        ? 0
+        : (scores.fold<int>(0, (sum, score) => sum + score.bestAccuracy) /
+                  scores.length)
+              .round();
     return Row(
       children: [
         Expanded(
-          child: _StatSquare(
-            label: _profileText(
-              context,
-              hil: 'Natapos nga\nAntas',
-              en: 'Levels\nComplete',
-            ),
+          child: _ProfileStatCircle(
             value: '${AppData.completedLevels.length}',
+            label: _profileText(context, hil: 'Leksiyon', en: 'Lessons'),
           ),
         ),
-        const SizedBox(width: 18),
+        const SizedBox(width: 14),
         Expanded(
-          child: _StatSquare(
-            label: _profileText(context, hil: 'Sunod-sunod', en: 'Streak'),
+          child: _ProfileStatCircle(
+            value: '$accuracy%',
+            label: _profileText(context, hil: 'Kahustoan', en: 'Accuracy'),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: _ProfileStatCircle(
             value: '$streak',
+            label: _profileText(context, hil: 'Streak', en: 'Streak'),
           ),
         ),
       ],
@@ -867,37 +898,55 @@ class _AboutCard extends StatelessWidget {
   }
 }
 
-class _StatSquare extends StatelessWidget {
+class _ProfileStatCircle extends StatelessWidget {
   final String label;
   final String value;
 
-  const _StatSquare({required this.label, required this.value});
+  const _ProfileStatCircle({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 130,
-      decoration: _softCardDecoration(radius: 28),
+      height: 132,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: TudloColors.softGreen,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.forest.withValues(alpha: .12),
+            blurRadius: 18,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
-              color: TudloColors.forest,
-              fontSize: 16,
-              height: 1.05,
-              fontWeight: FontWeight.w900,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: GoogleFonts.nunito(
+                color: TudloColors.forest,
+                fontSize: 30,
+                height: .95,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            value,
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.nunito(
-              color: Colors.black,
-              fontSize: 58,
-              height: .95,
+              color: TudloColors.forest,
+              fontSize: 13,
+              height: 1.05,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -916,41 +965,79 @@ class _WeeklyStreakCard extends StatelessWidget {
     final labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
       decoration: _softCardDecoration(radius: 24),
       child: Row(
-        children: List.generate(7, (index) {
-          final completed = index < completedDays;
-          return Expanded(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: const BoxDecoration(
+              color: TudloColors.gold,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: Colors.white,
+              size: 38,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: completed ? TudloColors.green : TudloColors.paper,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: TudloColors.line),
-                  ),
-                  child: Icon(
-                    completed ? Icons.check_rounded : Icons.circle_outlined,
-                    color: completed ? Colors.white : TudloColors.muted,
-                    size: completed ? 22 : 17,
-                  ),
-                ),
-                const SizedBox(height: 6),
                 Text(
-                  labels[index],
+                  _profileText(
+                    context,
+                    hil: '${StreakHelper.current().days} ka adlaw',
+                    en: '${StreakHelper.current().days} Days',
+                  ),
                   style: GoogleFonts.nunito(
-                    color: completed ? TudloColors.forest : TudloColors.muted,
-                    fontSize: 12,
+                    color: TudloColors.forest,
+                    fontSize: 25,
+                    height: 1,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                const SizedBox(height: 10),
+                Row(
+                  children: List.generate(7, (index) {
+                    final completed = index < completedDays;
+                    return Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: completed
+                                  ? TudloColors.green
+                                  : TudloColors.paper,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: TudloColors.line),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            labels[index],
+                            style: GoogleFonts.nunito(
+                              color: completed
+                                  ? TudloColors.forest
+                                  : TudloColors.muted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
               ],
             ),
-          );
-        }),
+          ),
+        ],
       ),
     );
   }
@@ -965,10 +1052,42 @@ class _FavoritesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sortedWords = [...words]..sort();
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: _softCardDecoration(radius: 24),
-      child: sortedWords.isEmpty
-          ? Text(
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+      decoration: BoxDecoration(
+        color: TudloColors.softGreen,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.forest.withValues(alpha: .12),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: TudloColors.forest, width: 6),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _profileText(context, hil: 'Koleksyon', en: 'Collection'),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: TudloColors.forest,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (sortedWords.isEmpty)
+            Text(
               _profileText(
                 context,
                 hil:
@@ -982,7 +1101,8 @@ class _FavoritesCard extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             )
-          : Column(
+          else
+            Column(
               children: [
                 for (final word in sortedWords)
                   _FavoriteWordRow(
@@ -991,6 +1111,8 @@ class _FavoritesCard extends StatelessWidget {
                   ),
               ],
             ),
+        ],
+      ),
     );
   }
 
@@ -1013,7 +1135,7 @@ class _FavoriteWordRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: TudloColors.softGreen,
+        color: Colors.white.withValues(alpha: .88),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
