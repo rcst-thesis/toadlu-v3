@@ -153,7 +153,6 @@ class _HomeMapPageState extends State<HomeMapPage> {
   bool _showScrollTopButton = false;
   int _mapHelpStep = 0;
   int? _activeLevel;
-  Offset? _activeLevelCenter;
 
   @override
   void initState() {
@@ -205,18 +204,12 @@ class _HomeMapPageState extends State<HomeMapPage> {
       setState(() => AppData.mapHelpDone = true);
       unawaited(AppStateScope.of(context).markMapHelpSeen());
     }
-    setState(() {
-      _activeLevel = level;
-      _activeLevelCenter = nodeCenter;
-    });
+    setState(() => _activeLevel = level);
   }
 
   void _closeLevelPopup() {
     if (_activeLevel == null) return;
-    setState(() {
-      _activeLevel = null;
-      _activeLevelCenter = null;
-    });
+    setState(() => _activeLevel = null);
   }
 
   Future<void> _startLevel(int level) async {
@@ -343,6 +336,13 @@ class _HomeMapPageState extends State<HomeMapPage> {
                                             _openLevel(level, nodeCenter)
                                       : null,
                                 ),
+                            if (_activeLevel != null)
+                              _LevelStartOverlay(
+                                level: _activeLevel!,
+                                title: _lessonPreviewForLevel(_activeLevel!),
+                                nodeCenter: road.pointForLevel(_activeLevel!),
+                                onStart: () => _startLevel(_activeLevel!),
+                              ),
                           ],
                         );
                       },
@@ -381,16 +381,6 @@ class _HomeMapPageState extends State<HomeMapPage> {
                 onTap: _dismissMapHelp,
                 onTargetTap: (nodeCenter) =>
                     _openMapHelpTarget(currentLevel, nodeCenter),
-              ),
-            ),
-          if (_activeLevel != null && _activeLevelCenter != null)
-            Positioned.fill(
-              child: _LevelStartOverlay(
-                level: _activeLevel!,
-                title: _lessonPreviewForLevel(_activeLevel!),
-                nodeCenter: _activeLevelCenter!,
-                onDismiss: _closeLevelPopup,
-                onStart: () => _startLevel(_activeLevel!),
               ),
             ),
         ],
@@ -1015,14 +1005,12 @@ class _LevelStartOverlay extends StatefulWidget {
   final int level;
   final String title;
   final Offset nodeCenter;
-  final VoidCallback onDismiss;
   final FutureOr<void> Function() onStart;
 
   const _LevelStartOverlay({
     required this.level,
     required this.title,
     required this.nodeCenter,
-    required this.onDismiss,
     required this.onStart,
   });
 
@@ -1086,50 +1074,39 @@ class _LevelStartOverlayState extends State<_LevelStartOverlay>
         .clamp(18.0, cardWidth - 52)
         .toDouble();
 
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: widget.onDismiss,
-            ),
-          ),
-          Positioned(
-            left: cardLeft,
-            top: cardTop,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: ScaleTransition(
-                  scale: _cardScaleAnimation,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: pointerLeft,
-                        top: -16,
-                        child: CustomPaint(
-                          size: const Size(34, 18),
-                          painter: _LevelCardPointerPainter(color: _cardGreen),
-                        ),
-                      ),
-                      _LevelStartCard(
-                        width: cardWidth,
-                        level: widget.level,
-                        title: widget.title,
-                        onStart: widget.onStart,
-                      ),
-                    ],
+    return Positioned(
+      left: cardLeft,
+      top: cardTop,
+      child: Material(
+        color: Colors.transparent,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: ScaleTransition(
+              scale: _cardScaleAnimation,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: pointerLeft,
+                    top: -16,
+                    child: CustomPaint(
+                      size: const Size(34, 18),
+                      painter: _LevelCardPointerPainter(color: _cardGreen),
+                    ),
                   ),
-                ),
+                  _LevelStartCard(
+                    width: cardWidth,
+                    level: widget.level,
+                    title: widget.title,
+                    onStart: widget.onStart,
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

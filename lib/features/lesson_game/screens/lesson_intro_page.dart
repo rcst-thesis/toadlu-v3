@@ -230,9 +230,6 @@ class _AnimatedLessonIntroContentState
     final contentText = labels.isNotEmpty
         ? _joinHiligaynonList(labels)
         : _cleanLessonTitle(content.title);
-    if (labels.map((label) => label.toUpperCase()).join(',') == 'A,N,T,Y') {
-      return 'Abyan, tun-an ta ang mga letra nga A, N, T, kag Y.';
-    }
     final needsArticle = labels.isEmpty
         ? true
         : labels.any((label) => !RegExp(r'^[A-Z0-9]$').hasMatch(label));
