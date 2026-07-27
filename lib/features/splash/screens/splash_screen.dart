@@ -41,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       await Future.wait([
         widget.loadFuture,
-        Future<void>.delayed(const Duration(seconds: 5)),
+        Future<void>.delayed(const Duration(seconds: 7)),
       ]);
     } catch (_) {
       await Future<void>.delayed(const Duration(milliseconds: 300));
@@ -56,34 +56,43 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: TudloColors.cloud,
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Center(
-          child: ScaleTransition(
-            scale: _scale,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  'assets/images/onbaording/Tudlo.png',
-                  width: 250,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 18),
-                const TudloMascot(size: 128),
-                const SizedBox(height: 22),
-                Text(
-                  'Magtuon kita!',
-                  style: GoogleFonts.nunito(
-                    color: TudloColors.forest,
-                    fontSize: 30,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final logoWidth = (constraints.maxWidth * .70).clamp(230.0, 340.0);
+            return Center(
+              child: ScaleTransition(
+                scale: _scale,
+                child: Transform.translate(
+                  offset: const Offset(0, -18),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/images/onbaording/Tudlo.png',
+                        width: logoWidth,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 22),
+                      const TudloMascot(size: 154, mood: KokaMood.hi),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Magtuon kita!',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.forest,
+                          fontSize: 32,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
-enum KokaMood { curious, hi, annoyed }
+enum KokaMood { idle, curious, hi, annoyed, talking, tapped }
 
 /// Shared animated Koka mascot wrapper.
 ///
@@ -18,7 +18,7 @@ class TudloMascot extends StatefulWidget {
     super.key,
     this.size = 118,
     this.asset,
-    this.mood = KokaMood.hi,
+    this.mood = KokaMood.idle,
   });
 
   @override
@@ -79,6 +79,15 @@ class _TudloMascotState extends State<TudloMascot> {
 
   String _animationName(rive.File file, KokaMood mood) {
     final names = switch (mood) {
+      KokaMood.idle => const [
+        'idle',
+        'Idle',
+        'breathing',
+        'Breathing',
+        'Sitting',
+        'sitting',
+        'curious',
+      ],
       KokaMood.curious => const [
         'curious',
         'Curious',
@@ -89,6 +98,15 @@ class _TudloMascotState extends State<TudloMascot> {
         'hi',
       ],
       KokaMood.hi => const ['hi', 'Hi', 'wave', 'Wave', 'Sitting', 'sitting'],
+      KokaMood.talking => const [
+        'talking',
+        'Talking',
+        'speak',
+        'Speak',
+        'hi',
+        'idle',
+      ],
+      KokaMood.tapped => const ['tapped', 'Tapped', 'tap', 'Tap', 'hi', 'idle'],
       KokaMood.annoyed => const [
         'annoyed',
         'Annoyed',

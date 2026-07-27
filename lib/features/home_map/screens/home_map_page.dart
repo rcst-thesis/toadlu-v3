@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
 import 'package:tudloapp/features/lesson_game/screens/lesson_intro_page.dart';
@@ -182,6 +184,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
 
   void _openMapHelpTarget(int level, Offset nodeCenter) {
     setState(() => AppData.mapHelpDone = true);
+    unawaited(AppStateScope.of(context).markMapHelpSeen());
     _openLevel(level, nodeCenter);
   }
 
@@ -199,6 +202,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
     final rootContext = context;
     if (!AppData.mapHelpDone) {
       setState(() => AppData.mapHelpDone = true);
+      unawaited(AppStateScope.of(context).markMapHelpSeen());
     }
     showGeneralDialog(
       context: context,
@@ -242,7 +246,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
   @override
   Widget build(BuildContext context) {
     final showMapHelp = !AppData.mapHelpDone;
-    final currentLevel = AppData.unlockedLevel.clamp(1, AppData.maxLevel);
+    final currentLevel = AppData.firstUnlockedIncompleteLevel;
     // The scrollable map needs a fixed content height so decorations, road,
     // stars, and level nodes can all be positioned in the same coordinate space.
     final mapHeight =
@@ -319,26 +323,29 @@ class _HomeMapPageState extends State<HomeMapPage> {
                               level <= AppData.maxLevel;
                               level++
                             )
-                              // Each button uses the same road coordinates as
-                              // the painter, which keeps nodes centered on the
-                              // trail instead of manually guessing positions.
-                              _LevelPositionedButton(
-                                level: level,
-                                point: road.pointForLevel(level),
-                                unitColor: _MapUnitStyle.colorForLevel(level),
-                                unlocked: AppData.isLevelUnlocked(level),
-                                current: level == currentLevel,
-                                completed: AppData.completedLevels.contains(
-                                  level,
+                              if (!(showMapHelp &&
+                                  _mapHelpStep == 1 &&
+                                  level == currentLevel))
+                                // Each button uses the same road coordinates as
+                                // the painter, which keeps nodes centered on the
+                                // trail instead of manually guessing positions.
+                                _LevelPositionedButton(
+                                  level: level,
+                                  point: road.pointForLevel(level),
+                                  unitColor: _MapUnitStyle.colorForLevel(level),
+                                  unlocked: AppData.isLevelUnlocked(level),
+                                  current: level == currentLevel,
+                                  completed: AppData.completedLevels.contains(
+                                    level,
+                                  ),
+                                  // Level button opens the level-start popup.
+                                  // Locked buttons pass null and cannot be
+                                  // tapped.
+                                  onTap: AppData.isLevelUnlocked(level)
+                                      ? (nodeCenter) =>
+                                            _openLevel(level, nodeCenter)
+                                      : null,
                                 ),
-                                // Level button opens the level-start popup.
-                                // Locked buttons pass null and cannot be
-                                // tapped.
-                                onTap: AppData.isLevelUnlocked(level)
-                                    ? (nodeCenter) =>
-                                          _openLevel(level, nodeCenter)
-                                    : null,
-                              ),
                           ],
                         );
                       },
@@ -366,13 +373,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
             ),
           ),
           if (!showMapHelp)
-            const Positioned(
-              left: 24,
-              bottom: 126,
-              child: IgnorePointer(
-                child: TudloMascot(size: 124, mood: KokaMood.hi),
-              ),
-            ),
+            const Positioned(left: 16, bottom: 132, child: _HomeKokaGuide()),
           if (showMapHelp)
             Positioned.fill(
               child: _MapDialogueOverlay(
@@ -411,7 +412,7 @@ class _MapHeader extends StatelessWidget {
       height: _mapHeaderHeight,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: palette.header,
+        color: TudloColors.meadow,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(42)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -425,7 +426,6 @@ class _MapHeader extends StatelessWidget {
               filterQuality: FilterQuality.high,
             ),
           ),
-          Positioned.fill(child: ColoredBox(color: palette.headerOverlay)),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -485,9 +485,41 @@ class _MapHeader extends StatelessWidget {
   }
 }
 
+class _HomeKokaGuide extends StatefulWidget {
+  const _HomeKokaGuide();
+
+  @override
+  State<_HomeKokaGuide> createState() => _HomeKokaGuideState();
+}
+
+class _HomeKokaGuideState extends State<_HomeKokaGuide> {
+  Future<void> _handleTap() async {
+    if (TudloVoiceButton.isSpeaking.value) return;
+    await TudloVoiceButton.speak(
+      context,
+      _homeText(
+        context,
+        hil: 'Maayong pag-abot, abyan!',
+        en: 'Welcome, friend!',
+      ),
+      hiligaynon: true,
+      waitForCompletion: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final mascotSize = (width * .48).clamp(196.0, 236.0);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _handleTap,
+      child: TudloMascot(size: mascotSize, mood: KokaMood.idle),
+    );
+  }
+}
+
 class _HomeTimePalette {
-  final Color header;
-  final Color headerOverlay;
   final Color card;
   final Color accent;
   final Color button;
@@ -496,8 +528,6 @@ class _HomeTimePalette {
   final bool dark;
 
   const _HomeTimePalette({
-    required this.header,
-    required this.headerOverlay,
     required this.card,
     required this.accent,
     required this.button,
@@ -517,8 +547,6 @@ class _HomeTimePalette {
   }
 
   static const dawn = _HomeTimePalette(
-    header: Color(0xFFFF9B72),
-    headerOverlay: Color(0x55FF7A59),
     card: Color(0xFFE96F50),
     accent: Color(0xFFFFE7B0),
     button: Color(0xFFFFE8DE),
@@ -528,8 +556,6 @@ class _HomeTimePalette {
   );
 
   static const morning = _HomeTimePalette(
-    header: Color(0xFFFFCF76),
-    headerOverlay: Color(0x42FFD27A),
     card: Color(0xFFF5B85A),
     accent: Color(0xFFFFF2B2),
     button: Color(0xFFFFF6D9),
@@ -539,8 +565,6 @@ class _HomeTimePalette {
   );
 
   static const noon = _HomeTimePalette(
-    header: Color(0xFFFFEA31),
-    headerOverlay: Color(0x40FFE336),
     card: Color(0xFFF8C91A),
     accent: Color(0xFFFFFFFF),
     button: Color(0xFFFFF9C2),
@@ -550,8 +574,6 @@ class _HomeTimePalette {
   );
 
   static const afternoon = _HomeTimePalette(
-    header: Color(0xFFFF7A00),
-    headerOverlay: Color(0x66FF5A00),
     card: Color(0xFFE86600),
     accent: Color(0xFFFFF0A8),
     button: Color(0xFFFFE2C3),
@@ -561,8 +583,6 @@ class _HomeTimePalette {
   );
 
   static const evening = _HomeTimePalette(
-    header: Color(0xFF6C45B8),
-    headerOverlay: Color(0x88543AA0),
     card: Color(0xFF5734A4),
     accent: Color(0xFFBDEFFF),
     button: Color(0xFFE9DCFF),
@@ -572,8 +592,6 @@ class _HomeTimePalette {
   );
 
   static const night = _HomeTimePalette(
-    header: Color(0xFF12385B),
-    headerOverlay: Color(0x99102B48),
     card: Color(0xFF102F4C),
     accent: Color(0xFFD8F35B),
     button: Color(0xFFE5F3FF),
@@ -583,7 +601,7 @@ class _HomeTimePalette {
   );
 }
 
-class _MapDialogueOverlay extends StatelessWidget {
+class _MapDialogueOverlay extends StatefulWidget {
   final int step;
   final String username;
   final Offset levelButtonTarget;
@@ -599,6 +617,57 @@ class _MapDialogueOverlay extends StatelessWidget {
     required this.onTap,
     required this.onTargetTap,
   });
+
+  @override
+  State<_MapDialogueOverlay> createState() => _MapDialogueOverlayState();
+}
+
+class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakCurrentMessage();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _MapDialogueOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.step != widget.step) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _speakCurrentMessage();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
+  }
+
+  void _speakCurrentMessage() {
+    unawaited(
+      TudloVoiceButton.speak(
+        context,
+        _message.replaceAll('\n', ' '),
+        hiligaynon: true,
+      ),
+    );
+  }
+
+  String get _message => widget.step == 0
+      ? _homeText(
+          context,
+          hil: 'Maayong pag-abot,\nabyan!',
+          en: 'Welcome,\nfriend!',
+        )
+      : _homeText(
+          context,
+          hil: 'Tum-oka ini para\nmakaumpisa kita!',
+          en: 'Press so\nwe can start',
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -618,34 +687,38 @@ class _MapDialogueOverlay extends StatelessWidget {
       12.0,
       size.width - bubbleWidth - 12,
     );
-    final targetSize = (size.width < 380 ? 104.0 : 112.0);
-    final message = step == 0
-        ? _homeText(
-            context,
-            hil: 'Maayong pag-abot,\n$username!',
-            en: 'Welcome,\n$username!',
-          )
-        : _homeText(
-            context,
-            hil: 'Itum-ok para\nmakaumpisa kita',
-            en: 'Press so\nwe can start',
-          );
+    const targetSize = 104.0;
+    final message = _message;
 
     return Stack(
       children: [
         Positioned.fill(
-          child: step == 1
+          child: CustomPaint(
+            painter: _MapTutorialDimPainter(
+              spotlightCenter: widget.step == 1
+                  ? widget.levelButtonTarget
+                  : null,
+              spotlightRadius: targetSize * .86,
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: widget.step == 1
               ? GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {},
-                  child: ColoredBox(color: Colors.black.withValues(alpha: .50)),
+                  child: const SizedBox.expand(),
                 )
-              : ColoredBox(color: Colors.black.withValues(alpha: .34)),
+              : const SizedBox.expand(),
         ),
         Positioned(
           left: mascotLeft,
           bottom: mascotBottom,
-          child: IgnorePointer(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: TudloVoiceButton.isSpeaking.value
+                ? null
+                : _speakCurrentMessage,
             child: TudloMascot(size: mascotWidth, mood: KokaMood.curious),
           ),
         ),
@@ -656,21 +729,21 @@ class _MapDialogueOverlay extends StatelessWidget {
             child: _DialogueBubbleImage(width: bubbleWidth, message: message),
           ),
         ),
-        if (step == 1)
+        if (widget.step == 1)
           Positioned(
-            left: levelButtonTarget.dx - targetSize / 2,
-            top: levelButtonTarget.dy - targetSize / 2,
-            child: _SpotlightLessonButton(
-              level: targetLevel,
+            left: widget.levelButtonTarget.dx - targetSize / 2,
+            top: widget.levelButtonTarget.dy - targetSize / 2,
+            child: _TutorialTargetLevelButton(
+              level: widget.targetLevel,
               size: targetSize,
-              onTap: () => onTargetTap(levelButtonTarget),
+              onTap: () => widget.onTargetTap(widget.levelButtonTarget),
             ),
           )
         else
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: onTap,
+              onTap: widget.onTap,
             ),
           ),
       ],
@@ -678,22 +751,58 @@ class _MapDialogueOverlay extends StatelessWidget {
   }
 }
 
-class _SpotlightLessonButton extends StatefulWidget {
+class _MapTutorialDimPainter extends CustomPainter {
+  final Offset? spotlightCenter;
+  final double spotlightRadius;
+
+  const _MapTutorialDimPainter({
+    required this.spotlightCenter,
+    required this.spotlightRadius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final overlayPath = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(Offset.zero & size);
+
+    final center = spotlightCenter;
+    if (center != null) {
+      overlayPath.addOval(
+        Rect.fromCircle(center: center, radius: spotlightRadius),
+      );
+    }
+
+    canvas.drawPath(
+      overlayPath,
+      Paint()..color = Colors.black.withValues(alpha: .55),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MapTutorialDimPainter oldDelegate) {
+    return oldDelegate.spotlightCenter != spotlightCenter ||
+        oldDelegate.spotlightRadius != spotlightRadius;
+  }
+}
+
+class _TutorialTargetLevelButton extends StatefulWidget {
   final int level;
   final double size;
   final VoidCallback onTap;
 
-  const _SpotlightLessonButton({
+  const _TutorialTargetLevelButton({
     required this.level,
     required this.size,
     required this.onTap,
   });
 
   @override
-  State<_SpotlightLessonButton> createState() => _SpotlightLessonButtonState();
+  State<_TutorialTargetLevelButton> createState() =>
+      _TutorialTargetLevelButtonState();
 }
 
-class _SpotlightLessonButtonState extends State<_SpotlightLessonButton>
+class _TutorialTargetLevelButtonState extends State<_TutorialTargetLevelButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _pulse;
@@ -703,7 +812,7 @@ class _SpotlightLessonButtonState extends State<_SpotlightLessonButton>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1300),
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
     _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
@@ -716,51 +825,55 @@ class _SpotlightLessonButtonState extends State<_SpotlightLessonButton>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (context, child) {
-        final value = _pulse.value;
-        return Transform.scale(
-          scale: 1 + value * .08,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.greenAccent.withValues(
-                    alpha: .60 + value * .20,
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: widget.onTap,
+        child: SizedBox.square(
+          dimension: widget.size,
+          child: AnimatedBuilder(
+            animation: _pulse,
+            builder: (context, child) {
+              final glow = _pulse.value;
+              return Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  OverflowBox(
+                    maxWidth: widget.size + 96,
+                    maxHeight: widget.size + 96,
+                    child: Container(
+                      width: widget.size + 72 + glow * 20,
+                      height: widget.size + 72 + glow * 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: .58),
+                            TudloColors.softGreen.withValues(alpha: .34),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  blurRadius: 24 + value * 18,
-                  spreadRadius: 8 + value * 8,
-                ),
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: .55),
-                  blurRadius: 16,
-                  spreadRadius: 4,
-                ),
-              ],
+                  child!,
+                ],
+              );
+            },
+            child: _CircularLevelNode(
+              size: widget.size,
+              nodeColor: TudloColors.brightGreen,
+              borderColor: TudloColors.forest,
+              lockedIconColor: const Color(0xFF9A7B50),
+              unlocked: true,
+              current: true,
+              unitColor: TudloColors.green,
+              glow: 0,
+              label: '${_localLevelNumber(widget.level)}',
             ),
-            child: child,
-          ),
-        );
-      },
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: widget.onTap,
-          child: _CircularLevelNode(
-            size: widget.size,
-            nodeColor: TudloColors.green,
-            borderColor: TudloColors.forest,
-            lockedIconColor: const Color(0xFF9A7B50),
-            unlocked: true,
-            current: true,
-            unitColor: TudloColors.green,
-            glow: 0,
-            showBackingCircle: false,
-            label: '${_localLevelNumber(widget.level)}',
           ),
         ),
       ),
@@ -1103,7 +1216,10 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
           onTapCancel: () => _setPressed(false),
           onTapUp: (_) => _setPressed(false),
           child: ElevatedButton(
-            onPressed: () => widget.onStart(),
+            onPressed: () async {
+              await AppAudioService.instance.playTap();
+              widget.onStart();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: _LevelStartDialogState._cardDark,
@@ -1845,6 +1961,17 @@ Future<void> _showDailyWordPopup(
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                                 filterQuality: FilterQuality.high,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const ColoredBox(
+                                    color: bedroomGreen,
+                                    child: Center(
+                                      child: TudloMascot(
+                                        size: 172,
+                                        mood: KokaMood.hi,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                             Positioned(
@@ -1906,7 +2033,7 @@ Future<void> _showDailyWordPopup(
                             ),
                             const Positioned(
                               bottom: 8,
-                              child: TudloMascot(size: 118, mood: KokaMood.hi),
+                              child: TudloMascot(size: 150, mood: KokaMood.hi),
                             ),
                           ],
                         ),
@@ -2247,7 +2374,6 @@ class _CircularLevelNode extends StatelessWidget {
   final bool current;
   final Color unitColor;
   final double glow;
-  final bool showBackingCircle;
   final String label;
 
   const _CircularLevelNode({
@@ -2259,7 +2385,6 @@ class _CircularLevelNode extends StatelessWidget {
     required this.current,
     required this.unitColor,
     required this.glow,
-    this.showBackingCircle = true,
     required this.label,
   });
 
@@ -2268,7 +2393,7 @@ class _CircularLevelNode extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        if (unlocked && showBackingCircle)
+        if (unlocked)
           Container(
             width: size + 24 + glow * 8,
             height: size + 24 + glow * 8,

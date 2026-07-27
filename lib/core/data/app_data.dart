@@ -123,8 +123,9 @@ class AppData {
 
   static void applyProfile(LearnerProfile profile) {
     streakDays = profile.streakDays;
-    unlockedLevel = profile.unlockedLevel.clamp(1, maxLevel);
     selectedGradeLevel = profile.parsedGrade;
+    mapHelpDone = profile.mapHelpDone;
+    unlockedLevel = profile.unlockedLevel.clamp(1, maxLevel);
     currentEnergy = profile.currentEnergy.clamp(0, maxEnergy).toInt();
     _lastEnergyAt = DateTime.now();
     levelStars
@@ -143,6 +144,7 @@ class AppData {
       currentEnergy: currentEnergy,
       levelStars: Map<int, int>.from(levelStars),
       completedLevels: Set<int>.from(completedLevels),
+      mapHelpDone: mapHelpDone,
     );
   }
 
@@ -153,6 +155,7 @@ class AppData {
     _lastEnergyAt = DateTime.now();
     levelStars.clear();
     completedLevels.clear();
+    mapHelpDone = false;
     energyRevision.value++;
   }
 
@@ -243,16 +246,43 @@ class AppData {
   }
 
   static bool isUnitStartLevel(int level) {
-    return units.any((unit) => unit.startLevel == level);
+    if (level < 1 || level > maxLevel) return false;
+    return lessonNumberForLevel(level) == 1;
   }
 
   static bool isLevelUnlocked(int level) {
     if (level < 1 || level > maxLevel) return false;
-    if (isUnitStartLevel(level)) return true;
+    final lessonNumber = lessonNumberForLevel(level);
+    if (lessonNumber == 1) return true;
     if (completedLevels.contains(level)) return true;
-    final previousLevel = level - 1;
-    final sameUnit = unitForLevel(previousLevel) == unitForLevel(level);
-    return sameUnit && completedLevels.contains(previousLevel);
+    return completedLevels.contains(level - 1);
+  }
+
+  static String lessonIdForLevel(int level) {
+    final unit = unitForLevel(level);
+    return '${unit.number}-${lessonNumberForLevel(level)}';
+  }
+
+  static Map<int, Set<int>> get completedLessonsByUnit {
+    final grouped = <int, Set<int>>{};
+    for (final level in completedLevels) {
+      if (level < 1 || level > maxLevel) continue;
+      final unit = unitForLevel(level);
+      grouped.putIfAbsent(unit.number, () => <int>{});
+      grouped[unit.number]!.add(lessonNumberForLevel(level));
+    }
+    return grouped;
+  }
+
+  static int get firstUnlockedIncompleteLevel {
+    for (final unit in units) {
+      for (var level = unit.startLevel; level <= unit.endLevel; level++) {
+        if (isLevelUnlocked(level) && !completedLevels.contains(level)) {
+          return level;
+        }
+      }
+    }
+    return 1;
   }
 
   static int get completedLevelCount =>

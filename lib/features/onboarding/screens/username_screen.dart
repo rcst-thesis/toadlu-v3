@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/features/onboarding/screens/grade_level_screen.dart';
 
 class UsernameScreen extends StatefulWidget {
@@ -9,16 +13,22 @@ class UsernameScreen extends StatefulWidget {
 }
 
 class _UsernameScreenState extends State<UsernameScreen> {
+  static const _prompt = 'Hi, abyan! Ano imo ngalan?';
   final TextEditingController controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     controller.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(TudloVoiceButton.speak(context, _prompt, hiligaynon: true));
+    });
   }
 
   @override
   void dispose() {
+    unawaited(TudloVoiceButton.stop());
     controller.dispose();
     super.dispose();
   }
@@ -26,6 +36,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
   void _continue() {
     final name = controller.text.trim();
     if (name.isEmpty) return;
+    unawaited(AppAudioService.instance.playTap());
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => GradeLevelScreen(learnerName: name)),
@@ -64,7 +75,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                     const FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        'Ano ang imo pangalan?',
+                        _prompt,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
@@ -159,7 +170,12 @@ class _RoundNextButton extends StatelessWidget {
         shadowColor: Colors.black38,
         child: InkWell(
           customBorder: const CircleBorder(),
-          onTap: enabled ? onTap : null,
+          onTap: enabled
+              ? () async {
+                  await AppAudioService.instance.playTap();
+                  onTap();
+                }
+              : null,
           child: SizedBox(
             width: size,
             height: size,

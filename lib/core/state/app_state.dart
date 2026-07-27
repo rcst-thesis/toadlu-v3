@@ -10,7 +10,7 @@ import 'package:tudloapp/features/profile/services/profile_storage.dart';
 /// and any widget that reads `AppStateScope.of(context)` rebuilds when it
 /// changes because this class extends [ChangeNotifier].
 class AppState extends ChangeNotifier {
-  static const int maxProfilesPerDevice = 4;
+  static const int profilesPerSelectionPage = 4;
 
   String username = '';
   String gradeLevel = 'Grade 1';
@@ -27,7 +27,7 @@ class AppState extends ChangeNotifier {
 
   String get gradeLabel => gradeLevel;
   bool get isHiligaynon => appLanguage == 'Hiligaynon';
-  bool get canCreateProfile => profiles.length < maxProfilesPerDevice;
+  bool get canCreateProfile => true;
 
   LearnerProfile? get activeProfile {
     for (final profile in profiles) {
@@ -48,11 +48,6 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> addProfile({required String name, required String grade}) async {
-    if (!canCreateProfile) {
-      throw StateError(
-        'This device can only create $maxProfilesPerDevice profiles.',
-      );
-    }
     final profile = LearnerProfile.newProfile(name: name, gradeLevel: grade);
     profiles.add(profile);
     _applyProfile(profile);
@@ -96,6 +91,7 @@ class AppState extends ChangeNotifier {
         currentEnergy: AppData.maxEnergy,
         levelStars: {},
         completedLevels: {},
+        mapHelpDone: false,
       ),
     );
     await _saveProfiles();
@@ -153,6 +149,15 @@ class AppState extends ChangeNotifier {
     final profile = activeProfile;
     if (profile == null || profile.hasSeenOnboarding) return;
     _replaceActiveProfile(profile.copyWith(hasSeenOnboarding: true));
+    await _saveProfiles();
+    notifyListeners();
+  }
+
+  Future<void> markMapHelpSeen() async {
+    final profile = activeProfile;
+    AppData.mapHelpDone = true;
+    if (profile == null || profile.mapHelpDone) return;
+    _replaceActiveProfile(profile.copyWith(mapHelpDone: true));
     await _saveProfiles();
     notifyListeners();
   }

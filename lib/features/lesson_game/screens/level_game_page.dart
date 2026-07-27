@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
@@ -90,12 +91,34 @@ class _LevelGamePageState extends State<LevelGamePage> {
 
     // Progress is saved only when the learner taps the completion button.
     // This prevents repeated completion interactions from saving twice.
+    final wasCompleted = AppData.completedLevels.contains(widget.level);
+    final previousNextLevel = AppData.firstUnlockedIncompleteLevel;
     AppData.saveLevelScore(widget.level, score, questions.length);
-    if (AppData.unlockedLevel <= widget.level &&
-        widget.level < AppData.maxLevel) {
-      AppData.unlockedLevel = widget.level + 1;
-    }
+    AppData.unlockedLevel = AppData.firstUnlockedIncompleteLevel;
+    final unlockedNewLesson =
+        AppData.firstUnlockedIncompleteLevel != previousNextLevel;
+    unawaited(
+      _playCompletionEffects(
+        showStar: !wasCompleted,
+        unlockedNewLesson: unlockedNewLesson,
+      ),
+    );
     AppStateScope.of(context).saveActiveProfileProgress();
+  }
+
+  Future<void> _playCompletionEffects({
+    required bool showStar,
+    required bool unlockedNewLesson,
+  }) async {
+    await AppAudioService.instance.playLessonComplete();
+    if (showStar) {
+      await Future<void>.delayed(const Duration(milliseconds: 260));
+      await AppAudioService.instance.playStar();
+    }
+    if (unlockedNewLesson) {
+      await Future<void>.delayed(const Duration(milliseconds: 260));
+      await AppAudioService.instance.playLessonUnlock();
+    }
   }
 
   void _handleQuestionChecked(
@@ -1370,6 +1393,7 @@ class _Grade3QuestionScreenState extends State<_Grade3QuestionScreen> {
       }
     });
     if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
       await TudloVoiceButton.speak(
         context,
         'Balikan ta ang sugilanon.',
@@ -1383,6 +1407,7 @@ class _Grade3QuestionScreenState extends State<_Grade3QuestionScreen> {
       );
       return;
     }
+    await AppAudioService.instance.playCorrect();
     widget.onCompleted(
       widget.questionIndex,
       firstAttemptCorrect: _attemptCount == 1,
@@ -2426,6 +2451,7 @@ class _GradeTwoDialogueChoiceCardState
       _attempt++;
     });
     if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
       await TudloVoiceButton.speak(
         context,
         'Liwata. Pili-a ang husto nga sabat.',
@@ -2433,6 +2459,7 @@ class _GradeTwoDialogueChoiceCardState
       );
       return;
     }
+    unawaited(AppAudioService.instance.playCorrect());
     Future<void>.delayed(const Duration(milliseconds: 850), () {
       if (mounted) widget.onDone();
     });
@@ -2497,6 +2524,7 @@ class _GradeTwoMissionCardState extends State<_GradeTwoMissionCard> {
       _attempt++;
     });
     if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
       await TudloVoiceButton.speak(
         context,
         'Liwata. Tan-awa liwat ang sitwasyon.',
@@ -2504,6 +2532,7 @@ class _GradeTwoMissionCardState extends State<_GradeTwoMissionCard> {
       );
       return;
     }
+    unawaited(AppAudioService.instance.playCorrect());
     await TudloVoiceButton.speak(
       context,
       'Husto! ${widget.plan.reward}',
@@ -4195,7 +4224,7 @@ _GradeTwoPlan _gradeTwoPlanFor(LevelContent content) {
 
 String _letterSoundText(String letter) {
   return switch (letter.trim().toUpperCase()) {
-    'A' => 'a',
+    'A' => 'Ah',
     'E' => 'e',
     'I' => 'i',
     'O' => 'o',
@@ -4680,14 +4709,13 @@ class _AlphabetPresentationSlideData {
 
   String get voiceText {
     final letter = target.letter;
-    final word = target.speechWord;
     return switch (type) {
       _AlphabetPresentationSlideType.letter =>
-        'Ang tunog sang letra nga $letter ay ${_letterSoundText(letter)}.',
+        'Ang tunog sang letra nga $letter amo ang...',
       _AlphabetPresentationSlideType.word =>
-        'Abyan, kilala mo kung sino ini? Ini ang $word.',
+        'Abyan, kilala mo kon sin-o ini? Siya si...',
       _AlphabetPresentationSlideType.highlight =>
-        'May ara letra nga $letter sa may $word.',
+        'May ara letra nga $letter sa may ${target.speechWord}.',
       _AlphabetPresentationSlideType.continuePrompt =>
         'Alright abyan, lets padayon kita.',
     };
@@ -4698,8 +4726,9 @@ class _AlphabetPresentationSlideData {
     final word = target.speechWord;
     return switch (type) {
       _AlphabetPresentationSlideType.letter =>
-        'Ang tunog sang letra nga "$letter" ay...',
-      _AlphabetPresentationSlideType.word => 'Abyan, kilala mo kung sino ini?',
+        'Ang tunog sang letra nga "$letter" amo ang...',
+      _AlphabetPresentationSlideType.word =>
+        'Abyan, kilala mo kon sin-o ini? Siya si...',
       _AlphabetPresentationSlideType.highlight =>
         'May ara letra nga "$letter" sa may $word',
       _AlphabetPresentationSlideType.continuePrompt =>
@@ -4969,6 +4998,17 @@ class _AlphabetPresentationBoard extends StatelessWidget {
                 ),
               ),
             ),
+          if (data.type == _AlphabetPresentationSlideType.word &&
+              target.word.toUpperCase() == 'NANAY')
+            Positioned(
+              left: 58,
+              right: 58,
+              bottom: 72,
+              child: _PresentationSyllablePractice(
+                syllables: const ['NA', 'NAY'],
+                fullWord: target.speechWord,
+              ),
+            ),
           Positioned(
             left: 0,
             bottom: 0,
@@ -4993,6 +5033,7 @@ class _AlphabetPresentationBoard extends StatelessWidget {
             bottom: 0,
             child: _PresentationSpeakerHint(
               onTap: () {
+                unawaited(AppAudioService.instance.playTap());
                 unawaited(
                   TudloVoiceButton.speak(
                     context,
@@ -5235,6 +5276,141 @@ class _PresentationSpeakerHint extends StatelessWidget {
   }
 }
 
+class _PresentationSyllablePractice extends StatefulWidget {
+  final List<String> syllables;
+  final String fullWord;
+
+  const _PresentationSyllablePractice({
+    required this.syllables,
+    required this.fullWord,
+  });
+
+  @override
+  State<_PresentationSyllablePractice> createState() =>
+      _PresentationSyllablePracticeState();
+}
+
+class _PresentationSyllablePracticeState
+    extends State<_PresentationSyllablePractice>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _wiggleController;
+  int _nextIndex = 0;
+  int? _wrongIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _wiggleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+  }
+
+  @override
+  void dispose() {
+    _wiggleController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _tapSyllable(int index) async {
+    if (index != _nextIndex) {
+      setState(() => _wrongIndex = index);
+      _wiggleController.forward(from: 0);
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Pindoton ang ${widget.syllables[_nextIndex]} anay.',
+        hiligaynon: true,
+      );
+      return;
+    }
+
+    final syllable = widget.syllables[index];
+    unawaited(AppAudioService.instance.playSyllableTap());
+    setState(() {
+      _wrongIndex = null;
+      _nextIndex = (_nextIndex + 1).clamp(0, widget.syllables.length);
+    });
+    await TudloVoiceButton.speak(
+      context,
+      _titleCase(syllable),
+      hiligaynon: true,
+      waitForCompletion: true,
+    );
+    if (!mounted) return;
+    if (_nextIndex >= widget.syllables.length) {
+      await TudloVoiceButton.speak(context, widget.fullWord, hiligaynon: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var index = 0; index < widget.syllables.length; index++) ...[
+          Expanded(child: _buildSyllable(index)),
+          if (index < widget.syllables.length - 1) const SizedBox(width: 8),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSyllable(int index) {
+    final selected = index < _nextIndex;
+    final card = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _tapSyllable(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected
+                ? TudloColors.green
+                : Colors.white.withValues(alpha: .92),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              if (selected)
+                BoxShadow(
+                  color: TudloColors.green.withValues(alpha: .40),
+                  blurRadius: 18,
+                  spreadRadius: 3,
+                ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .10),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Text(
+            widget.syllables[index],
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: selected ? Colors.white : TudloColors.ink,
+              fontSize: 20,
+              height: 1,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (_wrongIndex != index) return card;
+    return AnimatedBuilder(
+      animation: _wiggleController,
+      builder: (context, child) {
+        final dx = math.sin(_wiggleController.value * math.pi * 4) * 5;
+        return Transform.translate(offset: Offset(dx, 0), child: child);
+      },
+      child: card,
+    );
+  }
+}
+
 class _PresentationAssetArt extends StatelessWidget {
   final _AlphabetPresentationTarget target;
   final double size;
@@ -5302,7 +5478,12 @@ class _PresentationArrowButton extends StatelessWidget {
       opacity: enabled ? 1 : .32,
       child: IconButton(
         tooltip: icon == Icons.arrow_back_rounded ? 'Balik' : 'Sunod',
-        onPressed: enabled ? onTap : null,
+        onPressed: enabled
+            ? () async {
+                await AppAudioService.instance.playTap();
+                onTap();
+              }
+            : null,
         icon: Icon(
           icon,
           size: 46,
@@ -5495,6 +5676,11 @@ class _AlphabetMiniActivityState extends State<_AlphabetMiniActivity> {
       _wrong = !isCorrect;
       _motionKey++;
     });
+    unawaited(
+      isCorrect
+          ? AppAudioService.instance.playCorrect()
+          : AppAudioService.instance.playWrong(),
+    );
     if (completed && !_reported) {
       _reported = true;
       widget.onCorrect?.call();
@@ -10616,9 +10802,11 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
       answerFeedbackAttempt++;
     });
     if (correct) {
+      unawaited(AppAudioService.instance.playCorrect());
       widget.onChecked(true);
       return;
     }
+    unawaited(AppAudioService.instance.playWrong());
     Future<void>.delayed(const Duration(milliseconds: 900), () {
       if (!mounted || lastCorrect) return;
       setState(() {

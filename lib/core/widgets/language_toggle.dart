@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
@@ -80,8 +83,11 @@ class _LanguagePill extends StatelessWidget {
 
 class TudloVoiceButton extends StatelessWidget {
   static final FlutterTts _tts = FlutterTts();
+  static final ValueNotifier<bool> isSpeaking = ValueNotifier<bool>(false);
   static Map<String, String>? _preferredFilipinoVoice;
   static bool _lookedForFilipinoVoice = false;
+  static bool _handlersConfigured = false;
+  static int _speechToken = 0;
 
   static Future<void> speak(
     BuildContext context,
@@ -91,14 +97,28 @@ class TudloVoiceButton extends StatelessWidget {
   }) async {
     final text = message.trim();
     if (text.isEmpty) return;
+    final audio = AppAudioService.instance;
+    if (!audio.voiceOverEnabled) return;
     try {
+      _configureSpeechHandlers();
       await _tts.stop();
+      isSpeaking.value = false;
+      final token = ++_speechToken;
       await _tts.awaitSpeakCompletion(waitForCompletion);
       await _setSpeechLanguage(hiligaynon: hiligaynon);
       await _tts.setSpeechRate(.42);
       await _tts.setPitch(1.08);
+      await audio.lowerBackgroundVolume();
+      isSpeaking.value = true;
       await _tts.speak(text);
+      if (waitForCompletion) {
+        if (_speechToken == token) isSpeaking.value = false;
+        await audio.restoreBackgroundVolume();
+      } else {
+        _resetSpeakingAfterEstimate(text, token);
+      }
     } catch (_) {
+      isSpeaking.value = false;
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -109,9 +129,42 @@ class TudloVoiceButton extends StatelessWidget {
   static Future<void> stop() async {
     try {
       await _tts.stop();
+      _speechToken++;
+      isSpeaking.value = false;
+      await AppAudioService.instance.restoreBackgroundVolume();
     } catch (_) {
       // Stopping narration should never block navigation.
     }
+  }
+
+  static void _configureSpeechHandlers() {
+    if (_handlersConfigured) return;
+    _handlersConfigured = true;
+    _tts.setCompletionHandler(() {
+      _speechToken++;
+      isSpeaking.value = false;
+      AppAudioService.instance.restoreBackgroundVolume();
+    });
+    _tts.setCancelHandler(() {
+      _speechToken++;
+      isSpeaking.value = false;
+      AppAudioService.instance.restoreBackgroundVolume();
+    });
+    _tts.setErrorHandler((_) {
+      _speechToken++;
+      isSpeaking.value = false;
+      AppAudioService.instance.restoreBackgroundVolume();
+    });
+  }
+
+  static void _resetSpeakingAfterEstimate(String text, int token) {
+    final milliseconds = (text.length * 85).clamp(900, 9000);
+    Future<void>.delayed(Duration(milliseconds: milliseconds), () async {
+      if (_speechToken == token) isSpeaking.value = false;
+      if (_speechToken == token) {
+        await AppAudioService.instance.restoreBackgroundVolume();
+      }
+    });
   }
 
   static Future<void> _setSpeechLanguage({required bool hiligaynon}) async {
@@ -236,11 +289,9 @@ class TudloVoiceButton extends StatelessWidget {
         ),
         onPressed: () async {
           final appState = AppStateScope.of(context);
-          await speak(
-            context,
-            message,
-            hiligaynon: hiligaynon ?? appState.isHiligaynon,
-          );
+          final useHiligaynon = hiligaynon ?? appState.isHiligaynon;
+          unawaited(AppAudioService.instance.playTap());
+          await speak(context, message, hiligaynon: useHiligaynon);
         },
         icon: TudloSpeakerIcon(size: size * .54),
       ),

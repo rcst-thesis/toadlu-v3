@@ -37,6 +37,7 @@ dependencies:
   google_fonts: ^6.2.1
   web: ^1.1.1
   flutter_tts: ^4.2.5
+  audioplayers: ^6.7.1
   shared_preferences: ^2.5.5
   path_provider: ^2.1.5
   rive: ^0.14.10
@@ -77,6 +78,8 @@ flutter:
     - assets/images/level_game/letters/
     - assets/images/level_game/numbers/
     - assets/images/level_game/people/
+    - assets/images/word-of-the-day/
+    - assets/audio/effects/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

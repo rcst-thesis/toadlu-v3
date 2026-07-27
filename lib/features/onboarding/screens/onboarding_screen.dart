@@ -29,7 +29,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       englishDescription:
           'Learn Hiligaynon through fun lessons, stories, examples, and interactive activities.',
       hiligaynonVoice:
-          'Maayong pag-abot sa Tudlo! Diri, makatuon ka sang Hiligaynon paagi sa mga leksiyon, estorya, ehemplo, kag mga lingaw nga buluhaton. Sugdan ta ang pagtuon!',
+          'Maayong pag-abot, abyan! Diri makatuon kita sang Hiligaynon paagi sa sari-sari nga leksiyon, istorya, mga ehemplo, kag kaliliagaw nga mga buluhaton!',
       englishVoice:
           'Welcome to Tudlo! Here, you can learn Hiligaynon through lessons, stories, examples, and fun activities. Let us start learning!',
       color: TudloColors.green,
@@ -44,7 +44,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       englishDescription:
           'Search Hiligaynon and English words anytime. Listen to pronunciation and discover new words.',
       hiligaynonVoice:
-          'Pwede ka mangita sang mga tinaga sa Hiligaynon kag English. Pamatii ang ila husto nga paglitok kag tukibon ang bag-o nga mga tinaga adlaw-adlaw.',
+          'Diri, puwede ka man makapangita sang mga tinaga nga gusto mo mahibaluan kag kon ano ang ila kahulugan.',
       englishVoice:
           'You can search for words in Hiligaynon and English. Listen to their correct pronunciation and discover new words every day.',
       color: TudloColors.blue,
@@ -59,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       englishDescription:
           'Translate words and simple sentences between Hiligaynon and English.',
       hiligaynonVoice:
-          'Pwede mo mahubad ang mga tinaga kag simple nga mga pangungusap halin sa Hiligaynon pakadto sa English, kag halin sa English pakadto sa Hiligaynon bisan san-o.',
+          'Puwede mo man diri mahubad ang imo mga tinaga halin sa Hiligaynon pakadto sa English, ukon halin sa English pakadto sa Hiligaynon.',
       englishVoice:
           'You can translate words and simple sentences from Hiligaynon to English, and from English to Hiligaynon anytime.',
       color: TudloColors.coral,
@@ -132,8 +132,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final activePage = _pages[index];
     return TudloVoiceButton.speak(
       context,
-      activePage.voiceText(appState.isHiligaynon),
-      hiligaynon: appState.isHiligaynon,
+      activePage.hiligaynonVoice,
+      hiligaynon: true,
     );
   }
 

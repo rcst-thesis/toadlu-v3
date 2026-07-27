@@ -1,13 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/features/dictionary/screens/dictionary_page.dart';
 import 'package:tudloapp/features/translation/screens/translation_page.dart';
 import 'package:tudloapp/features/home_map/screens/home_map_page.dart';
 import 'package:tudloapp/features/profile/screens/profile_page.dart';
 import 'package:tudloapp/features/navigation/bottom_nav_bar.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
+import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 
 /// Main app container after onboarding.
@@ -38,7 +38,6 @@ class AppShellState extends State<AppShell> {
   void switchTo(int index) {
     // Called by the bottom navigation bar.
     setState(() {
-      if (index != 0) AppData.mapHelpDone = true;
       if (index != 0) _dictionaryFuture ??= DictionaryData.initialize();
       _selectedIndex = index;
     });
@@ -65,7 +64,9 @@ class AppShellState extends State<AppShell> {
             future: _dictionaryFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: TudloMascot(size: 156, mood: KokaMood.idle),
+                );
               }
               if (snapshot.hasError) {
                 return const Center(child: Text('Unable to load content.'));

@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
@@ -46,7 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final activeProfile = appState.activeProfile;
 
     return Scaffold(
-      backgroundColor: TudloColors.green,
+      backgroundColor: Color.fromARGB(255, 37, 125, 24),
       body: Stack(
         children: [
           const Positioned.fill(child: _ProfileBackground()),
@@ -79,6 +81,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   const SizedBox(height: 28),
                   _ProgressSection(username: username),
+                  const SizedBox(height: 18),
+                  const _AudioSettingsCard(),
                   const SizedBox(height: 28),
                   _ProfileManagementRow(
                     onSwitch: () {
@@ -174,7 +178,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: appState.activeProfile?.avatarAsset == avatar
-                              ? TudloColors.green
+                              ? Color.fromARGB(255, 37, 125, 24)
                               : Colors.transparent,
                           width: 4,
                         ),
@@ -495,6 +499,110 @@ class _ProfileManagementRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AudioSettingsCard extends StatelessWidget {
+  const _AudioSettingsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final audio = AppAudioService.instance;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.forest.withValues(alpha: .12),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _profileText(context, hil: 'Tunog', en: 'Audio'),
+            style: GoogleFonts.nunito(
+              color: TudloColors.forest,
+              fontSize: 21,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          _AudioSwitchTile(
+            icon: Icons.touch_app_rounded,
+            label: _profileText(
+              context,
+              hil: 'Sound effects',
+              en: 'Sound effects',
+            ),
+            listenable: audio.soundEffectsEnabledNotifier,
+            onChanged: audio.setSoundEffectsEnabled,
+          ),
+          _AudioSwitchTile(
+            icon: Icons.music_note_rounded,
+            label: _profileText(
+              context,
+              hil: 'Background music',
+              en: 'Background music',
+            ),
+            listenable: audio.musicEnabledNotifier,
+            onChanged: audio.setMusicEnabled,
+          ),
+          _AudioSwitchTile(
+            icon: Icons.record_voice_over_rounded,
+            label: _profileText(context, hil: 'Voice-over', en: 'Voice-over'),
+            listenable: audio.voiceOverEnabledNotifier,
+            onChanged: audio.setVoiceOverEnabled,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AudioSwitchTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final ValueListenable<bool> listenable;
+  final Future<void> Function(bool enabled) onChanged;
+
+  const _AudioSwitchTile({
+    required this.icon,
+    required this.label,
+    required this.listenable,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: listenable,
+      builder: (context, enabled, _) {
+        return SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: Icon(icon, color: TudloColors.green),
+          title: Text(
+            label,
+            style: GoogleFonts.nunito(
+              color: TudloColors.ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          activeThumbColor: TudloColors.green,
+          value: enabled,
+          onChanged: (value) async {
+            await AppAudioService.instance.playTap();
+            await onChanged(value);
+          },
+        );
+      },
     );
   }
 }

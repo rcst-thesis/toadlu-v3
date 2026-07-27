@@ -15,6 +15,7 @@ class LearnerProfile {
   final Set<String> favoriteWords;
   final String avatarAsset;
   final bool hasSeenOnboarding;
+  final bool mapHelpDone;
 
   const LearnerProfile({
     required this.id,
@@ -28,6 +29,7 @@ class LearnerProfile {
     required this.favoriteWords,
     required this.avatarAsset,
     required this.hasSeenOnboarding,
+    required this.mapHelpDone,
   });
 
   factory LearnerProfile.newProfile({
@@ -46,6 +48,7 @@ class LearnerProfile {
       favoriteWords: const {},
       avatarAsset: '',
       hasSeenOnboarding: false,
+      mapHelpDone: false,
     );
   }
 
@@ -70,6 +73,7 @@ class LearnerProfile {
       },
       avatarAsset: json['avatarAsset'] as String? ?? '',
       hasSeenOnboarding: json['hasSeenOnboarding'] as bool? ?? true,
+      mapHelpDone: json['mapHelpDone'] as bool? ?? true,
     );
   }
 
@@ -84,6 +88,7 @@ class LearnerProfile {
     Set<String>? favoriteWords,
     String? avatarAsset,
     bool? hasSeenOnboarding,
+    bool? mapHelpDone,
   }) {
     return LearnerProfile(
       id: id,
@@ -97,6 +102,7 @@ class LearnerProfile {
       favoriteWords: favoriteWords ?? this.favoriteWords,
       avatarAsset: avatarAsset ?? this.avatarAsset,
       hasSeenOnboarding: hasSeenOnboarding ?? this.hasSeenOnboarding,
+      mapHelpDone: mapHelpDone ?? this.mapHelpDone,
     );
   }
 
@@ -115,6 +121,7 @@ class LearnerProfile {
       'favoriteWords': favoriteWords.toList()..sort(),
       'avatarAsset': avatarAsset,
       'hasSeenOnboarding': hasSeenOnboarding,
+      'mapHelpDone': mapHelpDone,
     };
   }
 
