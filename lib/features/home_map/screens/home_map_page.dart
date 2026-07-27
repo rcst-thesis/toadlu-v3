@@ -152,6 +152,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
   final ScrollController _scrollController = ScrollController();
   bool _showScrollTopButton = false;
   int _mapHelpStep = 0;
+  int? _activeLevel;
+  Offset? _activeLevelCenter;
 
   @override
   void initState() {
@@ -199,47 +201,42 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 
   void _openLevel(int level, Offset nodeCenter) {
-    final rootContext = context;
     if (!AppData.mapHelpDone) {
       setState(() => AppData.mapHelpDone = true);
       unawaited(AppStateScope.of(context).markMapHelpSeen());
     }
-    showGeneralDialog(
-      context: context,
-      barrierColor: Colors.transparent,
-      barrierDismissible: true,
-      barrierLabel: 'Sirad-i ang pagpili sang leksiyon',
-      transitionDuration: const Duration(milliseconds: 320),
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          _LevelStartDialog(
-            level: level,
-            title: _lessonPreviewForLevel(level),
-            nodeCenter: nodeCenter,
-            onStart: () async {
-              // Start button in the level popup:
-              // Refresh real-time energy before gating access. If the learner
-              // has less than 15 energy, the unit does not start.
-              await AppData.refreshEnergy(save: true);
-              if (!context.mounted || !rootContext.mounted) return;
-              if (!AppData.canStartUnit()) {
-                Navigator.pop(context);
-                await showLowEnergyDialog(rootContext);
-                return;
-              }
-              // Enough energy: close the popup, then open the animated
-              // lesson intro before the game screen.
-              Navigator.pop(context);
-              Navigator.push(
-                rootContext,
-                MaterialPageRoute(
-                  builder: (_) => LessonIntroPage(level: level),
-                ),
-              );
-            },
-          ),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return child;
-      },
+    setState(() {
+      _activeLevel = level;
+      _activeLevelCenter = nodeCenter;
+    });
+  }
+
+  void _closeLevelPopup() {
+    if (_activeLevel == null) return;
+    setState(() {
+      _activeLevel = null;
+      _activeLevelCenter = null;
+    });
+  }
+
+  Future<void> _startLevel(int level) async {
+    // Start button in the level popup:
+    // Refresh real-time energy before gating access. If the learner has less
+    // than 15 energy, the unit does not start.
+    await AppData.refreshEnergy(save: true);
+    if (!mounted) return;
+    if (!AppData.canStartUnit()) {
+      _closeLevelPopup();
+      await showLowEnergyDialog(context);
+      return;
+    }
+    // Enough energy: close the popup, then open the animated lesson intro
+    // before the game screen.
+    _closeLevelPopup();
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => LessonIntroPage(level: level)),
     );
   }
 
@@ -373,7 +370,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
             ),
           ),
           if (!showMapHelp)
-            const Positioned(left: 16, bottom: 132, child: _HomeKokaGuide()),
+            const Positioned(left: 4, bottom: 104, child: _HomeKokaGuide()),
           if (showMapHelp)
             Positioned.fill(
               child: _MapDialogueOverlay(
@@ -384,6 +381,16 @@ class _HomeMapPageState extends State<HomeMapPage> {
                 onTap: _dismissMapHelp,
                 onTargetTap: (nodeCenter) =>
                     _openMapHelpTarget(currentLevel, nodeCenter),
+              ),
+            ),
+          if (_activeLevel != null && _activeLevelCenter != null)
+            Positioned.fill(
+              child: _LevelStartOverlay(
+                level: _activeLevel!,
+                title: _lessonPreviewForLevel(_activeLevel!),
+                nodeCenter: _activeLevelCenter!,
+                onDismiss: _closeLevelPopup,
+                onStart: () => _startLevel(_activeLevel!),
               ),
             ),
         ],
@@ -411,10 +418,7 @@ class _MapHeader extends StatelessWidget {
     return Container(
       height: _mapHeaderHeight,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: TudloColors.meadow,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(42)),
-      ),
+      decoration: BoxDecoration(color: TudloColors.meadow),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
@@ -440,7 +444,7 @@ class _MapHeader extends StatelessWidget {
                   if (dailyWord != null) ...[
                     const SizedBox(height: 22),
                     _HomeDailyWordCard(word: dailyWord!, palette: palette),
-                    const SizedBox(height: 12),
+                    const Spacer(),
                   ] else
                     const Spacer(),
                   Text(
@@ -474,7 +478,7 @@ class _MapHeader extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 34),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -625,11 +629,13 @@ class _MapDialogueOverlay extends StatefulWidget {
 }
 
 class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
+  static const _lessonAssetBase = 'assets/images/level_game/lesson-game-assets';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _speakCurrentMessage();
+      if (mounted) unawaited(_speakCurrentMessage());
     });
   }
 
@@ -638,7 +644,7 @@ class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.step != widget.step) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _speakCurrentMessage();
+        if (mounted) unawaited(_speakCurrentMessage());
       });
     }
   }
@@ -649,12 +655,14 @@ class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
     super.dispose();
   }
 
-  void _speakCurrentMessage() {
+  Future<void> _speakCurrentMessage() async {
+    await TudloVoiceButton.stop();
+    if (!mounted) return;
     unawaited(
       TudloVoiceButton.speak(
         context,
         _message.replaceAll('\n', ' '),
-        hiligaynon: true,
+        hiligaynon: AppStateScope.of(context).isHiligaynon,
       ),
     );
   }
@@ -718,10 +726,11 @@ class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
           bottom: mascotBottom,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: TudloVoiceButton.isSpeaking.value
-                ? null
-                : _speakCurrentMessage,
-            child: TudloMascot(size: mascotWidth, mood: KokaMood.curious),
+            onTap: () => unawaited(_speakCurrentMessage()),
+            child: TudloMascot(
+              size: mascotWidth,
+              mood: widget.step == 0 ? KokaMood.hi : KokaMood.curious,
+            ),
           ),
         ),
         Positioned(
@@ -740,6 +749,17 @@ class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
               size: targetSize,
               onTap: () => widget.onTargetTap(widget.levelButtonTarget),
             ),
+          ),
+        if (widget.step == 1)
+          Positioned(
+            left: widget.levelButtonTarget.dx + targetSize * .16,
+            top: widget.levelButtonTarget.dy - targetSize * .62,
+            child: IgnorePointer(
+              child: _AnimatedPointFinger(
+                asset: '$_lessonAssetBase/point-finger.png',
+                size: (size.width * .18).clamp(62.0, 88.0),
+              ),
+            ),
           )
         else
           Positioned.fill(
@@ -749,6 +769,71 @@ class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _AnimatedPointFinger extends StatefulWidget {
+  final String asset;
+  final double size;
+
+  const _AnimatedPointFinger({required this.asset, required this.size});
+
+  @override
+  State<_AnimatedPointFinger> createState() => _AnimatedPointFingerState();
+}
+
+class _AnimatedPointFingerState extends State<_AnimatedPointFinger>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  late final Animation<Offset> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 780),
+    )..repeat(reverse: true);
+    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _scale = Tween<double>(begin: 1, end: .86).animate(curve);
+    _offset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-8, -8),
+    ).animate(curve);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: _offset.value,
+          child: Transform.scale(
+            scale: _scale.value,
+            alignment: Alignment.topLeft,
+            child: child,
+          ),
+        );
+      },
+      child: Transform.rotate(
+        angle: -.55,
+        child: Image.asset(
+          widget.asset,
+          width: widget.size,
+          height: widget.size,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
     );
   }
 }
@@ -926,24 +1011,26 @@ class _DialogueBubbleImage extends StatelessWidget {
   }
 }
 
-class _LevelStartDialog extends StatefulWidget {
+class _LevelStartOverlay extends StatefulWidget {
   final int level;
   final String title;
   final Offset nodeCenter;
+  final VoidCallback onDismiss;
   final FutureOr<void> Function() onStart;
 
-  const _LevelStartDialog({
+  const _LevelStartOverlay({
     required this.level,
     required this.title,
     required this.nodeCenter,
+    required this.onDismiss,
     required this.onStart,
   });
 
   @override
-  State<_LevelStartDialog> createState() => _LevelStartDialogState();
+  State<_LevelStartOverlay> createState() => _LevelStartOverlayState();
 }
 
-class _LevelStartDialogState extends State<_LevelStartDialog>
+class _LevelStartOverlayState extends State<_LevelStartOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
@@ -1007,7 +1094,7 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.pop(context),
+              onTap: widget.onDismiss,
             ),
           ),
           Positioned(
@@ -1100,14 +1187,14 @@ class _LevelStartCard extends StatelessWidget {
     required this.onStart,
   });
 
-  static const _cardGreen = _LevelStartDialogState._cardGreen;
-  static const _cardDark = _LevelStartDialogState._cardDark;
+  static const _cardGreen = _LevelStartOverlayState._cardGreen;
+  static const _cardDark = _LevelStartOverlayState._cardDark;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      height: _LevelStartDialogState._cardHeight,
+      height: _LevelStartOverlayState._cardHeight,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
       decoration: BoxDecoration(
         color: _cardGreen,
@@ -1199,7 +1286,7 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: _LevelStartDialogState._cardDark,
+              foregroundColor: _LevelStartOverlayState._cardDark,
               elevation: 0,
               shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(

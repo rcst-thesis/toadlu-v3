@@ -78,6 +78,7 @@ flutter:
     - assets/images/level_game/letters/
     - assets/images/level_game/numbers/
     - assets/images/level_game/people/
+    - assets/images/level_game/lesson-game-assets/
     - assets/images/word-of-the-day/
     - assets/audio/effects/
 
