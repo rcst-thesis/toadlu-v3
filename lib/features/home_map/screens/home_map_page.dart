@@ -493,18 +493,20 @@ class _HomeKokaGuide extends StatefulWidget {
 }
 
 class _HomeKokaGuideState extends State<_HomeKokaGuide> {
-  Future<void> _handleTap() async {
-    if (TudloVoiceButton.isSpeaking.value) return;
-    await TudloVoiceButton.speak(
-      context,
-      _homeText(
-        context,
-        hil: 'Maayong pag-abot, abyan!',
-        en: 'Welcome, friend!',
-      ),
-      hiligaynon: true,
-      waitForCompletion: true,
-    );
+  int _tapCount = 0;
+  KokaMood _mood = KokaMood.idle;
+
+  KokaMood _moodForTapCount(int taps) {
+    if (taps >= 5) return KokaMood.annoyed;
+    if (taps >= 3) return KokaMood.curious;
+    return KokaMood.hi;
+  }
+
+  void _handleTap() {
+    setState(() {
+      _tapCount += 1;
+      _mood = _moodForTapCount(_tapCount);
+    });
   }
 
   @override
@@ -514,7 +516,7 @@ class _HomeKokaGuideState extends State<_HomeKokaGuide> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _handleTap,
-      child: TudloMascot(size: mascotSize, mood: KokaMood.idle),
+      child: TudloMascot(size: mascotSize, mood: _mood),
     );
   }
 }
@@ -947,12 +949,11 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _cardScaleAnimation;
   late final Animation<Offset> _slideAnimation;
-  late final Animation<double> _nodeBounceAnimation;
 
   static const _cardGreen = TudloColors.green;
   static const _cardDark = TudloColors.forest;
   static const _nodeSize = 98.0;
-  static const _cardHeight = 160.0;
+  static const _cardHeight = 134.0;
 
   @override
   void initState() {
@@ -976,18 +977,6 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
       begin: const Offset(0, .08),
       end: Offset.zero,
     ).animate(curved);
-    _nodeBounceAnimation = TweenSequence<double>(
-      [
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 1, end: 1.12),
-          weight: 45,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 1.12, end: 1),
-          weight: 55,
-        ),
-      ],
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
   }
 
@@ -1000,14 +989,12 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
   @override
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
-    final cardWidth = math.min(screen.width * .78, 360.0);
-    const cardTopGap = 30.0;
+    final cardWidth = math.min(screen.width * .68, 320.0);
+    const cardTopGap = 18.0;
     final cardLeft = (widget.nodeCenter.dx - cardWidth / 2)
         .clamp(16.0, screen.width - cardWidth - 16)
         .toDouble();
-    final cardTop = (widget.nodeCenter.dy + _nodeSize / 2 + cardTopGap)
-        .clamp(24.0, math.max(24.0, screen.height - _cardHeight - 74))
-        .toDouble();
+    final cardTop = widget.nodeCenter.dy + _nodeSize / 2 + cardTopGap;
     final pointerLeft = (widget.nodeCenter.dx - cardLeft - 17)
         .clamp(18.0, cardWidth - 52)
         .toDouble();
@@ -1015,6 +1002,7 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
     return Material(
       color: Colors.transparent,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
             child: GestureDetector(
@@ -1051,17 +1039,6 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
                     ],
                   ),
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: widget.nodeCenter.dx - _nodeSize / 2,
-            top: widget.nodeCenter.dy - _nodeSize / 2,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _nodeBounceAnimation,
-                child: const _SelectedLevelNode(),
               ),
             ),
           ),
@@ -1131,7 +1108,7 @@ class _LevelStartCard extends StatelessWidget {
     return Container(
       width: width,
       height: _LevelStartDialogState._cardHeight,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
       decoration: BoxDecoration(
         color: _cardGreen,
         borderRadius: BorderRadius.circular(24),
@@ -1158,7 +1135,7 @@ class _LevelStartCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 22,
                   height: 1.05,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1171,7 +1148,7 @@ class _LevelStartCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   color: Colors.white,
-                  fontSize: 15,
+                  fontSize: 14,
                   height: 1.05,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1210,7 +1187,7 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
       duration: const Duration(milliseconds: 90),
       curve: Curves.easeOut,
       child: SizedBox(
-        height: 52,
+        height: 46,
         child: GestureDetector(
           onTapDown: (_) => _setPressed(true),
           onTapCancel: () => _setPressed(false),
@@ -1233,7 +1210,7 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
                 ),
               ),
               textStyle: GoogleFonts.nunito(
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
               ),
@@ -1241,53 +1218,6 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
             child: const Text('Sugudi'),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SelectedLevelNode extends StatelessWidget {
-  const _SelectedLevelNode();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 98,
-      height: 98,
-      decoration: BoxDecoration(
-        color: TudloColors.brightGreen,
-        shape: BoxShape.circle,
-        border: Border.all(color: TudloColors.softGreen, width: 8),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x55234810),
-            blurRadius: 0,
-            offset: Offset(0, 9),
-          ),
-          BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            right: 18,
-            top: 16,
-            child: Container(
-              width: 28,
-              height: 8,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .25),
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-          ),
-          const Icon(Icons.star_rounded, color: Colors.white, size: 58),
-        ],
       ),
     );
   }
@@ -1923,6 +1853,14 @@ Future<void> _showDailyWordPopup(
       'Nagakaon ako sang mansanas.';
   final exampleEng = word.exampleSentenceEnglish ?? 'I am eating an apple.';
   final pronunciation = word.pronunciation ?? _pronunciationFor(word.hil);
+  var kokaTapCount = 0;
+  var kokaMood = KokaMood.idle;
+
+  KokaMood moodForTapCount(int taps) {
+    if (taps >= 5) return KokaMood.annoyed;
+    if (taps >= 3) return KokaMood.curious;
+    return KokaMood.hi;
+  }
 
   return showDialog<void>(
     context: context,
@@ -1935,7 +1873,6 @@ Future<void> _showDailyWordPopup(
           builder: (context, setDialogState) {
             final saved = appState.isFavoriteWord(word.hil);
             const bedroomGreen = Color(0xFFC9EFC7);
-            const wordCardColor = Color(0xFFF5BC5B);
             const wordInk = Color(0xFF101522);
             return ConstrainedBox(
               constraints: BoxConstraints(
@@ -1967,7 +1904,7 @@ Future<void> _showDailyWordPopup(
                                     child: Center(
                                       child: TudloMascot(
                                         size: 172,
-                                        mood: KokaMood.hi,
+                                        mood: KokaMood.idle,
                                       ),
                                     ),
                                   );
@@ -2031,9 +1968,18 @@ Future<void> _showDailyWordPopup(
                                 ),
                               ),
                             ),
-                            const Positioned(
+                            Positioned(
                               bottom: 8,
-                              child: TudloMascot(size: 150, mood: KokaMood.hi),
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  setDialogState(() {
+                                    kokaTapCount += 1;
+                                    kokaMood = moodForTapCount(kokaTapCount);
+                                  });
+                                },
+                                child: TudloMascot(size: 150, mood: kokaMood),
+                              ),
                             ),
                           ],
                         ),
@@ -2042,7 +1988,7 @@ Future<void> _showDailyWordPopup(
                           margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                           padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                           decoration: BoxDecoration(
-                            color: wordCardColor,
+                            color: bedroomGreen,
                             borderRadius: BorderRadius.circular(22),
                             boxShadow: [
                               BoxShadow(
