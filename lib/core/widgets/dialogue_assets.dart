@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 class TudloDialogueAssets {
-  static const mascotPrimary = 'assets/images/dialogue/mascot1.png';
-  static const mascotGuide = 'assets/images/dialogue/mascot2.png';
   static const dialogueBox = 'assets/images/dialogue/dialoguebox.png';
   static const speechBubble = 'assets/images/dialogue/speech-bubble.png';
   static const questionBubble =

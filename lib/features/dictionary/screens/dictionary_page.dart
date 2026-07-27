@@ -24,6 +24,10 @@ double dictionaryIndexScale(int index, int activeIndex) {
   return 1 + .55 * math.exp(-(distance * distance) / 4.5);
 }
 
+double _dictionaryScale(BuildContext context) {
+  return (MediaQuery.sizeOf(context).width / 430).clamp(1.0, 1.32).toDouble();
+}
+
 /// Dictionary screen built from word-based DictionaryData entries.
 ///
 /// It supports language direction switching, search, voice playback, and
@@ -224,6 +228,12 @@ class _DictionaryPageState extends State<DictionaryPage> {
   @override
   Widget build(BuildContext context) {
     final sections = _sections;
+    final scale = _dictionaryScale(context);
+    final horizontalPad = 10.0 * scale;
+    final indexWidth = 23.0 * scale;
+    final indexRight = 3.0 * scale;
+    final listRightPad = indexWidth + indexRight + 14 * scale;
+    final headerTop = 186.0 * scale;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -247,7 +257,12 @@ class _DictionaryPageState extends State<DictionaryPage> {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(10, 14, 18, 10),
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPad,
+                  14 * scale,
+                  horizontalPad,
+                  12 * scale,
+                ),
                 sliver: SliverToBoxAdapter(
                   child: _ModeSwitch(
                     mode: _mode,
@@ -276,7 +291,12 @@ class _DictionaryPageState extends State<DictionaryPage> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(10, 0, 34, 128),
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPad,
+                    0,
+                    listRightPad,
+                    128,
+                  ),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       children: sections.map((section) {
@@ -298,8 +318,8 @@ class _DictionaryPageState extends State<DictionaryPage> {
             ],
           ),
           Positioned(
-            top: 186,
-            right: 3,
+            top: headerTop,
+            right: indexRight,
             bottom: 118,
             child: _LetterIndex(
               activeLetter: _activeLetter ?? sections.firstOrNull?.letter,
@@ -334,26 +354,27 @@ class _DictionaryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _dictionaryScale(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
-        8,
-        MediaQuery.paddingOf(context).top + 14,
-        8,
-        10,
+        8 * scale,
+        MediaQuery.paddingOf(context).top + 14 * scale,
+        8 * scale,
+        12 * scale,
       ),
       decoration: const BoxDecoration(color: Color(0xFF79AD55)),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Dictionary',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 32,
+              fontSize: 32 * scale,
               height: 1,
               fontWeight: FontWeight.w900,
-              shadows: [
+              shadows: const [
                 Shadow(
                   color: Color(0x66000000),
                   offset: Offset(0, 2),
@@ -362,11 +383,11 @@ class _DictionaryHeader extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18 * scale),
           Row(
             children: [
               Expanded(child: _SearchField(controller: controller)),
-              const SizedBox(width: 8),
+              SizedBox(width: 8 * scale),
               _PartOfSpeechFilterButton(
                 selected: selectedPartOfSpeech,
                 options: partOfSpeechOptions,
@@ -387,39 +408,44 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      cursorColor: const Color(0xFF5EA832),
-      style: const TextStyle(
-        color: TudloColors.ink,
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-      ),
-      decoration: InputDecoration(
-        hintText: 'Search word...',
-        hintStyle: const TextStyle(
-          color: Color(0xFF8D9690),
-          fontWeight: FontWeight.w700,
+    final scale = _dictionaryScale(context);
+    return SizedBox(
+      height: 52 * scale,
+      child: TextField(
+        controller: controller,
+        cursorColor: const Color(0xFF5EA832),
+        style: TextStyle(
+          color: TudloColors.ink,
+          fontSize: 16 * scale,
+          fontWeight: FontWeight.w800,
         ),
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          color: Color(0xFF5EA832),
-          size: 29,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide.none,
+        decoration: InputDecoration(
+          hintText: 'Search word...',
+          hintStyle: TextStyle(
+            color: const Color(0xFF8D9690),
+            fontSize: 14 * scale,
+            fontWeight: FontWeight.w700,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: const Color(0xFF5EA832),
+            size: 29 * scale,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(vertical: 14 * scale),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20 * scale),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20 * scale),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20 * scale),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
@@ -439,6 +465,7 @@ class _PartOfSpeechFilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _dictionaryScale(context);
     final active = selected != _DictionaryPageState._allPartsFilter;
     return PopupMenuButton<String>(
       tooltip: 'Filter part of speech',
@@ -480,17 +507,20 @@ class _PartOfSpeechFilterButton extends StatelessWidget {
         ];
       },
       child: Container(
-        height: 52,
-        constraints: const BoxConstraints(minWidth: 54, maxWidth: 126),
-        padding: const EdgeInsets.symmetric(horizontal: 13),
+        height: 52 * scale,
+        constraints: BoxConstraints(
+          minWidth: 54 * scale,
+          maxWidth: 132 * scale,
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 13 * scale),
         decoration: BoxDecoration(
           color: active ? const Color(0xFF5EA832) : Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(18 * scale),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: .08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              blurRadius: 8 * scale,
+              offset: Offset(0, 2 * scale),
             ),
           ],
         ),
@@ -500,18 +530,18 @@ class _PartOfSpeechFilterButton extends StatelessWidget {
             Icon(
               Icons.filter_list_rounded,
               color: active ? Colors.white : const Color(0xFF5EA832),
-              size: 28,
+              size: 28 * scale,
             ),
             if (active) ...[
-              const SizedBox(width: 6),
+              SizedBox(width: 6 * scale),
               Flexible(
                 child: Text(
                   selected,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 13,
+                    fontSize: 13 * scale,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -535,18 +565,19 @@ class _ModeSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _dictionaryScale(context);
     return Container(
-      height: 44,
-      padding: const EdgeInsets.all(3),
+      height: 44 * scale,
+      padding: EdgeInsets.all(3 * scale),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20 * scale),
         border: Border.all(color: const Color(0xFFE7E9E3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: .08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 8 * scale,
+            offset: Offset(0, 2 * scale),
           ),
         ],
       ),
@@ -586,9 +617,10 @@ class _ModePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _dictionaryScale(context);
     return Expanded(
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18 * scale),
         // Tapping the pill tells the parent Dictionary page to change modes.
         onTap: onTap,
         child: AnimatedContainer(
@@ -596,7 +628,7 @@ class _ModePill extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? const Color(0xFF61A934) : Colors.transparent,
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(17 * scale),
           ),
           child: Text(
             label,
@@ -605,7 +637,7 @@ class _ModePill extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: selected ? Colors.white : const Color(0xFF797F7A),
-              fontSize: 15,
+              fontSize: 15 * scale,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -629,31 +661,32 @@ class _DictionarySectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _dictionaryScale(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(2, 6, 0, 8),
+          padding: EdgeInsets.fromLTRB(2 * scale, 6 * scale, 0, 8 * scale),
           child: Container(
-            width: 29,
-            height: 25,
+            width: 29 * scale,
+            height: 25 * scale,
             decoration: BoxDecoration(
               color: const Color(0xFF5EA832),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(6 * scale),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: .12),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  blurRadius: 4 * scale,
+                  offset: Offset(0, 2 * scale),
                 ),
               ],
             ),
             child: Center(
               child: Text(
                 section.letter,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 17,
+                  fontSize: 17 * scale,
                   height: 1,
                   fontWeight: FontWeight.w900,
                 ),
@@ -663,7 +696,7 @@ class _DictionarySectionView extends StatelessWidget {
         ),
         ...section.terms.map((term) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.only(bottom: 12 * scale),
             child: _DictionaryCard(term: term, englishMode: englishMode),
           );
         }),
@@ -680,6 +713,7 @@ class _DictionaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _dictionaryScale(context);
     // The displayed order changes based on the selected dictionary mode.
     final mainWord = englishMode
         ? term.english
@@ -688,16 +722,21 @@ class _DictionaryCard extends StatelessWidget {
         ? _capitalizeDictionaryWord(term.hiligaynon)
         : term.english;
     return Container(
-      constraints: const BoxConstraints(minHeight: 58),
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      constraints: BoxConstraints(minHeight: 58 * scale),
+      padding: EdgeInsets.fromLTRB(
+        18 * scale,
+        13 * scale,
+        18 * scale,
+        13 * scale,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(11 * scale),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: .12),
-            blurRadius: 7,
-            offset: const Offset(0, 2),
+            blurRadius: 7 * scale,
+            offset: Offset(0, 2 * scale),
           ),
         ],
       ),
@@ -711,9 +750,9 @@ class _DictionaryCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   text: TextSpan(
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: TudloColors.ink,
-                      fontSize: 22,
+                      fontSize: 22 * scale,
                       fontWeight: FontWeight.w900,
                       height: 1.08,
                     ),
@@ -731,12 +770,12 @@ class _DictionaryCard extends StatelessWidget {
                   ),
                 ),
                 if (term.partOfSpeech?.trim().isNotEmpty ?? false) ...[
-                  const SizedBox(height: 3),
+                  SizedBox(height: 4 * scale),
                   Text(
                     term.partOfSpeech!,
-                    style: const TextStyle(
-                      color: Color(0xFF9AA09B),
-                      fontSize: 11,
+                    style: TextStyle(
+                      color: const Color(0xFF9AA09B),
+                      fontSize: 11 * scale,
                       fontWeight: FontWeight.w800,
                       height: 1.1,
                     ),
@@ -767,21 +806,22 @@ class _LetterIndex extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _dictionaryScale(context);
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     final activeIndex = activeLetter == null
         ? -1
         : letters.indexOf(activeLetter!);
     return Container(
-      width: 23,
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      width: 23 * scale,
+      padding: EdgeInsets.symmetric(vertical: 5 * scale),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: .84),
         borderRadius: BorderRadius.circular(999),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: .10),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            blurRadius: 5 * scale,
+            offset: Offset(0, 2 * scale),
           ),
         ],
       ),
@@ -798,8 +838,8 @@ class _LetterIndex extends StatelessWidget {
               // ScrollController and the section GlobalKeys.
               onTap: () => onTap(letter),
               child: SizedBox(
-                width: 22,
-                height: 17,
+                width: 22 * scale,
+                height: 17 * scale,
                 child: Center(
                   child: AnimatedScale(
                     key: ValueKey('dictionary-index-$letter'),
@@ -812,7 +852,7 @@ class _LetterIndex extends StatelessWidget {
                         color: active
                             ? TudloColors.forest
                             : const Color(0xFF5EA832),
-                        fontSize: 10,
+                        fontSize: 10 * scale,
                         fontWeight: FontWeight.w900,
                       ),
                     ),

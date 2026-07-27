@@ -952,7 +952,7 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
   static const _cardGreen = TudloColors.green;
   static const _cardDark = TudloColors.forest;
   static const _nodeSize = 98.0;
-  static const _cardHeight = 190.0;
+  static const _cardHeight = 160.0;
 
   @override
   void initState() {
@@ -1000,13 +1000,13 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
   @override
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
-    final cardWidth = math.min(screen.width * .88, 430.0);
-    const cardTopGap = 22.0;
+    final cardWidth = math.min(screen.width * .78, 360.0);
+    const cardTopGap = 30.0;
     final cardLeft = (widget.nodeCenter.dx - cardWidth / 2)
         .clamp(16.0, screen.width - cardWidth - 16)
         .toDouble();
     final cardTop = (widget.nodeCenter.dy + _nodeSize / 2 + cardTopGap)
-        .clamp(24.0, math.max(24.0, screen.height - _cardHeight - 112))
+        .clamp(24.0, math.max(24.0, screen.height - _cardHeight - 74))
         .toDouble();
     final pointerLeft = (widget.nodeCenter.dx - cardLeft - 17)
         .clamp(18.0, cardWidth - 52)
@@ -1020,17 +1020,6 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => Navigator.pop(context),
-            ),
-          ),
-          Positioned(
-            left: widget.nodeCenter.dx - _nodeSize / 2,
-            top: widget.nodeCenter.dy - _nodeSize / 2,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _nodeBounceAnimation,
-                child: const _SelectedLevelNode(),
-              ),
             ),
           ),
           Positioned(
@@ -1062,6 +1051,17 @@ class _LevelStartDialogState extends State<_LevelStartDialog>
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: widget.nodeCenter.dx - _nodeSize / 2,
+            top: widget.nodeCenter.dy - _nodeSize / 2,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _nodeBounceAnimation,
+                child: const _SelectedLevelNode(),
               ),
             ),
           ),
@@ -1131,7 +1131,7 @@ class _LevelStartCard extends StatelessWidget {
     return Container(
       width: width,
       height: _LevelStartDialogState._cardHeight,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
       decoration: BoxDecoration(
         color: _cardGreen,
         borderRadius: BorderRadius.circular(24),
@@ -1146,9 +1146,9 @@ class _LevelStartCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          const Positioned(left: 48, top: 44, child: _SparkleDot(size: 9)),
-          const Positioned(right: 38, top: 36, child: _SparkleDot(size: 8)),
-          const Positioned(right: 4, bottom: 0, child: _SparkleDot(size: 12)),
+          const Positioned(left: 42, top: 40, child: _SparkleDot(size: 8)),
+          const Positioned(right: 34, top: 32, child: _SparkleDot(size: 7)),
+          const Positioned(right: 4, bottom: 0, child: _SparkleDot(size: 10)),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
@@ -1158,12 +1158,12 @@ class _LevelStartCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   color: Colors.white,
-                  fontSize: 27,
+                  fontSize: 24,
                   height: 1.05,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 5),
               Text(
                 title,
                 maxLines: 2,
@@ -1171,7 +1171,7 @@ class _LevelStartCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   color: Colors.white,
-                  fontSize: 17,
+                  fontSize: 15,
                   height: 1.05,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1210,7 +1210,7 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
       duration: const Duration(milliseconds: 90),
       curve: Curves.easeOut,
       child: SizedBox(
-        height: 62,
+        height: 52,
         child: GestureDetector(
           onTapDown: (_) => _setPressed(true),
           onTapCancel: () => _setPressed(false),
@@ -1226,14 +1226,14 @@ class _StartLevelButtonState extends State<_StartLevelButton> {
               elevation: 0,
               shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
                   color: Colors.white.withValues(alpha: .80),
                   width: 3,
                 ),
               ),
               textStyle: GoogleFonts.nunito(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
               ),
@@ -2487,62 +2487,37 @@ class _CompletedLevelStar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const starColor = Color(0xFFFFD84D);
+    final starSize = size * 1.24;
     return SizedBox.square(
-      dimension: size,
+      dimension: starSize,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          Positioned.fill(
-            child: OverflowBox(
-              maxWidth: size + 60,
-              maxHeight: size + 60,
-              child: Container(
-                width: size + 42 + glow * 10,
-                height: size + 42 + glow * 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      starColor.withValues(alpha: .40),
-                      starColor.withValues(alpha: .18),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
           Icon(
             Icons.star_rounded,
             color: Colors.black.withValues(alpha: .24),
-            size: size + 9,
+            size: starSize + 9,
           ),
           Icon(
             Icons.star_rounded,
             color: starColor,
-            size: size,
+            size: starSize,
             shadows: [
               Shadow(
                 color: starColor.withValues(alpha: current ? .90 : .62),
-                blurRadius: current ? 28 : 18,
+                blurRadius: current ? 34 + glow * 8 : 20,
               ),
+              if (current)
+                Shadow(
+                  color: Colors.white.withValues(alpha: .78),
+                  blurRadius: 18 + glow * 8,
+                ),
+              Shadow(color: starColor.withValues(alpha: .50), blurRadius: 14),
               Shadow(
                 color: Colors.black.withValues(alpha: .18),
                 blurRadius: 8,
                 offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          Icon(
-            Icons.check_rounded,
-            color: Colors.white,
-            size: size * .42,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: .22),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
               ),
             ],
           ),

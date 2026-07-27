@@ -90,6 +90,7 @@ class AppState extends ChangeNotifier {
         streakDays: 0,
         currentEnergy: AppData.maxEnergy,
         levelStars: {},
+        lessonScores: {},
         completedLevels: {},
         mapHelpDone: false,
       ),

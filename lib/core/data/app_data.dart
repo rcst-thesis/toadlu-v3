@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/core/models/learner_profile.dart';
+import 'package:tudloapp/core/models/lesson_score.dart';
 import 'package:tudloapp/features/energy/services/energy_storage.dart';
 
 /// Shared in-app progress and energy state.
@@ -36,6 +37,7 @@ class AppData {
   static int unlockedLevel = 1;
   static GradeLevel selectedGradeLevel = GradeLevel.grade1;
   static final Map<int, int> levelStars = {};
+  static final Map<String, LessonScoreStats> lessonScores = {};
   static final Set<int> completedLevels = {};
 
   /// Home Map unit definitions shared by the Map and Profile screens.
@@ -131,6 +133,9 @@ class AppData {
     levelStars
       ..clear()
       ..addAll(profile.levelStars);
+    lessonScores
+      ..clear()
+      ..addAll(profile.lessonScores);
     completedLevels
       ..clear()
       ..addAll(profile.completedLevels);
@@ -143,6 +148,7 @@ class AppData {
       streakDays: streakDays,
       currentEnergy: currentEnergy,
       levelStars: Map<int, int>.from(levelStars),
+      lessonScores: Map<String, LessonScoreStats>.from(lessonScores),
       completedLevels: Set<int>.from(completedLevels),
       mapHelpDone: mapHelpDone,
     );
@@ -154,6 +160,7 @@ class AppData {
     currentEnergy = maxEnergy;
     _lastEnergyAt = DateTime.now();
     levelStars.clear();
+    lessonScores.clear();
     completedLevels.clear();
     mapHelpDone = false;
     energyRevision.value++;
@@ -312,15 +319,17 @@ class AppData {
     return level - unit.startLevel + 1;
   }
 
-  /// Converts a lesson score into 0-3 stars and keeps the best result.
-  static void saveLevelScore(int level, int score, int total) {
+  /// Converts a lesson accuracy into 0-3 stars and keeps the best result.
+  static void saveLevelScore(int level, LessonScoreStats stats) {
     completedLevels.add(level);
-    final percent = total == 0 ? 0.0 : score / total;
-    final stars = percent >= .9
+    final lessonId = lessonIdForLevel(level);
+    final savedStats = stats.mergeBestFrom(lessonScores[lessonId]);
+    lessonScores[lessonId] = savedStats;
+    final stars = savedStats.bestAccuracy == 100
         ? 3
-        : percent >= .7
+        : savedStats.bestAccuracy >= 90
         ? 2
-        : percent >= .4
+        : savedStats.bestAccuracy >= 75
         ? 1
         : 0;
     final previous = levelStars[level] ?? 0;

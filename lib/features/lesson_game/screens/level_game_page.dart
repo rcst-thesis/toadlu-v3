@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/core/models/lesson_score.dart';
 import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
@@ -62,6 +63,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
   final Map<int, List<String>> builtWords = {};
   final Map<int, Map<String, String>> matches = {};
   final Map<int, _Grade3QuestionAttempt> grade3QuestionAttempts = {};
+  final _LessonAttemptTracker _scoreTracker = _LessonAttemptTracker();
   late final DateTime _levelStartedAt;
   bool _rewardsClaimed = false;
   bool _completeDialogShown = false;
@@ -80,6 +82,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       await DictionaryData.initialize();
       final content = await contentFuture;
       questions = content.quizItems.map(_questionFromQuizItem).toList();
+      _scoreTracker.expectedActivities = questions.length;
       return content;
     }();
     _levelStartedAt = DateTime.now();
@@ -93,7 +96,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
     // This prevents repeated completion interactions from saving twice.
     final wasCompleted = AppData.completedLevels.contains(widget.level);
     final previousNextLevel = AppData.firstUnlockedIncompleteLevel;
-    AppData.saveLevelScore(widget.level, score, questions.length);
+    AppData.saveLevelScore(widget.level, _buildLessonScoreStats());
     AppData.unlockedLevel = AppData.firstUnlockedIncompleteLevel;
     final unlockedNewLesson =
         AppData.firstUnlockedIncompleteLevel != previousNextLevel;
@@ -104,6 +107,33 @@ class _LevelGamePageState extends State<LevelGamePage> {
       ),
     );
     AppStateScope.of(context).saveActiveProfileProgress();
+  }
+
+  void _recordQuestionAttempt(int index, bool correct) {
+    _scoreTracker.recordAttempt(
+      activityId: _activityIdForQuestion(index),
+      correct: correct,
+    );
+  }
+
+  String _activityIdForQuestion(int index) {
+    final question = index >= 0 && index < questions.length
+        ? questions[index]
+        : null;
+    final label = question?.directionLabel.trim();
+    return label == null || label.isEmpty
+        ? 'q${index + 1}'
+        : 'q${index + 1}-$label';
+  }
+
+  LessonScoreStats _buildLessonScoreStats() {
+    final lessonId = AppData.lessonIdForLevel(widget.level);
+    return _scoreTracker.toStats(
+      lessonId: lessonId,
+      expectedActivities: questions.length,
+      startedAt: _levelStartedAt,
+      completedAt: DateTime.now(),
+    );
   }
 
   Future<void> _playCompletionEffects({
@@ -127,6 +157,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
     bool autoComplete = true,
   }) {
     if (_completeDialogShown) return;
+    if (!_scoreTracker.hasActivity(_activityIdForQuestion(index))) {
+      _recordQuestionAttempt(index, correct);
+    }
     setState(() {
       checkedAnswers[index] = correct;
       correctAnswers[index] = correct;
@@ -155,6 +188,17 @@ class _LevelGamePageState extends State<LevelGamePage> {
     required bool usedLookBackSupport,
   }) {
     if (_completeDialogShown) return;
+    final wrongAttempts = math.max(0, attemptCount - 1);
+    for (var i = 0; i < wrongAttempts; i++) {
+      _scoreTracker.recordAttempt(
+        activityId: _activityIdForQuestion(index),
+        correct: false,
+      );
+    }
+    _scoreTracker.recordAttempt(
+      activityId: _activityIdForQuestion(index),
+      correct: true,
+    );
     setState(() {
       checkedAnswers[index] = true;
       correctAnswers[index] = firstAttemptCorrect;
@@ -194,9 +238,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
   void _showCompleteDialog() {
     // The completion dialog shows lesson results. Progress updates only after
     // the learner returns to the map.
-    final accuracy = questions.isEmpty
-        ? 0
-        : ((score / questions.length) * 100).round();
+    final scoreStats = _buildLessonScoreStats();
+    final accuracy = scoreStats.accuracy;
     final durationLabel = _formatDuration(
       DateTime.now().difference(_levelStartedAt),
     );
@@ -207,7 +250,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       builder: (_) => _LessonCompleteDialog(
         level: widget.level,
         accuracy: accuracy,
-        mistakes: questions.length - score,
+        mistakes: scoreStats.mistakes,
         durationLabel: durationLabel,
         onBackToMap: () {
           _claimRewardsOnce();
@@ -584,6 +627,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                         onExit: _showPauseMenu,
                                         onPresentationChromeChanged:
                                             _setAlphabetPresentationChrome,
+                                        onQuizAttempt: _recordQuestionAttempt,
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
                                       )
@@ -622,6 +666,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                       )
                                     : _GradeOneFamilyLesson(
                                         content: levelContent,
+                                        onQuizAttempt: _recordQuestionAttempt,
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
                                       ),
@@ -661,6 +706,11 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                       ),
                                       number: entry.key + 1,
                                       question: entry.value,
+                                      onAttempt: (correct) =>
+                                          _recordQuestionAttempt(
+                                            entry.key,
+                                            correct,
+                                          ),
                                       onChecked: (correct) =>
                                           _handleQuestionChecked(
                                             entry.key,
@@ -724,7 +774,7 @@ class _LessonLoadingCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
-            TudloMascot(size: 110),
+            TudloMascot(size: 126, mood: KokaMood.curious),
             SizedBox(height: 14),
             Text(
               'Ginakuha ang leksiyon...',
@@ -771,6 +821,100 @@ class _Grade3QuestionAttempt {
     required this.usedLookBackSupport,
     required this.completedAt,
   });
+}
+
+class _LessonAttemptTracker {
+  final Map<String, _ActivityAttemptDraft> _activities = {};
+  int expectedActivities = 0;
+
+  bool hasActivity(String activityId) {
+    return _activities.containsKey(activityId);
+  }
+
+  void recordAttempt({required String activityId, required bool correct}) {
+    final activity = _activities.putIfAbsent(
+      activityId,
+      () => _ActivityAttemptDraft(activityId: activityId),
+    );
+    activity.record(correct);
+  }
+
+  LessonScoreStats toStats({
+    required String lessonId,
+    required int expectedActivities,
+    required DateTime startedAt,
+    required DateTime completedAt,
+  }) {
+    final activities =
+        _activities.values
+            .map((activity) => activity.toScore(startedAt))
+            .toList()
+          ..sort((a, b) => a.activityId.compareTo(b.activityId));
+    final attempts = activities.fold<int>(
+      0,
+      (total, activity) => total + activity.attempts,
+    );
+    final mistakes = activities.fold<int>(
+      0,
+      (total, activity) => total + activity.mistakes,
+    );
+    final correctAnswers = activities
+        .where((activity) => activity.attempts > activity.mistakes)
+        .length;
+    final accuracy = attempts == 0
+        ? 0
+        : ((correctAnswers / attempts) * 100).round();
+
+    return LessonScoreStats(
+      lessonId: lessonId,
+      totalActivities: expectedActivities > 0
+          ? expectedActivities
+          : this.expectedActivities,
+      attempts: attempts,
+      correctAnswers: correctAnswers,
+      mistakes: mistakes,
+      accuracy: accuracy,
+      bestAccuracy: accuracy,
+      replayCount: 0,
+      timeTakenMs: completedAt.difference(startedAt).inMilliseconds,
+      completionDate: completedAt,
+      completed: true,
+      activities: activities,
+    );
+  }
+}
+
+class _ActivityAttemptDraft {
+  final String activityId;
+  final DateTime startedAt = DateTime.now();
+  int attempts = 0;
+  int mistakes = 0;
+  bool completed = false;
+  DateTime? completedAt;
+
+  _ActivityAttemptDraft({required this.activityId});
+
+  void record(bool correct) {
+    if (completed && correct) return;
+    attempts++;
+    if (correct) {
+      completed = true;
+      completedAt = DateTime.now();
+      return;
+    }
+    mistakes++;
+  }
+
+  LessonActivityScore toScore(DateTime lessonStartedAt) {
+    final endedAt = completedAt ?? DateTime.now();
+    return LessonActivityScore(
+      activityId: activityId,
+      attempts: attempts,
+      mistakes: mistakes,
+      correctOnFirstTry: attempts == 1 && mistakes == 0 && completed,
+      completionTimeMs: endedAt.difference(startedAt).inMilliseconds,
+    );
+  }
 }
 
 String _grade3QuestionTypeFor(LessonQuestion question) {
@@ -2024,12 +2168,14 @@ class _GradeTwoMissionChoice {
   final String label;
   final String? visualLabel;
   final String? imageAsset;
+  final bool isKoka;
   final IconData icon;
 
   const _GradeTwoMissionChoice({
     required this.label,
     this.visualLabel,
     this.imageAsset,
+    this.isKoka = false,
     required this.icon,
   });
 }
@@ -2037,20 +2183,17 @@ class _GradeTwoMissionChoice {
 class _GradeTwoTileVisual {
   final String label;
   final String? imageAsset;
+  final bool isKoka;
   final IconData icon;
   final Color color;
 
   const _GradeTwoTileVisual({
     required this.label,
     this.imageAsset,
+    this.isKoka = false,
     required this.icon,
     required this.color,
   });
-}
-
-bool _isKokaMascotAsset(String? asset) {
-  return asset == TudloDialogueAssets.mascotPrimary ||
-      asset == TudloDialogueAssets.mascotGuide;
 }
 
 class _GradeTwoSceneCard extends StatefulWidget {
@@ -2830,18 +2973,18 @@ class _GradeTwoFocusPicture extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (visual.imageAsset != null)
-            _isKokaMascotAsset(visual.imageAsset)
-                ? const TudloMascot(size: 132)
-                : Image.asset(
-                    visual.imageAsset!,
-                    width: 166,
-                    height: 126,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                    errorBuilder: (_, __, ___) =>
-                        Icon(visual.icon, color: color, size: 96),
-                  )
+          if (visual.isKoka)
+            const TudloMascot(size: 132, mood: KokaMood.curious)
+          else if (visual.imageAsset != null)
+            Image.asset(
+              visual.imageAsset!,
+              width: 166,
+              height: 126,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, __, ___) =>
+                  Icon(visual.icon, color: color, size: 96),
+            )
           else
             Icon(visual.icon, color: visual.color, size: 80),
           const SizedBox(height: 6),
@@ -2963,18 +3106,19 @@ class _GradeTwoTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (visual.imageAsset != null) ...[
-                _isKokaMascotAsset(visual.imageAsset)
-                    ? const TudloMascot(size: 82)
-                    : Image.asset(
-                        visual.imageAsset!,
-                        width: 72,
-                        height: 82,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.high,
-                        errorBuilder: (_, __, ___) =>
-                            Icon(visual.icon, color: Colors.white, size: 44),
-                      ),
+              if (visual.isKoka) ...[
+                const TudloMascot(size: 82, mood: KokaMood.curious),
+                const SizedBox(height: 6),
+              ] else if (visual.imageAsset != null) ...[
+                Image.asset(
+                  visual.imageAsset!,
+                  width: 72,
+                  height: 82,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(visual.icon, color: Colors.white, size: 44),
+                ),
                 const SizedBox(height: 6),
               ] else if (visual.icon != Icons.text_fields_rounded) ...[
                 Icon(visual.icon, color: Colors.white, size: 38),
@@ -3055,7 +3199,9 @@ class _GradeTwoChoiceButton extends StatelessWidget {
     final wrong = checked && !correct;
     final visual = _gradeTwoTileVisualFor(label);
     final hasArt =
-        visual.imageAsset != null || visual.icon != Icons.text_fields_rounded;
+        visual.isKoka ||
+        visual.imageAsset != null ||
+        visual.icon != Icons.text_fields_rounded;
     final activeColor = wrong
         ? const Color(0xFFE53935)
         : checked && correct
@@ -3089,21 +3235,18 @@ class _GradeTwoChoiceButton extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (visual.imageAsset != null)
-                      _isKokaMascotAsset(visual.imageAsset)
-                          ? const TudloMascot(size: 58)
-                          : Image.asset(
-                              visual.imageAsset!,
-                              width: 58,
-                              height: 58,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.high,
-                              errorBuilder: (_, __, ___) => Icon(
-                                visual.icon,
-                                color: Colors.white,
-                                size: 44,
-                              ),
-                            )
+                    if (visual.isKoka)
+                      const TudloMascot(size: 58, mood: KokaMood.curious)
+                    else if (visual.imageAsset != null)
+                      Image.asset(
+                        visual.imageAsset!,
+                        width: 58,
+                        height: 58,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(visual.icon, color: Colors.white, size: 44),
+                      )
                     else
                       Icon(visual.icon, color: Colors.white, size: 42),
                     const SizedBox(width: 14),
@@ -3212,10 +3355,10 @@ class _GradeTwoMissionArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (choice.isKoka) {
+      return TudloMascot(size: size, mood: KokaMood.curious);
+    }
     if (choice.imageAsset != null) {
-      if (_isKokaMascotAsset(choice.imageAsset)) {
-        return TudloMascot(size: size);
-      }
       return Image.asset(
         choice.imageAsset!,
         width: size,
@@ -3241,7 +3384,8 @@ String _normalizedSentence(String value) {
 _GradeTwoTileVisual? _gradeTwoBuildFocusFor(_GradeTwoPlan plan) {
   for (final tile in plan.buildTiles) {
     final visual = _gradeTwoTileVisualFor(tile);
-    if (visual.imageAsset != null && plan.buildAnswer.contains(tile)) {
+    if ((visual.isKoka || visual.imageAsset != null) &&
+        plan.buildAnswer.contains(tile)) {
       return visual;
     }
   }
@@ -3266,7 +3410,7 @@ _GradeTwoTileVisual _gradeTwoTileVisualFor(String value) {
     ),
     'koka' => const _GradeTwoTileVisual(
       label: 'Koka',
-      imageAsset: TudloDialogueAssets.mascotGuide,
+      isKoka: true,
       icon: Icons.face_rounded,
       color: TudloColors.green,
     ),
@@ -3292,7 +3436,7 @@ _GradeTwoTileVisual _gradeTwoTileVisualFor(String value) {
     ),
     'koka ang ngalan ko' || 'koka ang ngalan ko.' => const _GradeTwoTileVisual(
       label: 'Koka ang ngalan ko',
-      imageAsset: TudloDialogueAssets.mascotGuide,
+      isKoka: true,
       icon: Icons.face_rounded,
       color: TudloColors.green,
     ),
@@ -3731,7 +3875,7 @@ _GradeTwoPlan _gradeTwoPlanFor(LevelContent content) {
       missionChoices: const [
         _GradeTwoMissionChoice(
           label: 'Koka ang ngalan ko.',
-          imageAsset: TudloDialogueAssets.mascotGuide,
+          isKoka: true,
           icon: Icons.face_rounded,
         ),
         _GradeTwoMissionChoice(label: 'Paalam!', icon: Icons.waving_hand),
@@ -4249,12 +4393,14 @@ class _GradeOneAlphabetLesson extends StatefulWidget {
   final LevelContent content;
   final VoidCallback onExit;
   final ValueChanged<bool> onPresentationChromeChanged;
+  final void Function(int index, bool correct) onQuizAttempt;
   final ValueChanged<int> onQuizCorrect;
 
   const _GradeOneAlphabetLesson({
     required this.content,
     required this.onExit,
     required this.onPresentationChromeChanged,
+    required this.onQuizAttempt,
     required this.onQuizCorrect,
   });
 
@@ -4338,6 +4484,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
         instruction: _instructionForQuiz(quizItem, target),
         mascotMessage: 'Koka: Pamatii, dayon pindoton ang husto nga letra.',
         spendEnergy: true,
+        onAttempt: (correct) => widget.onQuizAttempt(entry.key, correct),
         onCorrect: () {
           if (entry.key == _quizTargets.length - 1) {
             for (
@@ -5609,6 +5756,7 @@ class _AlphabetMiniActivity extends StatefulWidget {
   final String instruction;
   final String mascotMessage;
   final bool spendEnergy;
+  final ValueChanged<bool>? onAttempt;
   final VoidCallback? onCorrect;
 
   const _AlphabetMiniActivity({
@@ -5621,6 +5769,7 @@ class _AlphabetMiniActivity extends StatefulWidget {
     required this.mascotMessage,
     this.spendEnergy = false,
     this.imageAsset,
+    this.onAttempt,
     this.onCorrect,
   });
 
@@ -5669,6 +5818,9 @@ class _AlphabetMiniActivityState extends State<_AlphabetMiniActivity> {
     final completed =
         isCorrect &&
         _completedTargets.union({normalizedLetter}).containsAll(_targets);
+    if (widget.spendEnergy) {
+      widget.onAttempt?.call(isCorrect);
+    }
     setState(() {
       _selectedIndex = index;
       if (isCorrect) _completedTargets.add(normalizedLetter);
@@ -6408,10 +6560,12 @@ class _AlphabetIconArt extends StatelessWidget {
 
 class _GradeOneFamilyLesson extends StatefulWidget {
   final LevelContent content;
+  final void Function(int index, bool correct) onQuizAttempt;
   final ValueChanged<int> onQuizCorrect;
 
   const _GradeOneFamilyLesson({
     required this.content,
+    required this.onQuizAttempt,
     required this.onQuizCorrect,
   });
 
@@ -6449,6 +6603,7 @@ class _GradeOneFamilyLessonState extends State<_GradeOneFamilyLesson> {
           ),
           target: quizTargets[index],
           choices: _familyChoicesFor(quizTargets[index], words, 3),
+          onAttempt: (correct) => widget.onQuizAttempt(index, correct),
           onCorrect: () {
             widget.onQuizCorrect(index);
             _advanceAfterCorrect(maxIndex);
@@ -6486,6 +6641,12 @@ class _GradeOneFamilyLessonState extends State<_GradeOneFamilyLesson> {
         child: _FamilyMatchingCard(
           key: ValueKey('family-match-${widget.content.id}'),
           words: quizTargets,
+          onAttempt: (word, correct) {
+            final index = quizTargets.indexWhere(
+              (target) => target.hil == word.hil,
+            );
+            widget.onQuizAttempt(quizTargets.length + index, correct);
+          },
           onCorrect: () {
             for (
               var index = quizTargets.length;
@@ -8986,12 +9147,14 @@ class _PictureArrow extends StatelessWidget {
 class _FamilyQuizCard extends StatefulWidget {
   final _FamilyWord target;
   final List<_FamilyWord> choices;
+  final ValueChanged<bool> onAttempt;
   final VoidCallback onCorrect;
 
   const _FamilyQuizCard({
     super.key,
     required this.target,
     required this.choices,
+    required this.onAttempt,
     required this.onCorrect,
   });
 
@@ -9030,6 +9193,7 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
     if (!mounted) return;
     await TudloVoiceButton.speak(context, choice.hil, hiligaynon: true);
     final isCorrect = choice.hil == widget.target.hil;
+    widget.onAttempt(isCorrect);
     setState(() {
       _selected = choice.hil;
       _checked = true;
@@ -9089,11 +9253,13 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
 
 class _FamilyMatchingCard extends StatefulWidget {
   final List<_FamilyWord> words;
+  final void Function(_FamilyWord word, bool correct) onAttempt;
   final VoidCallback onCorrect;
 
   const _FamilyMatchingCard({
     super.key,
     required this.words,
+    required this.onAttempt,
     required this.onCorrect,
   });
 
@@ -9139,6 +9305,7 @@ class _FamilyMatchingCardState extends State<_FamilyMatchingCard> {
     if (!mounted) return;
     final selected = _selectedHil!;
     final correct = selected == word.hil;
+    widget.onAttempt(word, correct);
     setState(() {
       _feedbackKey++;
       if (correct) {
@@ -10718,12 +10885,14 @@ String _titleCase(String value) {
 class _LevelQuizCard extends StatefulWidget {
   final int number;
   final LessonQuestion question;
+  final ValueChanged<bool> onAttempt;
   final ValueChanged<bool> onChecked;
 
   const _LevelQuizCard({
     super.key,
     required this.number,
     required this.question,
+    required this.onAttempt,
     required this.onChecked,
   });
 
@@ -10796,6 +10965,7 @@ class _LevelQuizCardState extends State<_LevelQuizCard> {
     }
 
     final correct = isCorrect;
+    widget.onAttempt(correct);
     setState(() {
       checked = true;
       lastCorrect = correct;
@@ -11605,9 +11775,9 @@ class _LessonCompleteDialog extends StatelessWidget {
 
   /// Star count is based on accuracy so the reward screen reflects performance.
   int get starCount {
-    if (accuracy >= 90) return 3;
-    if (accuracy >= 70) return 2;
-    if (accuracy > 0) return 1;
+    if (accuracy == 100) return 3;
+    if (accuracy >= 90) return 2;
+    if (accuracy >= 75) return 1;
     return 0;
   }
 

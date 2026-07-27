@@ -173,7 +173,7 @@ class _KokaPlaceholder extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(
-        hasError ? Icons.error_outline_rounded : Icons.face_rounded,
+        hasError ? Icons.error_outline_rounded : Icons.hourglass_empty_rounded,
         color: const Color(0xFF2BAA10),
         size: 42,
       ),
