@@ -10376,6 +10376,7 @@ class _GradeOneFamilyLessonState extends State<_GradeOneFamilyLesson> {
     );
     final reviewTargets = quizTargets.take(2).toList();
     final useVisitorQuiz = widget.content.lessonNumber == 2;
+    final usePhotoQuiz = widget.content.lessonNumber == 3;
     final quizCards = [
       _UnitOneTapChoiceActivity(
         key: ValueKey('family-warm-n-${widget.content.id}'),
@@ -10392,7 +10393,18 @@ class _GradeOneFamilyLessonState extends State<_GradeOneFamilyLesson> {
           _advanceAfterCorrect(maxIndex);
         },
       ),
-      if (useVisitorQuiz)
+      if (usePhotoQuiz)
+        _FamilyPhotoQuizActivity(
+          key: ValueKey('family-photo-${widget.content.id}'),
+          progress: 2 / _lessonQuizCount,
+          members: _familyPhotoTargets(words),
+          onAttempt: (correct) => widget.onQuizAttempt(1, correct),
+          onCorrect: () {
+            widget.onQuizCorrect(1);
+            _advanceAfterCorrect(maxIndex);
+          },
+        )
+      else if (useVisitorQuiz)
         _FamilyVisitorDoorQuizActivity(
           key: ValueKey('family-visitors-${widget.content.id}'),
           progress: 2 / _lessonQuizCount,
@@ -10779,6 +10791,18 @@ class _GradeOneHelperLessonState extends State<_GradeOneHelperLesson> {
   Widget build(BuildContext context) {
     final helpers = _helpersForLesson(widget.content.lessonNumber);
     var maxIndex = 0;
+    final allHelpers = _helpersForLesson(4);
+    final helperByHil = {for (final helper in allHelpers) helper.hil: helper};
+    final quizCards = _helperQuizCardsForLesson(
+      lessonNumber: widget.content.lessonNumber,
+      helpers: helpers,
+      helperByHil: helperByHil,
+      onQuizDone: (index) {
+        widget.onQuizCorrect(index);
+        _advanceAfterCorrect(maxIndex);
+      },
+      onLessonDone: _markComplete,
+    );
     final steps = [
       for (final helper in helpers) ...[
         _AlphabetFadeStep(
@@ -10809,13 +10833,7 @@ class _GradeOneHelperLessonState extends State<_GradeOneHelperLesson> {
           onDone: () => _goToStep(_stepIndex + 1, maxIndex),
         ),
       ),
-      _AlphabetFadeStep(
-        child: _HelperReviewCard(
-          key: ValueKey('helper-review-${widget.content.id}'),
-          helpers: helpers.take(3).toList(),
-          onDone: _markComplete,
-        ),
-      ),
+      for (final card in quizCards) _AlphabetFadeStep(child: card),
     ];
     maxIndex = steps.length - 1;
     final activeStep = steps[_stepIndex.clamp(0, maxIndex)];
@@ -11268,11 +11286,7 @@ class _HelperReviewCard extends StatefulWidget {
   final List<_HelperWord> helpers;
   final VoidCallback onDone;
 
-  const _HelperReviewCard({
-    super.key,
-    required this.helpers,
-    required this.onDone,
-  });
+  const _HelperReviewCard({required this.helpers, required this.onDone});
 
   @override
   State<_HelperReviewCard> createState() => _HelperReviewCardState();
@@ -11424,6 +11438,962 @@ class _HelperReviewCardState extends State<_HelperReviewCard> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StoryTapItem {
+  final String id;
+  final String label;
+  final String imageAsset;
+  final IconData icon;
+  final Color color;
+  final String instruction;
+  final String successSpeech;
+
+  const _StoryTapItem({
+    required this.id,
+    required this.label,
+    required this.imageAsset,
+    required this.icon,
+    required this.color,
+    required this.instruction,
+    required this.successSpeech,
+  });
+}
+
+List<Widget> _helperQuizCardsForLesson({
+  required int lessonNumber,
+  required List<_HelperWord> helpers,
+  required Map<String, _HelperWord> helperByHil,
+  required ValueChanged<int> onQuizDone,
+  required VoidCallback onLessonDone,
+}) {
+  final teacher = helperByHil['manunudlo']!;
+  final doctor = helperByHil['doktor']!;
+  final nurse = helperByHil['nars']!;
+  final police = helperByHil['pulis']!;
+  final firefighter = helperByHil['bumbero']!;
+  final vendor = helperByHil['tindera']!;
+  final farmer = helperByHil['mangunguma']!;
+  final fisher = helperByHil['mangingisda']!;
+
+  switch (lessonNumber) {
+    case 1:
+      return [
+        _HelperStoryTapQuizCard(
+          key: const ValueKey('helper-story-sick-younger-sibling'),
+          title: 'Nagmasakit ang manghod ni Koka!',
+          progress: 1 / _lessonQuizCount,
+          items: [
+            _familyStoryItem(
+              id: 'manghod',
+              label: 'Manghod',
+              imageAsset: 'assets/images/level_game/people/bata-nga-babayi.png',
+              icon: Icons.child_friendly_rounded,
+              instruction: 'Ipindot ang manghod ni Koka.',
+              successSpeech: 'Husto. Ara ang manghod ni Koka.',
+            ),
+            _helperStoryItem(
+              doctor,
+              instruction: 'Ipindot ang doktor para usisaon siya.',
+              successSpeech: 'Husto. Gin-usisa siya sang doktor.',
+            ),
+            _helperStoryItem(
+              nurse,
+              instruction: 'Ipindot ang nars para sa bulong.',
+              successSpeech: 'Husto. Ang nars naghatag sang bulong.',
+            ),
+            _helperStoryItem(
+              teacher,
+              instruction:
+                  'Balik sa eskwelahan. Ipindot ang manunudlo nga nag-abot sa iya.',
+              successSpeech:
+                  'Husto. Ginbaton siya liwat sang manunudlo sa eskwelahan.',
+            ),
+          ],
+          onDone: () {
+            onQuizDone(0);
+            onLessonDone();
+          },
+        ),
+      ];
+    case 2:
+      return [
+        _HelperStoryTapQuizCard(
+          key: const ValueKey('helper-story-market-fire'),
+          title: 'May kalayo sa tinda!',
+          progress: 1 / _lessonQuizCount,
+          showGentleFire: true,
+          items: [
+            _helperStoryItem(
+              firefighter,
+              instruction: 'Ipindot ang bumbero para mapatay ang kalayo.',
+              successSpeech: 'Husto. Ginpatay sang bumbero ang kalayo.',
+            ),
+            _helperStoryItem(
+              police,
+              instruction: 'Ipindot ang pulis para magiya sang mga tawo.',
+              successSpeech: 'Husto. Ginbuligan sang pulis ang mga tawo.',
+            ),
+            _helperStoryItem(
+              vendor,
+              instruction: 'Ipindot ang tindera para buksan liwat ang tinda.',
+              successSpeech: 'Husto. Bukas na liwat ang tinda.',
+            ),
+            _helperStoryItem(
+              teacher,
+              instruction:
+                  'Ipindot ang manunudlo para magsiling sang salamat ang klase.',
+              successSpeech:
+                  'Husto. Nagsiling ang klase, salamat sa mga helpers!',
+            ),
+          ],
+          onDone: () => onQuizDone(0),
+        ),
+        _HelperToolSequenceQuizCard(
+          key: const ValueKey('helper-tool-emergency-review'),
+          progress: 2 / _lessonQuizCount,
+          targets: [firefighter, police, vendor],
+          onDone: () {
+            onQuizDone(1);
+            onLessonDone();
+          },
+        ),
+      ];
+    case 3:
+      return [
+        _HelperStoryTapQuizCard(
+          key: const ValueKey('helper-story-food-chain'),
+          title: 'Diin naghalin ang pagkaon ni Koka?',
+          progress: 1 / _lessonQuizCount,
+          items: [
+            _helperStoryItem(
+              farmer,
+              instruction: 'Ipindot ang mangunguma. Halin sa iya ang humay.',
+              successSpeech: 'Husto. Ang mangunguma nagatanom sang humay.',
+            ),
+            _helperStoryItem(
+              fisher,
+              instruction: 'Ipindot ang mangingisda. Halin sa iya ang isda.',
+              successSpeech: 'Husto. Ang mangingisda nagakuha sang isda.',
+            ),
+            _helperStoryItem(
+              vendor,
+              instruction: 'Ipindot ang tindera. Ginabaligya niya ini.',
+              successSpeech: 'Husto. Ang tindera nagabaligya sang pagkaon.',
+            ),
+            _familyStoryItem(
+              id: 'nanay',
+              label: 'Nanay',
+              imageAsset: 'assets/images/level_game/people/nanay.png',
+              icon: Icons.face_3_rounded,
+              instruction:
+                  'Ipindot si nanay. Siya nagaluto kag nagakaon ang pamilya.',
+              successSpeech: 'Husto. Nagluto si nanay para sa pamilya.',
+            ),
+          ],
+          onDone: () {
+            onQuizDone(0);
+            onLessonDone();
+          },
+        ),
+      ];
+    default:
+      return [
+        _HelperFastReviewQuizCard(
+          key: const ValueKey('helper-fast-review'),
+          helpers: _shuffledChoices(helperByHil.values).take(8).toList(),
+          progress: 1 / _lessonQuizCount,
+          onDone: () => onQuizDone(0),
+        ),
+        _HelperParadeQuizCard(
+          key: const ValueKey('helper-thank-you-parade'),
+          helpers: _shuffledChoices(helperByHil.values).take(8).toList(),
+          progress: 1,
+          onDone: () {
+            onQuizDone(1);
+            onLessonDone();
+          },
+        ),
+      ];
+  }
+}
+
+_StoryTapItem _helperStoryItem(
+  _HelperWord helper, {
+  required String instruction,
+  required String successSpeech,
+}) {
+  return _StoryTapItem(
+    id: helper.hil,
+    label: _titleCase(helper.hil),
+    imageAsset: helper.imageAsset,
+    icon: helper.icon,
+    color: helper.color,
+    instruction: instruction,
+    successSpeech: successSpeech,
+  );
+}
+
+_StoryTapItem _familyStoryItem({
+  required String id,
+  required String label,
+  required String imageAsset,
+  required IconData icon,
+  required String instruction,
+  required String successSpeech,
+}) {
+  return _StoryTapItem(
+    id: id,
+    label: label,
+    imageAsset: imageAsset,
+    icon: icon,
+    color: TudloColors.green,
+    instruction: instruction,
+    successSpeech: successSpeech,
+  );
+}
+
+class _HelperStoryTapQuizCard extends StatefulWidget {
+  final String title;
+  final double progress;
+  final List<_StoryTapItem> items;
+  final bool showGentleFire;
+  final VoidCallback onDone;
+
+  const _HelperStoryTapQuizCard({
+    super.key,
+    required this.title,
+    required this.progress,
+    required this.items,
+    required this.onDone,
+    this.showGentleFire = false,
+  });
+
+  @override
+  State<_HelperStoryTapQuizCard> createState() =>
+      _HelperStoryTapQuizCardState();
+}
+
+class _HelperStoryTapQuizCardState extends State<_HelperStoryTapQuizCard> {
+  final Set<String> _doneIds = {};
+  int _targetIndex = 0;
+  String? _wrongId;
+  bool _completed = false;
+  int _feedbackKey = 0;
+
+  _StoryTapItem get _target =>
+      widget.items[_targetIndex.clamp(0, math.max(0, widget.items.length - 1))];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.items.isEmpty) return;
+      unawaited(
+        TudloVoiceButton.speak(context, _target.instruction, hiligaynon: true),
+      );
+    });
+  }
+
+  Future<void> _tapItem(_StoryTapItem item) async {
+    if (_completed || _doneIds.contains(item.id)) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+
+    final correct = item.id == _target.id;
+    setState(() {
+      _feedbackKey++;
+      _wrongId = correct ? null : item.id;
+    });
+    if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Suliton liwat. ${_target.instruction}',
+        hiligaynon: true,
+      );
+      Future<void>.delayed(const Duration(milliseconds: 700), () {
+        if (mounted && !_completed) setState(() => _wrongId = null);
+      });
+      return;
+    }
+
+    unawaited(AppAudioService.instance.playCorrect());
+    setState(() {
+      _doneIds.add(item.id);
+      if (_doneIds.length >= widget.items.length) {
+        _completed = true;
+      } else {
+        _targetIndex++;
+      }
+    });
+    await TudloVoiceButton.speak(
+      context,
+      item.successSpeech,
+      hiligaynon: true,
+      waitForCompletion: true,
+    );
+    if (!mounted) return;
+    if (_completed) {
+      await TudloVoiceButton.speak(
+        context,
+        'Maayo gid! Natapos ang estorya.',
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+      if (mounted) widget.onDone();
+    } else {
+      unawaited(
+        TudloVoiceButton.speak(context, _target.instruction, hiligaynon: true),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: _completed ? 'Maayo gid!' : _target.instruction,
+      progress: widget.progress,
+      mascotMessage: _completed
+          ? 'Koka: Husto tanan!'
+          : 'Koka: ${widget.title}',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final itemSize = (width * .30).clamp(86.0, 118.0);
+          return Column(
+            children: [
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  color: Colors.white,
+                  fontSize: (width * .065).clamp(22.0, 31.0),
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                  shadows: const [
+                    Shadow(color: Color(0xFF459B27), offset: Offset(2, 2)),
+                  ],
+                ),
+              ),
+              if (widget.showGentleFire) ...[
+                const SizedBox(height: 6),
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: TudloColors.orange,
+                  size: 46,
+                ),
+              ],
+              const SizedBox(height: 8),
+              Expanded(
+                child: Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (final item in widget.items)
+                        _StoryTapTarget(
+                          item: item,
+                          size: itemSize,
+                          done: _doneIds.contains(item.id),
+                          wrong: _wrongId == item.id,
+                          feedbackKey: _feedbackKey,
+                          onTap: () => _tapItem(item),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _StoryTapTarget extends StatelessWidget {
+  final _StoryTapItem item;
+  final double size;
+  final bool done;
+  final bool wrong;
+  final int feedbackKey;
+  final VoidCallback onTap;
+
+  const _StoryTapTarget({
+    required this.item,
+    required this.size,
+    required this.done,
+    required this.wrong,
+    required this.feedbackKey,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      key: ValueKey('story-${item.id}-$feedbackKey-$wrong'),
+      correct: done,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: size,
+          height: size + 30,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: done
+                ? TudloColors.softGreen
+                : Colors.white.withValues(alpha: .18),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: done
+                ? [
+                    BoxShadow(
+                      color: TudloColors.green.withValues(alpha: .24),
+                      blurRadius: 18,
+                      spreadRadius: 3,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: Image.asset(
+                  item.imageAsset,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(item.icon, color: item.color, size: size * .58),
+                ),
+              ),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.nunito(
+                  color: Colors.white,
+                  fontSize: 18,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  shadows: const [
+                    Shadow(color: Color(0xFF459B27), offset: Offset(1.5, 1.5)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HelperToolSequenceQuizCard extends StatefulWidget {
+  final double progress;
+  final List<_HelperWord> targets;
+  final VoidCallback onDone;
+
+  const _HelperToolSequenceQuizCard({
+    super.key,
+    required this.progress,
+    required this.targets,
+    required this.onDone,
+  });
+
+  @override
+  State<_HelperToolSequenceQuizCard> createState() =>
+      _HelperToolSequenceQuizCardState();
+}
+
+class _HelperToolSequenceQuizCardState
+    extends State<_HelperToolSequenceQuizCard> {
+  final Set<String> _matched = {};
+  int _targetIndex = 0;
+  _HelperTool? _wrongTool;
+  bool _completed = false;
+
+  _HelperWord get _target =>
+      widget.targets[_targetIndex.clamp(
+        0,
+        math.max(0, widget.targets.length - 1),
+      )];
+
+  String get _instruction {
+    if (_target.hil == 'pulis') {
+      return 'Police officer. Pulis. Guyoda ang badge pakadto sa pulis.';
+    }
+    return 'Guyoda ang ${_target.tool.hil} pakadto sa ${_target.hil}.';
+  }
+
+  List<_HelperTool> get _tools =>
+      _shuffledChoices(widget.targets.map((helper) => helper.tool));
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.targets.isEmpty) return;
+      unawaited(
+        TudloVoiceButton.speak(context, _instruction, hiligaynon: true),
+      );
+    });
+  }
+
+  Future<void> _acceptTool(_HelperTool tool, _HelperWord helper) async {
+    if (_completed || _matched.contains(helper.hil)) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+    final correct = helper.hil == _target.hil && tool.hil == helper.tool.hil;
+    if (!correct) {
+      setState(() => _wrongTool = tool);
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Suliton liwat. $_instruction',
+        hiligaynon: true,
+      );
+      Future<void>.delayed(const Duration(milliseconds: 700), () {
+        if (mounted && !_completed) setState(() => _wrongTool = null);
+      });
+      return;
+    }
+
+    unawaited(AppAudioService.instance.playCorrect());
+    setState(() {
+      _matched.add(helper.hil);
+      if (_matched.length >= widget.targets.length) {
+        _completed = true;
+      } else {
+        _targetIndex++;
+      }
+    });
+    await TudloVoiceButton.speak(
+      context,
+      helper.toolSuccess,
+      hiligaynon: true,
+      waitForCompletion: true,
+    );
+    if (!mounted) return;
+    if (_completed) {
+      widget.onDone();
+    } else {
+      unawaited(
+        TudloVoiceButton.speak(context, _instruction, hiligaynon: true),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: _instruction,
+      progress: widget.progress,
+      mascotMessage: 'Koka: Pamatia kag guyoda ang gamit.',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final helperSize = (width * .26).clamp(76.0, 104.0);
+          return Column(
+            children: [
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    for (final helper in widget.targets)
+                      DragTarget<_HelperTool>(
+                        onWillAcceptWithDetails: (_) =>
+                            !_matched.contains(helper.hil),
+                        onAcceptWithDetails: (details) =>
+                            _acceptTool(details.data, helper),
+                        builder: (context, candidates, rejected) {
+                          return AnimatedScale(
+                            duration: const Duration(milliseconds: 140),
+                            scale: candidates.isNotEmpty ? 1.07 : 1,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _HelperArt(helper: helper, size: helperSize),
+                                const SizedBox(height: 4),
+                                if (_matched.contains(helper.hil))
+                                  _ToolArt(tool: helper.tool, size: 42),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 10,
+                children: [
+                  for (final tool in _tools)
+                    if (!_matched.any(
+                      (hil) =>
+                          widget.targets
+                              .firstWhere((helper) => helper.hil == hil)
+                              .tool
+                              .hil ==
+                          tool.hil,
+                    ))
+                      _FeedbackMotion(
+                        key: ValueKey(
+                          'tool-seq-${tool.hil}-${_wrongTool == tool}',
+                        ),
+                        correct: false,
+                        wrong: _wrongTool == tool,
+                        child: _ToolDraggable(
+                          tool: tool,
+                          size: 86,
+                          onMissed: () => unawaited(
+                            TudloVoiceButton.speak(
+                              context,
+                              _instruction,
+                              hiligaynon: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HelperFastReviewQuizCard extends StatefulWidget {
+  final List<_HelperWord> helpers;
+  final double progress;
+  final VoidCallback onDone;
+
+  const _HelperFastReviewQuizCard({
+    super.key,
+    required this.helpers,
+    required this.progress,
+    required this.onDone,
+  });
+
+  @override
+  State<_HelperFastReviewQuizCard> createState() =>
+      _HelperFastReviewQuizCardState();
+}
+
+class _HelperFastReviewQuizCardState extends State<_HelperFastReviewQuizCard> {
+  late final List<_HelperWord> _trials = [
+    ..._shuffledChoices(widget.helpers),
+    ..._shuffledChoices(widget.helpers),
+  ].take(10).toList();
+  int _index = 0;
+  String? _wrongHil;
+  bool _completed = false;
+  int _feedbackKey = 0;
+
+  _HelperWord get _target =>
+      _trials[_index.clamp(0, math.max(0, _trials.length - 1))];
+
+  String get _instruction => _index.isEven
+      ? 'Ipindot ang ${_target.hil}.'
+      : 'Ipindot ang helper nga may ${_target.tool.hil}.';
+
+  List<_HelperWord> get _choices {
+    final choices = <_HelperWord>[_target];
+    for (final helper in _shuffledChoices(widget.helpers)) {
+      if (choices.length >= 3) break;
+      if (!choices.any((choice) => choice.hil == helper.hil)) {
+        choices.add(helper);
+      }
+    }
+    return _shuffledChoices(choices);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _trials.isEmpty) return;
+      unawaited(
+        TudloVoiceButton.speak(context, _instruction, hiligaynon: true),
+      );
+    });
+  }
+
+  Future<void> _tapChoice(_HelperWord helper) async {
+    if (_completed) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+    final correct = helper.hil == _target.hil;
+    setState(() {
+      _feedbackKey++;
+      _wrongHil = correct ? null : helper.hil;
+    });
+    if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Suliton liwat. $_instruction',
+        hiligaynon: true,
+      );
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        if (mounted && !_completed) setState(() => _wrongHil = null);
+      });
+      return;
+    }
+
+    unawaited(AppAudioService.instance.playCorrect());
+    if (_index >= _trials.length - 1) {
+      setState(() => _completed = true);
+      widget.onDone();
+      return;
+    }
+    setState(() => _index++);
+    unawaited(TudloVoiceButton.speak(context, _instruction, hiligaynon: true));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: _instruction,
+      progress: widget.progress,
+      mascotMessage: 'Koka: Dali nga pagtilaw!',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final choices = _choices;
+          return Column(
+            children: [
+              Text(
+                '${_index + 1} / ${_trials.length}',
+                style: GoogleFonts.nunito(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  shadows: const [
+                    Shadow(color: Color(0xFF459B27), offset: Offset(2, 2)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_index.isOdd)
+                _ToolArt(tool: _target.tool, size: 96)
+              else
+                Text(
+                  _titleCase(_target.hil),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: Colors.white,
+                    fontSize: 40,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    shadows: const [
+                      Shadow(color: Color(0xFF459B27), offset: Offset(2, 2)),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      for (final helper in choices)
+                        _FeedbackMotion(
+                          key: ValueKey(
+                            'fast-${helper.hil}-$_feedbackKey-${_wrongHil == helper.hil}',
+                          ),
+                          correct: false,
+                          wrong: _wrongHil == helper.hil,
+                          child: GestureDetector(
+                            onTap: () => _tapChoice(helper),
+                            child: _HelperArt(
+                              helper: helper,
+                              size: (width * .27).clamp(86.0, 116.0),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HelperParadeQuizCard extends StatefulWidget {
+  final List<_HelperWord> helpers;
+  final double progress;
+  final VoidCallback onDone;
+
+  const _HelperParadeQuizCard({
+    super.key,
+    required this.helpers,
+    required this.progress,
+    required this.onDone,
+  });
+
+  @override
+  State<_HelperParadeQuizCard> createState() => _HelperParadeQuizCardState();
+}
+
+class _HelperParadeQuizCardState extends State<_HelperParadeQuizCard> {
+  final Set<String> _joined = {};
+  int _targetIndex = 0;
+  String? _wrongHil;
+  bool _completed = false;
+  int _feedbackKey = 0;
+
+  _HelperWord get _target =>
+      widget.helpers[_targetIndex.clamp(
+        0,
+        math.max(0, widget.helpers.length - 1),
+      )];
+
+  String get _instruction =>
+      'Salamat parade! Ipindot ang ${_target.hil} para magsulod sa linya.';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.helpers.isEmpty) return;
+      unawaited(
+        TudloVoiceButton.speak(context, _instruction, hiligaynon: true),
+      );
+    });
+  }
+
+  Future<void> _tapHelper(_HelperWord helper) async {
+    if (_completed || _joined.contains(helper.hil)) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+    final correct = helper.hil == _target.hil;
+    setState(() {
+      _feedbackKey++;
+      _wrongHil = correct ? null : helper.hil;
+    });
+    if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Suliton liwat. $_instruction',
+        hiligaynon: true,
+      );
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        if (mounted && !_completed) setState(() => _wrongHil = null);
+      });
+      return;
+    }
+    unawaited(AppAudioService.instance.playCorrect());
+    setState(() {
+      _joined.add(helper.hil);
+      if (_joined.length >= widget.helpers.length) {
+        _completed = true;
+      } else {
+        _targetIndex++;
+      }
+    });
+    if (_completed) {
+      await TudloVoiceButton.speak(
+        context,
+        'Salamat sa tanan nga helpers!',
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+      if (mounted) widget.onDone();
+    } else {
+      unawaited(
+        TudloVoiceButton.speak(context, _instruction, hiligaynon: true),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: _instruction,
+      progress: widget.progress,
+      mascotMessage: 'Koka: Tawga ang kada helper sa parade.',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final itemSize = (width * .21).clamp(64.0, 86.0);
+          return Column(
+            children: [
+              SizedBox(
+                height: 98,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (final helper in widget.helpers)
+                      if (_joined.contains(helper.hil))
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: _HelperArt(helper: helper, size: 46),
+                        ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final helper in widget.helpers)
+                        if (!_joined.contains(helper.hil))
+                          _FeedbackMotion(
+                            key: ValueKey(
+                              'parade-${helper.hil}-$_feedbackKey-${_wrongHil == helper.hil}',
+                            ),
+                            correct: false,
+                            wrong: _wrongHil == helper.hil,
+                            child: GestureDetector(
+                              onTap: () => _tapHelper(helper),
+                              child: _HelperArt(helper: helper, size: itemSize),
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -13406,6 +14376,372 @@ class _FamilyVisitorDoorQuizActivityState
   }
 }
 
+class _FamilyPhotoPlacement {
+  final _FamilyWord member;
+  final String place;
+  final Alignment alignment;
+
+  const _FamilyPhotoPlacement({
+    required this.member,
+    required this.place,
+    required this.alignment,
+  });
+}
+
+class _FamilyPhotoQuizActivity extends StatefulWidget {
+  final double progress;
+  final List<_FamilyWord> members;
+  final ValueChanged<bool> onAttempt;
+  final VoidCallback onCorrect;
+
+  const _FamilyPhotoQuizActivity({
+    super.key,
+    required this.progress,
+    required this.members,
+    required this.onAttempt,
+    required this.onCorrect,
+  });
+
+  @override
+  State<_FamilyPhotoQuizActivity> createState() =>
+      _FamilyPhotoQuizActivityState();
+}
+
+class _FamilyPhotoQuizActivityState extends State<_FamilyPhotoQuizActivity> {
+  late final List<_FamilyPhotoPlacement> _placements = _familyPhotoPlacements(
+    widget.members,
+  );
+  late final List<_FamilyWord> _choices = _shuffledChoices(
+    _placements.map((placement) => placement.member),
+  );
+  final Map<String, _FamilyWord> _placedByHil = {};
+  int _targetIndex = 0;
+  String? _wrongHil;
+  bool _done = false;
+  bool _flash = false;
+  int _feedbackKey = 0;
+
+  _FamilyPhotoPlacement get _target =>
+      _placements[_targetIndex.clamp(0, math.max(0, _placements.length - 1))];
+
+  String get _instruction =>
+      'Ibutang si ${_familyQuestionName(_target.member)} sa ${_target.place}!';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _placements.isEmpty) return;
+      unawaited(
+        TudloVoiceButton.speak(context, _instruction, hiligaynon: true),
+      );
+    });
+  }
+
+  Future<void> _placeMember(
+    _FamilyPhotoPlacement slot,
+    _FamilyWord member,
+  ) async {
+    if (_done || _placedByHil.containsKey(slot.member.hil)) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+
+    final correct =
+        member.hil == _target.member.hil &&
+        slot.member.hil == _target.member.hil;
+    widget.onAttempt(correct);
+    setState(() {
+      _feedbackKey++;
+      _wrongHil = correct ? null : member.hil;
+    });
+
+    if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Suliton liwat. $_instruction',
+        hiligaynon: true,
+      );
+      Future<void>.delayed(const Duration(milliseconds: 720), () {
+        if (mounted && !_done) setState(() => _wrongHil = null);
+      });
+      return;
+    }
+
+    unawaited(AppAudioService.instance.playCorrect());
+    setState(() {
+      _placedByHil[slot.member.hil] = member;
+      if (_placedByHil.length >= _placements.length) {
+        _done = true;
+        _flash = true;
+      } else {
+        _targetIndex++;
+      }
+    });
+
+    if (_done) {
+      unawaited(
+        AppAudioService.instance.playSoundEffect(
+          AppAudioService.tap,
+          volume: .60,
+          allowRapidRepeat: true,
+        ),
+      );
+      Future<void>.delayed(const Duration(milliseconds: 180), () {
+        if (mounted) setState(() => _flash = false);
+      });
+      await TudloVoiceButton.speak(
+        context,
+        'Husto! Kumpleto na ang photo sang pamilya!',
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+      if (!mounted) return;
+      widget.onCorrect();
+    } else {
+      unawaited(
+        TudloVoiceButton.speak(context, _instruction, hiligaynon: true),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: 'Photo sang pamilya!',
+      progress: widget.progress,
+      mascotMessage: _done
+          ? 'Koka: Kumpleto na ang photo!'
+          : 'Koka: $_instruction',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final frameWidth = math.min(width * .90, 342.0);
+          final frameHeight = math.min(338.0, constraints.maxHeight * .58);
+          final avatarSize = (frameWidth * .25).clamp(70.0, 92.0);
+          return Column(
+            children: [
+              _PresentationInstructionText(
+                message: _instruction,
+                fontSize: (width * .064).clamp(22.0, 31.0),
+                textAlign: TextAlign.center,
+                onReplay: () => unawaited(
+                  TudloVoiceButton.speak(
+                    context,
+                    _instruction,
+                    hiligaynon: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: frameWidth,
+                height: frameHeight,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: _flash
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: .86),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: TudloColors.forest,
+                            width: 6,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: TudloColors.forest.withValues(alpha: .18),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF6DE),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFFE9C77E),
+                              width: 4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    for (final placement in _placements)
+                      Align(
+                        alignment: placement.alignment,
+                        child: _FamilyPhotoSlot(
+                          placement: placement,
+                          placed: _placedByHil[placement.member.hil],
+                          avatarSize: avatarSize,
+                          onAccept: (member) => _placeMember(placement, member),
+                        ),
+                      ),
+                    if (_done)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 220),
+                            opacity: _flash ? .72 : 0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      for (final member in _choices)
+                        if (!_placedByHil.containsKey(member.hil))
+                          _FamilyPhotoDraggable(
+                            member: member,
+                            size: (width * .19).clamp(64.0, 84.0),
+                            wrong: _wrongHil == member.hil,
+                            feedbackKey: _feedbackKey,
+                          ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FamilyPhotoSlot extends StatelessWidget {
+  final _FamilyPhotoPlacement placement;
+  final _FamilyWord? placed;
+  final double avatarSize;
+  final ValueChanged<_FamilyWord> onAccept;
+
+  const _FamilyPhotoSlot({
+    required this.placement,
+    required this.placed,
+    required this.avatarSize,
+    required this.onAccept,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPlaced = placed != null;
+    return DragTarget<_FamilyWord>(
+      onWillAcceptWithDetails: (_) => !hasPlaced,
+      onAcceptWithDetails: (details) => onAccept(details.data),
+      builder: (context, candidates, rejected) {
+        return AnimatedScale(
+          duration: const Duration(milliseconds: 150),
+          scale: candidates.isNotEmpty ? 1.08 : 1,
+          child: Container(
+            width: avatarSize + 22,
+            height: avatarSize + 28,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: hasPlaced
+                  ? TudloColors.softGreen
+                  : Colors.white.withValues(alpha: .70),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: candidates.isNotEmpty
+                    ? TudloColors.blue
+                    : hasPlaced
+                    ? TudloColors.green
+                    : const Color(0xFFE8D59B),
+                width: 4,
+              ),
+            ),
+            child: hasPlaced
+                ? _FamilyPhotoPerson(member: placed!, size: avatarSize)
+                : Icon(
+                    Icons.person_add_alt_1_rounded,
+                    color: TudloColors.forest.withValues(alpha: .45),
+                    size: avatarSize * .55,
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FamilyPhotoDraggable extends StatelessWidget {
+  final _FamilyWord member;
+  final double size;
+  final bool wrong;
+  final int feedbackKey;
+
+  const _FamilyPhotoDraggable({
+    required this.member,
+    required this.size,
+    required this.wrong,
+    required this.feedbackKey,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = _FeedbackMotion(
+      key: ValueKey('photo-choice-${member.hil}-$feedbackKey-$wrong'),
+      correct: false,
+      wrong: wrong,
+      child: _FamilyPhotoPerson(member: member, size: size),
+    );
+    return Draggable<_FamilyWord>(
+      data: member,
+      feedback: Material(
+        color: Colors.transparent,
+        child: _FamilyPhotoPerson(member: member, size: size * 1.05),
+      ),
+      childWhenDragging: Opacity(opacity: .30, child: child),
+      child: child,
+    );
+  }
+}
+
+class _FamilyPhotoPerson extends StatelessWidget {
+  final _FamilyWord member;
+  final double size;
+
+  const _FamilyPhotoPerson({required this.member, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Image.asset(
+        member.imageAsset,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) =>
+            Icon(member.icon, color: TudloColors.forest, size: size * .76),
+      ),
+    );
+  }
+}
+
 class _FamilyHouseShell extends StatelessWidget {
   const _FamilyHouseShell();
 
@@ -14162,6 +15498,54 @@ List<_FamilyWord> _familyVisitorTargets(List<_FamilyWord> words) {
   return words.take(math.min(3, words.length)).toList();
 }
 
+List<_FamilyWord> _familyPhotoTargets(List<_FamilyWord> words) {
+  final targets = ['magulang', 'manghod', 'lola', 'tatay']
+      .map((name) => _familyWordByHil(words, name))
+      .whereType<_FamilyWord>()
+      .toList();
+  if (targets.length >= 4) return targets.take(4).toList();
+  final fallback = [...targets];
+  for (final word in words) {
+    if (fallback.length >= 4) break;
+    if (!fallback.any((item) => item.hil == word.hil)) fallback.add(word);
+  }
+  return fallback;
+}
+
+List<_FamilyPhotoPlacement> _familyPhotoPlacements(List<_FamilyWord> words) {
+  const defaults = [
+    ('magulang', 'wala', Alignment(-.58, -.40)),
+    ('manghod', 'tuo', Alignment(.58, -.40)),
+    ('lola', 'ubos nga wala', Alignment(-.58, .44)),
+    ('tatay', 'ubos nga tuo', Alignment(.58, .44)),
+  ];
+  final placements = <_FamilyPhotoPlacement>[];
+  for (final item in defaults) {
+    final word = _familyWordByHil(words, item.$1);
+    if (word == null) continue;
+    placements.add(
+      _FamilyPhotoPlacement(member: word, place: item.$2, alignment: item.$3),
+    );
+  }
+  if (placements.isNotEmpty) return placements;
+
+  const fallbackAlignments = [
+    Alignment(-.58, -.40),
+    Alignment(.58, -.40),
+    Alignment(-.58, .44),
+    Alignment(.58, .44),
+  ];
+  const fallbackPlaces = ['wala', 'tuo', 'ubos nga wala', 'ubos nga tuo'];
+  return [
+    for (var index = 0; index < words.length && index < 4; index++)
+      _FamilyPhotoPlacement(
+        member: words[index],
+        place: fallbackPlaces[index],
+        alignment: fallbackAlignments[index],
+      ),
+  ];
+}
+
 _FamilyWord? _familyWordByHil(List<_FamilyWord> words, String hil) {
   for (final word in words) {
     if (word.hil == hil) return word;
@@ -14176,6 +15560,8 @@ String _familyQuestionName(_FamilyWord word) {
     'bata' => 'child',
     'lola' => 'grandmother',
     'lolo' => 'grandfather',
+    'magulang' => 'older sibling',
+    'manghod' => 'younger sibling',
     _ => word.hil,
   };
 }
