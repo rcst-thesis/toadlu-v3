@@ -57,10 +57,6 @@ class NmtTranslationService {
           final nextToken = values.single as int;
           if (nextToken == _eosId) break;
           generated.add(nextToken);
-
-          // ponytail: reject a looping checkpoint; remove after model quality
-          // tests show repeated-token decoding is fixed.
-          if (_repeatsLastToken(generated)) return '';
         } finally {
           await targetTensor.dispose();
           for (final output in outputs.values) {
@@ -111,12 +107,6 @@ class NmtTranslationService {
       await session.close();
       rethrow;
     }
-  }
-
-  bool _repeatsLastToken(List<int> tokens) {
-    if (tokens.length < 5) return false;
-    final last = tokens.last;
-    return tokens.sublist(tokens.length - 4).every((token) => token == last);
   }
 
   Future<void> close() async {
