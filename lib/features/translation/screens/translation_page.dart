@@ -1,24 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/services/app_audio_service.dart';
-import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
+import 'package:tudloapp/features/translation/services/child_safety_filter.dart';
+import 'package:tudloapp/features/translation/services/nmt_translation_service.dart';
 
 class _TranslateStyle {
   static const softBg = TudloColors.paper;
 }
 
-/// Simple local translation screen.
-///
-/// It uses the word-based DictionaryData source, plus a few simple phrase
-/// mappings. It does not depend on lesson question data.
+/// Offline English-to-Hiligaynon model translation.
 class TranslationPage extends StatefulWidget {
-  const TranslationPage({super.key});
+  final Future<String> Function(String)? translateEnglish;
+
+  const TranslationPage({super.key, this.translateEnglish});
 
   @override
   State<TranslationPage> createState() => _TranslationPageState();
@@ -28,132 +30,130 @@ class _TranslationPageState extends State<TranslationPage> {
   final TextEditingController topController = TextEditingController();
   final TextEditingController bottomController = TextEditingController();
 
-  String fromLanguage = 'Hiligaynon';
-  String toLanguage = 'English';
   bool showHelpOverlay = !AppData.translateHelpDone;
-  bool _isUpdating = false;
+  bool _isTranslating = false;
+  bool _nmtRunning = false;
+  bool _disposed = false;
+  bool _safetyReady = false;
+  bool _inputBlocked = false;
+  int _requestId = 0;
+  Timer? _translationDebounce;
+  String? _translationError;
+  ({String text, int requestId})? _pendingRequest;
+  NmtTranslationService? _nmtService;
+  late final Future<String> Function(String) _translateEnglish;
 
   @override
   void initState() {
     super.initState();
+    _nmtService = widget.translateEnglish == null
+        ? NmtTranslationService()
+        : null;
+    _translateEnglish = widget.translateEnglish ?? _nmtService!.translate;
     topController.addListener(_onInputChanged);
+    _safetyReady = ChildSafetyFilter.isReady;
+    if (!_safetyReady) {
+      ChildSafetyFilter.initialize().then(
+        (_) {
+          if (mounted) setState(() => _safetyReady = true);
+        },
+        onError: (_) {
+          if (mounted) {
+            setState(() {
+              _translationError =
+                  'Child-safe translation is unavailable. Try again.';
+            });
+          }
+        },
+      );
+    }
   }
 
   void _onInputChanged() {
-    // The input listener updates the translation field immediately as the user
-    // types. `_isUpdating` prevents controller changes from causing loops.
-    if (_isUpdating) return;
+    if (!_safetyReady) return;
 
     final input = topController.text;
-    final result = _translate(input);
-    _isUpdating = true;
-    bottomController.text = result.translation;
-    _isUpdating = false;
+    final requestId = ++_requestId;
+    _translationDebounce?.cancel();
+    _pendingRequest = null;
+    final inputBlocked = ChildSafetyFilter.isUnsafe(input);
+    bottomController.text = inputBlocked
+        ? ChildSafetyFilter.blockedMessage
+        : '';
 
-    if (input.trim().isNotEmpty && !AppData.translateHelpDone) {
-      setState(() {
+    setState(() {
+      _inputBlocked = inputBlocked;
+      _isTranslating = false;
+      _translationError = null;
+      if (input.trim().isNotEmpty && !AppData.translateHelpDone) {
         showHelpOverlay = false;
         AppData.translateHelpDone = true;
-      });
-    } else {
-      setState(() {});
-    }
-  }
-
-  _TranslationResult _translate(String value) {
-    // Detect direction by scoring both dictionaries, then use the dictionary
-    // with the stronger match.
-    final clean = DictionaryData.normalizeForSearch(value);
-    if (clean.isEmpty) {
-      return const _TranslationResult('', 'Hiligaynon', 'English');
-    }
-
-    final hilScore = _score(clean, DictionaryData.hiligaynonToEnglish);
-    final engScore = _score(clean, DictionaryData.englishToHiligaynon);
-    final fromHil = hilScore >= engScore;
-    final dictionary = fromHil
-        ? DictionaryData.hiligaynonToEnglish
-        : DictionaryData.englishToHiligaynon;
-    final translation = _lookup(clean, dictionary);
-
-    fromLanguage = fromHil ? 'Hiligaynon' : 'English';
-    toLanguage = fromHil ? 'English' : 'Hiligaynon';
-
-    return _TranslationResult(translation, fromLanguage, toLanguage);
-  }
-
-  int _score(String value, Map<String, String> dictionary) {
-    // Exact phrase matches score higher than individual word matches.
-    final normalized = DictionaryData.normalizeForSearch(value);
-    var score =
-        dictionary.containsKey(normalized) ||
-            DictionaryData.phraseTranslations.containsKey(normalized)
-        ? 5
-        : 0;
-    final words = _words(value);
-    for (final word in words) {
-      if (dictionary.containsKey(word)) score++;
-    }
-    return score;
-  }
-
-  String _lookup(String value, Map<String, String> dictionary) {
-    // Try an exact phrase first. If it is missing, translate known words one by
-    // one while preserving spaces and basic punctuation.
-    final normalized = DictionaryData.normalizeForSearch(value);
-    final exact =
-        DictionaryData.phraseTranslations[normalized] ?? dictionary[normalized];
-    if (exact != null) return _matchCase(exact, value);
-
-    final translatedWords = value.split(RegExp(r'(\s+)')).map((part) {
-      if (part.trim().isEmpty) return part;
-      final punctuation = RegExp(r'(^[^\w]+|[^\w]+$)');
-      final edge = punctuation.allMatches(part).map((m) => m.group(0)!).join();
-      final core = part
-          .replaceAll(RegExp(r'^[^\w]+|[^\w]+$'), '')
-          .toLowerCase();
-      final translated = dictionary[DictionaryData.normalizeForSearch(core)];
-      if (translated == null) return part;
-      return edge.startsWith(part[0]) ? '$edge$translated' : '$translated$edge';
-    }).join();
-
-    return translatedWords == value
-        ? 'Translation not found yet.'
-        : translatedWords;
-  }
-
-  List<String> _words(String value) {
-    return DictionaryData.normalizeForSearch(value)
-        .split(RegExp(r'[^a-zA-Z\-]+'))
-        .where((word) => word.trim().isNotEmpty)
-        .toList();
-  }
-
-  String _matchCase(String translation, String source) {
-    if (source.isEmpty) return translation;
-    return source[0].toUpperCase() == source[0]
-        ? translation[0].toUpperCase() + translation.substring(1)
-        : translation;
-  }
-
-  void swapLanguages() {
-    // Swap both the language labels and the text fields so users can reverse a
-    // translation quickly.
-    setState(() {
-      final tempLang = fromLanguage;
-      fromLanguage = toLanguage;
-      toLanguage = tempLang;
-
-      final tempText = topController.text;
-      _isUpdating = true;
-      topController.text = bottomController.text;
-      bottomController.text = tempText;
-      _isUpdating = false;
+      }
     });
+
+    if (!inputBlocked && input.trim().isNotEmpty) {
+      _translationDebounce = Timer(const Duration(milliseconds: 450), () {
+        if (!_isCurrent(input, requestId)) return;
+        _pendingRequest = (text: input, requestId: requestId);
+        unawaited(_drainNmtRequests());
+      });
+    }
+  }
+
+  Future<void> _drainNmtRequests() async {
+    if (_nmtRunning) return;
+    _nmtRunning = true;
+    try {
+      while (_pendingRequest != null) {
+        final request = _pendingRequest!;
+        _pendingRequest = null;
+        if (!_isCurrent(request.text, request.requestId)) continue;
+        setState(() => _isTranslating = true);
+        try {
+          final translation = (await _translateEnglish(request.text)).trim();
+          if (!_isCurrent(request.text, request.requestId)) continue;
+          if (translation.isEmpty) {
+            throw StateError('The model returned an empty translation.');
+          }
+          setState(() {
+            bottomController.text = ChildSafetyFilter.isUnsafe(translation)
+                ? ChildSafetyFilter.blockedMessage
+                : translation;
+            _translationError = null;
+          });
+        } catch (_) {
+          if (!_isCurrent(request.text, request.requestId)) continue;
+          setState(() {
+            bottomController.clear();
+            _translationError = 'Offline translation unavailable. Try again.';
+          });
+        } finally {
+          if (_isCurrent(request.text, request.requestId)) {
+            setState(() => _isTranslating = false);
+          }
+        }
+      }
+    } finally {
+      _nmtRunning = false;
+    }
+  }
+
+  bool _isCurrent(String text, int requestId) {
+    return !_disposed &&
+        mounted &&
+        requestId == _requestId &&
+        topController.text == text;
   }
 
   @override
   void dispose() {
+    _disposed = true;
+    _requestId++;
+    _translationDebounce?.cancel();
+    _pendingRequest = null;
+    topController.removeListener(_onInputChanged);
+    final service = _nmtService;
+    if (service != null) unawaited(service.close());
     topController.dispose();
     bottomController.dispose();
     super.dispose();
@@ -205,30 +205,43 @@ class _TranslationPageState extends State<TranslationPage> {
                           ),
                           SizedBox(height: availableWidth >= 700 ? 46 : 38),
                           _TranslationLanguageCard(
-                            language: fromLanguage,
+                            language: 'English',
                             controller: topController,
-                            hint: fromLanguage == 'Hiligaynon'
-                                ? 'Type Hiligaynon'
-                                : 'Type English',
+                            hint: 'Type English',
                             readOnly: false,
+                            inputEnabled: _safetyReady,
+                            safeActions: !_inputBlocked,
                             onClear: topController.clear,
                           ),
-                          SizedBox(height: availableWidth >= 700 ? 18 : 14),
-                          Center(
-                            child: _VerticalSwapButton(onTap: swapLanguages),
-                          ),
-                          SizedBox(height: availableWidth >= 700 ? 18 : 14),
+                          SizedBox(height: availableWidth >= 700 ? 36 : 28),
                           _TranslationLanguageCard(
-                            language: toLanguage,
+                            language: 'Hiligaynon',
                             controller: bottomController,
-                            hint: toLanguage == 'Hiligaynon'
-                                ? 'Hiligaynon translation'
-                                : 'English translation',
+                            hint: 'Hiligaynon translation',
                             readOnly: true,
+                            inputEnabled: true,
+                            safeActions: true,
                             onClear: () {
                               setState(() => bottomController.clear());
                             },
                           ),
+                          if (!_safetyReady || _isTranslating)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 12),
+                              child: LinearProgressIndicator(),
+                            ),
+                          if (_translationError != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                _translationError!,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.nunito(
+                                  color: TudloColors.coral,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -387,23 +400,13 @@ class _TranslateBackgroundPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _TranslationResult {
-  final String translation;
-  final String fromLanguage;
-  final String toLanguage;
-
-  const _TranslationResult(
-    this.translation,
-    this.fromLanguage,
-    this.toLanguage,
-  );
-}
-
 class _TranslationLanguageCard extends StatelessWidget {
   final String language;
   final TextEditingController controller;
   final String hint;
   final bool readOnly;
+  final bool inputEnabled;
+  final bool safeActions;
   final VoidCallback onClear;
 
   const _TranslationLanguageCard({
@@ -411,6 +414,8 @@ class _TranslationLanguageCard extends StatelessWidget {
     required this.controller,
     required this.hint,
     required this.readOnly,
+    required this.inputEnabled,
+    required this.safeActions,
     required this.onClear,
   });
 
@@ -490,11 +495,11 @@ class _TranslationLanguageCard extends StatelessWidget {
                   IconButton(
                     tooltip: 'Listen',
                     iconSize: 30 * scale,
-                    onPressed: text.isEmpty
+                    onPressed: text.isEmpty || !safeActions
                         ? null
                         : () => TudloVoiceButton.speak(context, text),
                     icon: Opacity(
-                      opacity: text.isEmpty ? .35 : 1,
+                      opacity: text.isEmpty || !safeActions ? .35 : 1,
                       child: TudloSpeakerIcon(size: 24 * scale),
                     ),
                   ),
@@ -524,6 +529,7 @@ class _TranslationLanguageCard extends StatelessWidget {
                     )
                   : TextField(
                       controller: controller,
+                      enabled: inputEnabled,
                       maxLines: null,
                       minLines: 1,
                       style: GoogleFonts.nunito(
@@ -557,7 +563,7 @@ class _TranslationLanguageCard extends StatelessWidget {
                       tooltip: 'Copy text',
                       icon: Icons.copy_rounded,
                       color: TudloColors.forest,
-                      enabled: text.isNotEmpty,
+                      enabled: text.isNotEmpty && safeActions,
                       scale: scale,
                       onTap: () => _copyText(context, controller.text),
                     ),
@@ -621,69 +627,6 @@ class _TranslationActionButton extends StatelessWidget {
               icon,
               color: enabled ? color : TudloColors.muted.withValues(alpha: .45),
               size: 21 * scale,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _VerticalSwapButton extends StatefulWidget {
-  final VoidCallback onTap;
-
-  const _VerticalSwapButton({required this.onTap});
-
-  @override
-  State<_VerticalSwapButton> createState() => _VerticalSwapButtonState();
-}
-
-class _VerticalSwapButtonState extends State<_VerticalSwapButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final buttonSize = (width * .068).clamp(52.0, 68.0);
-    final iconSize = buttonSize * .72;
-
-    return AnimatedScale(
-      scale: _pressed ? .92 : 1,
-      duration: const Duration(milliseconds: 90),
-      curve: Curves.easeOut,
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: TudloColors.forest.withValues(alpha: .42),
-              blurRadius: 24,
-              spreadRadius: 4,
-            ),
-            BoxShadow(
-              color: TudloColors.forest.withValues(alpha: .28),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: TudloColors.forest,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: widget.onTap,
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapCancel: () => setState(() => _pressed = false),
-            onTapUp: (_) => setState(() => _pressed = false),
-            child: SizedBox(
-              width: buttonSize,
-              height: buttonSize,
-              child: Icon(
-                Icons.swap_vert_rounded,
-                color: Colors.white,
-                size: iconSize,
-              ),
             ),
           ),
         ),
