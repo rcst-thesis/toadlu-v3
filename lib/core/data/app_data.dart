@@ -35,6 +35,7 @@ class AppData {
   static DateTime _lastEnergyAt = DateTime.now();
 
   static int streakDays = 0;
+  static String? lastDailyStreakDate;
   static int unlockedLevel = 1;
   static bool developerMode = false;
   static int dailyWordDemoOffset = 0;
@@ -155,8 +156,25 @@ class AppData {
     return DateTime.now().add(Duration(days: dailyWordDemoOffset));
   }
 
+  static String dateKeyFor(DateTime date) {
+    final local = date.toLocal();
+    final year = local.year.toString().padLeft(4, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  static bool recordLessonStreakForToday({DateTime? now}) {
+    final today = dateKeyFor(now ?? DateTime.now());
+    if (lastDailyStreakDate == today) return false;
+    streakDays = streakDays <= 0 ? 1 : streakDays + 1;
+    lastDailyStreakDate = today;
+    return true;
+  }
+
   static void applyProfile(LearnerProfile profile) {
     streakDays = profile.streakDays;
+    lastDailyStreakDate = profile.lastDailyStreakDate;
     selectedGradeLevel = profile.parsedGrade;
     mapHelpDone = profile.mapHelpDone;
     unlockedLevel = profile.unlockedLevel.clamp(1, maxLevel);
@@ -178,6 +196,7 @@ class AppData {
     return profile.copyWith(
       unlockedLevel: unlockedLevel,
       streakDays: streakDays,
+      lastDailyStreakDate: lastDailyStreakDate,
       currentEnergy: currentEnergy,
       levelStars: Map<int, int>.from(levelStars),
       lessonScores: Map<String, LessonScoreStats>.from(lessonScores),
@@ -188,6 +207,7 @@ class AppData {
 
   static void clearLearningProgress() {
     streakDays = 0;
+    lastDailyStreakDate = null;
     unlockedLevel = 1;
     currentEnergy = maxEnergy;
     _lastEnergyAt = DateTime.now();

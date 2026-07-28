@@ -198,6 +198,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
   final _LessonAttemptTracker _scoreTracker = _LessonAttemptTracker();
   late final DateTime _levelStartedAt;
   bool _rewardsClaimed = false;
+  bool _showDailyStreakAfterCompletion = false;
   bool _completeDialogShown = false;
   bool _alphabetPresentationChrome = false;
 
@@ -213,15 +214,15 @@ class _LevelGamePageState extends State<LevelGamePage> {
       final contentFuture = LessonBank.loadLevelContentForLevel(widget.level);
       await DictionaryData.initialize();
       final content = await contentFuture;
-      questions = _fiveQuizQuestionsFor(content);
+      questions = _quizQuestionsFor(content, _quizQuestionCountFor(content));
       _scoreTracker.expectedActivities = questions.length;
       return content;
     }();
     _levelStartedAt = DateTime.now();
   }
 
-  void _claimRewardsOnce() {
-    if (_rewardsClaimed) return;
+  bool _claimRewardsOnce() {
+    if (_rewardsClaimed) return _showDailyStreakAfterCompletion;
     _rewardsClaimed = true;
 
     // Progress is saved only when the learner taps the completion button.
@@ -229,9 +230,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
     final wasCompleted = AppData.completedLevels.contains(widget.level);
     final previousNextLevel = AppData.firstUnlockedIncompleteLevel;
     AppData.saveLevelScore(widget.level, _buildLessonScoreStats());
-    if (AppData.streakDays < 1) {
-      AppData.streakDays = 1;
-    }
+    _showDailyStreakAfterCompletion = AppData.recordLessonStreakForToday();
     AppData.unlockedLevel = AppData.firstUnlockedIncompleteLevel;
     final unlockedNewLesson =
         AppData.firstUnlockedIncompleteLevel != previousNextLevel;
@@ -242,6 +241,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       ),
     );
     AppStateScope.of(context).saveActiveProfileProgress();
+    return _showDailyStreakAfterCompletion;
   }
 
   void _recordQuestionAttempt(int index, bool correct) {
@@ -507,13 +507,21 @@ class _LevelGamePageState extends State<LevelGamePage> {
     );
   }
 
-  List<LessonQuestion> _fiveQuizQuestionsFor(LevelContent content) {
+  int _quizQuestionCountFor(LevelContent content) {
+    return content.gradeLevel == 1 &&
+            content.unitNumber == 1 &&
+            content.lessonNumber == 9
+        ? 10
+        : _lessonQuizCount;
+  }
+
+  List<LessonQuestion> _quizQuestionsFor(LevelContent content, int count) {
     final parsed = content.quizItems.map(_questionFromQuizItem).toList();
-    if (parsed.length >= _lessonQuizCount) {
-      return parsed.take(_lessonQuizCount).toList();
+    if (parsed.length >= count) {
+      return parsed.take(count).toList();
     }
     final result = [...parsed];
-    while (result.length < _lessonQuizCount) {
+    while (result.length < count) {
       final index = result.length;
       final fallback = parsed.isEmpty
           ? LessonQuestion.choice(
@@ -571,6 +579,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
         final levelContent = snapshot.data;
         final alphabetLesson =
             levelContent != null && _isGradeOneAlphabetContent(levelContent);
+        final unitOneReviewLesson =
+            levelContent != null &&
+            _isGradeOneUnitOneReviewContent(levelContent);
         final numberLesson =
             levelContent != null && _isGradeOneNumberContent(levelContent);
         final familyLesson =
@@ -585,11 +596,20 @@ class _LevelGamePageState extends State<LevelGamePage> {
             levelContent != null && _isGradeTwoContent(levelContent);
         final gradeThreeLesson =
             levelContent != null && _isGradeThreeContent(levelContent);
+        final customLessonFlow =
+            alphabetLesson ||
+            unitOneReviewLesson ||
+            numberLesson ||
+            familyLesson ||
+            helperLesson ||
+            animalLesson ||
+            placeLesson ||
+            gradeTwoLesson ||
+            gradeThreeLesson;
         final progress = questions.isEmpty
             ? 0.0
             : checkedCount / questions.length;
-        final hideStandardChrome =
-            alphabetLesson && _alphabetPresentationChrome;
+        final hideStandardChrome = customLessonFlow;
         return Scaffold(
           backgroundColor: hideStandardChrome
               ? const Color(0xFFAEEAB3)
@@ -674,14 +694,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                   Expanded(
                     child: loading || levelContent == null
                         ? const _LessonLoadingCard()
-                        : alphabetLesson ||
-                              numberLesson ||
-                              familyLesson ||
-                              helperLesson ||
-                              animalLesson ||
-                              placeLesson ||
-                              gradeTwoLesson ||
-                              gradeThreeLesson
+                        : customLessonFlow
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -692,6 +705,13 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                         onExit: _showPauseMenu,
                                         onPresentationChromeChanged:
                                             _setAlphabetPresentationChrome,
+                                        onQuizAttempt: _recordQuestionAttempt,
+                                        onQuizCorrect: (index) =>
+                                            _handleQuestionChecked(index, true),
+                                      )
+                                    : unitOneReviewLesson
+                                    ? _GradeOneUnitOneReviewLesson(
+                                        content: levelContent,
                                         onQuizAttempt: _recordQuestionAttempt,
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
@@ -814,7 +834,14 @@ class _LevelGamePageState extends State<LevelGamePage> {
   bool _isGradeOneNumberContent(LevelContent content) {
     return content.gradeLevel == 1 &&
         content.unitNumber == 1 &&
-        content.lessonNumber >= 7;
+        content.lessonNumber >= 7 &&
+        content.lessonNumber <= 8;
+  }
+
+  bool _isGradeOneUnitOneReviewContent(LevelContent content) {
+    return content.gradeLevel == 1 &&
+        content.unitNumber == 1 &&
+        content.lessonNumber == 9;
   }
 
   bool _isGradeOneFamilyContent(LevelContent content) {
@@ -4613,6 +4640,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
         key: ValueKey('unit1-tap-${widget.content.id}'),
         prompt: 'Pamatii ang tingog. Pindoton ang husto nga letra.',
         listenText: _letterSoundText(_quizTargets.first),
+        showSpeakerHint: widget.content.lessonNumber == 1,
         progress: 1 / _lessonQuizCount,
         choices: _shuffledChoices([
           _quizTargets.first,
@@ -5002,6 +5030,127 @@ class _AlphabetAnchor {
   });
 }
 
+List<_AlphabetAnchor> _unitOneAlphabetAnchorsFor(int lessonNumber) {
+  switch (lessonNumber) {
+    case 1:
+      return const [
+        _AlphabetAnchor(
+          word: 'NANAY',
+          meaning: 'nanay',
+          targets: ['N', 'A', 'Y'],
+          imageAsset: 'assets/images/level_game/people/nanay.png',
+          icon: Icons.family_restroom_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'TATAY',
+          meaning: 'tatay',
+          targets: ['T', 'A', 'Y'],
+          imageAsset: 'assets/images/level_game/people/tatay.png',
+          icon: Icons.family_restroom_rounded,
+        ),
+      ];
+    case 2:
+      return const [
+        _AlphabetAnchor(
+          word: 'IDO',
+          meaning: 'ido',
+          targets: ['I', 'D', 'O'],
+          imageAsset: 'assets/images/level_game/animals/dog.png',
+          icon: Icons.pets_rounded,
+        ),
+      ];
+    case 3:
+      return const [
+        _AlphabetAnchor(
+          word: 'MANOK',
+          meaning: 'manok',
+          targets: ['M', 'K'],
+          imageAsset: 'assets/images/level_game/animals/chicken.png',
+          icon: Icons.egg_alt_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'KURING',
+          meaning: 'kuring',
+          targets: ['K', 'U'],
+          imageAsset: 'assets/images/level_game/animals/cat.png',
+          icon: Icons.pets_rounded,
+        ),
+      ];
+    case 4:
+      return const [
+        _AlphabetAnchor(
+          word: 'BALAY',
+          meaning: 'balay',
+          targets: ['B', 'L'],
+          imageAsset: 'assets/images/level_game/house.png',
+          icon: Icons.home_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'LOLA',
+          meaning: 'lola',
+          targets: ['L'],
+          icon: Icons.elderly_woman_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'ISDA',
+          meaning: 'isda',
+          targets: ['S'],
+          imageAsset: 'assets/images/level_game/animals/fish.png',
+          icon: Icons.water_rounded,
+        ),
+      ];
+    case 5:
+      return const [
+        _AlphabetAnchor(
+          word: 'ESKWELAHAN',
+          meaning: 'eskwelahan',
+          targets: ['E'],
+          imageAsset: 'assets/images/level_game/eskwelahan.png',
+          icon: Icons.school_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'GATAS',
+          meaning: 'gatas',
+          targets: ['G'],
+          imageAsset: 'assets/images/level_game/milk.png',
+          icon: Icons.local_drink_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'PAMILYA',
+          meaning: 'pamilya',
+          targets: ['P'],
+          imageAsset: 'assets/images/level_game/people/pamilya.png',
+          icon: Icons.diversity_3_rounded,
+        ),
+      ];
+    case 6:
+    default:
+      return const [
+        _AlphabetAnchor(
+          word: 'DOKTOR',
+          meaning: 'doktor',
+          targets: ['R'],
+          imageAsset: 'assets/images/level_game/people/doktor.png',
+          icon: Icons.medical_services_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'HOSPITAL',
+          meaning: 'ospital',
+          targets: ['H'],
+          imageAsset: 'assets/images/level_game/ospital.png',
+          icon: Icons.local_hospital_rounded,
+        ),
+        _AlphabetAnchor(
+          word: 'KARBAW',
+          meaning: 'karbaw',
+          targets: ['W'],
+          imageAsset: 'assets/images/level_game/animals/carabao.png',
+          icon: Icons.agriculture_rounded,
+        ),
+      ];
+  }
+}
+
 class _AlphabetFadeStep {
   final Widget child;
 
@@ -5050,46 +5199,52 @@ class _GradeOneNumberLessonState extends State<_GradeOneNumberLesson> {
   Widget build(BuildContext context) {
     var maxIndex = 0;
     final numbers = _numbersForUnitOneLesson(widget.content.lessonNumber);
-    final answer = widget.content.lessonNumber == 8 ? '6' : '3';
-    final secondAnswer = widget.content.lessonNumber == 8 ? '8' : '5';
-    final thirdAnswer = widget.content.lessonNumber == 8 ? '10' : '2';
-    final countAnswer = widget.content.lessonNumber == 8 ? 6 : 3;
+    final numberValues = numbers.map(int.parse).toList();
+    final soloNumbers = numberValues.take(4).toList();
+    double quizProgress(int quizIndex) {
+      return (quizIndex + 1) / _lessonQuizCount;
+    }
+
     final steps = [
+      for (final entry in numbers.asMap().entries)
+        _AlphabetFadeStep(
+          child: _NumberFruitPresentationSlide(
+            number: int.parse(entry.value),
+            progress: (entry.key + 1) / numbers.length,
+            showSpeakerHint: widget.content.lessonNumber == 1,
+            onBack: entry.key == 0
+                ? null
+                : () => _goToStep(_stepIndex - 1, maxIndex),
+            onNext: () => _goToStep(_stepIndex + 1, maxIndex),
+          ),
+        ),
       _AlphabetFadeStep(
         child: _QuizTimeSplash(
+          progress: 0,
           onDone: () => _goToStep(_stepIndex + 1, maxIndex),
         ),
       ),
       _AlphabetFadeStep(
         child: _UnitOneTapChoiceActivity(
-          prompt: 'Pamatii ang numero. Pindoton ang $answer.',
-          choices: _shuffledChoices([
-            answer,
-            ...numbers.where((item) => item != answer).take(2),
-          ]),
-          answer: answer,
-          isNumber: true,
+          prompt: 'Pamatii ang numero.',
+          listenText: _hiligaynonNumberWord('${soloNumbers[0]}'),
+          showSpeakerHint: false,
+          progress: quizProgress(0),
+          choices: _numberWordChoices(soloNumbers[0], numberValues),
+          answer: _hiligaynonNumberWord('${soloNumbers[0]}'),
+          imageAsset: _unitOneNumberAsset('${soloNumbers[0]}'),
+          icon: Icons.filter_1_rounded,
           onAttempt: (correct) => widget.onQuizAttempt(0, correct),
           onDone: () => _advanceAfterCorrect(maxIndex),
         ),
       ),
       _AlphabetFadeStep(
-        child: _UnitOneCountingChoiceActivity(
-          prompt: widget.content.lessonNumber == 8
-              ? 'Pila kabilog ang bata nga nagpanago?'
-              : 'Pila kabilog ang kandila makita mo sa cake?',
-          answer: countAnswer,
-          choices: _shuffledChoices([
-            '$countAnswer',
-            '${math.max(1, countAnswer - 1)}',
-            '${countAnswer + 1}',
-          ]),
-          imageAsset: widget.content.lessonNumber == 8
-              ? null
-              : 'assets/images/level_game/numbers/3-candle-cake.jpg',
-          icon: widget.content.lessonNumber == 8
-              ? Icons.groups_rounded
-              : Icons.cake_rounded,
+        child: _UnitOneSpellingActivity(
+          prompt: 'Pamatia ang tinaga. Pilia ang kulang nga letra.',
+          progress: quizProgress(1),
+          word: _hiligaynonNumberWord('${soloNumbers[1]}'),
+          imageAsset: _unitOneNumberAsset('${soloNumbers[1]}'),
+          icon: Icons.filter_2_rounded,
           onAttempt: (correct) => widget.onQuizAttempt(1, correct),
           onDone: () => _advanceAfterCorrect(maxIndex),
         ),
@@ -5097,34 +5252,33 @@ class _GradeOneNumberLessonState extends State<_GradeOneNumberLesson> {
       _AlphabetFadeStep(
         child: _UnitOneTapChoiceActivity(
           prompt: 'Ano ni siya nga numero?',
-          choices: _shuffledChoices([
-            secondAnswer,
-            ...numbers.where((item) => item != secondAnswer).take(2),
-          ]),
-          answer: secondAnswer,
-          isNumber: true,
-          imageAsset: _unitOneNumberAsset(secondAnswer),
-          icon: Icons.filter_8_rounded,
+          progress: quizProgress(2),
+          choices: _numberWordChoices(soloNumbers[2], numberValues),
+          answer: _hiligaynonNumberWord('${soloNumbers[2]}'),
+          imageAsset: _unitOneNumberAsset('${soloNumbers[2]}'),
+          icon: Icons.filter_3_rounded,
           onAttempt: (correct) => widget.onQuizAttempt(2, correct),
           onDone: () => _advanceAfterCorrect(maxIndex),
         ),
       ),
       _AlphabetFadeStep(
-        child: _UnitOneCountingChoiceActivity(
-          prompt: 'Pila ni kabilog?',
-          answer: int.tryParse(thirdAnswer) ?? countAnswer,
-          choices: _shuffledChoices([thirdAnswer, answer, secondAnswer]),
-          icon: Icons.groups_rounded,
+        child: _UnitOneTapChoiceActivity(
+          prompt: 'Pilia ang ngalan sang numero.',
+          progress: quizProgress(3),
+          choices: _numberWordChoices(soloNumbers[3], numberValues),
+          answer: _hiligaynonNumberWord('${soloNumbers[3]}'),
+          imageAsset: _unitOneNumberAsset('${soloNumbers[3]}'),
+          icon: Icons.filter_4_rounded,
           onAttempt: (correct) => widget.onQuizAttempt(3, correct),
           onDone: () => _advanceAfterCorrect(maxIndex),
         ),
       ),
       _AlphabetFadeStep(
-        child: _UnitOneDragFillActivity(
-          prompt: 'Guyoda ang mga numero sa husto nga kahon.',
-          word: numbers.take(widget.content.lessonNumber == 8 ? 5 : 4).join(),
-          isNumberSequence: true,
-          icon: Icons.format_list_numbered_rounded,
+        child: _UnitOneNumberMatchingActivity(
+          prompt: 'Ipares kung ano ang sakto.',
+          numbers: numbers.take(5).map(int.parse).toList(),
+          progress: 1,
+          showHint: widget.content.lessonNumber == 1,
           onAttempt: (correct) => widget.onQuizAttempt(4, correct),
           onDone: () {
             _finishQuiz();
@@ -5150,6 +5304,646 @@ class _GradeOneNumberLessonState extends State<_GradeOneNumberLesson> {
         ? const ['6', '7', '8', '9', '10']
         : const ['1', '2', '3', '4', '5'];
   }
+
+  List<String> _numberWordChoices(int answer, List<int> pool) {
+    return _shuffledChoices([
+      _hiligaynonNumberWord('$answer'),
+      ...pool
+          .where((number) => number != answer)
+          .take(2)
+          .map((number) => _hiligaynonNumberWord('$number')),
+    ]).toList();
+  }
+}
+
+class _GradeOneUnitOneReviewLesson extends StatefulWidget {
+  final LevelContent content;
+  final void Function(int index, bool correct) onQuizAttempt;
+  final ValueChanged<int> onQuizCorrect;
+
+  const _GradeOneUnitOneReviewLesson({
+    required this.content,
+    required this.onQuizAttempt,
+    required this.onQuizCorrect,
+  });
+
+  @override
+  State<_GradeOneUnitOneReviewLesson> createState() =>
+      _GradeOneUnitOneReviewLessonState();
+}
+
+class _GradeOneUnitOneReviewLessonState
+    extends State<_GradeOneUnitOneReviewLesson> {
+  static const int _reviewQuizCount = 10;
+  static const List<String> _allReviewLetters = [
+    'A',
+    'N',
+    'T',
+    'Y',
+    'I',
+    'D',
+    'O',
+    'M',
+    'K',
+    'U',
+    'B',
+    'L',
+    'S',
+    'E',
+    'G',
+    'P',
+    'R',
+    'H',
+    'W',
+  ];
+  static const List<int> _allReviewNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+  int _stepIndex = 0;
+  late final List<String> _reviewLetters = _shuffledChoices(_allReviewLetters);
+  late final List<int> _reviewNumbers = _shuffledChoices(_allReviewNumbers);
+
+  void _goToStep(int index, int maxIndex) {
+    final next = index.clamp(0, maxIndex);
+    if (next == _stepIndex) return;
+    setState(() => _stepIndex = next);
+  }
+
+  void _advanceAfterCorrect(int maxIndex) {
+    final completedStep = _stepIndex;
+    Future<void>.delayed(const Duration(milliseconds: 1000), () {
+      if (!mounted || _stepIndex != completedStep) return;
+      _goToStep(completedStep + 1, maxIndex);
+    });
+  }
+
+  void _finishQuiz() {
+    for (var index = 0; index < _reviewQuizCount; index++) {
+      widget.onQuizCorrect(index);
+    }
+  }
+
+  List<String> _letterChoices(String answer, List<String> pool) {
+    return _shuffledChoices([
+      answer,
+      ...pool.where((letter) => letter != answer).take(2),
+    ]).toList();
+  }
+
+  List<String> _numberWordChoices(int answer, List<int> pool) {
+    return _shuffledChoices([
+      _hiligaynonNumberWord('$answer'),
+      ...pool
+          .where((number) => number != answer)
+          .take(2)
+          .map((number) => _hiligaynonNumberWord('$number')),
+    ]).toList();
+  }
+
+  _AlphabetAnchor _anchorForLetter(String letter) {
+    final anchors = [
+      for (var lesson = 1; lesson <= 6; lesson++)
+        ..._unitOneAlphabetAnchorsFor(lesson),
+    ];
+    final target = letter.toUpperCase();
+    return anchors.firstWhere(
+      (anchor) =>
+          anchor.word.contains(target) || anchor.targets.contains(target),
+      orElse: () => anchors.first,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var maxIndex = 0;
+    final firstLetter = _reviewLetters[0];
+    final spellingAnchor = _anchorForLetter(_reviewLetters[1]);
+    final hiddenLetters = _reviewLetters.skip(2).take(3).toList();
+    final fourthLetter = _reviewLetters[5];
+    final dragAnchor = _anchorForLetter(_reviewLetters[6]);
+    final firstAnchor = _anchorForLetter(firstLetter);
+    final fourthAnchor = _anchorForLetter(fourthLetter);
+    final firstNumber = _reviewNumbers[0];
+    final spellingNumber = _reviewNumbers[1];
+    final thirdNumber = _reviewNumbers[2];
+    final fourthNumber = _reviewNumbers[3];
+    final matchingNumbers = _reviewNumbers.take(5).toList();
+    final steps = [
+      _UnitOneTapChoiceActivity(
+        key: ValueKey('unit1-review-tap-$firstLetter-${widget.content.id}'),
+        prompt: 'Pamatii ang tingog. Pindoton ang husto nga letra.',
+        listenText: _letterSoundText(firstLetter),
+        showSpeakerHint: false,
+        progress: 1 / _reviewQuizCount,
+        choices: _letterChoices(firstLetter, _allReviewLetters),
+        answer: firstLetter,
+        isLetter: true,
+        imageAsset: firstAnchor.imageAsset,
+        icon: firstAnchor.icon,
+        onAttempt: (correct) => widget.onQuizAttempt(0, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneSpellingActivity(
+        key: ValueKey(
+          'unit1-review-spell-${spellingAnchor.word}-${widget.content.id}',
+        ),
+        prompt: 'Pamatia ang tinaga. Pilia ang kulang nga letra.',
+        progress: 2 / _reviewQuizCount,
+        word: spellingAnchor.word,
+        imageAsset: spellingAnchor.imageAsset,
+        icon: spellingAnchor.icon,
+        onAttempt: (correct) => widget.onQuizAttempt(1, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneHiddenSearchActivity(
+        key: ValueKey('unit1-review-search-${widget.content.id}'),
+        prompt: 'Unahon ta pangitaon ang letra nga mabatian mo.',
+        progress: 3 / _reviewQuizCount,
+        targetLetters: hiddenLetters,
+        onAttempt: (correct) => widget.onQuizAttempt(2, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneTapChoiceActivity(
+        key: ValueKey(
+          'unit1-review-${fourthAnchor.meaning}-${widget.content.id}',
+        ),
+        prompt:
+            'Diin ang letra sang ${fourthAnchor.meaning}? Pindoton ang $fourthLetter.',
+        progress: 4 / _reviewQuizCount,
+        choices: _letterChoices(fourthLetter, _allReviewLetters),
+        answer: fourthLetter,
+        isLetter: true,
+        imageAsset: fourthAnchor.imageAsset,
+        icon: fourthAnchor.icon,
+        onAttempt: (correct) => widget.onQuizAttempt(3, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneDragFillActivity(
+        key: ValueKey(
+          'unit1-review-drag-${dragAnchor.word}-${widget.content.id}',
+        ),
+        prompt: 'Guyoda ang mga letra para matapos ang tinaga.',
+        progress: 5 / _reviewQuizCount,
+        word: dragAnchor.word,
+        imageAsset: dragAnchor.imageAsset,
+        icon: dragAnchor.icon,
+        onAttempt: (correct) => widget.onQuizAttempt(4, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneTapChoiceActivity(
+        key: ValueKey('unit1-review-num-$firstNumber-${widget.content.id}'),
+        prompt:
+            'Pamatii ang numero. Pindoton ang ${_hiligaynonNumberWord('$firstNumber')}.',
+        listenText: _hiligaynonNumberWord('$firstNumber'),
+        showSpeakerHint: false,
+        progress: 6 / _reviewQuizCount,
+        choices: _numberWordChoices(firstNumber, _allReviewNumbers),
+        answer: _hiligaynonNumberWord('$firstNumber'),
+        imageAsset: _unitOneNumberAsset('$firstNumber'),
+        icon: Icons.filter_1_rounded,
+        onAttempt: (correct) => widget.onQuizAttempt(5, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneSpellingActivity(
+        key: ValueKey('unit1-review-num-$spellingNumber-${widget.content.id}'),
+        prompt: 'Pamatia ang tinaga. Pilia ang kulang nga letra.',
+        progress: 7 / _reviewQuizCount,
+        word: _hiligaynonNumberWord('$spellingNumber'),
+        imageAsset: _unitOneNumberAsset('$spellingNumber'),
+        icon: Icons.filter_2_rounded,
+        onAttempt: (correct) => widget.onQuizAttempt(6, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneTapChoiceActivity(
+        key: ValueKey('unit1-review-num-$thirdNumber-${widget.content.id}'),
+        prompt: 'Ano ni siya nga numero?',
+        progress: 8 / _reviewQuizCount,
+        choices: _numberWordChoices(thirdNumber, _allReviewNumbers),
+        answer: _hiligaynonNumberWord('$thirdNumber'),
+        imageAsset: _unitOneNumberAsset('$thirdNumber'),
+        icon: Icons.filter_3_rounded,
+        onAttempt: (correct) => widget.onQuizAttempt(7, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneTapChoiceActivity(
+        key: ValueKey('unit1-review-num-$fourthNumber-${widget.content.id}'),
+        prompt: 'Pilia ang ngalan sang numero.',
+        progress: 9 / _reviewQuizCount,
+        choices: _numberWordChoices(fourthNumber, _allReviewNumbers),
+        answer: _hiligaynonNumberWord('$fourthNumber'),
+        imageAsset: _unitOneNumberAsset('$fourthNumber'),
+        icon: Icons.filter_4_rounded,
+        onAttempt: (correct) => widget.onQuizAttempt(8, correct),
+        onDone: () => _advanceAfterCorrect(maxIndex),
+      ),
+      _UnitOneNumberMatchingActivity(
+        key: ValueKey('unit1-review-match-numbers-${widget.content.id}'),
+        prompt: 'Ipares kung ano ang sakto.',
+        progress: 1,
+        numbers: matchingNumbers,
+        onAttempt: (correct) => widget.onQuizAttempt(9, correct),
+        onDone: () {
+          _finishQuiz();
+          _advanceAfterCorrect(maxIndex);
+        },
+      ),
+    ];
+    maxIndex = steps.length - 1;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 650),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: KeyedSubtree(
+        key: ValueKey('unit1-review-${widget.content.id}-$_stepIndex'),
+        child: steps[_stepIndex.clamp(0, maxIndex)],
+      ),
+    );
+  }
+}
+
+class _NumberFruitPresentationSlide extends StatelessWidget {
+  final int number;
+  final double progress;
+  final bool showSpeakerHint;
+  final VoidCallback? onBack;
+  final VoidCallback onNext;
+
+  const _NumberFruitPresentationSlide({
+    required this.number,
+    required this.progress,
+    this.showSpeakerHint = false,
+    required this.onBack,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final numberWord = _numberWordFor(number);
+    return _UnitOneQuizStage(
+      prompt: 'Pamatii ang numero',
+      mascotMessage: 'Numero $numberWord',
+      progress: progress,
+      child: _NumberFruitContent(
+        number: number,
+        showSpeakerHint: showSpeakerHint,
+        onBack: onBack,
+        onNext: onNext,
+      ),
+    );
+  }
+}
+
+class _NumberFruitContent extends StatefulWidget {
+  final int number;
+  final bool showSpeakerHint;
+  final VoidCallback? onBack;
+  final VoidCallback onNext;
+
+  const _NumberFruitContent({
+    required this.number,
+    required this.showSpeakerHint,
+    required this.onBack,
+    required this.onNext,
+  });
+
+  @override
+  State<_NumberFruitContent> createState() => _NumberFruitContentState();
+}
+
+class _NumberFruitContentState extends State<_NumberFruitContent>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _tapHintController;
+  late final Animation<double> _tapScale;
+  late final Animation<Offset> _tapOffset;
+  Timer? _hideHintTimer;
+  Timer? _numberPopTimer;
+  Timer? _fruitPopTimer;
+  late bool _showSpeakerHint = widget.showSpeakerHint;
+  bool _showNumber = false;
+  bool _showFruits = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tapHintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..repeat(reverse: true);
+    final curve = CurvedAnimation(
+      parent: _tapHintController,
+      curve: Curves.easeInOut,
+    );
+    _tapScale = Tween<double>(begin: 1, end: .86).animate(curve);
+    _tapOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-8, -8),
+    ).animate(curve);
+    _startContentAnimation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _playNumberVoice();
+      if (_showSpeakerHint) {
+        _hideHintTimer = Timer(const Duration(seconds: 4), () {
+          if (mounted) setState(() => _showSpeakerHint = false);
+        });
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _NumberFruitContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.number != widget.number) {
+      _startContentAnimation();
+    }
+  }
+
+  void _startContentAnimation() {
+    _numberPopTimer?.cancel();
+    _fruitPopTimer?.cancel();
+    _showNumber = false;
+    _showFruits = false;
+    _numberPopTimer = Timer(const Duration(milliseconds: 160), () {
+      if (!mounted) return;
+      setState(() => _showNumber = true);
+    });
+    _fruitPopTimer = Timer(const Duration(milliseconds: 650), () {
+      if (!mounted) return;
+      setState(() => _showFruits = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _hideHintTimer?.cancel();
+    _numberPopTimer?.cancel();
+    _fruitPopTimer?.cancel();
+    _tapHintController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _playNumberVoice() async {
+    final word = _numberWordFor(widget.number);
+    await TudloVoiceButton.speak(
+      context,
+      'Pamatii ang tunog sang numero $word.',
+      hiligaynon: true,
+    );
+    if (!mounted) return;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
+    await TudloVoiceButton.speak(context, word, hiligaynon: true);
+  }
+
+  Future<void> _replayNumberVoice() async {
+    await AppAudioService.instance.playTap();
+    if (!mounted) return;
+    setState(() => _showSpeakerHint = false);
+    await TudloVoiceButton.speak(
+      context,
+      _numberWordFor(widget.number),
+      hiligaynon: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final width = size.width;
+    final number = widget.number;
+    final numberAsset = _unitOneNumberAsset('$number');
+    return Column(
+      children: [
+        const Spacer(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: (width * .45).clamp(172.0, 280.0),
+              height: (width * .52).clamp(205.0, 330.0),
+              child: AnimatedScale(
+                scale: _showNumber ? 1 : .35,
+                duration: const Duration(milliseconds: 460),
+                curve: Curves.elasticOut,
+                child: AnimatedOpacity(
+                  opacity: _showNumber ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  child: numberAsset == null
+                      ? FittedBox(
+                          fit: BoxFit.contain,
+                          child: Text(
+                            '$number',
+                            style: GoogleFonts.nunito(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        )
+                      : Image.asset(
+                          numberAsset,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                        ),
+                ),
+              ),
+            ),
+            SizedBox(width: (width * .035).clamp(12.0, 24.0)),
+            SizedBox(
+              width: (width * .46).clamp(178.0, 300.0),
+              height: (width * .46).clamp(178.0, 300.0),
+              child: _AnimatedFruitCount(number: number, start: _showFruits),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          _titleCase(_numberWordFor(number)),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            color: Colors.white,
+            fontSize: (width * .155).clamp(58.0, 96.0),
+            height: 1,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+            shadows: const [
+              Shadow(
+                color: Color(0xFF459B27),
+                blurRadius: 0,
+                offset: Offset(2, 2),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _PresentationSpeakerHint(
+          size: (width * .22).clamp(86.0, 118.0),
+          showFinger: _showSpeakerHint,
+          tapScale: _tapScale,
+          tapOffset: _tapOffset,
+          onTap: () => unawaited(_replayNumberVoice()),
+        ),
+        const Spacer(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Opacity(
+              opacity: widget.onBack == null ? .35 : 1,
+              child: _PresentationImageButton(
+                asset:
+                    'assets/images/level_game/lesson-game-assets/back-lesson.png',
+                size: (width * .18).clamp(70.0, 100.0),
+                enabled: widget.onBack != null,
+                onTap: widget.onBack ?? () {},
+                tooltip: 'Balik',
+              ),
+            ),
+            SizedBox(width: (width * .16).clamp(56.0, 92.0)),
+            _PresentationImageButton(
+              asset:
+                  'assets/images/level_game/lesson-game-assets/next-lesson.png',
+              size: (width * .18).clamp(70.0, 100.0),
+              onTap: widget.onNext,
+              tooltip: 'Padayon',
+            ),
+          ],
+        ),
+        const Spacer(),
+      ],
+    );
+  }
+}
+
+class _AnimatedFruitCount extends StatefulWidget {
+  final int number;
+  final bool start;
+
+  const _AnimatedFruitCount({required this.number, required this.start});
+
+  @override
+  State<_AnimatedFruitCount> createState() => _AnimatedFruitCountState();
+}
+
+class _AnimatedFruitCountState extends State<_AnimatedFruitCount> {
+  int _visibleCount = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.start) {
+      _startFruitAnimation();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedFruitCount oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.number != widget.number) {
+      _startFruitAnimation();
+      return;
+    }
+    if (!oldWidget.start && widget.start) {
+      _startFruitAnimation();
+    }
+  }
+
+  void _startFruitAnimation() {
+    _timer?.cancel();
+    _visibleCount = 0;
+    if (!widget.start) {
+      if (mounted) setState(() {});
+      return;
+    }
+    _timer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+      if (!mounted) return;
+      if (_visibleCount >= widget.number) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _visibleCount++);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.number.clamp(1, 10).toInt();
+    final columns = count <= 3 ? count : math.min(4, count);
+    final rows = (count / columns).ceil();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fruitSize = math
+            .min(constraints.maxWidth / columns, constraints.maxHeight / rows)
+            .clamp(68.0, 150.0)
+            .toDouble();
+        return Center(
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            runAlignment: WrapAlignment.center,
+            spacing: 5,
+            runSpacing: 5,
+            children: [
+              for (var index = 0; index < count; index++)
+                AnimatedScale(
+                  scale: index < _visibleCount ? 1 : .35,
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.elasticOut,
+                  child: AnimatedOpacity(
+                    opacity: index < _visibleCount ? 1 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    child: SizedBox(
+                      width: fruitSize,
+                      height: fruitSize,
+                      child: Image.asset(
+                        _fruitAssetForNumber(widget.number),
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+String _fruitAssetForNumber(int number) {
+  if (number <= 2) return 'assets/images/level_game/banana.png';
+  if (number <= 5) return 'assets/images/level_game/mango.png';
+  return 'assets/images/level_game/fruits.png';
+}
+
+String _numberMatchingFruitAsset() {
+  return 'assets/images/level_game/apple.png';
+}
+
+String _numberWordFor(int number) {
+  return _hiligaynonNumberWord('$number');
+}
+
+String _hiligaynonNumberWord(String number) {
+  return const {
+        '1': 'isa',
+        '2': 'duwa',
+        '3': 'tatlo',
+        '4': 'apat',
+        '5': 'lima',
+        '6': 'anum',
+        '7': 'pito',
+        '8': 'walo',
+        '9': 'siyam',
+        '10': 'napulo',
+      }[number] ??
+      number;
 }
 
 class _UnitOneQuizStage extends StatelessWidget {
@@ -5240,7 +6034,7 @@ class _UnitOneQuizStage extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.nunito(
                 color: Colors.white,
-                fontSize: (width * .069).clamp(24.0, 40.0),
+                fontSize: (width * .073).clamp(25.0, 42.0),
                 height: 1.10,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -5316,11 +6110,11 @@ class _SubjectQuestionLabel extends StatelessWidget {
 class _UnitOneTapChoiceActivity extends StatefulWidget {
   final String prompt;
   final String? listenText;
+  final bool showSpeakerHint;
   final double progress;
   final List<String> choices;
   final String answer;
   final bool isLetter;
-  final bool isNumber;
   final String? imageAsset;
   final IconData icon;
   final ValueChanged<bool> onAttempt;
@@ -5330,11 +6124,11 @@ class _UnitOneTapChoiceActivity extends StatefulWidget {
     super.key,
     required this.prompt,
     this.listenText,
+    this.showSpeakerHint = true,
     this.progress = 0,
     required this.choices,
     required this.answer,
     this.isLetter = false,
-    this.isNumber = false,
     this.imageAsset,
     this.icon = Icons.text_fields_rounded,
     required this.onAttempt,
@@ -5390,7 +6184,7 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
   }
 
   void _showHintBriefly() {
-    if (widget.listenText == null || _done) return;
+    if (!widget.showSpeakerHint || widget.listenText == null || _done) return;
     _hideHintTimer?.cancel();
     _inactiveHintTimer?.cancel();
     if (mounted) setState(() => _showSpeakerHint = true);
@@ -5408,7 +6202,7 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
     if (mounted && _showSpeakerHint) {
       setState(() => _showSpeakerHint = false);
     }
-    if (widget.listenText == null || _done) return;
+    if (!widget.showSpeakerHint || widget.listenText == null || _done) return;
     _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
       if (mounted && !_done) _showHintBriefly();
     });
@@ -5436,10 +6230,13 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
   Future<void> _choose(String choice) async {
     if (_done) return;
     await AppAudioService.instance.playTap();
+    if (!mounted) return;
     setState(() {
       _selected = choice;
       _wrong = false;
     });
+    final spokenChoice = widget.isLetter ? _letterSoundText(choice) : choice;
+    unawaited(TudloVoiceButton.speak(context, spokenChoice, hiligaynon: true));
   }
 
   Future<void> _submit() async {
@@ -5498,24 +6295,26 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
           : 'Koka: Pindoton ang husto nga sabat.',
       child: Column(
         children: [
-          SizedBox(
-            height: widget.listenText != null ? 300 : 260,
+          Expanded(
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _SubjectQuestionLabel(
-                    imageAsset: widget.imageAsset,
-                    icon: widget.icon,
-                  ),
-                  const SizedBox(height: 8),
-                  Flexible(
+                  if (widget.listenText == null) ...[
+                    _SubjectQuestionLabel(
+                      imageAsset: widget.imageAsset,
+                      icon: widget.icon,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  SizedBox(
+                    height: widget.listenText != null ? 200 : 215,
                     child: widget.imageAsset == null
                         ? Icon(widget.icon, color: TudloColors.green, size: 170)
                         : Image.asset(
                             widget.imageAsset!,
-                            width: widget.listenText != null ? 250 : 285,
-                            height: widget.listenText != null ? 230 : 260,
+                            width: widget.listenText != null ? 255 : 270,
+                            height: widget.listenText != null ? 200 : 215,
                             fit: BoxFit.contain,
                             filterQuality: FilterQuality.high,
                             errorBuilder: (_, __, ___) => Icon(
@@ -5526,9 +6325,9 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
                           ),
                   ),
                   if (widget.listenText != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     _PresentationSpeakerHint(
-                      size: 82,
+                      size: 86,
                       showFinger: _showSpeakerHint,
                       tapScale: _tapScale,
                       tapOffset: _tapOffset,
@@ -5539,6 +6338,7 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
               ),
             ),
           ),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -5547,7 +6347,6 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
                   child: _UnitOneSymbolButton(
                     label: choice,
                     isLetter: widget.isLetter,
-                    isNumber: widget.isNumber,
                     selected: _selected == choice,
                     correct: _selected == choice && _done,
                     wrong: _selected == choice && _wrong,
@@ -5556,47 +6355,13 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          const Spacer(),
           _UnitOneSubmitButton(
             enabled: _selected != null && !_done,
             onPressed: _submit,
           ),
         ],
       ),
-    );
-  }
-}
-
-class _UnitOneCountingChoiceActivity extends StatelessWidget {
-  final String prompt;
-  final int answer;
-  final List<String> choices;
-  final String? imageAsset;
-  final IconData icon;
-  final ValueChanged<bool> onAttempt;
-  final VoidCallback onDone;
-
-  const _UnitOneCountingChoiceActivity({
-    required this.prompt,
-    required this.answer,
-    required this.choices,
-    this.imageAsset,
-    required this.icon,
-    required this.onAttempt,
-    required this.onDone,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _UnitOneTapChoiceActivity(
-      prompt: prompt,
-      choices: choices,
-      answer: '$answer',
-      isNumber: true,
-      imageAsset: imageAsset,
-      icon: icon,
-      onAttempt: onAttempt,
-      onDone: onDone,
     );
   }
 }
@@ -5622,7 +6387,7 @@ class _UnitOneSubmitButton extends StatelessWidget {
         onTap: enabled ? _handleTap : null,
         child: Container(
           width: double.infinity,
-          height: 62,
+          height: 58,
           alignment: Alignment.center,
           margin: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
@@ -5647,6 +6412,550 @@ class _UnitOneSubmitButton extends StatelessWidget {
               height: 1,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UnitOneNumberMatchingActivity extends StatefulWidget {
+  final String prompt;
+  final double progress;
+  final List<int> numbers;
+  final bool showHint;
+  final ValueChanged<bool> onAttempt;
+  final VoidCallback onDone;
+
+  const _UnitOneNumberMatchingActivity({
+    super.key,
+    required this.prompt,
+    this.progress = 0,
+    required this.numbers,
+    this.showHint = false,
+    required this.onAttempt,
+    required this.onDone,
+  });
+
+  @override
+  State<_UnitOneNumberMatchingActivity> createState() =>
+      _UnitOneNumberMatchingActivityState();
+}
+
+class _UnitOneNumberMatchingActivityState
+    extends State<_UnitOneNumberMatchingActivity>
+    with SingleTickerProviderStateMixin {
+  late final List<int> _leftNumbers = _shuffledChoices(widget.numbers);
+  late final List<int> _rightNumbers = _shuffledChoices(widget.numbers);
+  final Map<int, int> _connections = {};
+  int? _pendingLeft;
+  int? _pendingRight;
+  bool _submittedWrong = false;
+  bool _done = false;
+  late bool _showHint = widget.showHint;
+  Timer? _hideHintTimer;
+  late final AnimationController _hintController;
+  late final Animation<double> _hintScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _hintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..repeat(reverse: true);
+    final curve = CurvedAnimation(
+      parent: _hintController,
+      curve: Curves.easeInOut,
+    );
+    _hintScale = Tween<double>(begin: 1, end: .86).animate(curve);
+    if (_showHint) {
+      _hideHintTimer = Timer(const Duration(seconds: 4), () {
+        if (mounted) setState(() => _showHint = false);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideHintTimer?.cancel();
+    _hintController.dispose();
+    super.dispose();
+  }
+
+  bool get _allConnected => _connections.length >= widget.numbers.length;
+
+  bool get _allCorrect =>
+      _allConnected &&
+      _connections.entries.every((entry) => entry.key == entry.value);
+
+  void _hideHint() {
+    _hideHintTimer?.cancel();
+    if (_showHint) {
+      setState(() => _showHint = false);
+    }
+  }
+
+  Future<void> _selectWord(int number) async {
+    if (_done) return;
+    _hideHint();
+    await AppAudioService.instance.playTap();
+    if (!mounted) return;
+    if (_pendingRight != null) {
+      _connect(number, _pendingRight!);
+      return;
+    }
+    setState(() {
+      _pendingLeft = number;
+      _pendingRight = null;
+      _submittedWrong = false;
+    });
+  }
+
+  Future<void> _selectFruitGroup(int number) async {
+    if (_done) return;
+    _hideHint();
+    await AppAudioService.instance.playTap();
+    if (!mounted) return;
+    if (_pendingLeft != null) {
+      _connect(_pendingLeft!, number);
+      return;
+    }
+    setState(() {
+      _pendingRight = number;
+      _pendingLeft = null;
+      _submittedWrong = false;
+    });
+  }
+
+  void _connect(int leftNumber, int rightNumber) {
+    setState(() {
+      _connections[leftNumber] = rightNumber;
+      _pendingLeft = null;
+      _pendingRight = null;
+      _submittedWrong = false;
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_done || !_allConnected) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+
+    final correct = _allCorrect;
+    widget.onAttempt(correct);
+    if (correct) {
+      setState(() => _done = true);
+      unawaited(AppAudioService.instance.playCorrect());
+      await TudloVoiceButton.speak(context, 'Husto!', hiligaynon: true);
+      if (!mounted) return;
+      widget.onDone();
+      return;
+    }
+
+    setState(() => _submittedWrong = true);
+    unawaited(AppAudioService.instance.playWrong());
+    await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
+  }
+
+  double _rowCenterY(int index, int count, double height) {
+    return ((index + .5) / count) * height;
+  }
+
+  int get _hintTargetNumber {
+    return widget.numbers.contains(1) ? 1 : _leftNumbers.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: widget.prompt,
+      progress: widget.progress,
+      mascotMessage: _done
+          ? 'Koka: Husto!'
+          : 'Koka: Ipares ang numero kag prutas.',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final wordFont = (width * .082).clamp(29.0, 42.0);
+          return Column(
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, area) {
+                    final height = area.maxHeight;
+                    final leftX = width * .16;
+                    final rightX = width * .70;
+                    final leftIndexes = {
+                      for (var i = 0; i < _leftNumbers.length; i++)
+                        _leftNumbers[i]: i,
+                    };
+                    final rightIndexes = {
+                      for (var i = 0; i < _rightNumbers.length; i++)
+                        _rightNumbers[i]: i,
+                    };
+                    final lineEntries = _connections.entries
+                        .where(
+                          (entry) =>
+                              leftIndexes.containsKey(entry.key) &&
+                              rightIndexes.containsKey(entry.value),
+                        )
+                        .map(
+                          (entry) => _NumberMatchLine(
+                            start: Offset(
+                              leftX + width * .10,
+                              _rowCenterY(
+                                leftIndexes[entry.key]!,
+                                _leftNumbers.length,
+                                height,
+                              ),
+                            ),
+                            end: Offset(
+                              rightX - width * .10,
+                              _rowCenterY(
+                                rightIndexes[entry.value]!,
+                                _rightNumbers.length,
+                                height,
+                              ),
+                            ),
+                            correct: entry.key == entry.value,
+                          ),
+                        )
+                        .toList();
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _NumberMatchLinePainter(
+                              lines: lineEntries,
+                              showCorrectness: _submittedWrong || _done,
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          right: width * .58,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final number in _leftNumbers)
+                                _NumberMatchWord(
+                                  label: _titleCase(
+                                    _hiligaynonNumberWord('$number'),
+                                  ),
+                                  fontSize: wordFont,
+                                  selected: _pendingLeft == number,
+                                  connected: _connections.containsKey(number),
+                                  wrong:
+                                      _submittedWrong &&
+                                      _connections[number] != null &&
+                                      _connections[number] != number,
+                                  onTap: () => unawaited(_selectWord(number)),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Positioned.fill(
+                          left: width * .50,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              for (final number in _rightNumbers)
+                                _NumberFruitMatchGroup(
+                                  count: number,
+                                  selected: _pendingRight == number,
+                                  connected: _connections.containsValue(number),
+                                  wrong:
+                                      _submittedWrong &&
+                                      _connections.entries.any(
+                                        (entry) =>
+                                            entry.value == number &&
+                                            entry.key != number,
+                                      ),
+                                  onTap: () =>
+                                      unawaited(_selectFruitGroup(number)),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (_showHint &&
+                            leftIndexes.containsKey(_hintTargetNumber) &&
+                            rightIndexes.containsKey(_hintTargetNumber))
+                          _NumberMatchGestureHint(
+                            scale: _hintScale,
+                            start: Offset(
+                              leftX,
+                              _rowCenterY(
+                                leftIndexes[_hintTargetNumber]!,
+                                _leftNumbers.length,
+                                height,
+                              ),
+                            ),
+                            end: Offset(
+                              rightX - width * .14,
+                              _rowCenterY(
+                                rightIndexes[_hintTargetNumber]!,
+                                _rightNumbers.length,
+                                height,
+                              ),
+                            ),
+                            size: (width * .16).clamp(54.0, 72.0),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              _UnitOneSubmitButton(
+                enabled: _allConnected && !_done,
+                onPressed: _submit,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NumberMatchLine {
+  final Offset start;
+  final Offset end;
+  final bool correct;
+
+  const _NumberMatchLine({
+    required this.start,
+    required this.end,
+    required this.correct,
+  });
+}
+
+class _NumberMatchLinePainter extends CustomPainter {
+  final List<_NumberMatchLine> lines;
+  final bool showCorrectness;
+
+  const _NumberMatchLinePainter({
+    required this.lines,
+    required this.showCorrectness,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final line in lines) {
+      final color = showCorrectness
+          ? line.correct
+                ? TudloColors.green
+                : TudloColors.coral
+          : TudloColors.gold;
+      final paint = Paint()
+        ..color = color.withValues(alpha: .92)
+        ..strokeWidth = 7
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(line.start, line.end, paint);
+      canvas.drawCircle(line.start, 5, paint);
+      canvas.drawCircle(line.end, 5, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NumberMatchLinePainter oldDelegate) {
+    return oldDelegate.lines != lines ||
+        oldDelegate.showCorrectness != showCorrectness;
+  }
+}
+
+class _NumberMatchGestureHint extends StatelessWidget {
+  static const _assetBase = 'assets/images/level_game/lesson-game-assets';
+
+  final Animation<double> scale;
+  final Offset start;
+  final Offset end;
+  final double size;
+
+  const _NumberMatchGestureHint({
+    required this.scale,
+    required this.start,
+    required this.end,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 2200),
+          curve: Curves.easeInOutCubic,
+          builder: (context, value, child) {
+            final position = Offset.lerp(start, end, value)!;
+            return Stack(
+              children: [
+                Positioned(
+                  left: position.dx,
+                  top: position.dy - size * .18,
+                  child: AnimatedBuilder(
+                    animation: scale,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: scale.value,
+                        alignment: Alignment.topLeft,
+                        child: child,
+                      );
+                    },
+                    child: child,
+                  ),
+                ),
+              ],
+            );
+          },
+          child: Transform.rotate(
+            angle: -.55,
+            child: Image.asset(
+              '$_assetBase/point-finger.png',
+              width: size,
+              height: size,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NumberMatchWord extends StatelessWidget {
+  final String label;
+  final double fontSize;
+  final bool selected;
+  final bool connected;
+  final bool wrong;
+  final VoidCallback onTap;
+
+  const _NumberMatchWord({
+    required this.label,
+    required this.fontSize,
+    required this.selected,
+    required this.connected,
+    required this.wrong,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = wrong ? const Color(0xFFFFE2E2) : Colors.white;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 160),
+        scale: selected ? 1.08 : 1,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: selected
+                ? TudloColors.blue.withValues(alpha: .32)
+                : connected
+                ? Colors.white.withValues(alpha: .16)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: color,
+              fontSize: fontSize,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+              shadows: const [
+                Shadow(
+                  color: Color(0xFF459B27),
+                  blurRadius: 0,
+                  offset: Offset(2, 2),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NumberFruitMatchGroup extends StatelessWidget {
+  final int count;
+  final bool selected;
+  final bool connected;
+  final bool wrong;
+  final VoidCallback onTap;
+
+  const _NumberFruitMatchGroup({
+    required this.count,
+    required this.selected,
+    required this.connected,
+    required this.wrong,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = count > 5;
+    final columns = compact ? 5 : math.min(3, count);
+    final rows = (count / columns).ceil();
+    final fruitSize = compact ? 34.0 : 46.0;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 160),
+        scale: selected ? 1.08 : 1,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: selected
+                ? TudloColors.blue.withValues(alpha: .20)
+                : connected
+                ? Colors.white.withValues(alpha: .10)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: wrong
+                  ? TudloColors.coral
+                  : selected
+                  ? TudloColors.blue
+                  : Colors.transparent,
+              width: selected || wrong ? 3 : 0,
+            ),
+          ),
+          child: SizedBox(
+            width: columns * (fruitSize + 3),
+            height: rows * (fruitSize + 3),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              spacing: 3,
+              runSpacing: 3,
+              children: [
+                for (var index = 0; index < count; index++)
+                  Image.asset(
+                    _numberMatchingFruitAsset(),
+                    width: fruitSize,
+                    height: fruitSize,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                  ),
+              ],
             ),
           ),
         ),
@@ -6003,6 +7312,7 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
                                 label: _done
                                     ? _letters[i]
                                     : _filledLetters[i] ?? '',
+                                lineColor: _quizLineColorAt(i),
                                 active:
                                     candidates.isNotEmpty ||
                                     _activeMissingIndex == i ||
@@ -6568,7 +7878,6 @@ class _UnitOneDragFillActivity extends StatefulWidget {
   final String prompt;
   final double progress;
   final String word;
-  final bool isNumberSequence;
   final String? imageAsset;
   final IconData icon;
   final ValueChanged<bool> onAttempt;
@@ -6579,7 +7888,6 @@ class _UnitOneDragFillActivity extends StatefulWidget {
     required this.prompt,
     this.progress = 0,
     required this.word,
-    this.isNumberSequence = false,
     this.imageAsset,
     required this.icon,
     required this.onAttempt,
@@ -6596,15 +7904,11 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
   String? _wrong;
   bool _done = false;
 
-  late final List<String> _targets = widget.isNumberSequence
-      ? RegExp(
-          r'10|[0-9]',
-        ).allMatches(widget.word).map((m) => m.group(0)!).toList()
-      : widget.word
-            .replaceAll(RegExp(r'\s+'), '')
-            .characters
-            .map((letter) => letter.toUpperCase())
-            .toList();
+  late final List<String> _targets = widget.word
+      .replaceAll(RegExp(r'\s+'), '')
+      .characters
+      .map((letter) => letter.toUpperCase())
+      .toList();
   late final List<String> _choices = _shuffledChoices(_targets.toSet());
 
   Future<void> _drop(String value) async {
@@ -6693,7 +7997,6 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
                       scale: candidates.isNotEmpty ? 1.08 : 1,
                       child: _LetterSlot(
                         label: i < _filled.length ? _filled[i] : '',
-                        isNumber: widget.isNumberSequence,
                       ),
                     );
                   },
@@ -6716,8 +8019,7 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
                         color: Colors.transparent,
                         child: _UnitOneSymbolButton(
                           label: value,
-                          isLetter: !widget.isNumberSequence,
-                          isNumber: widget.isNumberSequence,
+                          isLetter: true,
                           assetSize: 82,
                           onTap: () {},
                         ),
@@ -6726,16 +8028,14 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
                         opacity: .35,
                         child: _UnitOneSymbolButton(
                           label: value,
-                          isLetter: !widget.isNumberSequence,
-                          isNumber: widget.isNumberSequence,
+                          isLetter: true,
                           assetSize: 82,
                           onTap: () {},
                         ),
                       ),
                       child: _UnitOneSymbolButton(
                         label: value,
-                        isLetter: !widget.isNumberSequence,
-                        isNumber: widget.isNumberSequence,
+                        isLetter: true,
                         assetSize: 82,
                         wrong: _wrong == value,
                         onTap: () {},
@@ -6756,7 +8056,6 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
 class _UnitOneSymbolButton extends StatelessWidget {
   final String label;
   final bool isLetter;
-  final bool isNumber;
   final bool selected;
   final bool correct;
   final bool wrong;
@@ -6767,7 +8066,6 @@ class _UnitOneSymbolButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isLetter = false,
-    this.isNumber = false,
     this.selected = false,
     this.correct = false,
     this.wrong = false,
@@ -6776,12 +8074,8 @@ class _UnitOneSymbolButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = isLetter
-        ? _unitOneLetterAsset(label)
-        : isNumber
-        ? _unitOneNumberAsset(label)
-        : null;
-    final usesAssetChoice = asset != null && (isLetter || isNumber);
+    final asset = isLetter ? _unitOneLetterAsset(label) : null;
+    final usesAssetChoice = asset != null && isLetter;
     final color = wrong
         ? TudloColors.coral
         : correct
@@ -6797,11 +8091,9 @@ class _UnitOneSymbolButton extends StatelessWidget {
         ? TudloColors.blue
         : TudloColors.green;
     final choiceSize =
-        assetSize ??
-        (usesAssetChoice ? 116.0 : (isLetter || isNumber ? 100.0 : 112.0));
+        assetSize ?? (usesAssetChoice ? 116.0 : (isLetter ? 100.0 : 112.0));
     final choiceHeight =
-        assetSize ??
-        (usesAssetChoice ? 116.0 : (isLetter || isNumber ? 100.0 : 70.0));
+        assetSize ?? (usesAssetChoice ? 116.0 : (isLetter ? 100.0 : 70.0));
     return _FeedbackMotion(
       correct: correct,
       wrong: wrong,
@@ -6895,18 +8187,13 @@ class _UnitOneSymbolButton extends StatelessWidget {
 
 class _LetterSlot extends StatelessWidget {
   final String label;
-  final bool isNumber;
   final bool large;
 
-  const _LetterSlot({
-    required this.label,
-    this.isNumber = false,
-    this.large = false,
-  });
+  const _LetterSlot({required this.label, this.large = false});
 
   @override
   Widget build(BuildContext context) {
-    final width = large ? 72.0 : (isNumber ? 64.0 : 58.0);
+    final width = large ? 72.0 : 58.0;
     final height = large ? 76.0 : 64.0;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
@@ -6931,7 +8218,7 @@ class _LetterSlot extends StatelessWidget {
               label,
               style: GoogleFonts.nunito(
                 color: TudloColors.forest,
-                fontSize: large ? 38 : (isNumber ? 28 : 32),
+                fontSize: large ? 38 : 32,
                 height: 1,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -6977,10 +8264,12 @@ class _PlainAnswerLetter extends StatelessWidget {
 
 class _MissingLetterUnderlineSlot extends StatelessWidget {
   final String label;
+  final Color lineColor;
   final bool active;
 
   const _MissingLetterUnderlineSlot({
     required this.label,
+    required this.lineColor,
     required this.active,
   });
 
@@ -6994,12 +8283,12 @@ class _MissingLetterUnderlineSlot extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: TudloColors.blue, width: active ? 7 : 6),
+          bottom: BorderSide(color: lineColor, width: active ? 7 : 6),
         ),
         boxShadow: active
             ? [
                 BoxShadow(
-                  color: TudloColors.blue.withValues(alpha: .30),
+                  color: lineColor.withValues(alpha: .34),
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),
@@ -7028,6 +8317,17 @@ class _MissingLetterUnderlineSlot extends StatelessWidget {
           : const SizedBox.shrink(),
     );
   }
+}
+
+Color _quizLineColorAt(int index) {
+  const colors = [
+    Color(0xFF1EA7FF),
+    Color(0xFFFFC928),
+    Color(0xFFFF6B57),
+    Color(0xFF8C5CFF),
+    Color(0xFF00BFA6),
+  ];
+  return colors[index % colors.length];
 }
 
 class _HiddenSceneCover extends StatelessWidget {
@@ -8273,9 +9573,10 @@ class _PresentationAssetArt extends StatelessWidget {
 class _QuizTimeSplash extends StatefulWidget {
   static const _assetBase = 'assets/images/level_game/lesson-game-assets';
 
+  final double progress;
   final VoidCallback onDone;
 
-  const _QuizTimeSplash({required this.onDone});
+  const _QuizTimeSplash({this.progress = 0, required this.onDone});
 
   @override
   State<_QuizTimeSplash> createState() => _QuizTimeSplashState();
@@ -8338,7 +9639,7 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(999),
                   child: LinearProgressIndicator(
-                    value: 1,
+                    value: widget.progress.clamp(0, 1).toDouble(),
                     minHeight: (height * .023).clamp(16.0, 24.0),
                     backgroundColor: Colors.white,
                     color: TudloColors.green,
@@ -14050,7 +15351,7 @@ class _LessonCompleteDialog extends StatefulWidget {
   final int accuracy;
   final int mistakes;
   final String durationLabel;
-  final VoidCallback onClaimXp;
+  final bool Function() onClaimXp;
   final VoidCallback onBackToMap;
   final FutureOr<void> Function() onContinue;
 
@@ -14081,11 +15382,15 @@ class _LessonCompleteDialogState extends State<_LessonCompleteDialog> {
   }
 
   void _claimXp() {
+    final showStreak = _claimed ? _showStreak : widget.onClaimXp();
     if (!_claimed) {
       _claimed = true;
-      widget.onClaimXp();
     }
-    setState(() => _showStreak = true);
+    if (showStreak) {
+      setState(() => _showStreak = true);
+      return;
+    }
+    unawaited(Future.sync(widget.onContinue));
   }
 
   @override

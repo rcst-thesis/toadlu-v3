@@ -76,6 +76,7 @@ class AppShellState extends State<AppShell> {
           );
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           page,

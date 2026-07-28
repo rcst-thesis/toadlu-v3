@@ -148,82 +148,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final isHiligaynon = appState.isHiligaynon;
     final activePage = _pages[_pageIndex];
     return Scaffold(
-      backgroundColor: TudloColors.paper,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxHeight < 700;
+            final compact = constraints.maxHeight < 720;
             return Padding(
-              padding: EdgeInsets.fromLTRB(22, compact ? 12 : 18, 22, 22),
+              padding: EdgeInsets.fromLTRB(22, compact ? 12 : 18, 22, 18),
               child: Column(
                 children: [
-                  Align(
-                    alignment: Alignment.center,
-                    child: Row(
-                      children: [
-                        const TudloLanguageToggle(),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: _finish,
-                          child: Text(
-                            isHiligaynon ? 'Laktawan' : 'Skip',
-                            style: GoogleFonts.nunito(
-                              color: TudloColors.muted,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: TudloLanguageToggle(),
                   ),
+                  SizedBox(height: compact ? 12 : 18),
                   Expanded(
-                    child: PageView.builder(
-                      controller: _controller,
-                      itemCount: _pages.length,
-                      onPageChanged: (value) {
-                        unawaited(_handlePageChanged(value));
-                      },
-                      itemBuilder: (context, index) {
-                        return _TudloOnboardingPage(
-                          data: _pages[index],
-                          compact: compact,
-                          hiligaynon: isHiligaynon,
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _OnboardingDots(
-                    count: _pages.length,
-                    activeIndex: _pageIndex,
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    height: compact ? 56 : 64,
-                    child: ElevatedButton(
-                      onPressed: () => unawaited(_next()),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: activePage.color,
-                        foregroundColor: Colors.white,
-                        shadowColor: activePage.color.withValues(alpha: .35),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 430),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: PageView.builder(
+                                controller: _controller,
+                                itemCount: _pages.length,
+                                onPageChanged: (value) {
+                                  unawaited(_handlePageChanged(value));
+                                },
+                                itemBuilder: (context, index) {
+                                  return _TudloOnboardingPage(
+                                    data: _pages[index],
+                                    compact: compact,
+                                    hiligaynon: isHiligaynon,
+                                  );
+                                },
+                              ),
+                            ),
+                            _OnboardingBottomNav(
+                              count: _pages.length,
+                              activeIndex: _pageIndex,
+                              color: activePage.color,
+                              hiligaynon: isHiligaynon,
+                              onSkip: () => unawaited(_finish()),
+                              onNext: () => unawaited(_next()),
+                            ),
+                          ],
                         ),
-                        textStyle: GoogleFonts.nunito(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      child: Text(
-                        _pageIndex == _pages.length - 1
-                            ? isHiligaynon
-                                  ? 'Umpisahan ta na'
-                                  : 'Start Learning'
-                            : isHiligaynon
-                            ? 'Padayon'
-                            : 'Continue',
                       ),
                     ),
                   ),
@@ -250,58 +220,160 @@ class _TudloOnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOut,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      padding: EdgeInsets.fromLTRB(24, compact ? 22 : 30, 24, 28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: TudloColors.green.withValues(alpha: .10),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(28, compact ? 18 : 32, 28, 0),
       child: Column(
         children: [
           Expanded(
+            flex: 7,
             child: Center(
               child: TudloMascot(
-                size: compact ? 210 : 270,
+                size: compact ? 230 : 290,
                 mood: KokaMood.idle,
               ),
             ),
           ),
+          const Spacer(flex: 1),
           Text(
             data.titleText(hiligaynon),
             textAlign: TextAlign.center,
             style: GoogleFonts.nunito(
               color: TudloColors.ink,
-              fontSize: compact ? 36 : 42,
+              fontSize: compact ? 34 : 40,
               height: 1.02,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Text(
             data.descriptionText(hiligaynon),
             textAlign: TextAlign.center,
-            maxLines: compact ? 5 : 6,
+            maxLines: compact ? 4 : 5,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.nunito(
               color: TudloColors.muted,
-              fontSize: compact ? 20 : 23,
-              height: 1.20,
+              fontSize: compact ? 18 : 21,
+              height: 1.18,
               fontWeight: FontWeight.w800,
               letterSpacing: 0,
             ),
           ),
+          SizedBox(height: compact ? 18 : 26),
         ],
+      ),
+    );
+  }
+}
+
+class _OnboardingBottomNav extends StatelessWidget {
+  final int count;
+  final int activeIndex;
+  final Color color;
+  final bool hiligaynon;
+  final VoidCallback onSkip;
+  final VoidCallback onNext;
+
+  const _OnboardingBottomNav({
+    required this.count,
+    required this.activeIndex,
+    required this.color,
+    required this.hiligaynon,
+    required this.onSkip,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLast = activeIndex == count - 1;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      child: SizedBox(
+        height: 58,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 108,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: onSkip,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 44),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    hiligaynon ? 'Laktawan' : 'Skip',
+                    style: GoogleFonts.nunito(
+                      color: TudloColors.muted.withValues(alpha: .58),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .7,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: _OnboardingDots(count: count, activeIndex: activeIndex),
+              ),
+            ),
+            SizedBox(
+              width: 132,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: isLast
+                    ? ElevatedButton(
+                        onPressed: onNext,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          minimumSize: const Size(118, 42),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          textStyle: GoogleFonts.nunito(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .6,
+                          ),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            hiligaynon ? 'SUGDAN' : 'START',
+                            maxLines: 1,
+                            softWrap: false,
+                          ),
+                        ),
+                      )
+                    : TextButton(
+                        onPressed: onNext,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 44),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          hiligaynon ? 'PADAYON' : 'NEXT',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: GoogleFonts.nunito(
+                            color: color,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .7,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -316,20 +388,21 @@ class _OnboardingDots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (var index = 0; index < count; index++)
           AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOut,
-            width: index == activeIndex ? 30 : 11,
-            height: 11,
-            margin: const EdgeInsets.symmetric(horizontal: 5),
+            width: index == activeIndex ? 12 : 8,
+            height: index == activeIndex ? 12 : 8,
+            margin: const EdgeInsets.symmetric(horizontal: 7),
             decoration: BoxDecoration(
               color: index == activeIndex
                   ? TudloColors.green
                   : TudloColors.line,
-              borderRadius: BorderRadius.circular(999),
+              shape: BoxShape.circle,
             ),
           ),
       ],

@@ -227,15 +227,43 @@ class _AnimatedLessonIntroContentState
         .map((item) => item.label.trim())
         .where((label) => label.isNotEmpty)
         .toList();
-    final contentText = labels.isNotEmpty
-        ? _joinHiligaynonList(labels)
+    final spokenLabels = labels.map(_introVoiceLabelFor).toList();
+    final allNumbers =
+        labels.isNotEmpty &&
+        labels.every((label) => RegExp(r'^\d+$').hasMatch(label));
+    if (allNumbers) {
+      return 'Tuon ta ang mga numero ${_joinHiligaynonList(spokenLabels)}.';
+    }
+
+    final contentText = spokenLabels.isNotEmpty
+        ? _joinHiligaynonList(spokenLabels)
         : _cleanLessonTitle(content.title);
-    final needsArticle = labels.isEmpty
+    final needsArticle = spokenLabels.isEmpty
         ? true
-        : labels.any((label) => !RegExp(r'^[A-Z0-9]$').hasMatch(label));
+        : spokenLabels.any((label) => !RegExp(r'^[A-Z]$').hasMatch(label));
     return needsArticle
         ? 'Tuon ta ang ${contentText.toLowerCase()}.'
         : 'Tuon ta $contentText.';
+  }
+
+  String _introVoiceLabelFor(String label) {
+    return _hiligaynonNumberWord(label) ?? label;
+  }
+
+  String? _hiligaynonNumberWord(String label) {
+    return const {
+      '0': 'sero',
+      '1': 'isa',
+      '2': 'duwa',
+      '3': 'tatlo',
+      '4': 'apat',
+      '5': 'lima',
+      '6': 'anum',
+      '7': 'pito',
+      '8': 'walo',
+      '9': 'siyam',
+      '10': 'napulo',
+    }[label.trim()];
   }
 
   String _joinHiligaynonList(List<String> values) {

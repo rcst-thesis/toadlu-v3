@@ -57,7 +57,22 @@ String _lessonPreviewForLevel(int level) {
     (GradeLevel.grade1, 1, 3) => _joinLessonPreview(['M', 'K', 'U']),
     (GradeLevel.grade1, 1, 4) => _joinLessonPreview(['B', 'L', 'S']),
     (GradeLevel.grade1, 1, 5) => _joinLessonPreview(['E', 'G', 'P']),
-    (GradeLevel.grade1, 1, _) => _joinLessonPreview(['R', 'H', 'W', 'C']),
+    (GradeLevel.grade1, 1, 6) => _joinLessonPreview(['R', 'H', 'W', 'C']),
+    (GradeLevel.grade1, 1, 7) => _joinLessonPreview([
+      'Isa',
+      'Duwa',
+      'Tatlo',
+      'Apat',
+      'Lima',
+    ]),
+    (GradeLevel.grade1, 1, 8) => _joinLessonPreview([
+      'Anum',
+      'Pito',
+      'Walo',
+      'Siyam',
+      'Napulo',
+    ]),
+    (GradeLevel.grade1, 1, _) => 'Numero',
     (GradeLevel.grade1, 2, 1) => 'Pamilya',
     (GradeLevel.grade1, 2, 2) => _joinLessonPreview(['Lola', 'Lolo', 'Nanay']),
     (GradeLevel.grade1, 2, _) => _joinLessonPreview([

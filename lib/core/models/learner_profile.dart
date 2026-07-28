@@ -10,6 +10,7 @@ class LearnerProfile {
   final String gradeLevel;
   final int unlockedLevel;
   final int streakDays;
+  final String? lastDailyStreakDate;
   final int currentEnergy;
   final Map<int, int> levelStars;
   final Map<String, LessonScoreStats> lessonScores;
@@ -25,6 +26,7 @@ class LearnerProfile {
     required this.gradeLevel,
     required this.unlockedLevel,
     required this.streakDays,
+    required this.lastDailyStreakDate,
     required this.currentEnergy,
     required this.levelStars,
     required this.lessonScores,
@@ -45,6 +47,7 @@ class LearnerProfile {
       gradeLevel: gradeLevel,
       unlockedLevel: 1,
       streakDays: 0,
+      lastDailyStreakDate: null,
       currentEnergy: AppData.maxEnergy,
       levelStars: const {},
       lessonScores: const {},
@@ -65,6 +68,7 @@ class LearnerProfile {
       gradeLevel: json['gradeLevel'] as String? ?? 'Grade 1',
       unlockedLevel: json['unlockedLevel'] as int? ?? 1,
       streakDays: json['streakDays'] as int? ?? 0,
+      lastDailyStreakDate: json['lastDailyStreakDate'] as String?,
       currentEnergy: json['currentEnergy'] as int? ?? AppData.maxEnergy,
       levelStars: _intMap(json['levelStars']),
       lessonScores: _lessonScoreMap(json['lessonScores']),
@@ -87,6 +91,7 @@ class LearnerProfile {
     String? gradeLevel,
     int? unlockedLevel,
     int? streakDays,
+    Object? lastDailyStreakDate = _unchanged,
     int? currentEnergy,
     Map<int, int>? levelStars,
     Map<String, LessonScoreStats>? lessonScores,
@@ -102,6 +107,9 @@ class LearnerProfile {
       gradeLevel: gradeLevel ?? this.gradeLevel,
       unlockedLevel: unlockedLevel ?? this.unlockedLevel,
       streakDays: streakDays ?? this.streakDays,
+      lastDailyStreakDate: identical(lastDailyStreakDate, _unchanged)
+          ? this.lastDailyStreakDate
+          : lastDailyStreakDate as String?,
       currentEnergy: currentEnergy ?? this.currentEnergy,
       levelStars: levelStars ?? this.levelStars,
       lessonScores: lessonScores ?? this.lessonScores,
@@ -120,6 +128,7 @@ class LearnerProfile {
       'gradeLevel': gradeLevel,
       'unlockedLevel': unlockedLevel,
       'streakDays': streakDays,
+      'lastDailyStreakDate': lastDailyStreakDate,
       'currentEnergy': currentEnergy,
       'levelStars': {
         for (final entry in levelStars.entries) '${entry.key}': entry.value,
@@ -157,6 +166,8 @@ class LearnerProfile {
     };
   }
 }
+
+const Object _unchanged = Object();
 
 String encodeProfiles(List<LearnerProfile> profiles, String? activeProfileId) {
   return jsonEncode({
