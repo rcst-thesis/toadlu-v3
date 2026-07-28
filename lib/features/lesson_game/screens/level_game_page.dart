@@ -5714,47 +5714,59 @@ class _NumberFruitContentState extends State<_NumberFruitContent>
     return Column(
       children: [
         const Spacer(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: (width * .45).clamp(172.0, 280.0),
-              height: (width * .52).clamp(205.0, 330.0),
-              child: AnimatedScale(
-                scale: _showNumber ? 1 : .35,
-                duration: const Duration(milliseconds: 460),
-                curve: Curves.elasticOut,
-                child: AnimatedOpacity(
-                  opacity: _showNumber ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
-                  child: numberAsset == null
-                      ? FittedBox(
-                          fit: BoxFit.contain,
-                          child: Text(
-                            '$number',
-                            style: GoogleFonts.nunito(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0,
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: (width * .11).clamp(32.0, 58.0),
+          ),
+          child: SizedBox(
+            height: (width * .5).clamp(198.0, 320.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: 11,
+                  child: AnimatedScale(
+                    scale: _showNumber ? 1 : .35,
+                    duration: const Duration(milliseconds: 460),
+                    curve: Curves.elasticOut,
+                    child: AnimatedOpacity(
+                      opacity: _showNumber ? 1 : 0,
+                      duration: const Duration(milliseconds: 220),
+                      child: numberAsset == null
+                          ? FittedBox(
+                              fit: BoxFit.contain,
+                              child: Text(
+                                '$number',
+                                style: GoogleFonts.nunito(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            )
+                          : Image.asset(
+                              numberAsset,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
                             ),
-                          ),
-                        )
-                      : Image.asset(
-                          numberAsset,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.high,
-                        ),
+                    ),
+                  ),
                 ),
-              ),
+                SizedBox(width: (width * .025).clamp(8.0, 16.0)),
+                Expanded(
+                  flex: 9,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _AnimatedFruitCount(
+                      number: number,
+                      start: _showFruits,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: (width * .035).clamp(12.0, 24.0)),
-            SizedBox(
-              width: (width * .46).clamp(178.0, 300.0),
-              height: (width * .46).clamp(178.0, 300.0),
-              child: _AnimatedFruitCount(number: number, start: _showFruits),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: 10),
         Text(
@@ -5874,13 +5886,17 @@ class _AnimatedFruitCountState extends State<_AnimatedFruitCount> {
   @override
   Widget build(BuildContext context) {
     final count = widget.number.clamp(1, 10).toInt();
-    final columns = count <= 3 ? count : math.min(4, count);
+    final columns = count <= 2
+        ? count
+        : count <= 4
+        ? 2
+        : 3;
     final rows = (count / columns).ceil();
     return LayoutBuilder(
       builder: (context, constraints) {
         final fruitSize = math
             .min(constraints.maxWidth / columns, constraints.maxHeight / rows)
-            .clamp(68.0, 150.0)
+            .clamp(58.0, 140.0)
             .toDouble();
         return Center(
           child: Wrap(
@@ -6053,7 +6069,7 @@ class _UnitOneQuizStage extends StatelessWidget {
             left: width * .06,
             right: width * .06,
             top: height * .31,
-            bottom: height * .045,
+            bottom: height * .02,
             child: child,
           ),
         ],
@@ -6293,74 +6309,91 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
           : _wrong
           ? 'Koka: Sulayi liwat.'
           : 'Koka: Pindoton ang husto nga sabat.',
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.listenText == null) ...[
-                    _SubjectQuestionLabel(
-                      imageAsset: widget.imageAsset,
-                      icon: widget.icon,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  SizedBox(
-                    height: widget.listenText != null ? 200 : 215,
-                    child: widget.imageAsset == null
-                        ? Icon(widget.icon, color: TudloColors.green, size: 170)
-                        : Image.asset(
-                            widget.imageAsset!,
-                            width: widget.listenText != null ? 255 : 270,
-                            height: widget.listenText != null ? 200 : 215,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                            errorBuilder: (_, __, ___) => Icon(
-                              widget.icon,
-                              color: TudloColors.green,
-                              size: 150,
-                            ),
-                          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight;
+          final imageHeight = (height * .34).clamp(145.0, 205.0);
+          final imageWidth = (width * .66).clamp(210.0, 270.0);
+          final speakerSize = (width * .20).clamp(72.0, 86.0);
+          final choiceSize = (width * .27).clamp(92.0, 112.0);
+          return Column(
+            children: [
+              SizedBox(
+                height: imageHeight,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.listenText == null) ...[
+                        _SubjectQuestionLabel(
+                          imageAsset: widget.imageAsset,
+                          icon: widget.icon,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      Flexible(
+                        child: widget.imageAsset == null
+                            ? Icon(
+                                widget.icon,
+                                color: TudloColors.green,
+                                size: imageHeight * .84,
+                              )
+                            : Image.asset(
+                                widget.imageAsset!,
+                                width: imageWidth,
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.high,
+                                errorBuilder: (_, __, ___) => Icon(
+                                  widget.icon,
+                                  color: TudloColors.green,
+                                  size: imageHeight * .74,
+                                ),
+                              ),
+                      ),
+                    ],
                   ),
-                  if (widget.listenText != null) ...[
-                    const SizedBox(height: 10),
-                    _PresentationSpeakerHint(
-                      size: 86,
+                ),
+              ),
+              if (widget.listenText != null)
+                SizedBox(
+                  height: speakerSize * .98,
+                  child: Center(
+                    child: _PresentationSpeakerHint(
+                      size: speakerSize,
                       showFinger: _showSpeakerHint,
                       tapScale: _tapScale,
                       tapOffset: _tapOffset,
                       onTap: _replayListenText,
                     ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              for (final choice in widget.choices.take(3))
-                Flexible(
-                  child: _UnitOneSymbolButton(
-                    label: choice,
-                    isLetter: widget.isLetter,
-                    selected: _selected == choice,
-                    correct: _selected == choice && _done,
-                    wrong: _selected == choice && _wrong,
-                    onTap: () => _choose(choice),
                   ),
                 ),
+              SizedBox(height: (height * .035).clamp(14.0, 24.0)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  for (final choice in widget.choices.take(3))
+                    Flexible(
+                      child: _UnitOneSymbolButton(
+                        label: choice,
+                        isLetter: widget.isLetter,
+                        assetSize: widget.isLetter ? choiceSize : null,
+                        selected: _selected == choice,
+                        correct: _selected == choice && _done,
+                        wrong: _selected == choice && _wrong,
+                        onTap: () => _choose(choice),
+                      ),
+                    ),
+                ],
+              ),
+              const Spacer(),
+              _UnitOneSubmitButton(
+                enabled: _selected != null && !_done,
+                onPressed: _submit,
+              ),
             ],
-          ),
-          const Spacer(),
-          _UnitOneSubmitButton(
-            enabled: _selected != null && !_done,
-            onPressed: _submit,
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -6443,14 +6476,19 @@ class _UnitOneNumberMatchingActivity extends StatefulWidget {
       _UnitOneNumberMatchingActivityState();
 }
 
+enum _NumberMatchDragSide { left, right }
+
 class _UnitOneNumberMatchingActivityState
     extends State<_UnitOneNumberMatchingActivity>
     with SingleTickerProviderStateMixin {
   late final List<int> _leftNumbers = _shuffledChoices(widget.numbers);
   late final List<int> _rightNumbers = _shuffledChoices(widget.numbers);
   final Map<int, int> _connections = {};
-  int? _pendingLeft;
-  int? _pendingRight;
+  final GlobalKey _matchAreaKey = GlobalKey();
+  _NumberMatchDragSide? _dragSide;
+  int? _dragNumber;
+  Offset? _dragStart;
+  Offset? _dragCurrent;
   bool _submittedWrong = false;
   bool _done = false;
   late bool _showHint = widget.showHint;
@@ -6497,45 +6535,86 @@ class _UnitOneNumberMatchingActivityState
     }
   }
 
-  Future<void> _selectWord(int number) async {
-    if (_done) return;
-    _hideHint();
-    await AppAudioService.instance.playTap();
-    if (!mounted) return;
-    if (_pendingRight != null) {
-      _connect(number, _pendingRight!);
-      return;
-    }
-    setState(() {
-      _pendingLeft = number;
-      _pendingRight = null;
-      _submittedWrong = false;
-    });
-  }
-
-  Future<void> _selectFruitGroup(int number) async {
-    if (_done) return;
-    _hideHint();
-    await AppAudioService.instance.playTap();
-    if (!mounted) return;
-    if (_pendingLeft != null) {
-      _connect(_pendingLeft!, number);
-      return;
-    }
-    setState(() {
-      _pendingRight = number;
-      _pendingLeft = null;
-      _submittedWrong = false;
-    });
-  }
-
   void _connect(int leftNumber, int rightNumber) {
     setState(() {
       _connections[leftNumber] = rightNumber;
-      _pendingLeft = null;
-      _pendingRight = null;
+      _dragSide = null;
+      _dragNumber = null;
+      _dragStart = null;
+      _dragCurrent = null;
       _submittedWrong = false;
     });
+  }
+
+  Offset _toMatchLocal(Offset globalPosition) {
+    final box =
+        _matchAreaKey.currentContext?.findRenderObject() as RenderBox?;
+    return box?.globalToLocal(globalPosition) ?? Offset.zero;
+  }
+
+  int? _numberAtY(double y, List<int> numbers, double height) {
+    if (numbers.isEmpty || y < 0 || y > height) return null;
+    final rawIndex = (y / height * numbers.length).floor();
+    final index = rawIndex.clamp(0, numbers.length - 1).toInt();
+    return numbers[index];
+  }
+
+  void _startDrag({
+    required _NumberMatchDragSide side,
+    required int number,
+    required Offset anchor,
+    required Offset globalPosition,
+  }) {
+    if (_done) return;
+    _hideHint();
+    unawaited(AppAudioService.instance.playTap());
+    setState(() {
+      _dragSide = side;
+      _dragNumber = number;
+      _dragStart = anchor;
+      _dragCurrent = _toMatchLocal(globalPosition);
+      _submittedWrong = false;
+    });
+  }
+
+  void _updateDrag(Offset globalPosition) {
+    if (_done || _dragStart == null) return;
+    setState(() => _dragCurrent = _toMatchLocal(globalPosition));
+  }
+
+  void _cancelDrag() {
+    if (_done) return;
+    setState(() {
+      _dragSide = null;
+      _dragNumber = null;
+      _dragStart = null;
+      _dragCurrent = null;
+    });
+  }
+
+  void _endDrag(double height) {
+    if (_done || _dragSide == null || _dragNumber == null) return;
+    final local = _dragCurrent;
+    if (local == null) return;
+    final side = _dragSide!;
+    final number = _dragNumber!;
+    final target = side == _NumberMatchDragSide.left
+        ? _numberAtY(local.dy, _rightNumbers, height)
+        : _numberAtY(local.dy, _leftNumbers, height);
+    if (target == null) {
+      setState(() {
+        _dragSide = null;
+        _dragNumber = null;
+        _dragStart = null;
+        _dragCurrent = null;
+      });
+      return;
+    }
+    if (side == _NumberMatchDragSide.left) {
+      _connect(number, target);
+    } else {
+      _connect(target, number);
+    }
   }
 
   Future<void> _submit() async {
@@ -6623,17 +6702,33 @@ class _UnitOneNumberMatchingActivityState
                                 height,
                               ),
                             ),
+                            colorKey: entry.key,
                             correct: entry.key == entry.value,
                           ),
                         )
                         .toList();
+                    final activeLine =
+                        _dragStart != null &&
+                            _dragCurrent != null &&
+                            _dragNumber != null
+                        ? _NumberMatchLine(
+                            start: _dragStart!,
+                            end: _dragCurrent!,
+                            colorKey: _dragNumber!,
+                            correct: true,
+                          )
+                        : null;
                     return Stack(
+                      key: _matchAreaKey,
                       clipBehavior: Clip.none,
                       children: [
                         Positioned.fill(
                           child: CustomPaint(
                             painter: _NumberMatchLinePainter(
-                              lines: lineEntries,
+                              lines: [
+                                ...lineEntries,
+                                if (activeLine != null) activeLine,
+                              ],
                               showCorrectness: _submittedWrong || _done,
                             ),
                           ),
@@ -6650,13 +6745,31 @@ class _UnitOneNumberMatchingActivityState
                                     _hiligaynonNumberWord('$number'),
                                   ),
                                   fontSize: wordFont,
-                                  selected: _pendingLeft == number,
+                                  selected:
+                                      _dragSide == _NumberMatchDragSide.left &&
+                                      _dragNumber == number,
                                   connected: _connections.containsKey(number),
                                   wrong:
                                       _submittedWrong &&
                                       _connections[number] != null &&
                                       _connections[number] != number,
-                                  onTap: () => unawaited(_selectWord(number)),
+                                  onPanStart: (details) => _startDrag(
+                                    side: _NumberMatchDragSide.left,
+                                    number: number,
+                                    anchor: Offset(
+                                      leftX + width * .10,
+                                      _rowCenterY(
+                                        leftIndexes[number]!,
+                                        _leftNumbers.length,
+                                        height,
+                                      ),
+                                    ),
+                                    globalPosition: details.globalPosition,
+                                  ),
+                                  onPanUpdate: (details) =>
+                                      _updateDrag(details.globalPosition),
+                                  onPanEnd: (_) => _endDrag(height),
+                                  onPanCancel: () => _cancelDrag(),
                                 ),
                             ],
                           ),
@@ -6670,7 +6783,10 @@ class _UnitOneNumberMatchingActivityState
                               for (final number in _rightNumbers)
                                 _NumberFruitMatchGroup(
                                   count: number,
-                                  selected: _pendingRight == number,
+                                  selected:
+                                      _dragSide ==
+                                          _NumberMatchDragSide.right &&
+                                      _dragNumber == number,
                                   connected: _connections.containsValue(number),
                                   wrong:
                                       _submittedWrong &&
@@ -6679,8 +6795,23 @@ class _UnitOneNumberMatchingActivityState
                                             entry.value == number &&
                                             entry.key != number,
                                       ),
-                                  onTap: () =>
-                                      unawaited(_selectFruitGroup(number)),
+                                  onPanStart: (details) => _startDrag(
+                                    side: _NumberMatchDragSide.right,
+                                    number: number,
+                                    anchor: Offset(
+                                      rightX - width * .10,
+                                      _rowCenterY(
+                                        rightIndexes[number]!,
+                                        _rightNumbers.length,
+                                        height,
+                                      ),
+                                    ),
+                                    globalPosition: details.globalPosition,
+                                  ),
+                                  onPanUpdate: (details) =>
+                                      _updateDrag(details.globalPosition),
+                                  onPanEnd: (_) => _endDrag(height),
+                                  onPanCancel: () => _cancelDrag(),
                                 ),
                             ],
                           ),
@@ -6729,11 +6860,13 @@ class _UnitOneNumberMatchingActivityState
 class _NumberMatchLine {
   final Offset start;
   final Offset end;
+  final int colorKey;
   final bool correct;
 
   const _NumberMatchLine({
     required this.start,
     required this.end,
+    required this.colorKey,
     required this.correct,
   });
 }
@@ -6754,7 +6887,7 @@ class _NumberMatchLinePainter extends CustomPainter {
           ? line.correct
                 ? TudloColors.green
                 : TudloColors.coral
-          : TudloColors.gold;
+          : _numberMatchColor(line.colorKey);
       final paint = Paint()
         ..color = color.withValues(alpha: .92)
         ..strokeWidth = 7
@@ -6770,6 +6903,16 @@ class _NumberMatchLinePainter extends CustomPainter {
     return oldDelegate.lines != lines ||
         oldDelegate.showCorrectness != showCorrectness;
   }
+}
+
+Color _numberMatchColor(int number) {
+  return const [
+    Color(0xFFFFD43B),
+    Color(0xFF29B6F6),
+    Color(0xFFFF7A59),
+    Color(0xFFB86BFF),
+    Color(0xFF16C784),
+  ][number.abs() % 5];
 }
 
 class _NumberMatchGestureHint extends StatelessWidget {
@@ -6839,7 +6982,10 @@ class _NumberMatchWord extends StatelessWidget {
   final bool selected;
   final bool connected;
   final bool wrong;
-  final VoidCallback onTap;
+  final GestureDragStartCallback onPanStart;
+  final GestureDragUpdateCallback onPanUpdate;
+  final GestureDragEndCallback onPanEnd;
+  final VoidCallback onPanCancel;
 
   const _NumberMatchWord({
     required this.label,
@@ -6847,14 +6993,21 @@ class _NumberMatchWord extends StatelessWidget {
     required this.selected,
     required this.connected,
     required this.wrong,
-    required this.onTap,
+    required this.onPanStart,
+    required this.onPanUpdate,
+    required this.onPanEnd,
+    required this.onPanCancel,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = wrong ? const Color(0xFFFFE2E2) : Colors.white;
     return GestureDetector(
-      onTap: onTap,
+      behavior: HitTestBehavior.translucent,
+      onPanStart: onPanStart,
+      onPanUpdate: onPanUpdate,
+      onPanEnd: onPanEnd,
+      onPanCancel: onPanCancel,
       child: AnimatedScale(
         duration: const Duration(milliseconds: 160),
         scale: selected ? 1.08 : 1,
@@ -6898,14 +7051,20 @@ class _NumberFruitMatchGroup extends StatelessWidget {
   final bool selected;
   final bool connected;
   final bool wrong;
-  final VoidCallback onTap;
+  final GestureDragStartCallback onPanStart;
+  final GestureDragUpdateCallback onPanUpdate;
+  final GestureDragEndCallback onPanEnd;
+  final VoidCallback onPanCancel;
 
   const _NumberFruitMatchGroup({
     required this.count,
     required this.selected,
     required this.connected,
     required this.wrong,
-    required this.onTap,
+    required this.onPanStart,
+    required this.onPanUpdate,
+    required this.onPanEnd,
+    required this.onPanCancel,
   });
 
   @override
@@ -6915,7 +7074,11 @@ class _NumberFruitMatchGroup extends StatelessWidget {
     final rows = (count / columns).ceil();
     final fruitSize = compact ? 34.0 : 46.0;
     return GestureDetector(
-      onTap: onTap,
+      behavior: HitTestBehavior.translucent,
+      onPanStart: onPanStart,
+      onPanUpdate: onPanUpdate,
+      onPanEnd: onPanEnd,
+      onPanCancel: onPanCancel,
       child: AnimatedScale(
         duration: const Duration(milliseconds: 160),
         scale: selected ? 1.08 : 1,
@@ -7248,7 +7411,7 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
           Column(
             children: [
               SizedBox(
-                height: 220,
+                height: 238,
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -7288,7 +7451,7 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               Wrap(
                 alignment: WrapAlignment.center,
                 spacing: 6,
@@ -7326,9 +7489,9 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
                       _PlainAnswerLetter(label: _letters[i]),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               SizedBox(
-                height: 140,
+                height: 132,
                 child: Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -7369,6 +7532,7 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
                   ),
                 ),
               ),
+              const Spacer(),
               const SizedBox(height: 8),
               _UnitOneSubmitButton(
                 enabled:

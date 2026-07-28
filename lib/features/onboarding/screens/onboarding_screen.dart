@@ -152,7 +152,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxHeight < 720;
+            final compact =
+                constraints.maxHeight < 820 || constraints.maxWidth < 390;
             return Padding(
               padding: EdgeInsets.fromLTRB(22, compact ? 12 : 18, 22, 18),
               child: Column(
@@ -286,94 +287,107 @@ class _OnboardingBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLast = activeIndex == count - 1;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-      child: SizedBox(
-        height: 58,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 108,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: onSkip,
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 44),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    hiligaynon ? 'Laktawan' : 'Skip',
-                    style: GoogleFonts.nunito(
-                      color: TudloColors.muted.withValues(alpha: .58),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .7,
+    return SizedBox(
+      height: 68,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final buttonFont = constraints.maxWidth < 350 ? 14.0 : 16.0;
+          return Row(
+            children: [
+              Expanded(
+                flex: 5,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: onSkip,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: const Size(0, 44),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        hiligaynon ? 'Laktawan' : 'Skip',
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.muted.withValues(alpha: .58),
+                          fontSize: buttonFont,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .5,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Center(
-                child: _OnboardingDots(count: count, activeIndex: activeIndex),
+              Expanded(
+                flex: 4,
+                child: Center(
+                  child: _OnboardingDots(
+                    count: count,
+                    activeIndex: activeIndex,
+                  ),
+                ),
               ),
-            ),
-            SizedBox(
-              width: 132,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: isLast
-                    ? ElevatedButton(
-                        onPressed: onNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 18),
-                          minimumSize: const Size(118, 42),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
+              Expanded(
+                flex: 5,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: isLast
+                        ? ElevatedButton(
+                            onPressed: onNext,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              minimumSize: const Size(104, 42),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              textStyle: GoogleFonts.nunito(
+                                fontSize: buttonFont,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: .5,
+                              ),
+                            ),
+                            child: Text(
+                              hiligaynon ? 'SUGDAN' : 'START',
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
+                          )
+                        : TextButton(
+                            onPressed: onNext,
+                            style: TextButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              minimumSize: const Size(0, 44),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              hiligaynon ? 'PADAYON' : 'NEXT',
+                              maxLines: 1,
+                              softWrap: false,
+                              style: GoogleFonts.nunito(
+                                color: color,
+                                fontSize: buttonFont,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: .5,
+                              ),
+                            ),
                           ),
-                          textStyle: GoogleFonts.nunito(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .6,
-                          ),
-                        ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            hiligaynon ? 'SUGDAN' : 'START',
-                            maxLines: 1,
-                            softWrap: false,
-                          ),
-                        ),
-                      )
-                    : TextButton(
-                        onPressed: onNext,
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(0, 44),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          hiligaynon ? 'PADAYON' : 'NEXT',
-                          maxLines: 1,
-                          softWrap: false,
-                          style: GoogleFonts.nunito(
-                            color: color,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .7,
-                          ),
-                        ),
-                      ),
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -395,9 +409,9 @@ class _OnboardingDots extends StatelessWidget {
           AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOut,
-            width: index == activeIndex ? 12 : 8,
-            height: index == activeIndex ? 12 : 8,
-            margin: const EdgeInsets.symmetric(horizontal: 7),
+            width: index == activeIndex ? 11 : 7,
+            height: index == activeIndex ? 11 : 7,
+            margin: const EdgeInsets.symmetric(horizontal: 5),
             decoration: BoxDecoration(
               color: index == activeIndex
                   ? TudloColors.green
