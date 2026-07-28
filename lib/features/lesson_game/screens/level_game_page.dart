@@ -43,6 +43,136 @@ List<T> _shuffledChoices<T>(Iterable<T> choices) {
   return shuffled;
 }
 
+Future<bool> _showLessonExitConfirmation(BuildContext context) async {
+  final shouldExit = await showDialog<bool>(
+    context: context,
+    barrierColor: TudloColors.ink.withValues(alpha: .55),
+    builder: (dialogContext) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
+          decoration: BoxDecoration(
+            color: TudloColors.paper,
+            borderRadius: BorderRadius.circular(34),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.ink.withValues(alpha: .20),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -4,
+                top: -4,
+                child: IconButton(
+                  tooltip: 'Magpabilin',
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: TudloColors.muted,
+                    size: 30,
+                  ),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  const TudloMascot(size: 138, mood: KokaMood.curious),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Mahalin ka na?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: TudloColors.ink,
+                      fontSize: 29,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Tapusa ang leksiyon, ukon madula ang imo progreso.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: TudloColors.muted,
+                      fontSize: 18,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 58,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: TudloColors.softGreen,
+                              foregroundColor: TudloColors.green,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            child: const Text('Halin'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: SizedBox(
+                          height: 58,
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                Navigator.pop(dialogContext, false),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: TudloColors.green,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            child: const Text('Magpabilin'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
+  return shouldExit == true;
+}
+
+Future<void> _exitLessonFromContext(BuildContext context) async {
+  final shouldExit = await _showLessonExitConfirmation(context);
+  if (!context.mounted || !shouldExit) return;
+  Navigator.pop(context);
+}
+
 /// Main lesson gameplay screen opened from the Home Map.
 ///
 /// A level receives grade-based content and generated questions from
@@ -301,133 +431,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
     // Back icon button:
     // Opens a leave confirmation before discarding the current lesson attempt.
     // Exiting from this menu does not save level progress.
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      barrierColor: TudloColors.ink.withValues(alpha: .55),
-      builder: (dialogContext) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
-            decoration: BoxDecoration(
-              color: TudloColors.paper,
-              borderRadius: BorderRadius.circular(34),
-              boxShadow: [
-                BoxShadow(
-                  color: TudloColors.ink.withValues(alpha: .20),
-                  blurRadius: 28,
-                  offset: const Offset(0, 14),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -4,
-                  top: -4,
-                  child: IconButton(
-                    tooltip: 'Magpabilin',
-                    onPressed: () => Navigator.pop(dialogContext, false),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: TudloColors.muted,
-                      size: 30,
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 8),
-                    const TudloMascot(size: 138),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Mahalin ka na?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: TudloColors.ink,
-                        fontSize: 29,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Tapusa ang leksiyon, ukon madula ang imo progreso.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: TudloColors.muted,
-                        fontSize: 18,
-                        height: 1.25,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 58,
-                            child: ElevatedButton(
-                              // Leave button:
-                              // Discards this attempt and returns to the
-                              // previous page without saving progress.
-                              onPressed: () =>
-                                  Navigator.pop(dialogContext, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: TudloColors.softGreen,
-                                foregroundColor: TudloColors.green,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              child: const Text('Halin'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: SizedBox(
-                            height: 58,
-                            child: ElevatedButton(
-                              // Stay here button:
-                              // Closes the popup and resumes the lesson.
-                              onPressed: () =>
-                                  Navigator.pop(dialogContext, false),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: TudloColors.green,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              child: const Text('Magpabilin'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!mounted || shouldExit != true) return;
+    final shouldExit = await _showLessonExitConfirmation(context);
+    if (!mounted || !shouldExit) return;
     Navigator.pop(context);
   }
 
@@ -5184,7 +5189,7 @@ class _UnitOneQuizStage extends StatelessWidget {
             child: _PresentationImageButton(
               asset: '$_assetBase/exit-page.png',
               size: topButtonSize,
-              onTap: () => Navigator.maybePop(context),
+              onTap: () => unawaited(_exitLessonFromContext(context)),
               tooltip: 'Balik',
             ),
           ),
@@ -6000,7 +6005,11 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
             ],
           ),
           if (_showDragTutorialHint && !_done)
-            const Positioned.fill(child: _DragLetterTutorialHint()),
+            Positioned.fill(
+              child: _DragLetterTutorialHint(
+                choiceIndex: _choices.indexOf(_letters[_activeMissingIndex]),
+              ),
+            ),
         ],
       ),
     );
@@ -6031,7 +6040,21 @@ class _UnitOneHiddenSearchActivity extends StatefulWidget {
 class _DragLetterTutorialHint extends StatelessWidget {
   static const _assetBase = 'assets/images/level_game/lesson-game-assets';
 
-  const _DragLetterTutorialHint();
+  final int choiceIndex;
+
+  const _DragLetterTutorialHint({required this.choiceIndex});
+
+  Offset _choiceAnchor(double width, double height) {
+    final index = choiceIndex < 0 ? 0 : choiceIndex;
+    final anchors = [
+      Offset(width * .20, height * .68),
+      Offset(width * .47, height * .68),
+      Offset(width * .74, height * .68),
+      Offset(width * .34, height * .86),
+      Offset(width * .61, height * .86),
+    ];
+    return anchors[index.clamp(0, anchors.length - 1)];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -6045,7 +6068,7 @@ class _DragLetterTutorialHint extends StatelessWidget {
             duration: const Duration(milliseconds: 2600),
             curve: Curves.easeInOutCubic,
             builder: (context, value, child) {
-              final begin = Offset(width * .26, height * .67);
+              final begin = _choiceAnchor(width, height);
               final end = Offset(width * .48, height * .42);
               final position = Offset.lerp(begin, end, value)!;
               final pulse = math.sin(value * math.pi * 3).abs() * .08;
@@ -8226,7 +8249,7 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
                 child: _PresentationImageButton(
                   asset: '${_QuizTimeSplash._assetBase}/exit-page.png',
                   size: topButtonSize,
-                  onTap: () => Navigator.maybePop(context),
+                  onTap: () => unawaited(_exitLessonFromContext(context)),
                   tooltip: 'Balik',
                 ),
               ),
@@ -14416,19 +14439,76 @@ class _ResultPrimaryButton extends StatelessWidget {
   }
 }
 
-class _StreakDayChip extends StatelessWidget {
+class _StreakDayChip extends StatefulWidget {
   final String label;
   final bool completed;
 
   const _StreakDayChip({required this.label, required this.completed});
 
   @override
+  State<_StreakDayChip> createState() => _StreakDayChipState();
+}
+
+class _StreakDayChipState extends State<_StreakDayChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  late final Animation<double> _opacity;
+  bool _showUnlocked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    final curve = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    );
+    _scale = Tween<double>(begin: .66, end: 1).animate(curve);
+    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    if (widget.completed) {
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        if (!mounted) return;
+        setState(() => _showUnlocked = true);
+        _controller.forward(from: 0);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _StreakDayChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.completed && widget.completed) {
+      _showUnlocked = false;
+      _controller.reset();
+      Future<void>.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        setState(() => _showUnlocked = true);
+        _controller.forward(from: 0);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final completed = widget.completed;
+    final asset = completed && _showUnlocked
+        ? 'assets/images/level_game/lesson-game-assets/fire-unlocked.png'
+        : 'assets/images/level_game/lesson-game-assets/fire-locked.png';
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          label,
+          widget.label,
           style: GoogleFonts.nunito(
             color: completed ? TudloColors.green : TudloColors.muted,
             fontSize: 19,
@@ -14438,19 +14518,26 @@ class _StreakDayChip extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Image.asset(
-          completed
-              ? 'assets/images/level_game/lesson-game-assets/fire-unlocked.png'
-              : 'assets/images/level_game/lesson-game-assets/fire-locked.png',
-          width: 52,
-          height: 52,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: completed ? TudloColors.green : TudloColors.line,
-              shape: BoxShape.circle,
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final scale = completed && _showUnlocked ? _scale.value : 1.0;
+            final opacity = completed && _showUnlocked ? _opacity.value : 1.0;
+            return Opacity(
+              opacity: opacity,
+              child: Transform.scale(scale: scale, child: child),
+            );
+          },
+          child: Image.asset(
+            asset,
+            key: ValueKey(asset),
+            width: 52,
+            height: 52,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.local_fire_department_rounded,
+              color: completed ? TudloColors.green : TudloColors.muted,
+              size: 48,
             ),
           ),
         ),
