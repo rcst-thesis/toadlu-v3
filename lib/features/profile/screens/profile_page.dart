@@ -921,7 +921,7 @@ class _WeeklyStreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final completedDays = StreakHelper.current().completedDaysThisWeek;
-    final labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
@@ -952,18 +952,6 @@ class _WeeklyStreakCard extends StatelessWidget {
                     return Expanded(
                       child: Column(
                         children: [
-                          Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              color: completed
-                                  ? TudloColors.green
-                                  : TudloColors.paper,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: TudloColors.line),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
                           Text(
                             labels[index],
                             style: GoogleFonts.nunito(
@@ -972,6 +960,22 @@ class _WeeklyStreakCard extends StatelessWidget {
                                   : TudloColors.muted,
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Image.asset(
+                            completed
+                                ? 'assets/images/level_game/lesson-game-assets/fire-unlocked.png'
+                                : 'assets/images/level_game/lesson-game-assets/fire-locked.png',
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.local_fire_department_rounded,
+                              color: completed
+                                  ? TudloColors.green
+                                  : TudloColors.muted,
+                              size: 34,
                             ),
                           ),
                         ],

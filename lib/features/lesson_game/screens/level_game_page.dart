@@ -4524,10 +4524,11 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
   @override
   void initState() {
     super.initState();
+    final targets = _targetLettersFor(
+      widget.content,
+    ).map((target) => target.toUpperCase()).toSet().toList();
     _quizTargets = _shuffledChoices(
-      _targetLettersFor(
-        widget.content,
-      ).map((target) => target.toUpperCase()).toSet(),
+      targets.isNotEmpty ? targets : const ['A', 'N', 'T', 'Y'],
     );
   }
 
@@ -4574,7 +4575,15 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
     final anchors = _alphabetAnchorsFor(widget.content.lessonNumber);
     final targets = _targetLettersFor(widget.content);
     var maxIndex = 0;
-    final spellingAnchor = anchors.first;
+    final spellingAnchor = anchors.isNotEmpty
+        ? anchors.first
+        : const _AlphabetAnchor(
+            word: 'NANAY',
+            meaning: 'nanay',
+            targets: ['N', 'A', 'Y'],
+            imageAsset: 'assets/images/level_game/people/nanay.png',
+            icon: Icons.family_restroom_rounded,
+          );
     final secondTarget = _quizTargets.length > 1
         ? _quizTargets[1]
         : _quizTargets.first;
@@ -4613,6 +4622,8 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
         word: spellingAnchor.word,
         imageAsset: spellingAnchor.imageAsset,
         icon: spellingAnchor.icon,
+        showDragTutorial:
+            widget.content.unitNumber == 1 && widget.content.lessonNumber == 1,
         onAttempt: (correct) => widget.onQuizAttempt(1, correct),
         onDone: () => _advanceAfterCorrect(maxIndex),
       ),
@@ -4819,6 +4830,15 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
     String target, {
     String prompt = '',
   }) {
+    if (anchors.isEmpty) {
+      return const _AlphabetAnchor(
+        word: 'NANAY',
+        meaning: 'nanay',
+        targets: ['N', 'A', 'Y'],
+        imageAsset: 'assets/images/level_game/people/nanay.png',
+        icon: Icons.family_restroom_rounded,
+      );
+    }
     final lowerPrompt = prompt.toLowerCase();
     for (final anchor in anchors) {
       if (lowerPrompt.contains(anchor.word.toLowerCase())) return anchor;
@@ -5316,10 +5336,10 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
     _hideHintTimer?.cancel();
     _inactiveHintTimer?.cancel();
     if (mounted) setState(() => _showSpeakerHint = true);
-    _hideHintTimer = Timer(const Duration(seconds: 4), () {
+    _hideHintTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) setState(() => _showSpeakerHint = false);
     });
-    _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
+    _inactiveHintTimer = Timer(const Duration(seconds: 8), () {
       if (mounted && !_done) _showHintBriefly();
     });
   }
@@ -5578,6 +5598,7 @@ class _UnitOneSpellingActivity extends StatefulWidget {
   final String word;
   final String? imageAsset;
   final IconData icon;
+  final bool showDragTutorial;
   final ValueChanged<bool> onAttempt;
   final VoidCallback onDone;
 
@@ -5588,6 +5609,7 @@ class _UnitOneSpellingActivity extends StatefulWidget {
     required this.word,
     this.imageAsset,
     required this.icon,
+    this.showDragTutorial = false,
     required this.onAttempt,
     required this.onDone,
   });
@@ -5600,35 +5622,44 @@ class _UnitOneSpellingActivity extends StatefulWidget {
 class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
     with SingleTickerProviderStateMixin {
   String? _selectedChoice;
-  String? _wrongChoice;
+  Set<String> _wrongChoices = const {};
+  late int _activeMissingIndex;
+  final Map<int, String> _filledLetters = {};
   bool _done = false;
   bool _showSpeakerHint = true;
+  bool _showDragTutorialHint = false;
   Timer? _hideHintTimer;
   Timer? _inactiveHintTimer;
+  Timer? _dragTutorialTimer;
+  Timer? _inactiveDragTutorialTimer;
   late final AnimationController _tapHintController;
   late final Animation<double> _tapScale;
   late final Animation<Offset> _tapOffset;
 
-  late final List<String> _letters = widget.word
-      .replaceAll(RegExp(r'\s+'), '')
-      .characters
-      .map((letter) => letter.toUpperCase())
-      .toList();
-  late final int _missingIndex = _letters.length <= 2
-      ? 0
-      : _letters.length ~/ 2;
-  late final String _missingLetter = _letters[_missingIndex];
+  late final List<String> _letters = () {
+    final letters = widget.word
+        .replaceAll(RegExp(r'\s+'), '')
+        .characters
+        .map((letter) => letter.toUpperCase())
+        .toList();
+    return letters.isEmpty ? ['A'] : letters;
+  }();
+  late final List<int> _missingIndexes = _buildMissingIndexes();
+  late final Set<String> _missingLetters = {
+    for (final index in _missingIndexes) _letters[index],
+  };
 
   late final List<String> _choices = _shuffledChoices(
     {
-      _missingLetter,
+      ..._missingLetters,
       ...const ['A', 'N', 'T', 'Y', 'I', 'D', 'O', 'M', 'K', 'U'],
-    }.take(math.max(5, _letters.toSet().length + 2)),
+    }.take(5),
   ).toList();
 
   @override
   void initState() {
     super.initState();
+    _activeMissingIndex = _missingIndexes.first;
     _tapHintController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 820),
@@ -5645,16 +5676,62 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _showHintBriefly();
+      _queueDragTutorial(const Duration(milliseconds: 850));
       unawaited(TudloVoiceButton.speak(context, widget.prompt));
     });
+  }
+
+  void _queueDragTutorial(Duration delay) {
+    if (!widget.showDragTutorial || _done) return;
+    _dragTutorialTimer?.cancel();
+    _inactiveDragTutorialTimer?.cancel();
+    _inactiveDragTutorialTimer = Timer(delay, () {
+      _showDragTutorialBriefly();
+    });
+  }
+
+  void _showDragTutorialBriefly() {
+    if (!mounted || _done || !widget.showDragTutorial) return;
+    setState(() => _showDragTutorialHint = true);
+    _dragTutorialTimer?.cancel();
+    _dragTutorialTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      setState(() => _showDragTutorialHint = false);
+      _queueDragTutorial(const Duration(seconds: 8));
+    });
+  }
+
+  List<int> _buildMissingIndexes() {
+    if (_letters.isEmpty) return const [0];
+    if (_letters.length <= 2) return const [0];
+    final shouldUseTwoBlanks =
+        _letters.length >= 5 &&
+        widget.word.codeUnits.fold<int>(0, (sum, code) => sum + code).isEven;
+    final first = _letters.length ~/ 2;
+    if (!shouldUseTwoBlanks) return [first];
+
+    final second = math.max(0, _letters.length - 1);
+    if (second == first) return [first];
+    return [first, second]..sort();
   }
 
   @override
   void dispose() {
     _hideHintTimer?.cancel();
     _inactiveHintTimer?.cancel();
+    _dragTutorialTimer?.cancel();
+    _inactiveDragTutorialTimer?.cancel();
     _tapHintController.dispose();
     super.dispose();
+  }
+
+  void _dismissDragTutorial() {
+    _dragTutorialTimer?.cancel();
+    _inactiveDragTutorialTimer?.cancel();
+    if (_showDragTutorialHint && mounted) {
+      setState(() => _showDragTutorialHint = false);
+    }
+    if (!_done) _queueDragTutorial(const Duration(seconds: 8));
   }
 
   void _showHintBriefly() {
@@ -5685,6 +5762,7 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
   Future<void> _playWord() async {
     await AppAudioService.instance.playTap();
     if (!mounted) return;
+    _dismissDragTutorial();
     _hideHintUntilInactive();
     await TudloVoiceButton.speak(
       context,
@@ -5696,32 +5774,60 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
 
   Future<void> _selectLetter(String letter) async {
     if (_done) return;
+    _dismissDragTutorial();
     await AppAudioService.instance.playTap();
     setState(() {
+      final targetIndex = _filledLetters.containsKey(_activeMissingIndex)
+          ? _firstEmptyMissingIndex() ?? _activeMissingIndex
+          : _activeMissingIndex;
+      _filledLetters[targetIndex] = letter;
       _selectedChoice = letter;
-      _wrongChoice = null;
+      _wrongChoices = const {};
+      _activeMissingIndex = _firstEmptyMissingIndex() ?? targetIndex;
+    });
+  }
+
+  int? _firstEmptyMissingIndex() {
+    for (final index in _missingIndexes) {
+      if (!_filledLetters.containsKey(index)) return index;
+    }
+    return null;
+  }
+
+  void _clearSlot(int index) {
+    if (_done) return;
+    _dismissDragTutorial();
+    setState(() {
+      _filledLetters.remove(index);
+      _activeMissingIndex = index;
+      _selectedChoice = null;
+      _wrongChoices = const {};
     });
   }
 
   Future<void> _submitLetter() async {
-    if (_done || _selectedChoice == null) return;
+    if (_done || _filledLetters.length < _missingIndexes.length) return;
+    _dismissDragTutorial();
     final spent = await AppData.spendQuestionEnergy();
     if (!mounted) return;
     if (!spent) {
       await showLowEnergyDialog(context);
       return;
     }
-    final letter = _selectedChoice!;
-    final correct = letter == _missingLetter;
+    final correct = _missingIndexes.every(
+      (index) => _filledLetters[index] == _letters[index],
+    );
     widget.onAttempt(correct);
     if (correct) {
       setState(() {
-        _wrongChoice = null;
+        _wrongChoices = const {};
         _done = true;
         _showSpeakerHint = false;
       });
       _hideHintTimer?.cancel();
       _inactiveHintTimer?.cancel();
+      _dragTutorialTimer?.cancel();
+      _inactiveDragTutorialTimer?.cancel();
       unawaited(AppAudioService.instance.playCorrect());
       await TudloVoiceButton.speak(
         context,
@@ -5733,14 +5839,23 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
         if (mounted && _done) widget.onDone();
       });
     } else {
+      final wrongEntries = _filledLetters.entries
+          .where((entry) => entry.value != _letters[entry.key])
+          .toList();
       setState(() {
-        _wrongChoice = letter;
+        _wrongChoices = {for (final entry in wrongEntries) entry.value};
+        for (final entry in wrongEntries) {
+          _filledLetters.remove(entry.key);
+        }
+        _activeMissingIndex = wrongEntries.isNotEmpty
+            ? wrongEntries.first.key
+            : _missingIndexes.first;
         _selectedChoice = null;
       });
       unawaited(AppAudioService.instance.playWrong());
       await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
       Future<void>.delayed(const Duration(milliseconds: 650), () {
-        if (mounted) setState(() => _wrongChoice = null);
+        if (mounted) setState(() => _wrongChoices = const {});
       });
     }
   }
@@ -5752,119 +5867,140 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
       progress: widget.progress,
       mascotMessage: _done
           ? 'Koka: Nabuo mo ang ${_titleCase(widget.word)}!'
-          : _wrongChoice != null
+          : _wrongChoices.isNotEmpty
           ? 'Koka: Sulayi liwat.'
           : 'Koka: Pamatia anay ang tinaga, dayon pilia ang kulang nga letra.',
-      child: Column(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          SizedBox(
-            height: 198,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          Column(
+            children: [
+              SizedBox(
+                height: 198,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: widget.imageAsset == null
+                            ? Icon(
+                                widget.icon,
+                                color: TudloColors.green,
+                                size: 145,
+                              )
+                            : Image.asset(
+                                widget.imageAsset!,
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.high,
+                                errorBuilder: (_, __, ___) => Icon(
+                                  widget.icon,
+                                  color: TudloColors.green,
+                                  size: 140,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 4),
+                      _PresentationSpeakerHint(
+                        size: 72,
+                        showFinger: false,
+                        tapScale: _tapScale,
+                        tapOffset: _tapOffset,
+                        onTap: _playWord,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 6,
+                runSpacing: 8,
                 children: [
-                  Flexible(
-                    child: widget.imageAsset == null
-                        ? Icon(widget.icon, color: TudloColors.green, size: 145)
-                        : Image.asset(
-                            widget.imageAsset!,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                            errorBuilder: (_, __, ___) => Icon(
-                              widget.icon,
-                              color: TudloColors.green,
-                              size: 140,
+                  for (var i = 0; i < _letters.length; i++)
+                    if (_missingIndexes.contains(i))
+                      DragTarget<String>(
+                        onWillAcceptWithDetails: (_) => !_done,
+                        onAcceptWithDetails: (details) {
+                          _activeMissingIndex = i;
+                          unawaited(_selectLetter(details.data));
+                        },
+                        builder: (context, candidates, rejected) {
+                          return AnimatedScale(
+                            duration: const Duration(milliseconds: 140),
+                            scale: candidates.isNotEmpty ? 1.08 : 1,
+                            child: GestureDetector(
+                              onTap: () => _clearSlot(i),
+                              child: _MissingLetterUnderlineSlot(
+                                label: _done
+                                    ? _letters[i]
+                                    : _filledLetters[i] ?? '',
+                                active:
+                                    candidates.isNotEmpty ||
+                                    _activeMissingIndex == i ||
+                                    _filledLetters.containsKey(i),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      _PlainAnswerLetter(label: _letters[i]),
+                ],
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 140,
+                child: Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 16,
+                    runSpacing: 0,
+                    children: [
+                      for (final letter in _choices)
+                        Draggable<String>(
+                          data: letter,
+                          feedback: Material(
+                            color: Colors.transparent,
+                            child: _UnitOneSymbolButton(
+                              label: letter,
+                              isLetter: true,
+                              assetSize: 82,
+                              onTap: () {},
                             ),
                           ),
-                  ),
-                  const SizedBox(height: 4),
-                  _PresentationSpeakerHint(
-                    size: 72,
-                    showFinger: _showSpeakerHint && !_done,
-                    tapScale: _tapScale,
-                    tapOffset: _tapOffset,
-                    onTap: _playWord,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 6,
-            runSpacing: 8,
-            children: [
-              for (var i = 0; i < _letters.length; i++)
-                if (i == _missingIndex)
-                  DragTarget<String>(
-                    onWillAcceptWithDetails: (_) => !_done,
-                    onAcceptWithDetails: (details) =>
-                        unawaited(_selectLetter(details.data)),
-                    builder: (context, candidates, rejected) {
-                      return AnimatedScale(
-                        duration: const Duration(milliseconds: 140),
-                        scale: candidates.isNotEmpty ? 1.08 : 1,
-                        child: _MissingLetterUnderlineSlot(
-                          label: _done ? _missingLetter : _selectedChoice ?? '',
-                          active:
-                              candidates.isNotEmpty || _selectedChoice != null,
+                          childWhenDragging: Opacity(
+                            opacity: .35,
+                            child: _UnitOneSymbolButton(
+                              label: letter,
+                              isLetter: true,
+                              assetSize: 82,
+                              onTap: () {},
+                            ),
+                          ),
+                          child: _UnitOneSymbolButton(
+                            label: letter,
+                            isLetter: true,
+                            assetSize: 82,
+                            selected: _selectedChoice == letter,
+                            wrong: _wrongChoices.contains(letter),
+                            onTap: () => _selectLetter(letter),
+                          ),
                         ),
-                      );
-                    },
-                  )
-                else
-                  _PlainAnswerLetter(label: _letters[i]),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _UnitOneSubmitButton(
+                enabled:
+                    _filledLetters.length == _missingIndexes.length && !_done,
+                onPressed: _submitLetter,
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 140,
-            child: Center(
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 16,
-                runSpacing: 0,
-                children: [
-                  for (final letter in _choices)
-                    Draggable<String>(
-                      data: letter,
-                      feedback: Material(
-                        color: Colors.transparent,
-                        child: _UnitOneSymbolButton(
-                          label: letter,
-                          isLetter: true,
-                          assetSize: 82,
-                          onTap: () {},
-                        ),
-                      ),
-                      childWhenDragging: Opacity(
-                        opacity: .35,
-                        child: _UnitOneSymbolButton(
-                          label: letter,
-                          isLetter: true,
-                          assetSize: 82,
-                          onTap: () {},
-                        ),
-                      ),
-                      child: _UnitOneSymbolButton(
-                        label: letter,
-                        isLetter: true,
-                        assetSize: 82,
-                        selected: _selectedChoice == letter,
-                        wrong: _wrongChoice == letter,
-                        onTap: () => _selectLetter(letter),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _UnitOneSubmitButton(
-            enabled: _selectedChoice != null && !_done,
-            onPressed: _submitLetter,
-          ),
+          if (_showDragTutorialHint && !_done)
+            const Positioned.fill(child: _DragLetterTutorialHint()),
         ],
       ),
     );
@@ -5890,6 +6026,57 @@ class _UnitOneHiddenSearchActivity extends StatefulWidget {
   @override
   State<_UnitOneHiddenSearchActivity> createState() =>
       _UnitOneHiddenSearchActivityState();
+}
+
+class _DragLetterTutorialHint extends StatelessWidget {
+  static const _assetBase = 'assets/images/level_game/lesson-game-assets';
+
+  const _DragLetterTutorialHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight;
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 2600),
+            curve: Curves.easeInOutCubic,
+            builder: (context, value, child) {
+              final begin = Offset(width * .26, height * .67);
+              final end = Offset(width * .48, height * .42);
+              final position = Offset.lerp(begin, end, value)!;
+              final pulse = math.sin(value * math.pi * 3).abs() * .08;
+              return Stack(
+                children: [
+                  Positioned(
+                    left: position.dx,
+                    top: position.dy,
+                    child: Transform.rotate(
+                      angle: -.35,
+                      child: Transform.scale(
+                        scale: 1 + pulse,
+                        alignment: Alignment.topLeft,
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+            child: Image.asset(
+              '$_assetBase/point-finger.png',
+              width: (MediaQuery.sizeOf(context).width * .18).clamp(64.0, 92.0),
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _UnitOneHiddenSearchActivityState
@@ -8069,7 +8256,7 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
               Positioned(
                 left: width * .10,
                 right: width * .10,
-                top: safeTop + height * .13,
+                top: height * .31,
                 child: Text(
                   'Oras na sang Pagtilaw!',
                   textAlign: TextAlign.center,
@@ -8093,7 +8280,7 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
               Positioned(
                 left: 0,
                 right: 0,
-                top: height * .34,
+                top: height * .39,
                 child: Center(
                   child: TudloMascot(
                     size: (width * .62).clamp(230.0, 330.0),
@@ -12874,7 +13061,12 @@ String _titleCase(String value) {
   return value
       .trim()
       .split(RegExp(r'\s+'))
-      .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
+      .where((word) => word.isNotEmpty)
+      .map((word) {
+        final letters = word.characters.toList();
+        if (letters.isEmpty) return '';
+        return '${letters.first.toUpperCase()}${letters.skip(1).join().toLowerCase()}';
+      })
       .join(' ');
 }
 
@@ -14017,21 +14209,8 @@ class _LessonStreakPage extends StatelessWidget {
             child: Column(
               children: [
                 const Spacer(),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(color: TudloColors.green, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: TudloColors.green.withValues(alpha: .12),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     'Padayona kada adlaw para magdugang ang imo streak!',
                     textAlign: TextAlign.center,
@@ -14259,16 +14438,21 @@ class _StreakDayChip extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: completed ? TudloColors.green : TudloColors.line,
-            shape: BoxShape.circle,
+        Image.asset(
+          completed
+              ? 'assets/images/level_game/lesson-game-assets/fire-unlocked.png'
+              : 'assets/images/level_game/lesson-game-assets/fire-locked.png',
+          width: 52,
+          height: 52,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: completed ? TudloColors.green : TudloColors.line,
+              shape: BoxShape.circle,
+            ),
           ),
-          child: completed
-              ? const Icon(Icons.check_rounded, color: Colors.white, size: 34)
-              : null,
         ),
       ],
     );
@@ -15470,30 +15654,21 @@ class _ImageChoiceGrid extends StatelessWidget {
       );
     }).toList();
 
+    if (cards.isEmpty) return const SizedBox.shrink();
+
     return SizedBox(
       height: 520,
-      child: Column(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(child: cards[0]),
-                const SizedBox(width: 14),
-                Expanded(child: cards[1]),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(child: cards[2]),
-                const SizedBox(width: 14),
-                Expanded(child: cards[3]),
-              ],
-            ),
-          ),
-        ],
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        itemCount: cards.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: .88,
+        ),
+        itemBuilder: (context, index) => cards[index],
       ),
     );
   }

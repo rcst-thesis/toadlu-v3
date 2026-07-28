@@ -18,7 +18,7 @@ class GradeLevelScreen extends StatefulWidget {
 }
 
 class _GradeLevelScreenState extends State<GradeLevelScreen> {
-  static const _prompt = 'Abyan, sa ano nga grade ka na?';
+  static const _prompt = 'Abyan, sa ano nga grado ka na?';
   GradeOption? selected;
 
   @override
