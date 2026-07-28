@@ -10,6 +10,8 @@ import 'package:tudloapp/features/profile/services/profile_storage.dart';
 /// and any widget that reads `AppStateScope.of(context)` rebuilds when it
 /// changes because this class extends [ChangeNotifier].
 class AppState extends ChangeNotifier {
+  static const int profilesPerSelectionPage = 4;
+
   String username = '';
   String gradeLevel = 'Grade 1';
   String appLanguage = 'Hiligaynon';
@@ -25,6 +27,21 @@ class AppState extends ChangeNotifier {
 
   String get gradeLabel => gradeLevel;
   bool get isHiligaynon => appLanguage == 'Hiligaynon';
+  bool get canCreateProfile => true;
+
+  String _normalizedName(String value) =>
+      value.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+  bool isUsernameTaken(String value, {String? exceptProfileId}) {
+    final normalized = _normalizedName(value);
+    if (normalized.isEmpty) return false;
+    return profiles.any(
+      (profile) =>
+          profile.id != exceptProfileId &&
+          _normalizedName(profile.name) == normalized,
+    );
+  }
+
   LearnerProfile? get activeProfile {
     for (final profile in profiles) {
       if (profile.id == activeProfileId) return profile;
@@ -44,6 +61,9 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> addProfile({required String name, required String grade}) async {
+    if (isUsernameTaken(name)) {
+      throw StateError('Username is taken');
+    }
     final profile = LearnerProfile.newProfile(name: name, gradeLevel: grade);
     profiles.add(profile);
     _applyProfile(profile);
@@ -86,7 +106,9 @@ class AppState extends ChangeNotifier {
         streakDays: 0,
         currentEnergy: AppData.maxEnergy,
         levelStars: {},
+        lessonScores: {},
         completedLevels: {},
+        mapHelpDone: false,
       ),
     );
     await _saveProfiles();
@@ -140,6 +162,23 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> markOnboardingSeen() async {
+    final profile = activeProfile;
+    if (profile == null || profile.hasSeenOnboarding) return;
+    _replaceActiveProfile(profile.copyWith(hasSeenOnboarding: true));
+    await _saveProfiles();
+    notifyListeners();
+  }
+
+  Future<void> markMapHelpSeen() async {
+    final profile = activeProfile;
+    AppData.mapHelpDone = true;
+    if (profile == null || profile.mapHelpDone) return;
+    _replaceActiveProfile(profile.copyWith(mapHelpDone: true));
+    await _saveProfiles();
+    notifyListeners();
+  }
+
   void setAppLanguage(String value) {
     appLanguage = value == 'English' ? 'English' : 'Hiligaynon';
     notifyListeners();
@@ -147,6 +186,16 @@ class AppState extends ChangeNotifier {
 
   void toggleAppLanguage() {
     appLanguage = isHiligaynon ? 'English' : 'Hiligaynon';
+    notifyListeners();
+  }
+
+  Future<void> setDeveloperMode(bool enabled) async {
+    await AppData.setDeveloperMode(enabled);
+    notifyListeners();
+  }
+
+  Future<void> setDailyWordDemoOffset(int offset) async {
+    await AppData.setDailyWordDemoOffset(offset);
     notifyListeners();
   }
 

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 
 /// Floating bottom navigation used by the main app shell.
@@ -73,7 +74,10 @@ class TudloBottomNavBar extends StatelessWidget {
                   child: _BottomNavItem(
                     asset: iconAssets[index],
                     selected: isSelected,
-                    onTap: () => onTap(index),
+                    onTap: () async {
+                      await AppAudioService.instance.playTap();
+                      onTap(index);
+                    },
                   ),
                 );
               }),

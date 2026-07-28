@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
+import 'package:tudloapp/features/onboarding/screens/onboarding_screen.dart';
 
 class GradeLevelScreen extends StatefulWidget {
   final String? learnerName;
@@ -13,14 +18,38 @@ class GradeLevelScreen extends StatefulWidget {
 }
 
 class _GradeLevelScreenState extends State<GradeLevelScreen> {
+  static const _prompt = 'Abyan, sa ano nga grado ka na?';
   GradeOption? selected;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(TudloVoiceButton.speak(context, _prompt, hiligaynon: true));
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
+  }
 
   Future<void> _continue() async {
     final selectedGrade = selected;
     if (selectedGrade == null) return;
     final appState = AppStateScope.of(context);
     final name = widget.learnerName?.trim();
+    await AppAudioService.instance.playTap();
     if (name != null && name.isNotEmpty) {
+      if (appState.isUsernameTaken(name)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Username is taken')));
+        return;
+      }
       await appState.addProfile(name: name, grade: selectedGrade.label);
     } else {
       appState.setGradeLevel(selectedGrade.label);
@@ -28,7 +57,11 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 0)),
+      MaterialPageRoute(
+        builder: (_) => name != null && name.isNotEmpty
+            ? const OnboardingScreen()
+            : const AppShell(initialIndex: 0),
+      ),
       (_) => false,
     );
   }
@@ -36,7 +69,7 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 37, 125, 24),
+      backgroundColor: const Color(0xFF2FAA1F),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -69,7 +102,7 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Grade Level',
+                            _prompt,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white,
@@ -153,7 +186,10 @@ class _GradeButtonState extends State<_GradeButton> {
           onTapDown: (_) => _setPressed(true),
           onTapCancel: () => _setPressed(false),
           onTapUp: (_) => _setPressed(false),
-          onTap: widget.onTap,
+          onTap: () async {
+            await AppAudioService.instance.playTap();
+            widget.onTap();
+          },
           child: Stack(
             alignment: Alignment.center,
             clipBehavior: Clip.none,

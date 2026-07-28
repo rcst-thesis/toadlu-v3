@@ -31,7 +31,7 @@ class _MascotScreenState extends State<MascotScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 2300), () {
+    Future.delayed(const Duration(seconds: 7), () {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,

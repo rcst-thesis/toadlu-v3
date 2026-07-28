@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/core/models/learner_profile.dart';
+import 'package:tudloapp/core/models/lesson_score.dart';
+import 'package:tudloapp/core/services/app_storage.dart';
 import 'package:tudloapp/features/energy/services/energy_storage.dart';
 
 /// Shared in-app progress and energy state.
@@ -34,8 +36,11 @@ class AppData {
 
   static int streakDays = 0;
   static int unlockedLevel = 1;
+  static bool developerMode = false;
+  static int dailyWordDemoOffset = 0;
   static GradeLevel selectedGradeLevel = GradeLevel.grade1;
   static final Map<int, int> levelStars = {};
+  static final Map<String, LessonScoreStats> lessonScores = {};
   static final Set<int> completedLevels = {};
 
   /// Home Map unit definitions shared by the Map and Profile screens.
@@ -110,6 +115,10 @@ class AppData {
   /// Loads energy from storage, then immediately applies real-time recharge.
   /// This is called before runApp so all screens see restored energy.
   static Future<void> initialize() async {
+    final devValues = await AppStorage.readDeveloperSettings();
+    developerMode = devValues['developerMode'] == true;
+    dailyWordDemoOffset = (devValues['dailyWordDemoOffset'] as int?) ?? 0;
+
     final values = await EnergyStorage.read();
     currentEnergy =
         int.tryParse(
@@ -118,18 +127,47 @@ class AppData {
         maxEnergy;
     _lastEnergyAt =
         DateTime.tryParse(values['lastEnergyAt'] ?? '') ?? DateTime.now();
+    if (developerMode) currentEnergy = maxEnergy;
     await refreshEnergy(save: true);
+  }
+
+  static Future<void> setDeveloperMode(bool enabled) async {
+    developerMode = enabled;
+    if (developerMode) currentEnergy = maxEnergy;
+    await AppStorage.writeDeveloperSettings(
+      developerMode: developerMode,
+      dailyWordDemoOffset: dailyWordDemoOffset,
+    );
+    await saveEnergyState();
+    energyRevision.value++;
+  }
+
+  static Future<void> setDailyWordDemoOffset(int offset) async {
+    dailyWordDemoOffset = offset;
+    await AppStorage.writeDeveloperSettings(
+      developerMode: developerMode,
+      dailyWordDemoOffset: dailyWordDemoOffset,
+    );
+    energyRevision.value++;
+  }
+
+  static DateTime dailyWordNow() {
+    return DateTime.now().add(Duration(days: dailyWordDemoOffset));
   }
 
   static void applyProfile(LearnerProfile profile) {
     streakDays = profile.streakDays;
-    unlockedLevel = profile.unlockedLevel.clamp(1, maxLevel);
     selectedGradeLevel = profile.parsedGrade;
+    mapHelpDone = profile.mapHelpDone;
+    unlockedLevel = profile.unlockedLevel.clamp(1, maxLevel);
     currentEnergy = profile.currentEnergy.clamp(0, maxEnergy).toInt();
     _lastEnergyAt = DateTime.now();
     levelStars
       ..clear()
       ..addAll(profile.levelStars);
+    lessonScores
+      ..clear()
+      ..addAll(profile.lessonScores);
     completedLevels
       ..clear()
       ..addAll(profile.completedLevels);
@@ -142,7 +180,9 @@ class AppData {
       streakDays: streakDays,
       currentEnergy: currentEnergy,
       levelStars: Map<int, int>.from(levelStars),
+      lessonScores: Map<String, LessonScoreStats>.from(lessonScores),
       completedLevels: Set<int>.from(completedLevels),
+      mapHelpDone: mapHelpDone,
     );
   }
 
@@ -152,7 +192,9 @@ class AppData {
     currentEnergy = maxEnergy;
     _lastEnergyAt = DateTime.now();
     levelStars.clear();
+    lessonScores.clear();
     completedLevels.clear();
+    mapHelpDone = false;
     energyRevision.value++;
   }
 
@@ -161,6 +203,14 @@ class AppData {
   /// The saved timestamp marks the last recharge boundary. If the app was
   /// closed for 72 minutes, this adds 3 energy because 72 / 24 = 3 intervals.
   static Future<void> refreshEnergy({DateTime? now, bool save = false}) async {
+    if (developerMode) {
+      final changed = currentEnergy != maxEnergy;
+      currentEnergy = maxEnergy;
+      _lastEnergyAt = now ?? DateTime.now();
+      if (save) await saveEnergyState();
+      if (changed) energyRevision.value++;
+      return;
+    }
     final updatedAt = now ?? DateTime.now();
     final changed = _applyRecharge(updatedAt);
     if (save) await saveEnergyState();
@@ -198,22 +248,31 @@ class AppData {
 
   /// Unit start restriction. Home Map calls this before opening a lesson.
   static bool canStartUnit() {
+    if (developerMode) return true;
     return currentEnergy >= minimumEnergyToStartUnit;
   }
 
-  /// Deducts energy when a question is checked.
-  ///
-  /// This is intentionally separate from correctness. Trying a question costs
-  /// energy once, whether the answer is right or wrong.
-  static Future<bool> spendQuestionEnergy() async {
+  /// Deducts the fixed lesson-start cost. Individual quiz attempts do not
+  /// spend energy, so one lesson always costs exactly 10 energy.
+  static Future<bool> spendLessonEnergy() async {
     await refreshEnergy();
-    if (currentEnergy < energyPerQuestion) return false;
-    currentEnergy = (currentEnergy - energyPerQuestion)
+    if (developerMode) return true;
+    if (currentEnergy < minimumEnergyToStartUnit) return false;
+    currentEnergy = (currentEnergy - minimumEnergyToStartUnit)
         .clamp(0, maxEnergy)
         .toInt();
     _lastEnergyAt = DateTime.now();
     await saveEnergyState();
     energyRevision.value++;
+    return true;
+  }
+
+  /// Deducts energy when a question is checked.
+  ///
+  /// Kept for existing quiz call sites, but the current rule spends energy
+  /// once when the lesson starts instead of per question.
+  static Future<bool> spendQuestionEnergy() async {
+    await refreshEnergy();
     return true;
   }
 
@@ -243,17 +302,55 @@ class AppData {
   }
 
   static bool isUnitStartLevel(int level) {
-    return units.any((unit) => unit.startLevel == level);
+    if (level < 1 || level > maxLevel) return false;
+    return lessonNumberForLevel(level) == 1;
   }
 
   static bool isLevelUnlocked(int level) {
     if (level < 1 || level > maxLevel) return false;
-    if (isUnitStartLevel(level)) return true;
+    if (developerMode) return true;
+    final lessonNumber = lessonNumberForLevel(level);
+    if (lessonNumber == 1) return true;
     if (completedLevels.contains(level)) return true;
-    final previousLevel = level - 1;
-    final sameUnit = unitForLevel(previousLevel) == unitForLevel(level);
-    return sameUnit && completedLevels.contains(previousLevel);
+    return completedLevels.contains(level - 1);
   }
+
+  static String lessonIdForLevel(int level) {
+    final unit = unitForLevel(level);
+    return '${unit.number}-${lessonNumberForLevel(level)}';
+  }
+
+  static Map<int, Set<int>> get completedLessonsByUnit {
+    final grouped = <int, Set<int>>{};
+    for (final level in completedLevels) {
+      if (level < 1 || level > maxLevel) continue;
+      final unit = unitForLevel(level);
+      grouped.putIfAbsent(unit.number, () => <int>{});
+      grouped[unit.number]!.add(lessonNumberForLevel(level));
+    }
+    return grouped;
+  }
+
+  static int get firstUnlockedIncompleteLevel {
+    for (final unit in units) {
+      for (var level = unit.startLevel; level <= unit.endLevel; level++) {
+        if (isLevelUnlocked(level) && !completedLevels.contains(level)) {
+          return level;
+        }
+      }
+    }
+    return 1;
+  }
+
+  static int get completedLevelCount =>
+      completedLevels.where((level) => level >= 1 && level <= maxLevel).length;
+
+  static double get overallProgress {
+    if (maxLevel <= 0) return 0;
+    return (completedLevelCount / maxLevel).clamp(0.0, 1.0);
+  }
+
+  static int get overallProgressPercent => (overallProgress * 100).round();
 
   static int starsForLevel(int level) {
     return levelStars[level] ?? 0;
@@ -272,15 +369,17 @@ class AppData {
     return level - unit.startLevel + 1;
   }
 
-  /// Converts a lesson score into 0-3 stars and keeps the best result.
-  static void saveLevelScore(int level, int score, int total) {
+  /// Converts a lesson accuracy into 0-3 stars and keeps the best result.
+  static void saveLevelScore(int level, LessonScoreStats stats) {
     completedLevels.add(level);
-    final percent = total == 0 ? 0.0 : score / total;
-    final stars = percent >= .9
+    final lessonId = lessonIdForLevel(level);
+    final savedStats = stats.mergeBestFrom(lessonScores[lessonId]);
+    lessonScores[lessonId] = savedStats;
+    final stars = savedStats.bestAccuracy == 100
         ? 3
-        : percent >= .7
+        : savedStats.bestAccuracy >= 90
         ? 2
-        : percent >= .4
+        : savedStats.bestAccuracy >= 75
         ? 1
         : 0;
     final previous = levelStars[level] ?? 0;

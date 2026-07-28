@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
+import 'package:tudloapp/core/state/app_state.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/features/onboarding/screens/grade_level_screen.dart';
 
 class UsernameScreen extends StatefulWidget {
@@ -9,16 +14,23 @@ class UsernameScreen extends StatefulWidget {
 }
 
 class _UsernameScreenState extends State<UsernameScreen> {
+  static const _prompt = 'Hi, abyan! Ano imo ngalan?';
   final TextEditingController controller = TextEditingController();
+  String? _errorText;
 
   @override
   void initState() {
     super.initState();
     controller.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(TudloVoiceButton.speak(context, _prompt, hiligaynon: true));
+    });
   }
 
   @override
   void dispose() {
+    unawaited(TudloVoiceButton.stop());
     controller.dispose();
     super.dispose();
   }
@@ -26,6 +38,13 @@ class _UsernameScreenState extends State<UsernameScreen> {
   void _continue() {
     final name = controller.text.trim();
     if (name.isEmpty) return;
+    final appState = AppStateScope.of(context);
+    if (appState.isUsernameTaken(name)) {
+      setState(() => _errorText = 'Username is taken');
+      return;
+    }
+    setState(() => _errorText = null);
+    unawaited(AppAudioService.instance.playTap());
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => GradeLevelScreen(learnerName: name)),
@@ -64,7 +83,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                     const FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        'Ano ang imo pangalan?',
+                        _prompt,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
@@ -99,8 +118,25 @@ class _UsernameScreenState extends State<UsernameScreen> {
                           focusedBorder: _pillBorder(width: 4),
                         ),
                         onSubmitted: (_) => _continue(),
+                        onChanged: (_) {
+                          if (_errorText != null) {
+                            setState(() => _errorText = null);
+                          }
+                        },
                       ),
                     ),
+                    if (_errorText != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        _errorText!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                     SizedBox(height: compact ? 42 : 64),
                     _RoundNextButton(
                       enabled: hasName,
@@ -159,7 +195,12 @@ class _RoundNextButton extends StatelessWidget {
         shadowColor: Colors.black38,
         child: InkWell(
           customBorder: const CircleBorder(),
-          onTap: enabled ? onTap : null,
+          onTap: enabled
+              ? () async {
+                  await AppAudioService.instance.playTap();
+                  onTap();
+                }
+              : null,
           child: SizedBox(
             width: size,
             height: size,

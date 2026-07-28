@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:rive/rive.dart' as rive;
 import 'package:tudloapp/core/constants/app_strings.dart';
 import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
-import 'package:tudloapp/features/profile/screens/profile_selection_screen.dart';
+import 'package:tudloapp/features/splash/screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await rive.RiveNative.init();
   await AppData.initialize();
+  await AppAudioService.instance.initialize();
   runApp(const TudloApp());
 }
 
@@ -34,17 +38,7 @@ class _TudloAppState extends State<TudloApp> {
         debugShowCheckedModeBanner: false,
         title: AppStrings.appName,
         theme: TudloTheme.theme,
-        home: FutureBuilder<void>(
-          future: _loadProfiles,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-            return const ProfileSelectionScreen();
-          },
-        ),
+        home: SplashScreen(loadFuture: _loadProfiles),
       ),
     );
   }

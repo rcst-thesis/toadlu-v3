@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
+import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 import 'package:tudloapp/features/lesson_game/screens/level_game_page.dart';
@@ -167,30 +168,90 @@ class _AnimatedLessonIntroContentState
     extends State<_AnimatedLessonIntroContent> {
   int _visibleLetters = 0;
   bool _showStart = false;
+  bool _introVoicePlaying = false;
   late final List<_IntroLetterItem> _letters;
+  late final String _introVoiceText;
+  int _voiceRun = 0;
 
   @override
   void initState() {
     super.initState();
     _letters = _introLettersFor(widget.content);
+    _introVoiceText = _introVoiceFor(widget.content, _letters);
     unawaited(_playLetterAnimation());
+    Future<void>.delayed(const Duration(milliseconds: 120), () {
+      if (mounted) unawaited(_playIntroVoice());
+    });
   }
 
   Future<void> _playLetterAnimation() async {
-    await Future<void>.delayed(const Duration(milliseconds: 280));
+    await Future<void>.delayed(const Duration(milliseconds: 110));
     if (_letters.isEmpty) {
-      if (mounted) setState(() => _showStart = true);
+      if (mounted) {
+        setState(() {
+          _showStart = true;
+        });
+      }
       return;
     }
 
     for (var index = 0; index < _letters.length; index++) {
       if (!mounted) return;
       setState(() => _visibleLetters = index + 1);
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await Future<void>.delayed(const Duration(milliseconds: 170));
     }
 
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-    if (mounted) setState(() => _showStart = true);
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+    setState(() => _showStart = true);
+  }
+
+  Future<void> _playIntroVoice() async {
+    final run = ++_voiceRun;
+    setState(() {
+      _introVoicePlaying = true;
+      _showStart = true;
+    });
+    await TudloVoiceButton.speak(
+      context,
+      _introVoiceText,
+      hiligaynon: true,
+      waitForCompletion: true,
+    );
+    if (!mounted || run != _voiceRun) return;
+    setState(() => _introVoicePlaying = false);
+  }
+
+  String _introVoiceFor(LevelContent content, List<_IntroLetterItem> items) {
+    final labels = items
+        .map((item) => item.label.trim())
+        .where((label) => label.isNotEmpty)
+        .toList();
+    final contentText = labels.isNotEmpty
+        ? _joinHiligaynonList(labels)
+        : _cleanLessonTitle(content.title);
+    final needsArticle = labels.isEmpty
+        ? true
+        : labels.any((label) => !RegExp(r'^[A-Z0-9]$').hasMatch(label));
+    return needsArticle
+        ? 'Tuon ta ang ${contentText.toLowerCase()}.'
+        : 'Tuon ta $contentText.';
+  }
+
+  String _joinHiligaynonList(List<String> values) {
+    if (values.isEmpty) return '';
+    if (values.length == 1) return values.first;
+    if (values.length == 2) return '${values.first} kag ${values.last}';
+    return '${values.take(values.length - 1).join(', ')}, kag ${values.last}';
+  }
+
+  String _cleanLessonTitle(String title) {
+    return title
+        .replaceAll(RegExp(r'\([^)]*\)'), '')
+        .replaceAll(RegExp(r'^\s*Letters\s+', caseSensitive: false), '')
+        .replaceAll(RegExp(r'^\s*Numbers\s+', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   @override
@@ -234,7 +295,7 @@ class _AnimatedLessonIntroContentState
               child: _showStart
                   ? _IntroStartButton(
                       height: buttonHeight,
-                      onPressed: widget.onStart,
+                      onPressed: _introVoicePlaying ? null : widget.onStart,
                     )
                   : SizedBox(height: buttonHeight),
             ),
@@ -1096,7 +1157,7 @@ class _IntroIconArt extends StatelessWidget {
 
 class _IntroStartButton extends StatelessWidget {
   final double height;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const _IntroStartButton({required this.height, required this.onPressed});
 

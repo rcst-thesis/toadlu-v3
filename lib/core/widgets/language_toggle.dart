@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
+import 'package:tudloapp/core/services/tudlo_tts_platform.dart';
+import 'package:tudloapp/core/services/tudlo_tts_platform_interface.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
@@ -79,24 +83,157 @@ class _LanguagePill extends StatelessWidget {
 }
 
 class TudloVoiceButton extends StatelessWidget {
-  static final FlutterTts _tts = FlutterTts();
-  static Map<String, String>? _preferredFilipinoVoice;
-  static bool _lookedForFilipinoVoice = false;
+  static final TudloTtsPlatform _tts = createTudloTtsPlatform();
+  static final ValueNotifier<bool> isSpeaking = ValueNotifier<bool>(false);
+  static int _speechToken = 0;
+
+  static const _voBase = 'audio/VO';
+
+  static final Map<String, List<String>> _recordedHilVoice = {
+    'hi abyan ano imo ngalan': ['$_voBase/Username.m4a'],
+    'abyan sa ano nga grado ka na': ['$_voBase/Grade-level.m4a'],
+    'maayong pag abot abyan': ['$_voBase/Maayong-pag-abot.m4a'],
+    'tum oka ini para makaumpisa kita': [
+      '$_voBase/Tum-oka-ini-para-makaumpisa-kita.m4a',
+    ],
+    'maayong pag abot abyan diri makatuon kita sang hiligaynon paagi sa sari sari nga leksiyon istorya mga ehemplo kag kaliliagaw nga mga buluhaton':
+        ['$_voBase/Onboarding1.m4a'],
+    'diri puwede ka man makapangita sang mga tinaga nga gusto mo mahibaluan kag kon ano ang ila kahulugan':
+        ['$_voBase/Onboarding2.m4a'],
+    'puwede mo man diri mahubad ang imo mga tinaga halin sa hiligaynon pakadto sa english ukon halin sa english pakadto sa hiligaynon':
+        ['$_voBase/Onboarding3.m4a'],
+    'tuon ta a n t kag y': ['$_voBase/Level1-ANTY.m4a'],
+    'abyan kilala mo kon sin o ini siya si': [
+      '$_voBase/Abyan-kilala-mo-kon-sino-ini.m4a',
+    ],
+    'maayo gid abyan padayon kita': [
+      '$_voBase/Maayo-gid-abyan-padayon-kita.m4a',
+    ],
+    'pamatii ang tingog pindoton ang husto nga letra': [
+      '$_voBase/Pamatii-ang-tingog.m4a',
+    ],
+    'pamatia ang tinaga pilia ang kulang nga letra': [
+      '$_voBase/Pamatia-ang-tinaga.m4a',
+    ],
+    'unahon ta pangitaon ang letra nga mabatian mo': [
+      '$_voBase/Unahon-ta-pangitaon.m4a',
+    ],
+    'guyoda ang mga letra para matapos ang tinaga': [
+      '$_voBase/Guyuda-ang-mga-letra.m4a',
+    ],
+    'ara na tanan nga letra': ['$_voBase/Ara-na-tanan-nga-letra.m4a'],
+    'husto natapos mo': ['$_voBase/Husto-natapos-mo.m4a'],
+    'natapos mo na ang leksyon': ['$_voBase/Natapos-mo-na-ang-leksyon.m4a'],
+    'nanay': ['$_voBase/Nanay.m4a'],
+    'tatay': ['$_voBase/Tatay.m4a'],
+    'ah': ['$_voBase/Sound-A.m4a'],
+    'n': ['$_voBase/Sound-N.m4a'],
+    't': ['$_voBase/Sound-T.m4a'],
+    'y': ['$_voBase/Sound-Y.m4a'],
+    'ang tunog sang letra nga a amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-A.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'ang tunog sang letra nga n amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-N.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'ang tunog sang letra nga t amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-T.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'ang tunog sang letra nga y amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-Y.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'may ara letra nga a sa may nanay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-A.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Nanay.m4a',
+    ],
+    'may ara letra nga n sa may nanay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-N.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Nanay.m4a',
+    ],
+    'may ara letra nga t sa may tatay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-T.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Tatay.m4a',
+    ],
+    'may ara letra nga y sa may nanay kag tatay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-Y.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Nanay.m4a',
+      '$_voBase/Kag.m4a',
+      '$_voBase/Tatay.m4a',
+    ],
+  };
 
   static Future<void> speak(
     BuildContext context,
     String message, {
     bool hiligaynon = true,
+    bool waitForCompletion = false,
   }) async {
     final text = message.trim();
     if (text.isEmpty) return;
+    final audio = AppAudioService.instance;
+    if (!audio.voiceOverEnabled) return;
     try {
       await _tts.stop();
-      await _setSpeechLanguage(hiligaynon: hiligaynon);
-      await _tts.setSpeechRate(.42);
-      await _tts.setPitch(1.08);
-      await _tts.speak(text);
+      await audio.stopVoice();
+      isSpeaking.value = false;
+      final token = ++_speechToken;
+      await audio.lowerBackgroundVolume();
+      isSpeaking.value = true;
+      final recordedAssets = hiligaynon
+          ? _recordedHilVoice[_voiceKey(text)]
+          : null;
+      if (recordedAssets != null) {
+        try {
+          final playback = audio.playVoiceAssets(recordedAssets);
+          if (waitForCompletion) {
+            await playback;
+            if (_speechToken == token) isSpeaking.value = false;
+            await audio.restoreBackgroundVolume();
+          } else {
+            unawaited(
+              playback.whenComplete(() async {
+                if (_speechToken == token) isSpeaking.value = false;
+                if (_speechToken == token) {
+                  await audio.restoreBackgroundVolume();
+                }
+              }),
+            );
+          }
+          return;
+        } catch (_) {
+          await audio.stopVoice();
+          if (_speechToken == token) isSpeaking.value = true;
+        }
+      }
+      await _tts.speak(
+        text,
+        hiligaynon: hiligaynon,
+        waitForCompletion: waitForCompletion,
+      );
+      if (waitForCompletion) {
+        if (_speechToken == token) isSpeaking.value = false;
+        await audio.restoreBackgroundVolume();
+      } else {
+        _resetSpeakingAfterEstimate(text, token);
+      }
     } catch (_) {
+      isSpeaking.value = false;
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -104,78 +241,34 @@ class TudloVoiceButton extends StatelessWidget {
     }
   }
 
-  static Future<void> _setSpeechLanguage({required bool hiligaynon}) async {
-    if (!hiligaynon) {
-      await _tts.setLanguage('en-US');
-      return;
-    }
-
-    const preferredLocales = ['tl-PH', 'fil-PH'];
-    for (final locale in preferredLocales) {
-      try {
-        await _tts.setLanguage(locale);
-        break;
-      } catch (_) {
-        // Try the next Filipino/Tagalog locale supported by the platform.
-      }
-    }
-
-    final voice = await _preferredVoiceForLocales(preferredLocales);
-    if (voice != null) {
-      try {
-        await _tts.setVoice(voice);
-      } catch (_) {
-        // Some platforms accept the language but do not support setVoice.
-      }
-    }
-  }
-
-  static Future<Map<String, String>?> _preferredVoiceForLocales(
-    List<String> locales,
-  ) async {
-    if (_lookedForFilipinoVoice) return _preferredFilipinoVoice;
-    _lookedForFilipinoVoice = true;
-
+  static Future<void> stop() async {
     try {
-      final voices = await _tts.getVoices;
-      if (voices is! Iterable) return null;
-
-      final normalizedLocales = locales.map((locale) => locale.toLowerCase());
-      final candidates = <Map<String, String>>[];
-      for (final voice in voices) {
-        if (voice is! Map) continue;
-        final name = voice['name']?.toString();
-        final locale = voice['locale']?.toString();
-        if (name == null || locale == null) continue;
-        if (!normalizedLocales.contains(locale.toLowerCase())) continue;
-        candidates.add({'name': name, 'locale': locale});
-      }
-
-      if (candidates.isEmpty) return null;
-      candidates.sort((a, b) => _voiceRank(a).compareTo(_voiceRank(b)));
-      _preferredFilipinoVoice = candidates.first;
-      return _preferredFilipinoVoice;
+      await _tts.stop();
+      await AppAudioService.instance.stopVoice();
+      _speechToken++;
+      isSpeaking.value = false;
+      await AppAudioService.instance.restoreBackgroundVolume();
     } catch (_) {
-      return null;
+      // Stopping narration should never block navigation.
     }
   }
 
-  static int _voiceRank(Map<String, String> voice) {
-    final name = voice['name']!.toLowerCase();
-    final locale = voice['locale']!.toLowerCase();
-    var rank = 0;
-    if (locale == 'tl-ph') rank -= 20;
-    if (name.contains('female') ||
-        name.contains('woman') ||
-        name.contains('zira')) {
-      rank -= 8;
-    }
-    if (name.contains('male') ||
-        name.contains('man') ||
-        name.contains('david')) {
-      rank += 8;
-    }
-    return rank;
+  static void _resetSpeakingAfterEstimate(String text, int token) {
+    final milliseconds = (text.length * 85).clamp(900, 9000);
+    Future<void>.delayed(Duration(milliseconds: milliseconds), () async {
+      if (_speechToken == token) isSpeaking.value = false;
+      if (_speechToken == token) {
+        await AppAudioService.instance.restoreBackgroundVolume();
+      }
+    });
+  }
+
+  static String _voiceKey(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
   }
 
   final String message;
@@ -226,11 +319,9 @@ class TudloVoiceButton extends StatelessWidget {
         ),
         onPressed: () async {
           final appState = AppStateScope.of(context);
-          await speak(
-            context,
-            message,
-            hiligaynon: hiligaynon ?? appState.isHiligaynon,
-          );
+          final useHiligaynon = hiligaynon ?? appState.isHiligaynon;
+          unawaited(AppAudioService.instance.playTap());
+          await speak(context, message, hiligaynon: useHiligaynon);
         },
         icon: TudloSpeakerIcon(size: size * .54),
       ),

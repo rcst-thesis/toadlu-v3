@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
+import 'package:tudloapp/core/models/lesson_score.dart';
 
 class LearnerProfile {
   final String id;
@@ -11,9 +12,12 @@ class LearnerProfile {
   final int streakDays;
   final int currentEnergy;
   final Map<int, int> levelStars;
+  final Map<String, LessonScoreStats> lessonScores;
   final Set<int> completedLevels;
   final Set<String> favoriteWords;
   final String avatarAsset;
+  final bool hasSeenOnboarding;
+  final bool mapHelpDone;
 
   const LearnerProfile({
     required this.id,
@@ -23,9 +27,12 @@ class LearnerProfile {
     required this.streakDays,
     required this.currentEnergy,
     required this.levelStars,
+    required this.lessonScores,
     required this.completedLevels,
     required this.favoriteWords,
     required this.avatarAsset,
+    required this.hasSeenOnboarding,
+    required this.mapHelpDone,
   });
 
   factory LearnerProfile.newProfile({
@@ -40,9 +47,12 @@ class LearnerProfile {
       streakDays: 0,
       currentEnergy: AppData.maxEnergy,
       levelStars: const {},
+      lessonScores: const {},
       completedLevels: const {},
       favoriteWords: const {},
       avatarAsset: '',
+      hasSeenOnboarding: false,
+      mapHelpDone: false,
     );
   }
 
@@ -57,6 +67,7 @@ class LearnerProfile {
       streakDays: json['streakDays'] as int? ?? 0,
       currentEnergy: json['currentEnergy'] as int? ?? AppData.maxEnergy,
       levelStars: _intMap(json['levelStars']),
+      lessonScores: _lessonScoreMap(json['lessonScores']),
       completedLevels: {
         for (final value in (json['completedLevels'] as List<dynamic>? ?? []))
           if (value is int) value,
@@ -66,6 +77,8 @@ class LearnerProfile {
           if (value is String) value,
       },
       avatarAsset: json['avatarAsset'] as String? ?? '',
+      hasSeenOnboarding: json['hasSeenOnboarding'] as bool? ?? true,
+      mapHelpDone: json['mapHelpDone'] as bool? ?? true,
     );
   }
 
@@ -76,9 +89,12 @@ class LearnerProfile {
     int? streakDays,
     int? currentEnergy,
     Map<int, int>? levelStars,
+    Map<String, LessonScoreStats>? lessonScores,
     Set<int>? completedLevels,
     Set<String>? favoriteWords,
     String? avatarAsset,
+    bool? hasSeenOnboarding,
+    bool? mapHelpDone,
   }) {
     return LearnerProfile(
       id: id,
@@ -88,9 +104,12 @@ class LearnerProfile {
       streakDays: streakDays ?? this.streakDays,
       currentEnergy: currentEnergy ?? this.currentEnergy,
       levelStars: levelStars ?? this.levelStars,
+      lessonScores: lessonScores ?? this.lessonScores,
       completedLevels: completedLevels ?? this.completedLevels,
       favoriteWords: favoriteWords ?? this.favoriteWords,
       avatarAsset: avatarAsset ?? this.avatarAsset,
+      hasSeenOnboarding: hasSeenOnboarding ?? this.hasSeenOnboarding,
+      mapHelpDone: mapHelpDone ?? this.mapHelpDone,
     );
   }
 
@@ -105,9 +124,15 @@ class LearnerProfile {
       'levelStars': {
         for (final entry in levelStars.entries) '${entry.key}': entry.value,
       },
+      'lessonScores': {
+        for (final entry in lessonScores.entries)
+          entry.key: entry.value.toJson(),
+      },
       'completedLevels': completedLevels.toList()..sort(),
       'favoriteWords': favoriteWords.toList()..sort(),
       'avatarAsset': avatarAsset,
+      'hasSeenOnboarding': hasSeenOnboarding,
+      'mapHelpDone': mapHelpDone,
     };
   }
 
@@ -120,6 +145,15 @@ class LearnerProfile {
       for (final entry in source.entries)
         if (int.tryParse('${entry.key}') != null && entry.value is int)
           int.parse('${entry.key}'): entry.value as int,
+    };
+  }
+
+  static Map<String, LessonScoreStats> _lessonScoreMap(dynamic value) {
+    final source = value is Map ? value : const {};
+    return {
+      for (final entry in source.entries)
+        if (entry.value is Map<String, dynamic>)
+          '${entry.key}': LessonScoreStats.fromJson(entry.value),
     };
   }
 }

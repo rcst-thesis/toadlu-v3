@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
+import 'package:tudloapp/core/widgets/mascot_widget.dart';
 
 class _TranslateStyle {
   static const softBg = TudloColors.paper;
@@ -164,52 +167,74 @@ class _TranslationPageState extends State<TranslationPage> {
         children: [
           const Positioned.fill(child: _TranslateBackground()),
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 34, 24, 154),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          'Translate',
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          style: GoogleFonts.archivoBlack(
-                            color: TudloColors.forest,
-                            fontSize: 52,
-                            letterSpacing: 0,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final availableWidth = constraints.maxWidth;
+                final horizontalPadding = availableWidth >= 700 ? 44.0 : 24.0;
+                final contentWidth = (availableWidth - horizontalPadding * 2)
+                    .clamp(0.0, availableWidth);
+                final maxContentWidth = availableWidth >= 700 ? 720.0 : 520.0;
+                final titleSize = availableWidth >= 700 ? 64.0 : 52.0;
+                final topPadding = availableWidth >= 700 ? 48.0 : 34.0;
+
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      topPadding,
+                      horizontalPadding,
+                      154,
+                    ),
+                    child: SizedBox(
+                      width: contentWidth.clamp(0.0, maxContentWidth),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Translate',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              style: GoogleFonts.archivoBlack(
+                                color: TudloColors.forest,
+                                fontSize: titleSize,
+                                letterSpacing: 0,
+                              ),
+                            ),
                           ),
-                        ),
+                          SizedBox(height: availableWidth >= 700 ? 46 : 38),
+                          _TranslationLanguageCard(
+                            language: fromLanguage,
+                            controller: topController,
+                            hint: fromLanguage == 'Hiligaynon'
+                                ? 'Type Hiligaynon'
+                                : 'Type English',
+                            readOnly: false,
+                            onClear: topController.clear,
+                          ),
+                          SizedBox(height: availableWidth >= 700 ? 18 : 14),
+                          Center(
+                            child: _VerticalSwapButton(onTap: swapLanguages),
+                          ),
+                          SizedBox(height: availableWidth >= 700 ? 18 : 14),
+                          _TranslationLanguageCard(
+                            language: toLanguage,
+                            controller: bottomController,
+                            hint: toLanguage == 'Hiligaynon'
+                                ? 'Hiligaynon translation'
+                                : 'English translation',
+                            readOnly: true,
+                            onClear: () {
+                              setState(() => bottomController.clear());
+                            },
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 38),
-                      _TranslationLanguageCard(
-                        language: fromLanguage,
-                        controller: topController,
-                        hint: fromLanguage == 'Hiligaynon'
-                            ? 'Type Hiligaynon'
-                            : 'Type English',
-                        readOnly: false,
-                      ),
-                      const SizedBox(height: 14),
-                      Center(child: _VerticalSwapButton(onTap: swapLanguages)),
-                      const SizedBox(height: 14),
-                      _TranslationLanguageCard(
-                        language: toLanguage,
-                        controller: bottomController,
-                        hint: toLanguage == 'Hiligaynon'
-                            ? 'Hiligaynon translation'
-                            : 'English translation',
-                        readOnly: true,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
           if (showHelpOverlay)
@@ -258,12 +283,7 @@ class _TranslateHelpOverlay extends StatelessWidget {
             Positioned(
               left: mascotLeft,
               bottom: mascotBottom,
-              child: Image.asset(
-                TudloDialogueAssets.mascotGuide,
-                width: mascotWidth,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              ),
+              child: TudloMascot(size: mascotWidth),
             ),
             Positioned(
               left: bubbleLeft,
@@ -384,107 +404,228 @@ class _TranslationLanguageCard extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final bool readOnly;
+  final VoidCallback onClear;
 
   const _TranslationLanguageCard({
     required this.language,
     required this.controller,
     required this.hint,
     required this.readOnly,
+    required this.onClear,
   });
+
+  Future<void> _copyText(BuildContext context, String value) async {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    await AppAudioService.instance.playTap();
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Copied text'),
+          duration: Duration(milliseconds: 900),
+        ),
+      );
+  }
+
+  Future<void> _clearText() async {
+    if (controller.text.trim().isEmpty) return;
+    await AppAudioService.instance.playTap();
+    onClear();
+  }
 
   @override
   Widget build(BuildContext context) {
     final text = controller.text.trim();
-    return Container(
-      constraints: const BoxConstraints(minHeight: 176),
-      padding: const EdgeInsets.fromLTRB(20, 18, 16, 22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .13),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = (constraints.maxWidth / 520).clamp(1.0, 1.18);
+        final labelSize = 26.0 * scale;
+        final bodySize = (constraints.maxWidth * .055).clamp(23.0, 30.0);
+
+        return Container(
+          constraints: BoxConstraints(minHeight: 176 * scale),
+          padding: EdgeInsets.fromLTRB(
+            20 * scale,
+            18 * scale,
+            16 * scale,
+            22 * scale,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Text(_flagFor(language), style: const TextStyle(fontSize: 30)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  language,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.nunito(
-                    color: const Color(0xFF6B86A8),
-                    fontSize: 26,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18 * scale),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .13),
+                blurRadius: 18 * scale,
+                offset: Offset(0, 8 * scale),
               ),
-              IconButton(
-                tooltip: 'Listen',
-                onPressed: text.isEmpty
-                    ? null
-                    : () => TudloVoiceButton.speak(context, text),
-                icon: Opacity(
-                  opacity: text.isEmpty ? .35 : 1,
-                  child: const TudloSpeakerIcon(size: 24),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    _flagFor(language),
+                    style: TextStyle(fontSize: 30 * scale),
+                  ),
+                  SizedBox(width: 8 * scale),
+                  Expanded(
+                    child: Text(
+                      language,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.nunito(
+                        color: const Color(0xFF6B86A8),
+                        fontSize: labelSize,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Listen',
+                    iconSize: 30 * scale,
+                    onPressed: text.isEmpty
+                        ? null
+                        : () => TudloVoiceButton.speak(context, text),
+                    icon: Opacity(
+                      opacity: text.isEmpty ? .35 : 1,
+                      child: TudloSpeakerIcon(size: 24 * scale),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 22 * scale),
+              readOnly
+                  ? Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        20 * scale,
+                        0,
+                        12 * scale,
+                        8 * scale,
+                      ),
+                      child: Text(
+                        text.isEmpty ? hint : controller.text,
+                        softWrap: true,
+                        style: GoogleFonts.nunito(
+                          color: text.isEmpty
+                              ? TudloColors.muted.withValues(alpha: .60)
+                              : Colors.black,
+                          fontSize: bodySize,
+                          height: 1.14,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    )
+                  : TextField(
+                      controller: controller,
+                      maxLines: null,
+                      minLines: 1,
+                      style: GoogleFonts.nunito(
+                        color: Colors.black,
+                        fontSize: bodySize,
+                        height: 1.14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: hint,
+                        hintStyle: GoogleFonts.nunito(
+                          color: TudloColors.muted.withValues(alpha: .58),
+                          fontWeight: FontWeight.w900,
+                        ),
+                        contentPadding: EdgeInsets.fromLTRB(
+                          20 * scale,
+                          0,
+                          12 * scale,
+                          8 * scale,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+              SizedBox(height: 10 * scale),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _TranslationActionButton(
+                      tooltip: 'Copy text',
+                      icon: Icons.copy_rounded,
+                      color: TudloColors.forest,
+                      enabled: text.isNotEmpty,
+                      scale: scale,
+                      onTap: () => _copyText(context, controller.text),
+                    ),
+                    SizedBox(width: 8 * scale),
+                    _TranslationActionButton(
+                      tooltip: 'Clear text',
+                      icon: Icons.delete_rounded,
+                      color: TudloColors.coral,
+                      enabled: text.isNotEmpty,
+                      scale: scale,
+                      onTap: _clearText,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 22),
-          readOnly
-              ? Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
-                  child: Text(
-                    text.isEmpty ? hint : controller.text,
-                    softWrap: true,
-                    style: GoogleFonts.nunito(
-                      color: text.isEmpty
-                          ? TudloColors.muted.withValues(alpha: .60)
-                          : Colors.black,
-                      fontSize: 34,
-                      height: 1.14,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                )
-              : TextField(
-                  controller: controller,
-                  maxLines: null,
-                  minLines: 1,
-                  style: GoogleFonts.nunito(
-                    color: Colors.black,
-                    fontSize: 34,
-                    height: 1.14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    hintStyle: GoogleFonts.nunito(
-                      color: TudloColors.muted.withValues(alpha: .58),
-                      fontWeight: FontWeight.w900,
-                    ),
-                    contentPadding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
-                    border: InputBorder.none,
-                  ),
-                ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   String _flagFor(String language) {
     return language == 'English' ? '🇺🇸' : '🇵🇭';
+  }
+}
+
+class _TranslationActionButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final Color color;
+  final bool enabled;
+  final double scale;
+  final VoidCallback onTap;
+
+  const _TranslationActionButton({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    required this.enabled,
+    required this.scale,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 38 * scale;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: enabled
+            ? color.withValues(alpha: .11)
+            : TudloColors.line.withValues(alpha: .70),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: enabled ? onTap : null,
+          child: SizedBox.square(
+            dimension: size,
+            child: Icon(
+              icon,
+              color: enabled ? color : TudloColors.muted.withValues(alpha: .45),
+              size: 21 * scale,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -502,6 +643,10 @@ class _VerticalSwapButtonState extends State<_VerticalSwapButton> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final buttonSize = (width * .068).clamp(52.0, 68.0);
+    final iconSize = buttonSize * .72;
+
     return AnimatedScale(
       scale: _pressed ? .92 : 1,
       duration: const Duration(milliseconds: 90),
@@ -531,13 +676,13 @@ class _VerticalSwapButtonState extends State<_VerticalSwapButton> {
             onTapDown: (_) => setState(() => _pressed = true),
             onTapCancel: () => setState(() => _pressed = false),
             onTapUp: (_) => setState(() => _pressed = false),
-            child: const SizedBox(
-              width: 52,
-              height: 52,
+            child: SizedBox(
+              width: buttonSize,
+              height: buttonSize,
               child: Icon(
                 Icons.swap_vert_rounded,
                 color: Colors.white,
-                size: 38,
+                size: iconSize,
               ),
             ),
           ),
