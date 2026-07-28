@@ -4,6 +4,7 @@ class ChildSafetyFilter {
   static const blockedMessage = 'Let’s use child-friendly words.';
 
   static const _hiligaynonWords = ['buang', 'linti', 'oten', 'pisti', 'yawa'];
+  static const _allowedWords = ['i'];
 
   static Future<void>? _initialization;
   static bool _ready = false;
@@ -40,7 +41,11 @@ class ChildSafetyFilter {
   }
 
   static String _filter(String text) {
-    return SafeTextFilter.filterText(text: text, extraWords: _hiligaynonWords);
+    return SafeTextFilter.filterText(
+      text: text,
+      extraWords: _hiligaynonWords,
+      excludedWords: _allowedWords,
+    );
   }
 
   static bool _containsHiligaynonWord(String text) {

@@ -129,6 +129,7 @@ void main() {
   test('matches unsafe whole words without blocking safe substrings', () {
     expect(ChildSafetyFilter.isUnsafe('YAWA!'), isTrue);
     expect(ChildSafetyFilter.isUnsafe('f@ck!'), isTrue);
+    expect(ChildSafetyFilter.isUnsafe('I'), isFalse);
     expect(ChildSafetyFilter.isUnsafe('classroom grass'), isFalse);
   });
 }
