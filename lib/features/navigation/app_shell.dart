@@ -32,13 +32,13 @@ class AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    if (_selectedIndex != 0) _dictionaryFuture = DictionaryData.initialize();
+    if (_selectedIndex == 2) _dictionaryFuture = DictionaryData.initialize();
   }
 
   void switchTo(int index) {
     // Called by the bottom navigation bar.
     setState(() {
-      if (index != 0) _dictionaryFuture ??= DictionaryData.initialize();
+      if (index == 2) _dictionaryFuture ??= DictionaryData.initialize();
       _selectedIndex = index;
     });
   }
@@ -58,8 +58,8 @@ class AppShellState extends State<AppShell> {
       const ProfilePage(),
     ];
 
-    final page = _selectedIndex == 0
-        ? pages.first
+    final page = _selectedIndex != 2
+        ? pages[_selectedIndex]
         : FutureBuilder<void>(
             future: _dictionaryFuture,
             builder: (context, snapshot) {

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/services/app_audio_service.dart';
-import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
@@ -17,7 +16,7 @@ class _TranslateStyle {
   static const softBg = TudloColors.paper;
 }
 
-/// Local dictionary translation with an offline English-to-Hiligaynon model.
+/// Offline English-to-Hiligaynon model translation.
 class TranslationPage extends StatefulWidget {
   final Future<String> Function(String)? translateEnglish;
 
@@ -31,10 +30,7 @@ class _TranslationPageState extends State<TranslationPage> {
   final TextEditingController topController = TextEditingController();
   final TextEditingController bottomController = TextEditingController();
 
-  String fromLanguage = 'Hiligaynon';
-  String toLanguage = 'English';
   bool showHelpOverlay = !AppData.translateHelpDone;
-  bool _isUpdating = false;
   bool _isTranslating = false;
   bool _nmtRunning = false;
   bool _disposed = false;
@@ -43,7 +39,7 @@ class _TranslationPageState extends State<TranslationPage> {
   int _requestId = 0;
   Timer? _translationDebounce;
   String? _translationError;
-  ({String text, int requestId, String fallback})? _pendingRequest;
+  ({String text, int requestId})? _pendingRequest;
   NmtTranslationService? _nmtService;
   late final Future<String> Function(String) _translateEnglish;
 
@@ -74,24 +70,16 @@ class _TranslationPageState extends State<TranslationPage> {
   }
 
   void _onInputChanged() {
-    if (_isUpdating || !_safetyReady) return;
+    if (!_safetyReady) return;
 
     final input = topController.text;
     final requestId = ++_requestId;
     _translationDebounce?.cancel();
     _pendingRequest = null;
     final inputBlocked = ChildSafetyFilter.isUnsafe(input);
-    final dictionaryResult = inputBlocked ? '' : _dictionaryTranslation(input);
-    final outputBlocked =
-        dictionaryResult.isNotEmpty &&
-        ChildSafetyFilter.isUnsafe(dictionaryResult);
-    final translation = inputBlocked || outputBlocked
+    bottomController.text = inputBlocked
         ? ChildSafetyFilter.blockedMessage
-        : dictionaryResult;
-
-    _isUpdating = true;
-    bottomController.text = translation;
-    _isUpdating = false;
+        : '';
 
     setState(() {
       _inputBlocked = inputBlocked;
@@ -103,76 +91,13 @@ class _TranslationPageState extends State<TranslationPage> {
       }
     });
 
-    if (!inputBlocked &&
-        !outputBlocked &&
-        fromLanguage == 'English' &&
-        input.trim().isNotEmpty &&
-        translation == 'Translation not found yet.') {
+    if (!inputBlocked && input.trim().isNotEmpty) {
       _translationDebounce = Timer(const Duration(milliseconds: 450), () {
         if (!_isCurrent(input, requestId)) return;
-        _pendingRequest = (
-          text: input,
-          requestId: requestId,
-          fallback: translation,
-        );
+        _pendingRequest = (text: input, requestId: requestId);
         unawaited(_drainNmtRequests());
       });
     }
-  }
-
-  String _dictionaryTranslation(String value) {
-    final clean = DictionaryData.normalizeForSearch(value);
-    if (clean.isEmpty) return '';
-    final dictionary = fromLanguage == 'Hiligaynon'
-        ? DictionaryData.hiligaynonToEnglish
-        : DictionaryData.englishToHiligaynon;
-    return _lookup(clean, dictionary);
-  }
-
-  String _lookup(String value, Map<String, String> dictionary) {
-    // Try an exact phrase first. If it is missing, translate known words one by
-    // one while preserving spaces and basic punctuation.
-    final normalized = DictionaryData.normalizeForSearch(value);
-    final exact =
-        DictionaryData.phraseTranslations[normalized] ?? dictionary[normalized];
-    if (exact != null) return _matchCase(exact, value);
-    if (value.contains(RegExp(r'\s'))) {
-      return _lookupPhraseWords(value, dictionary);
-    }
-
-    final translatedWords = value.split(RegExp(r'(\s+)')).map((part) {
-      if (part.trim().isEmpty) return part;
-      final punctuation = RegExp(r'(^[^\w]+|[^\w]+$)');
-      final edge = punctuation.allMatches(part).map((m) => m.group(0)!).join();
-      final core = part
-          .replaceAll(RegExp(r'^[^\w]+|[^\w]+$'), '')
-          .toLowerCase();
-      final translated = dictionary[DictionaryData.normalizeForSearch(core)];
-      if (translated == null) return part;
-      return edge.startsWith(part[0]) ? '$edge$translated' : '$translated$edge';
-    }).join();
-
-    return translatedWords == value
-        ? 'Translation not found yet.'
-        : translatedWords;
-  }
-
-  String _lookupPhraseWords(String value, Map<String, String> dictionary) {
-    final translated = value.splitMapJoin(
-      RegExp(r'\S+'),
-      onMatch: (match) {
-        final part = match.group(0)!;
-        final core = part
-            .replaceAll(RegExp(r'^[^\w]+|[^\w]+$'), '')
-            .toLowerCase();
-        final replacement = dictionary[DictionaryData.normalizeForSearch(core)];
-        if (replacement == null) return part;
-        final prefix = RegExp(r'^[^\w]+').firstMatch(part)?.group(0) ?? '';
-        final suffix = RegExp(r'[^\w]+$').firstMatch(part)?.group(0) ?? '';
-        return '$prefix$replacement$suffix';
-      },
-    );
-    return translated == value ? 'Translation not found yet.' : translated;
   }
 
   Future<void> _drainNmtRequests() async {
@@ -187,17 +112,19 @@ class _TranslationPageState extends State<TranslationPage> {
         try {
           final translation = (await _translateEnglish(request.text)).trim();
           if (!_isCurrent(request.text, request.requestId)) continue;
-          final output = translation.isEmpty ? request.fallback : translation;
+          if (translation.isEmpty) {
+            throw StateError('The model returned an empty translation.');
+          }
           setState(() {
-            bottomController.text = ChildSafetyFilter.isUnsafe(output)
+            bottomController.text = ChildSafetyFilter.isUnsafe(translation)
                 ? ChildSafetyFilter.blockedMessage
-                : output;
+                : translation;
             _translationError = null;
           });
         } catch (_) {
           if (!_isCurrent(request.text, request.requestId)) continue;
           setState(() {
-            bottomController.text = request.fallback;
+            bottomController.clear();
             _translationError = 'Offline translation unavailable. Try again.';
           });
         } finally {
@@ -215,36 +142,7 @@ class _TranslationPageState extends State<TranslationPage> {
     return !_disposed &&
         mounted &&
         requestId == _requestId &&
-        topController.text == text &&
-        fromLanguage == 'English';
-  }
-
-  String _matchCase(String translation, String source) {
-    if (source.isEmpty) return translation;
-    return source[0].toUpperCase() == source[0]
-        ? translation[0].toUpperCase() + translation.substring(1)
-        : translation;
-  }
-
-  void swapLanguages() {
-    if (!_safetyReady || _inputBlocked) return;
-    _translationDebounce?.cancel();
-    _pendingRequest = null;
-    _requestId++;
-    setState(() {
-      final tempLang = fromLanguage;
-      fromLanguage = toLanguage;
-      toLanguage = tempLang;
-      _isTranslating = false;
-      _inputBlocked = false;
-      _translationError = null;
-
-      final tempText = topController.text;
-      _isUpdating = true;
-      topController.text = bottomController.text;
-      bottomController.text = tempText;
-      _isUpdating = false;
-    });
+        topController.text == text;
   }
 
   @override
@@ -307,27 +205,19 @@ class _TranslationPageState extends State<TranslationPage> {
                           ),
                           SizedBox(height: availableWidth >= 700 ? 46 : 38),
                           _TranslationLanguageCard(
-                            language: fromLanguage,
+                            language: 'English',
                             controller: topController,
-                            hint: fromLanguage == 'Hiligaynon'
-                                ? 'Type Hiligaynon'
-                                : 'Type English',
+                            hint: 'Type English',
                             readOnly: false,
                             inputEnabled: _safetyReady,
                             safeActions: !_inputBlocked,
                             onClear: topController.clear,
                           ),
-                          SizedBox(height: availableWidth >= 700 ? 18 : 14),
-                          Center(
-                            child: _VerticalSwapButton(onTap: swapLanguages),
-                          ),
-                          SizedBox(height: availableWidth >= 700 ? 18 : 14),
+                          SizedBox(height: availableWidth >= 700 ? 36 : 28),
                           _TranslationLanguageCard(
-                            language: toLanguage,
+                            language: 'Hiligaynon',
                             controller: bottomController,
-                            hint: toLanguage == 'Hiligaynon'
-                                ? 'Hiligaynon translation'
-                                : 'English translation',
+                            hint: 'Hiligaynon translation',
                             readOnly: true,
                             inputEnabled: true,
                             safeActions: true,
@@ -737,69 +627,6 @@ class _TranslationActionButton extends StatelessWidget {
               icon,
               color: enabled ? color : TudloColors.muted.withValues(alpha: .45),
               size: 21 * scale,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _VerticalSwapButton extends StatefulWidget {
-  final VoidCallback onTap;
-
-  const _VerticalSwapButton({required this.onTap});
-
-  @override
-  State<_VerticalSwapButton> createState() => _VerticalSwapButtonState();
-}
-
-class _VerticalSwapButtonState extends State<_VerticalSwapButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final buttonSize = (width * .068).clamp(52.0, 68.0);
-    final iconSize = buttonSize * .72;
-
-    return AnimatedScale(
-      scale: _pressed ? .92 : 1,
-      duration: const Duration(milliseconds: 90),
-      curve: Curves.easeOut,
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: TudloColors.forest.withValues(alpha: .42),
-              blurRadius: 24,
-              spreadRadius: 4,
-            ),
-            BoxShadow(
-              color: TudloColors.forest.withValues(alpha: .28),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: TudloColors.forest,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: widget.onTap,
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapCancel: () => setState(() => _pressed = false),
-            onTapUp: (_) => setState(() => _pressed = false),
-            child: SizedBox(
-              width: buttonSize,
-              height: buttonSize,
-              child: Icon(
-                Icons.swap_vert_rounded,
-                color: Colors.white,
-                size: iconSize,
-              ),
             ),
           ),
         ),

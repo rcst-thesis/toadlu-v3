@@ -3,41 +3,39 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudloapp/core/data/app_data.dart';
-import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/features/translation/screens/translation_page.dart';
 import 'package:tudloapp/features/translation/services/child_safety_filter.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
-    await DictionaryData.initialize();
-    await ChildSafetyFilter.initialize();
-  });
+  setUpAll(ChildSafetyFilter.initialize);
 
   setUp(() {
     AppData.translateHelpDone = true;
   });
 
-  testWidgets('uses the dictionary immediately for Hiligaynon', (tester) async {
-    var nmtCalls = 0;
+  testWidgets('uses the model for known phrases', (tester) async {
+    final requests = <String>[];
     await tester.pumpWidget(
       MaterialApp(
         home: TranslationPage(
           translateEnglish: (text) async {
-            nmtCalls++;
-            return 'unused';
+            requests.add(text);
+            return 'maayong aga';
           },
         ),
       ),
     );
     await tester.pump();
 
-    await tester.enterText(find.byType(TextField), 'maayong aga');
+    await tester.enterText(find.byType(TextField), 'good morning');
+    await tester.pump(const Duration(milliseconds: 451));
     await tester.pump();
 
-    expect(find.text('good morning'), findsOneWidget);
-    expect(nmtCalls, 0);
+    expect(requests, ['good morning']);
+    expect(find.text('maayong aga'), findsOneWidget);
+    expect(find.byIcon(Icons.swap_vert_rounded), findsNothing);
   });
 
   testWidgets('debounces NMT and ignores stale results', (tester) async {
@@ -57,8 +55,6 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.swap_vert_rounded));
-    await tester.pump();
     expect(
       tester.widget<TextField>(find.byType(TextField)).decoration?.hintText,
       'Type English',
@@ -101,8 +97,6 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.swap_vert_rounded));
-    await tester.pump();
 
     await tester.enterText(find.byType(TextField), 'f@ck!');
     await tester.pump(const Duration(milliseconds: 500));
@@ -119,13 +113,6 @@ void main() {
           .onPressed,
       isNull,
     );
-    await tester.tap(find.byIcon(Icons.swap_vert_rounded));
-    await tester.pump();
-    expect(
-      tester.widget<TextField>(find.byType(TextField)).decoration?.hintText,
-      'Type English',
-    );
-
     await tester.enterText(find.byType(TextField), 'qzxv blorf');
     await tester.pump(const Duration(milliseconds: 451));
     await tester.pump();
