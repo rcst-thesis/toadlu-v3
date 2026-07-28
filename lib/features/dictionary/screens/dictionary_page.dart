@@ -747,8 +747,6 @@ class _DictionaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 RichText(
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   text: TextSpan(
                     style: TextStyle(
                       color: TudloColors.ink,

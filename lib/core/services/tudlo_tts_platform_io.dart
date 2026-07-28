@@ -17,7 +17,7 @@ class _NativeTudloTtsPlatform implements TudloTtsPlatform {
     await _tts.stop();
     await _tts.awaitSpeakCompletion(waitForCompletion);
     await _setSpeechLanguage(hiligaynon: hiligaynon);
-    await _tts.setSpeechRate(.34);
+    await _tts.setSpeechRate(.29);
     await _tts.setPitch(1.04);
     await _tts.speak(text);
   }

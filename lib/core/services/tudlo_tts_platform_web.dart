@@ -21,7 +21,7 @@ class _WebTudloTtsPlatform implements TudloTtsPlatform {
 
     final utterance = web.SpeechSynthesisUtterance(text)
       ..lang = hiligaynon ? 'tl-PH' : 'en-US'
-      ..rate = .72
+      ..rate = .62
       ..pitch = 1.04
       ..volume = 1;
 
@@ -37,7 +37,7 @@ class _WebTudloTtsPlatform implements TudloTtsPlatform {
 
     if (waitForCompletion) {
       await completion.future.timeout(
-        Duration(milliseconds: (text.length * 145).clamp(1600, 16000)),
+        Duration(milliseconds: (text.length * 170).clamp(1900, 22000)),
         onTimeout: () {},
       );
     }

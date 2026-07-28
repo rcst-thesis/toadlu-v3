@@ -535,7 +535,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
           ? LessonQuestion.choice(
               prompt: 'Pili-a ang husto nga sabat.',
               answer: 'Husto',
-              choices: const ['Husto', 'Sulayi liwat'],
+              choices: const ['Husto', 'Suliton liwat'],
               targetPhrase: content.title,
               targetMeaning: content.title,
               directionLabel: 'generated-q${index + 1}',
@@ -546,7 +546,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
           prompt: fallback.prompt,
           answer: fallback.answer.isEmpty ? 'Husto' : fallback.answer,
           choices: fallback.choices.isEmpty
-              ? const ['Husto', 'Sulayi liwat']
+              ? const ['Husto', 'Suliton liwat']
               : fallback.choices,
           imagePath: fallback.imagePath,
           sentenceMeaning: fallback.sentenceMeaning,
@@ -6070,26 +6070,14 @@ class _UnitOneQuizStage extends StatelessWidget {
             left: width * .31,
             right: width * .035,
             top: safeTop + height * .108,
-            child: Text(
-              prompt,
-              textAlign: TextAlign.start,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.nunito(
-                color: Colors.white,
-                fontSize: (width * .073).clamp(25.0, 42.0),
-                height: 1.10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
-                shadows: const [
-                  Shadow(
-                    color: Color(0xFF459B27),
-                    blurRadius: 0,
-                    offset: Offset(2, 2),
-                  ),
-                  Shadow(color: Colors.white, blurRadius: 1),
-                ],
-              ),
+            child: _PresentationInstructionText(
+              message: prompt,
+              fontSize: (width * .068).clamp(23.0, 39.0),
+              onReplay: () {
+                unawaited(
+                  TudloVoiceButton.speak(context, prompt, hiligaynon: true),
+                );
+              },
             ),
           ),
           Positioned(
@@ -6304,7 +6292,7 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
     );
     await TudloVoiceButton.speak(
       context,
-      correct ? 'Husto! $_selected.' : 'Sulayi liwat.',
+      correct ? 'Husto! $_selected.' : 'Suliton liwat.',
       hiligaynon: true,
     );
     if (!mounted) return;
@@ -6334,7 +6322,7 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
       mascotMessage: _done
           ? 'Koka: Husto! Maayo gid.'
           : _wrong
-          ? 'Koka: Sulayi liwat.'
+          ? 'Koka: Suliton liwat.'
           : 'Koka: Pindoton ang husto nga sabat.',
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -6564,6 +6552,9 @@ class _UnitOneNumberMatchingActivityState
 
   void _connect(int leftNumber, int rightNumber) {
     setState(() {
+      _connections.removeWhere(
+        (left, right) => left == leftNumber || right == rightNumber,
+      );
       _connections[leftNumber] = rightNumber;
       _dragSide = null;
       _dragNumber = null;
@@ -6574,8 +6565,7 @@ class _UnitOneNumberMatchingActivityState
   }
 
   Offset _toMatchLocal(Offset globalPosition) {
-    final box =
-        _matchAreaKey.currentContext?.findRenderObject() as RenderBox?;
+    final box = _matchAreaKey.currentContext?.findRenderObject() as RenderBox?;
     return box?.globalToLocal(globalPosition) ?? Offset.zero;
   }
 
@@ -6666,7 +6656,7 @@ class _UnitOneNumberMatchingActivityState
 
     setState(() => _submittedWrong = true);
     unawaited(AppAudioService.instance.playWrong());
-    await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
+    await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
   }
 
   double _rowCenterY(int index, int count, double height) {
@@ -6811,8 +6801,7 @@ class _UnitOneNumberMatchingActivityState
                                 _NumberFruitMatchGroup(
                                   count: number,
                                   selected:
-                                      _dragSide ==
-                                          _NumberMatchDragSide.right &&
+                                      _dragSide == _NumberMatchDragSide.right &&
                                       _dragNumber == number,
                                   connected: _connections.containsValue(number),
                                   wrong:
@@ -7415,7 +7404,7 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
         _selectedChoice = null;
       });
       unawaited(AppAudioService.instance.playWrong());
-      await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
+      await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
       Future<void>.delayed(const Duration(milliseconds: 650), () {
         if (mounted) setState(() => _wrongChoices = const {});
       });
@@ -7430,7 +7419,7 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
       mascotMessage: _done
           ? 'Koka: Nabuo mo ang ${_titleCase(widget.word)}!'
           : _wrongChoices.isNotEmpty
-          ? 'Koka: Sulayi liwat.'
+          ? 'Koka: Suliton liwat.'
           : 'Koka: Pamatia anay ang tinaga, dayon pilia ang kulang nga letra.',
       child: Stack(
         clipBehavior: Clip.none,
@@ -7800,6 +7789,7 @@ class _UnitOneHiddenSearchActivityState
           context,
           'Ara na tanan nga letra!',
           hiligaynon: true,
+          waitForCompletion: true,
         );
       } else {
         _showHintBriefly();
@@ -7807,7 +7797,7 @@ class _UnitOneHiddenSearchActivityState
     } else {
       setState(() => _wrong = letter);
       unawaited(AppAudioService.instance.playWrong());
-      await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
+      await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
       Future<void>.delayed(const Duration(milliseconds: 650), () {
         if (mounted) setState(() => _wrong = null);
       });
@@ -8006,7 +7996,7 @@ class _UnitOneSubjectMatchActivityState
     } else {
       setState(() => _wrong = true);
       unawaited(AppAudioService.instance.playWrong());
-      await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
+      await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
       Future<void>.delayed(const Duration(milliseconds: 650), () {
         if (mounted) setState(() => _wrong = false);
       });
@@ -8022,7 +8012,7 @@ class _UnitOneSubjectMatchActivityState
       mascotMessage: _done
           ? 'Koka: Husto tanan!'
           : _wrong
-          ? 'Koka: Sulayi liwat.'
+          ? 'Koka: Suliton liwat.'
           : 'Koka: Pili-a ang ngalan, dayon pindoton ang sapat.',
       child: Column(
         children: [
@@ -8121,12 +8111,17 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
       });
       unawaited(AppAudioService.instance.playCorrect());
       if (_done) {
-        await TudloVoiceButton.speak(context, 'Husto! Natapos mo.');
+        await TudloVoiceButton.speak(
+          context,
+          'Husto! Natapos mo.',
+          hiligaynon: true,
+          waitForCompletion: true,
+        );
       }
     } else {
       setState(() => _wrong = value);
       unawaited(AppAudioService.instance.playWrong());
-      await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
+      await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
       Future<void>.delayed(const Duration(milliseconds: 650), () {
         if (mounted) setState(() => _wrong = null);
       });
@@ -8141,7 +8136,7 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
       mascotMessage: _done
           ? 'Koka: Husto! Natapos mo.'
           : _wrong != null
-          ? 'Koka: Sulayi liwat.'
+          ? 'Koka: Suliton liwat.'
           : 'Koka: Guyoda ang husto sa kahon.',
       child: Column(
         children: [
@@ -9162,8 +9157,8 @@ class _PresentationInstructionText extends StatelessWidget {
     final iconSize = (fontSize * 1.15).clamp(30.0, 44.0);
     return RichText(
       textAlign: textAlign,
-      maxLines: 3,
-      overflow: TextOverflow.ellipsis,
+      maxLines: 4,
+      overflow: TextOverflow.clip,
       text: TextSpan(
         style: textStyle,
         children: [
@@ -10265,6 +10260,7 @@ class _AlphabetMascotBubble extends StatelessWidget {
   bool get _messageLooksLikeRetry {
     final message = _cleanMessage.toLowerCase();
     return message.contains('sulayi liwat') ||
+        message.contains('suliton liwat') ||
         message.contains('liwata') ||
         message.contains('indi husto');
   }
@@ -10374,17 +10370,60 @@ class _GradeOneFamilyLessonState extends State<_GradeOneFamilyLesson> {
     final words = _familyWordsFor(widget.content.lessonNumber);
     var maxIndex = 0;
     final quizTargets = words.take(math.min(3, words.length)).toList();
+    final nanay = words.firstWhere(
+      (word) => word.hil == 'nanay',
+      orElse: () => quizTargets.first,
+    );
+    final reviewTargets = quizTargets.take(2).toList();
+    final useVisitorQuiz = widget.content.lessonNumber == 2;
     final quizCards = [
-      for (var index = 0; index < quizTargets.length; index++)
+      _UnitOneTapChoiceActivity(
+        key: ValueKey('family-warm-n-${widget.content.id}'),
+        prompt: 'Tap the letter of nanay!',
+        progress: 1 / _lessonQuizCount,
+        choices: _shuffledChoices(const ['N', 'A', 'T']),
+        answer: 'N',
+        isLetter: true,
+        imageAsset: nanay.imageAsset,
+        icon: nanay.icon,
+        onAttempt: (correct) => widget.onQuizAttempt(0, correct),
+        onDone: () {
+          widget.onQuizCorrect(0);
+          _advanceAfterCorrect(maxIndex);
+        },
+      ),
+      if (useVisitorQuiz)
+        _FamilyVisitorDoorQuizActivity(
+          key: ValueKey('family-visitors-${widget.content.id}'),
+          progress: 2 / _lessonQuizCount,
+          visitors: _familyVisitorTargets(words),
+          onAttempt: (correct) => widget.onQuizAttempt(1, correct),
+          onCorrect: () {
+            widget.onQuizCorrect(1);
+            _advanceAfterCorrect(maxIndex);
+          },
+        )
+      else
+        _FamilyHouseWindowQuizActivity(
+          key: ValueKey('family-house-${widget.content.id}'),
+          progress: 2 / _lessonQuizCount,
+          members: _familyHouseTargets(words),
+          onAttempt: (correct) => widget.onQuizAttempt(1, correct),
+          onCorrect: () {
+            widget.onQuizCorrect(1);
+            _advanceAfterCorrect(maxIndex);
+          },
+        ),
+      for (var index = 0; index < reviewTargets.length; index++)
         _FamilyQuizCard(
           key: ValueKey(
-            'family-quiz-${widget.content.id}-${quizTargets[index].hil}',
+            'family-quiz-${widget.content.id}-${reviewTargets[index].hil}',
           ),
-          target: quizTargets[index],
-          choices: _familyChoicesFor(quizTargets[index], words, 3),
-          onAttempt: (correct) => widget.onQuizAttempt(index, correct),
+          target: reviewTargets[index],
+          choices: _familyChoicesFor(reviewTargets[index], words, 3),
+          onAttempt: (correct) => widget.onQuizAttempt(index + 2, correct),
           onCorrect: () {
-            widget.onQuizCorrect(index);
+            widget.onQuizCorrect(index + 2);
             _advanceAfterCorrect(maxIndex);
           },
         ),
@@ -10421,16 +10460,10 @@ class _GradeOneFamilyLessonState extends State<_GradeOneFamilyLesson> {
           key: ValueKey('family-match-${widget.content.id}'),
           words: quizTargets,
           onAttempt: (word, correct) {
-            widget.onQuizAttempt(quizTargets.length, correct);
+            widget.onQuizAttempt(4, correct);
           },
           onCorrect: () {
-            for (
-              var index = quizTargets.length;
-              index < _lessonQuizCount;
-              index++
-            ) {
-              widget.onQuizCorrect(index);
-            }
+            widget.onQuizCorrect(4);
           },
         ),
       ),
@@ -12993,7 +13026,7 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
   Widget build(BuildContext context) {
     return _FamilyStage(
       mascotMessage: _checked
-          ? (_correct ? 'Husto! Maayo gid.' : 'Sulayi liwat.')
+          ? (_correct ? 'Husto! Maayo gid.' : 'Suliton liwat.')
           : _cleanFamilyPrompt('Koka: Pili-a ang sakto nga sabat.'),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -13022,6 +13055,609 @@ class _FamilyQuizCardState extends State<_FamilyQuizCard> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _FamilyHouseWindowQuizActivity extends StatefulWidget {
+  final double progress;
+  final List<_FamilyWord> members;
+  final ValueChanged<bool> onAttempt;
+  final VoidCallback onCorrect;
+
+  const _FamilyHouseWindowQuizActivity({
+    super.key,
+    required this.progress,
+    required this.members,
+    required this.onAttempt,
+    required this.onCorrect,
+  });
+
+  @override
+  State<_FamilyHouseWindowQuizActivity> createState() =>
+      _FamilyHouseWindowQuizActivityState();
+}
+
+class _FamilyHouseWindowQuizActivityState
+    extends State<_FamilyHouseWindowQuizActivity> {
+  late final List<_FamilyWord> _windowOrder = _shuffledChoices(widget.members);
+  final Set<String> _found = {};
+  int _targetIndex = 0;
+  int? _wrongWindow;
+  bool _done = false;
+  int _feedbackKey = 0;
+
+  _FamilyWord get _target =>
+      widget.members[_targetIndex.clamp(
+        0,
+        math.max(0, widget.members.length - 1),
+      )];
+
+  String get _question => 'Diin si ${_familyQuestionName(_target)}?';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(TudloVoiceButton.speak(context, _question, hiligaynon: true));
+    });
+  }
+
+  Future<void> _tapWindow(int index) async {
+    if (_done || index < 0 || index >= _windowOrder.length) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+    final member = _windowOrder[index];
+    if (_found.contains(member.hil)) return;
+    final correct = member.hil == _target.hil;
+    widget.onAttempt(correct);
+    setState(() {
+      _feedbackKey++;
+      _wrongWindow = correct ? null : index;
+    });
+    if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Suliton liwat. $_question',
+        hiligaynon: true,
+      );
+      Future<void>.delayed(const Duration(milliseconds: 720), () {
+        if (mounted && !_done) setState(() => _wrongWindow = null);
+      });
+      return;
+    }
+
+    unawaited(AppAudioService.instance.playCorrect());
+    setState(() {
+      _found.add(member.hil);
+      if (_found.length >= widget.members.length) {
+        _done = true;
+      } else {
+        _targetIndex++;
+      }
+    });
+    if (_done) {
+      await TudloVoiceButton.speak(
+        context,
+        'Ara na sila tanan!',
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+      if (!mounted) return;
+      widget.onCorrect();
+    } else {
+      unawaited(TudloVoiceButton.speak(context, _question, hiligaynon: true));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: 'Buligi si Koka makita ang iya pamilya sa balay!',
+      progress: widget.progress,
+      mascotMessage: _done ? 'Koka: Ara na sila tanan!' : 'Koka: $_question',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return Column(
+            children: [
+              _PresentationInstructionText(
+                message: _question,
+                fontSize: (width * .074).clamp(25.0, 36.0),
+                textAlign: TextAlign.center,
+                onReplay: () => unawaited(
+                  TudloVoiceButton.speak(context, _question, hiligaynon: true),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Center(
+                  child: SizedBox(
+                    width: math.min(width, 360),
+                    height: 350,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Positioned.fill(child: _FamilyHouseShell()),
+                        for (
+                          var index = 0;
+                          index < _windowOrder.length && index < 3;
+                          index++
+                        )
+                          Positioned(
+                            left: 31.0 + index * 105.0,
+                            top: 114,
+                            child: _FamilyWindowTarget(
+                              member: _windowOrder[index],
+                              found: _found.contains(_windowOrder[index].hil),
+                              wrong: _wrongWindow == index,
+                              feedbackKey: _feedbackKey,
+                              onTap: () => _tapWindow(index),
+                            ),
+                          ),
+                        if (_done)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: TweenAnimationBuilder<double>(
+                                tween: Tween(begin: .4, end: 1),
+                                duration: const Duration(milliseconds: 620),
+                                curve: Curves.elasticOut,
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value.clamp(0, 1),
+                                    child: Transform.scale(
+                                      scale: value,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Center(
+                                  child: Image.asset(
+                                    'assets/images/level_game/people/pamilya.png',
+                                    width: 250,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.family_restroom_rounded,
+                                      color: TudloColors.green,
+                                      size: 150,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FamilyVisitorDoorQuizActivity extends StatefulWidget {
+  final double progress;
+  final List<_FamilyWord> visitors;
+  final ValueChanged<bool> onAttempt;
+  final VoidCallback onCorrect;
+
+  const _FamilyVisitorDoorQuizActivity({
+    super.key,
+    required this.progress,
+    required this.visitors,
+    required this.onAttempt,
+    required this.onCorrect,
+  });
+
+  @override
+  State<_FamilyVisitorDoorQuizActivity> createState() =>
+      _FamilyVisitorDoorQuizActivityState();
+}
+
+class _FamilyVisitorDoorQuizActivityState
+    extends State<_FamilyVisitorDoorQuizActivity> {
+  late final List<_FamilyWord> _visitorOrder = _shuffledChoices(
+    widget.visitors,
+  );
+  final Set<String> _found = {};
+  int _targetIndex = 0;
+  String? _wrong;
+  bool _done = false;
+  int _feedbackKey = 0;
+
+  _FamilyWord get _target =>
+      widget.visitors[_targetIndex.clamp(
+        0,
+        math.max(0, widget.visitors.length - 1),
+      )];
+
+  String get _question =>
+      'Kilala mo si ${_familyQuestionName(_target)}? Tap-tapa siya!';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(TudloVoiceButton.speak(context, _question, hiligaynon: true));
+    });
+  }
+
+  Future<void> _tapVisitor(_FamilyWord visitor) async {
+    if (_done || _found.contains(visitor.hil)) return;
+    final spent = await AppData.spendQuestionEnergy();
+    if (!mounted) return;
+    if (!spent) {
+      await showLowEnergyDialog(context);
+      return;
+    }
+    final correct = visitor.hil == _target.hil;
+    widget.onAttempt(correct);
+    setState(() {
+      _feedbackKey++;
+      _wrong = correct ? null : visitor.hil;
+    });
+    if (!correct) {
+      unawaited(AppAudioService.instance.playWrong());
+      await TudloVoiceButton.speak(
+        context,
+        'Suliton liwat. $_question',
+        hiligaynon: true,
+      );
+      Future<void>.delayed(const Duration(milliseconds: 720), () {
+        if (mounted && !_done) setState(() => _wrong = null);
+      });
+      return;
+    }
+
+    unawaited(AppAudioService.instance.playCorrect());
+    setState(() {
+      _found.add(visitor.hil);
+      if (_found.length >= widget.visitors.length) {
+        _done = true;
+      } else {
+        _targetIndex++;
+      }
+    });
+    if (_done) {
+      await TudloVoiceButton.speak(
+        context,
+        'Husto! Kilala mo sila tanan.',
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+      if (!mounted) return;
+      widget.onCorrect();
+    } else {
+      unawaited(TudloVoiceButton.speak(context, _question, hiligaynon: true));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UnitOneQuizStage(
+      prompt: 'May bisita sa balay ni Koka!',
+      progress: widget.progress,
+      mascotMessage: _done ? 'Koka: Maayo gid!' : 'Koka: $_question',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return Column(
+            children: [
+              _PresentationInstructionText(
+                message: _question,
+                fontSize: (width * .066).clamp(23.0, 32.0),
+                textAlign: TextAlign.center,
+                onReplay: () => unawaited(
+                  TudloVoiceButton.speak(context, _question, hiligaynon: true),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    Positioned(
+                      top: 8,
+                      child: _FamilyDoorShape(
+                        width: math.min(width * .56, 210),
+                        height: 270,
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 12,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          for (final visitor in _visitorOrder)
+                            _FamilyVisitorTarget(
+                              visitor: visitor,
+                              found: _found.contains(visitor.hil),
+                              wrong: _wrong == visitor.hil,
+                              feedbackKey: _feedbackKey,
+                              onTap: () => _tapVisitor(visitor),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FamilyHouseShell extends StatelessWidget {
+  const _FamilyHouseShell();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _FamilyHouseShellPainter());
+  }
+}
+
+class _FamilyHouseShellPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..isAntiAlias = true;
+    final roof = Path()
+      ..moveTo(size.width * .08, size.height * .34)
+      ..lineTo(size.width * .50, size.height * .06)
+      ..lineTo(size.width * .92, size.height * .34)
+      ..close();
+    paint.color = const Color(0xFFFFA94D);
+    canvas.drawPath(roof, paint);
+    paint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..color = TudloColors.forest.withValues(alpha: .75);
+    canvas.drawPath(roof, paint);
+    paint
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xFFFFF5D8);
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        size.width * .10,
+        size.height * .28,
+        size.width * .80,
+        size.height * .58,
+      ),
+      const Radius.circular(24),
+    );
+    canvas.drawRRect(body, paint);
+    paint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..color = TudloColors.forest;
+    canvas.drawRRect(body, paint);
+    paint
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xFFC68144);
+    final door = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        size.width * .43,
+        size.height * .57,
+        size.width * .14,
+        size.height * .29,
+      ),
+      const Radius.circular(16),
+    );
+    canvas.drawRRect(door, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _FamilyWindowTarget extends StatelessWidget {
+  final _FamilyWord member;
+  final bool found;
+  final bool wrong;
+  final int feedbackKey;
+  final VoidCallback onTap;
+
+  const _FamilyWindowTarget({
+    required this.member,
+    required this.found,
+    required this.wrong,
+    required this.feedbackKey,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      key: ValueKey('window-${member.hil}-$feedbackKey-$wrong'),
+      correct: found,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: 88,
+          height: 106,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: found ? Colors.white : const Color(0xFFC7F2FF),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: found ? TudloColors.green : TudloColors.blue,
+              width: 5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.forest.withValues(alpha: .20),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: found
+              ? Image.asset(
+                  member.imageAsset,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(member.icon, color: TudloColors.forest, size: 52),
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD1DC),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD1DC),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FamilyDoorShape extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const _FamilyDoorShape({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4D2),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: TudloColors.forest, width: 6),
+      ),
+      child: Center(
+        child: Container(
+          width: width * .58,
+          height: height * .72,
+          decoration: BoxDecoration(
+            color: const Color(0xFFC68144),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: const Color(0xFF8F5D2D), width: 5),
+          ),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              margin: EdgeInsets.only(right: width * .08),
+              width: 12,
+              height: 12,
+              decoration: const BoxDecoration(
+                color: TudloColors.gold,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FamilyVisitorTarget extends StatelessWidget {
+  final _FamilyWord visitor;
+  final bool found;
+  final bool wrong;
+  final int feedbackKey;
+  final VoidCallback onTap;
+
+  const _FamilyVisitorTarget({
+    required this.visitor,
+    required this.found,
+    required this.wrong,
+    required this.feedbackKey,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      key: ValueKey('visitor-${visitor.hil}-$feedbackKey-$wrong'),
+      correct: found,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: 108,
+          height: 178,
+          padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
+          decoration: BoxDecoration(
+            color: found
+                ? TudloColors.softGreen
+                : Colors.white.withValues(alpha: .78),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: found ? TudloColors.green : Colors.white,
+              width: 4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.forest.withValues(alpha: .14),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: Image.asset(
+                  visitor.imageAsset,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(visitor.icon, color: TudloColors.forest, size: 74),
+                ),
+              ),
+              Text(
+                found ? _titleCase(visitor.hil) : '?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.forest,
+                  fontSize: 18,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -13506,6 +14142,42 @@ List<_FamilyWord> _familyChoicesFor(
     }
   }
   return selected;
+}
+
+List<_FamilyWord> _familyHouseTargets(List<_FamilyWord> words) {
+  final targets = ['nanay', 'tatay', 'bata']
+      .map((name) => _familyWordByHil(words, name))
+      .whereType<_FamilyWord>()
+      .toList();
+  if (targets.length >= 3) return targets.take(3).toList();
+  return words.take(math.min(3, words.length)).toList();
+}
+
+List<_FamilyWord> _familyVisitorTargets(List<_FamilyWord> words) {
+  final targets = ['lola', 'lolo', 'nanay']
+      .map((name) => _familyWordByHil(words, name))
+      .whereType<_FamilyWord>()
+      .toList();
+  if (targets.length >= 3) return targets.take(3).toList();
+  return words.take(math.min(3, words.length)).toList();
+}
+
+_FamilyWord? _familyWordByHil(List<_FamilyWord> words, String hil) {
+  for (final word in words) {
+    if (word.hil == hil) return word;
+  }
+  return null;
+}
+
+String _familyQuestionName(_FamilyWord word) {
+  return switch (word.hil) {
+    'nanay' => 'mother',
+    'tatay' => 'father',
+    'bata' => 'child',
+    'lola' => 'grandmother',
+    'lolo' => 'grandfather',
+    _ => word.hil,
+  };
 }
 
 String _cleanFamilyPrompt(String prompt) {
@@ -15731,7 +16403,7 @@ class _LessonResultPage extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _ResultStatBox(
-                        label: 'SAYOP',
+                        label: 'SA PAG LIWAT',
                         value: '$mistakes',
                         icon: Icons.refresh_rounded,
                       ),
@@ -17476,7 +18148,7 @@ class _AnswerFeedbackPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = correct ? TudloColors.green : TudloColors.coral;
-    final title = correct ? 'Maayo gid!' : 'Sulayi liwat!';
+    final title = correct ? 'Maayo gid!' : 'Suliton liwat!';
     final subtitle = correct
         ? 'Husto ang imo sabat.'
         : 'Tan-awa liwat ang sabat.';

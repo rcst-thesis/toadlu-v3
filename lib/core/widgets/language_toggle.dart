@@ -254,7 +254,7 @@ class TudloVoiceButton extends StatelessWidget {
   }
 
   static void _resetSpeakingAfterEstimate(String text, int token) {
-    final milliseconds = (text.length * 85).clamp(900, 9000);
+    final milliseconds = (text.length * 110).clamp(1200, 14000);
     Future<void>.delayed(Duration(milliseconds: milliseconds), () async {
       if (_speechToken == token) isSpeaking.value = false;
       if (_speechToken == token) {
