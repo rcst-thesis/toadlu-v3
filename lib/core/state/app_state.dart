@@ -189,6 +189,16 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setDeveloperMode(bool enabled) async {
+    await AppData.setDeveloperMode(enabled);
+    notifyListeners();
+  }
+
+  Future<void> setDailyWordDemoOffset(int offset) async {
+    await AppData.setDailyWordDemoOffset(offset);
+    notifyListeners();
+  }
+
   Future<void> saveActiveProfileProgress() async {
     final profile = activeProfile;
     if (profile == null) return;

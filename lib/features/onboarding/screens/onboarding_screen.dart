@@ -96,14 +96,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  void _next() {
+  Future<void> _next() async {
     if (_pageIndex >= _pages.length - 1) {
-      _finish();
+      await _finish();
       return;
     }
-    final nextIndex = _pageIndex + 1;
-    unawaited(_playNarrationForPage(nextIndex, force: true));
-    _controller.nextPage(
+    await TudloVoiceButton.stop();
+    if (!mounted) return;
+    await _controller.nextPage(
       duration: const Duration(milliseconds: 360),
       curve: Curves.easeOutCubic,
     );
@@ -127,11 +127,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (!force && _lastNarrationKey == key) return Future.value();
     _lastNarrationKey = key;
     final activePage = _pages[index];
+    final useHiligaynon = appState.isHiligaynon;
     return TudloVoiceButton.speak(
       context,
-      activePage.hiligaynonVoice,
-      hiligaynon: true,
+      activePage.voiceText(useHiligaynon),
+      hiligaynon: useHiligaynon,
     );
+  }
+
+  Future<void> _handlePageChanged(int value) async {
+    setState(() => _pageIndex = value);
+    await TudloVoiceButton.stop();
+    if (!mounted) return;
+    unawaited(_playNarrationForPage(value, force: true));
   }
 
   @override
@@ -174,8 +182,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       controller: _controller,
                       itemCount: _pages.length,
                       onPageChanged: (value) {
-                        setState(() => _pageIndex = value);
-                        _scheduleNarrationIfNeeded();
+                        unawaited(_handlePageChanged(value));
                       },
                       itemBuilder: (context, index) {
                         return _TudloOnboardingPage(
@@ -196,7 +203,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     width: double.infinity,
                     height: compact ? 56 : 64,
                     child: ElevatedButton(
-                      onPressed: _next,
+                      onPressed: () => unawaited(_next()),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: activePage.color,
                         foregroundColor: Colors.white,

@@ -6,7 +6,7 @@ class StreakHelper {
   const StreakHelper._();
 
   static StreakModel current() {
-    final days = AppData.streakDays < 1 ? 1 : AppData.streakDays;
-    return StreakModel(days: days, completedDaysThisWeek: days.clamp(1, 7));
+    final days = AppData.streakDays < 1 ? 0 : AppData.streakDays;
+    return StreakModel(days: days, completedDaysThisWeek: days.clamp(0, 7));
   }
 }

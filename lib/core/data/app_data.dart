@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/core/models/learner_profile.dart';
 import 'package:tudloapp/core/models/lesson_score.dart';
+import 'package:tudloapp/core/services/app_storage.dart';
 import 'package:tudloapp/features/energy/services/energy_storage.dart';
 
 /// Shared in-app progress and energy state.
@@ -35,6 +36,8 @@ class AppData {
 
   static int streakDays = 0;
   static int unlockedLevel = 1;
+  static bool developerMode = false;
+  static int dailyWordDemoOffset = 0;
   static GradeLevel selectedGradeLevel = GradeLevel.grade1;
   static final Map<int, int> levelStars = {};
   static final Map<String, LessonScoreStats> lessonScores = {};
@@ -112,6 +115,10 @@ class AppData {
   /// Loads energy from storage, then immediately applies real-time recharge.
   /// This is called before runApp so all screens see restored energy.
   static Future<void> initialize() async {
+    final devValues = await AppStorage.readDeveloperSettings();
+    developerMode = devValues['developerMode'] == true;
+    dailyWordDemoOffset = (devValues['dailyWordDemoOffset'] as int?) ?? 0;
+
     final values = await EnergyStorage.read();
     currentEnergy =
         int.tryParse(
@@ -120,7 +127,32 @@ class AppData {
         maxEnergy;
     _lastEnergyAt =
         DateTime.tryParse(values['lastEnergyAt'] ?? '') ?? DateTime.now();
+    if (developerMode) currentEnergy = maxEnergy;
     await refreshEnergy(save: true);
+  }
+
+  static Future<void> setDeveloperMode(bool enabled) async {
+    developerMode = enabled;
+    if (developerMode) currentEnergy = maxEnergy;
+    await AppStorage.writeDeveloperSettings(
+      developerMode: developerMode,
+      dailyWordDemoOffset: dailyWordDemoOffset,
+    );
+    await saveEnergyState();
+    energyRevision.value++;
+  }
+
+  static Future<void> setDailyWordDemoOffset(int offset) async {
+    dailyWordDemoOffset = offset;
+    await AppStorage.writeDeveloperSettings(
+      developerMode: developerMode,
+      dailyWordDemoOffset: dailyWordDemoOffset,
+    );
+    energyRevision.value++;
+  }
+
+  static DateTime dailyWordNow() {
+    return DateTime.now().add(Duration(days: dailyWordDemoOffset));
   }
 
   static void applyProfile(LearnerProfile profile) {
@@ -171,6 +203,14 @@ class AppData {
   /// The saved timestamp marks the last recharge boundary. If the app was
   /// closed for 72 minutes, this adds 3 energy because 72 / 24 = 3 intervals.
   static Future<void> refreshEnergy({DateTime? now, bool save = false}) async {
+    if (developerMode) {
+      final changed = currentEnergy != maxEnergy;
+      currentEnergy = maxEnergy;
+      _lastEnergyAt = now ?? DateTime.now();
+      if (save) await saveEnergyState();
+      if (changed) energyRevision.value++;
+      return;
+    }
     final updatedAt = now ?? DateTime.now();
     final changed = _applyRecharge(updatedAt);
     if (save) await saveEnergyState();
@@ -208,22 +248,31 @@ class AppData {
 
   /// Unit start restriction. Home Map calls this before opening a lesson.
   static bool canStartUnit() {
+    if (developerMode) return true;
     return currentEnergy >= minimumEnergyToStartUnit;
   }
 
-  /// Deducts energy when a question is checked.
-  ///
-  /// This is intentionally separate from correctness. Trying a question costs
-  /// energy once, whether the answer is right or wrong.
-  static Future<bool> spendQuestionEnergy() async {
+  /// Deducts the fixed lesson-start cost. Individual quiz attempts do not
+  /// spend energy, so one lesson always costs exactly 10 energy.
+  static Future<bool> spendLessonEnergy() async {
     await refreshEnergy();
-    if (currentEnergy < energyPerQuestion) return false;
-    currentEnergy = (currentEnergy - energyPerQuestion)
+    if (developerMode) return true;
+    if (currentEnergy < minimumEnergyToStartUnit) return false;
+    currentEnergy = (currentEnergy - minimumEnergyToStartUnit)
         .clamp(0, maxEnergy)
         .toInt();
     _lastEnergyAt = DateTime.now();
     await saveEnergyState();
     energyRevision.value++;
+    return true;
+  }
+
+  /// Deducts energy when a question is checked.
+  ///
+  /// Kept for existing quiz call sites, but the current rule spends energy
+  /// once when the lesson starts instead of per question.
+  static Future<bool> spendQuestionEnergy() async {
+    await refreshEnergy();
     return true;
   }
 
@@ -259,6 +308,7 @@ class AppData {
 
   static bool isLevelUnlocked(int level) {
     if (level < 1 || level > maxLevel) return false;
+    if (developerMode) return true;
     final lessonNumber = lessonNumberForLevel(level);
     if (lessonNumber == 1) return true;
     if (completedLevels.contains(level)) return true;

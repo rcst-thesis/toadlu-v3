@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
@@ -212,7 +213,7 @@ class _DailyWordsPageState extends State<DailyWordsPage> {
     final terms = (await LessonBank.loadTermsForActiveGrade())
         .where((term) => term.hil.split(' ').length <= 3)
         .toList();
-    final day = DateTime.now().difference(DateTime(2026, 1, 1)).inDays;
+    final day = AppData.dailyWordNow().difference(DateTime(2026, 1, 1)).inDays;
     return terms[day.abs() % terms.length];
   }
 }

@@ -52,6 +52,25 @@ class AppStorage {
     };
   }
 
+  static Future<Map<String, dynamic>> readDeveloperSettings() async {
+    final p = await _prefs;
+    return {
+      'developerMode': p.getBool('${_prefix}developerMode') ?? false,
+      'dailyWordDemoOffset': p.getInt('${_prefix}dailyWordDemoOffset') ?? 0,
+    };
+  }
+
+  static Future<void> writeDeveloperSettings({
+    required bool developerMode,
+    required int dailyWordDemoOffset,
+  }) async {
+    final p = await _prefs;
+    await Future.wait([
+      p.setBool('${_prefix}developerMode', developerMode),
+      p.setInt('${_prefix}dailyWordDemoOffset', dailyWordDemoOffset),
+    ]);
+  }
+
   static Future<void> writeAppState({
     required String username,
     required String ageRange,

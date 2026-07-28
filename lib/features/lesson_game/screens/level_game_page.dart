@@ -229,7 +229,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
     final wasCompleted = AppData.completedLevels.contains(widget.level);
     final previousNextLevel = AppData.firstUnlockedIncompleteLevel;
     AppData.saveLevelScore(widget.level, _buildLessonScoreStats());
-    if (!wasCompleted && AppData.streakDays < 1) {
+    if (AppData.streakDays < 1) {
       AppData.streakDays = 1;
     }
     AppData.unlockedLevel = AppData.firstUnlockedIncompleteLevel;
@@ -397,7 +397,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
             (route) => false,
           );
         },
-        onContinue: () {
+        onContinue: () async {
           _claimRewardsOnce();
           Navigator.pop(context);
           if (widget.level >= AppData.maxLevel) {
@@ -410,6 +410,14 @@ class _LevelGamePageState extends State<LevelGamePage> {
             );
             return;
           }
+          final spent = await AppData.spendLessonEnergy();
+          if (!mounted) return;
+          if (!spent) {
+            await showLowEnergyDialog(context);
+            return;
+          }
+          await AppStateScope.of(context).saveActiveProfileProgress();
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -5232,7 +5240,7 @@ class _UnitOneQuizStage extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.nunito(
                 color: Colors.white,
-                fontSize: (width * .073).clamp(26.0, 42.0),
+                fontSize: (width * .069).clamp(24.0, 40.0),
                 height: 1.10,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -5254,6 +5262,51 @@ class _UnitOneQuizStage extends StatelessWidget {
             bottom: height * .045,
             child: child,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+bool _isLivingSubjectAsset(String? imageAsset, IconData icon) {
+  final asset = imageAsset?.toLowerCase() ?? '';
+  if (asset.contains('/people/') || asset.contains('/animals/')) return true;
+  return icon == Icons.family_restroom_rounded ||
+      icon == Icons.pets_rounded ||
+      icon == Icons.egg_alt_rounded ||
+      icon == Icons.elderly_woman_rounded ||
+      icon == Icons.elderly_rounded;
+}
+
+String _subjectQuestionFor(String? imageAsset, IconData icon) {
+  return _isLivingSubjectAsset(imageAsset, icon)
+      ? 'Sino ni siya?'
+      : 'Ano ni siya?';
+}
+
+class _SubjectQuestionLabel extends StatelessWidget {
+  final String? imageAsset;
+  final IconData icon;
+
+  const _SubjectQuestionLabel({required this.imageAsset, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return Text(
+      _subjectQuestionFor(imageAsset, icon),
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: GoogleFonts.nunito(
+        color: Colors.white,
+        fontSize: (width * .065).clamp(24.0, 36.0),
+        height: 1,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0,
+        shadows: const [
+          Shadow(color: Color(0xFF459B27), blurRadius: 0, offset: Offset(2, 2)),
+          Shadow(color: Colors.white, blurRadius: 1),
         ],
       ),
     );
@@ -5451,6 +5504,11 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  _SubjectQuestionLabel(
+                    imageAsset: widget.imageAsset,
+                    icon: widget.icon,
+                  ),
+                  const SizedBox(height: 8),
                   Flexible(
                     child: widget.imageAsset == null
                         ? Icon(widget.icon, color: TudloColors.green, size: 170)
@@ -5881,11 +5939,16 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
           Column(
             children: [
               SizedBox(
-                height: 198,
+                height: 220,
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      _SubjectQuestionLabel(
+                        imageAsset: widget.imageAsset,
+                        icon: widget.icon,
+                      ),
+                      const SizedBox(height: 8),
                       Flexible(
                         child: widget.imageAsset == null
                             ? Icon(
@@ -6588,18 +6651,33 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
       child: Column(
         children: [
           SizedBox(
-            height: widget.imageAsset == null ? 120 : 180,
-            child: widget.imageAsset == null
-                ? Icon(widget.icon, color: TudloColors.green, size: 110)
-                : Image.asset(
-                    widget.imageAsset!,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                    errorBuilder: (_, __, ___) =>
-                        Icon(widget.icon, color: TudloColors.green, size: 110),
-                  ),
+            height: widget.imageAsset == null ? 142 : 190,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SubjectQuestionLabel(
+                  imageAsset: widget.imageAsset,
+                  icon: widget.icon,
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: widget.imageAsset == null
+                      ? Icon(widget.icon, color: TudloColors.green, size: 110)
+                      : Image.asset(
+                          widget.imageAsset!,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder: (_, __, ___) => Icon(
+                            widget.icon,
+                            color: TudloColors.green,
+                            size: 110,
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Wrap(
             alignment: WrapAlignment.center,
             spacing: 8,
@@ -6622,9 +6700,9 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           SizedBox(
-            height: 178,
+            height: 154,
             child: Center(
               child: Wrap(
                 alignment: WrapAlignment.center,
@@ -6640,7 +6718,7 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
                           label: value,
                           isLetter: !widget.isNumberSequence,
                           isNumber: widget.isNumberSequence,
-                          assetSize: 86,
+                          assetSize: 82,
                           onTap: () {},
                         ),
                       ),
@@ -6650,7 +6728,7 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
                           label: value,
                           isLetter: !widget.isNumberSequence,
                           isNumber: widget.isNumberSequence,
-                          assetSize: 86,
+                          assetSize: 82,
                           onTap: () {},
                         ),
                       ),
@@ -6658,7 +6736,7 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
                         label: value,
                         isLetter: !widget.isNumberSequence,
                         isNumber: widget.isNumberSequence,
-                        assetSize: 86,
+                        assetSize: 82,
                         wrong: _wrong == value,
                         onTap: () {},
                       ),
@@ -6667,7 +6745,7 @@ class _UnitOneDragFillActivityState extends State<_UnitOneDragFillActivity> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _UnitOneSubmitButton(enabled: _done, onPressed: widget.onDone),
         ],
       ),
@@ -13974,7 +14052,7 @@ class _LessonCompleteDialog extends StatefulWidget {
   final String durationLabel;
   final VoidCallback onClaimXp;
   final VoidCallback onBackToMap;
-  final VoidCallback onContinue;
+  final FutureOr<void> Function() onContinue;
 
   const _LessonCompleteDialog({
     required this.level,
@@ -14022,7 +14100,7 @@ class _LessonCompleteDialogState extends State<_LessonCompleteDialog> {
         child: _showStreak
             ? _LessonStreakPage(
                 key: const ValueKey('streak'),
-                streakDays: math.max(1, AppData.streakDays),
+                streakDays: AppData.streakDays,
                 onCommitted: widget.onContinue,
                 onBackToMap: widget.onBackToMap,
               )
@@ -14044,7 +14122,7 @@ class _LessonResultPage extends StatelessWidget {
   final int mistakes;
   final String durationLabel;
   final VoidCallback onBackToMap;
-  final VoidCallback onContinue;
+  final FutureOr<void> Function() onContinue;
 
   const _LessonResultPage({
     super.key,
@@ -14194,7 +14272,7 @@ class _LessonResultPage extends StatelessWidget {
 
 class _LessonStreakPage extends StatelessWidget {
   final int streakDays;
-  final VoidCallback onCommitted;
+  final FutureOr<void> Function() onCommitted;
   final VoidCallback onBackToMap;
 
   const _LessonStreakPage({
@@ -14209,6 +14287,9 @@ class _LessonStreakPage extends StatelessWidget {
     final size = MediaQuery.sizeOf(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
     const week = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    final completedDays = streakDays.clamp(0, week.length);
+    final fireSize = (size.width * .105).clamp(38.0, 50.0);
+    final dayFontSize = (size.width * .04).clamp(14.0, 19.0);
     return SizedBox(
       width: size.width,
       height: size.height,
@@ -14276,10 +14357,18 @@ class _LessonStreakPage extends StatelessWidget {
                 ),
                 const Spacer(),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     for (var index = 0; index < week.length; index++)
-                      _StreakDayChip(label: week[index], completed: index == 0),
+                      Expanded(
+                        child: Center(
+                          child: _StreakDayChip(
+                            label: week[index],
+                            completed: index < completedDays,
+                            fireSize: fireSize,
+                            labelFontSize: dayFontSize,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 38),
@@ -14388,7 +14477,7 @@ class _ResultStatBox extends StatelessWidget {
 
 class _ResultPrimaryButton extends StatelessWidget {
   final String label;
-  final VoidCallback onTap;
+  final FutureOr<void> Function() onTap;
   final bool outlined;
 
   const _ResultPrimaryButton({
@@ -14402,7 +14491,7 @@ class _ResultPrimaryButton extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         unawaited(AppAudioService.instance.playTap());
-        onTap();
+        unawaited(Future.sync(onTap));
       },
       child: Container(
         height: 70,
@@ -14442,8 +14531,15 @@ class _ResultPrimaryButton extends StatelessWidget {
 class _StreakDayChip extends StatefulWidget {
   final String label;
   final bool completed;
+  final double fireSize;
+  final double labelFontSize;
 
-  const _StreakDayChip({required this.label, required this.completed});
+  const _StreakDayChip({
+    required this.label,
+    required this.completed,
+    required this.fireSize,
+    required this.labelFontSize,
+  });
 
   @override
   State<_StreakDayChip> createState() => _StreakDayChipState();
@@ -14470,7 +14566,7 @@ class _StreakDayChipState extends State<_StreakDayChip>
     _scale = Tween<double>(begin: .66, end: 1).animate(curve);
     _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     if (widget.completed) {
-      Future<void>.delayed(const Duration(milliseconds: 650), () {
+      Future<void>.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
         setState(() => _showUnlocked = true);
         _controller.forward(from: 0);
@@ -14484,7 +14580,7 @@ class _StreakDayChipState extends State<_StreakDayChip>
     if (!oldWidget.completed && widget.completed) {
       _showUnlocked = false;
       _controller.reset();
-      Future<void>.delayed(const Duration(milliseconds: 300), () {
+      Future<void>.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
         setState(() => _showUnlocked = true);
         _controller.forward(from: 0);
@@ -14511,13 +14607,13 @@ class _StreakDayChipState extends State<_StreakDayChip>
           widget.label,
           style: GoogleFonts.nunito(
             color: completed ? TudloColors.green : TudloColors.muted,
-            fontSize: 19,
+            fontSize: widget.labelFontSize,
             height: 1,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: widget.fireSize * .22),
         AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
@@ -14531,13 +14627,13 @@ class _StreakDayChipState extends State<_StreakDayChip>
           child: Image.asset(
             asset,
             key: ValueKey(asset),
-            width: 52,
-            height: 52,
+            width: widget.fireSize,
+            height: widget.fireSize,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => Icon(
               Icons.local_fire_department_rounded,
               color: completed ? TudloColors.green : TudloColors.muted,
-              size: 48,
+              size: widget.fireSize,
             ),
           ),
         ),

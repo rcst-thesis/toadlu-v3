@@ -76,6 +76,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   _ProgressSection(username: username),
                   const SizedBox(height: 18),
                   const _AudioSettingsCard(),
+                  if (AppData.developerMode) ...[
+                    const SizedBox(height: 18),
+                    const _DeveloperModePanel(),
+                  ],
                   const SizedBox(height: 28),
                   _ProfileManagementRow(
                     onSwitch: () {
@@ -92,6 +96,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
+          ),
+          const Positioned(
+            top: 12,
+            right: 16,
+            child: SafeArea(child: _DeveloperModeToggleButton()),
           ),
         ],
       ),
@@ -907,6 +916,189 @@ class _ProfileStatCircle extends StatelessWidget {
               fontSize: 13,
               height: 1.05,
               fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeveloperModeToggleButton extends StatelessWidget {
+  const _DeveloperModeToggleButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = AppStateScope.of(context);
+    final enabled = AppData.developerMode;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () async {
+          await AppAudioService.instance.playTap();
+          if (!context.mounted) return;
+          await appState.setDeveloperMode(!enabled);
+        },
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: enabled ? Colors.white : TudloColors.softGreen,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: TudloColors.forest, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.forest.withValues(alpha: .18),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                enabled ? Icons.toggle_on_rounded : Icons.toggle_off_rounded,
+                color: enabled ? TudloColors.green : TudloColors.muted,
+                size: 28,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'DEV',
+                style: GoogleFonts.nunito(
+                  color: enabled ? TudloColors.forest : TudloColors.muted,
+                  fontSize: 14,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeveloperModePanel extends StatelessWidget {
+  const _DeveloperModePanel();
+
+  Future<void> _changeDailyWordOffset(BuildContext context, int delta) async {
+    await AppAudioService.instance.playTap();
+    if (!context.mounted) return;
+    await AppStateScope.of(
+      context,
+    ).setDailyWordDemoOffset(AppData.dailyWordDemoOffset + delta);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = AppStateScope.of(context);
+    final demoDate = AppData.dailyWordNow();
+    final month = demoDate.month.toString().padLeft(2, '0');
+    final day = demoDate.day.toString().padLeft(2, '0');
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+      decoration: _softCardDecoration(radius: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.developer_mode_rounded,
+                color: TudloColors.forest,
+                size: 30,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Dev Mode',
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.forest,
+                    fontSize: 24,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+              Switch(
+                value: AppData.developerMode,
+                activeThumbColor: TudloColors.green,
+                onChanged: (value) => appState.setDeveloperMode(value),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'All lessons unlocked, all features open, and energy is unlimited.',
+            style: GoogleFonts.nunito(
+              color: TudloColors.muted,
+              fontSize: 15,
+              height: 1.18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: TudloColors.softGreen,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                IconButton.filled(
+                  tooltip: 'Previous daily word',
+                  onPressed: () => _changeDailyWordOffset(context, -1),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: TudloColors.forest,
+                  ),
+                  icon: const Icon(Icons.chevron_left_rounded, size: 34),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Daily Word Demo',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.forest,
+                          fontSize: 18,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Offset ${AppData.dailyWordDemoOffset >= 0 ? '+' : ''}${AppData.dailyWordDemoOffset} day • $month/$day/${demoDate.year}',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.muted,
+                          fontSize: 14,
+                          height: 1.1,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton.filled(
+                  tooltip: 'Next daily word',
+                  onPressed: () => _changeDailyWordOffset(context, 1),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: TudloColors.forest,
+                  ),
+                  icon: const Icon(Icons.chevron_right_rounded, size: 34),
+                ),
+              ],
             ),
           ),
         ],

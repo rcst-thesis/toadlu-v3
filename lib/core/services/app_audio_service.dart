@@ -23,6 +23,7 @@ class AppAudioService {
 
   final AudioPlayer _effectPlayer = AudioPlayer();
   final AudioPlayer _backgroundPlayer = AudioPlayer();
+  final AudioPlayer _voicePlayer = AudioPlayer();
   final ValueNotifier<bool> soundEffectsEnabledNotifier = ValueNotifier<bool>(
     true,
   );
@@ -35,6 +36,7 @@ class AppAudioService {
   String? _currentBackgroundTrack;
   double _backgroundVolume = .18;
   bool _initialized = false;
+  int _voiceToken = 0;
 
   bool get soundEffectsEnabled => soundEffectsEnabledNotifier.value;
   bool get musicEnabled => musicEnabledNotifier.value;
@@ -79,6 +81,42 @@ class AppAudioService {
   Future<void> playLessonComplete() =>
       playSoundEffect(lessonComplete, volume: .48);
   Future<void> playStar() => playSoundEffect(star, volume: .38);
+
+  Future<void> playVoiceAssets(
+    List<String> assetPaths, {
+    double volume = .95,
+  }) async {
+    if (!voiceOverEnabled || assetPaths.isEmpty) return;
+    final token = ++_voiceToken;
+    try {
+      await _voicePlayer.stop();
+      await _voicePlayer.setReleaseMode(ReleaseMode.stop);
+      await _voicePlayer.setVolume(volume.clamp(0, 1).toDouble());
+      for (final assetPath in assetPaths) {
+        if (token != _voiceToken) return;
+        final completed = Completer<void>();
+        late final StreamSubscription<void> sub;
+        sub = _voicePlayer.onPlayerComplete.listen((_) {
+          if (!completed.isCompleted) completed.complete();
+        });
+        await _voicePlayer.play(AssetSource(assetPath));
+        await completed.future.timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {},
+        );
+        await sub.cancel();
+      }
+    } catch (_) {
+      rethrow;
+    }
+  }
+
+  Future<void> stopVoice() async {
+    _voiceToken++;
+    try {
+      await _voicePlayer.stop();
+    } catch (_) {}
+  }
 
   Future<void> playBackgroundMusic(
     String assetPath, {
@@ -139,5 +177,6 @@ class AppAudioService {
   Future<void> dispose() async {
     await _effectPlayer.dispose();
     await _backgroundPlayer.dispose();
+    await _voicePlayer.dispose();
   }
 }

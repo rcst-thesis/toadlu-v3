@@ -87,6 +87,97 @@ class TudloVoiceButton extends StatelessWidget {
   static final ValueNotifier<bool> isSpeaking = ValueNotifier<bool>(false);
   static int _speechToken = 0;
 
+  static const _voBase = 'audio/VO';
+
+  static final Map<String, List<String>> _recordedHilVoice = {
+    'hi abyan ano imo ngalan': ['$_voBase/Username.m4a'],
+    'abyan sa ano nga grado ka na': ['$_voBase/Grade-level.m4a'],
+    'maayong pag abot abyan': ['$_voBase/Maayong-pag-abot.m4a'],
+    'tum oka ini para makaumpisa kita': [
+      '$_voBase/Tum-oka-ini-para-makaumpisa-kita.m4a',
+    ],
+    'maayong pag abot abyan diri makatuon kita sang hiligaynon paagi sa sari sari nga leksiyon istorya mga ehemplo kag kaliliagaw nga mga buluhaton':
+        ['$_voBase/Onboarding1.m4a'],
+    'diri puwede ka man makapangita sang mga tinaga nga gusto mo mahibaluan kag kon ano ang ila kahulugan':
+        ['$_voBase/Onboarding2.m4a'],
+    'puwede mo man diri mahubad ang imo mga tinaga halin sa hiligaynon pakadto sa english ukon halin sa english pakadto sa hiligaynon':
+        ['$_voBase/Onboarding3.m4a'],
+    'tuon ta a n t kag y': ['$_voBase/Level1-ANTY.m4a'],
+    'abyan kilala mo kon sin o ini siya si': [
+      '$_voBase/Abyan-kilala-mo-kon-sino-ini.m4a',
+    ],
+    'maayo gid abyan padayon kita': [
+      '$_voBase/Maayo-gid-abyan-padayon-kita.m4a',
+    ],
+    'pamatii ang tingog pindoton ang husto nga letra': [
+      '$_voBase/Pamatii-ang-tingog.m4a',
+    ],
+    'pamatia ang tinaga pilia ang kulang nga letra': [
+      '$_voBase/Pamatia-ang-tinaga.m4a',
+    ],
+    'unahon ta pangitaon ang letra nga mabatian mo': [
+      '$_voBase/Unahon-ta-pangitaon.m4a',
+    ],
+    'guyoda ang mga letra para matapos ang tinaga': [
+      '$_voBase/Guyuda-ang-mga-letra.m4a',
+    ],
+    'ara na tanan nga letra': ['$_voBase/Ara-na-tanan-nga-letra.m4a'],
+    'husto natapos mo': ['$_voBase/Husto-natapos-mo.m4a'],
+    'natapos mo na ang leksyon': ['$_voBase/Natapos-mo-na-ang-leksyon.m4a'],
+    'nanay': ['$_voBase/Nanay.m4a'],
+    'tatay': ['$_voBase/Tatay.m4a'],
+    'ah': ['$_voBase/Sound-A.m4a'],
+    'n': ['$_voBase/Sound-N.m4a'],
+    't': ['$_voBase/Sound-T.m4a'],
+    'y': ['$_voBase/Sound-Y.m4a'],
+    'ang tunog sang letra nga a amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-A.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'ang tunog sang letra nga n amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-N.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'ang tunog sang letra nga t amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-T.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'ang tunog sang letra nga y amo ang': [
+      '$_voBase/Ang-tunog-sng-letra-nga.m4a',
+      '$_voBase/Letter-Y.m4a',
+      '$_voBase/Amo-ang.m4a',
+    ],
+    'may ara letra nga a sa may nanay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-A.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Nanay.m4a',
+    ],
+    'may ara letra nga n sa may nanay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-N.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Nanay.m4a',
+    ],
+    'may ara letra nga t sa may tatay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-T.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Tatay.m4a',
+    ],
+    'may ara letra nga y sa may nanay kag tatay': [
+      '$_voBase/May-ara-letra-nga.m4a',
+      '$_voBase/Letter-Y.m4a',
+      '$_voBase/Sa-may.m4a',
+      '$_voBase/Nanay.m4a',
+      '$_voBase/Kag.m4a',
+      '$_voBase/Tatay.m4a',
+    ],
+  };
+
   static Future<void> speak(
     BuildContext context,
     String message, {
@@ -99,10 +190,37 @@ class TudloVoiceButton extends StatelessWidget {
     if (!audio.voiceOverEnabled) return;
     try {
       await _tts.stop();
+      await audio.stopVoice();
       isSpeaking.value = false;
       final token = ++_speechToken;
       await audio.lowerBackgroundVolume();
       isSpeaking.value = true;
+      final recordedAssets = hiligaynon
+          ? _recordedHilVoice[_voiceKey(text)]
+          : null;
+      if (recordedAssets != null) {
+        try {
+          final playback = audio.playVoiceAssets(recordedAssets);
+          if (waitForCompletion) {
+            await playback;
+            if (_speechToken == token) isSpeaking.value = false;
+            await audio.restoreBackgroundVolume();
+          } else {
+            unawaited(
+              playback.whenComplete(() async {
+                if (_speechToken == token) isSpeaking.value = false;
+                if (_speechToken == token) {
+                  await audio.restoreBackgroundVolume();
+                }
+              }),
+            );
+          }
+          return;
+        } catch (_) {
+          await audio.stopVoice();
+          if (_speechToken == token) isSpeaking.value = true;
+        }
+      }
       await _tts.speak(
         text,
         hiligaynon: hiligaynon,
@@ -126,6 +244,7 @@ class TudloVoiceButton extends StatelessWidget {
   static Future<void> stop() async {
     try {
       await _tts.stop();
+      await AppAudioService.instance.stopVoice();
       _speechToken++;
       isSpeaking.value = false;
       await AppAudioService.instance.restoreBackgroundVolume();
@@ -142,6 +261,14 @@ class TudloVoiceButton extends StatelessWidget {
         await AppAudioService.instance.restoreBackgroundVolume();
       }
     });
+  }
+
+  static String _voiceKey(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
   }
 
   final String message;

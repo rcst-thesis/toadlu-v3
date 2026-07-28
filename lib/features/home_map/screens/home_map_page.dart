@@ -215,14 +215,18 @@ class _HomeMapPageState extends State<HomeMapPage> {
   Future<void> _startLevel(int level) async {
     // Start button in the level popup:
     // Refresh real-time energy before gating access. If the learner has less
-    // than 15 energy, the unit does not start.
+    // than the fixed lesson cost, the unit does not start.
     await AppData.refreshEnergy(save: true);
     if (!mounted) return;
-    if (!AppData.canStartUnit()) {
+    final spent = await AppData.spendLessonEnergy();
+    if (!mounted) return;
+    if (!spent) {
       _closeLevelPopup();
       await showLowEnergyDialog(context);
       return;
     }
+    await AppStateScope.of(context).saveActiveProfileProgress();
+    if (!mounted) return;
     // Enough energy: close the popup, then open the animated lesson intro
     // before the game screen.
     _closeLevelPopup();
@@ -235,7 +239,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final showMapHelp = !AppData.mapHelpDone;
+    final showMapHelp = !AppData.developerMode && !AppData.mapHelpDone;
     final currentLevel = AppData.firstUnlockedIncompleteLevel;
     // The scrollable map needs a fixed content height so decorations, road,
     // stars, and level nodes can all be positioned in the same coordinate space.
@@ -620,29 +624,34 @@ class _MapDialogueOverlay extends StatefulWidget {
 
 class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
   static const _lessonAssetBase = 'assets/images/level_game/lesson-game-assets';
+  Timer? _speechTimer;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_speakCurrentMessage());
-    });
+    _scheduleCurrentMessageSpeech();
   }
 
   @override
   void didUpdateWidget(covariant _MapDialogueOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.step != widget.step) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_speakCurrentMessage());
-      });
+      _scheduleCurrentMessageSpeech();
     }
   }
 
   @override
   void dispose() {
+    _speechTimer?.cancel();
     unawaited(TudloVoiceButton.stop());
     super.dispose();
+  }
+
+  void _scheduleCurrentMessageSpeech() {
+    _speechTimer?.cancel();
+    _speechTimer = Timer(const Duration(milliseconds: 320), () {
+      if (mounted) unawaited(_speakCurrentMessage());
+    });
   }
 
   Future<void> _speakCurrentMessage() async {
@@ -656,6 +665,9 @@ class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
       ),
     );
   }
+
+  String get _tapHint =>
+      _homeText(context, hil: 'ipindot para magpadayon', en: 'tap to continue');
 
   String get _message => widget.step == 0
       ? _homeText(
@@ -727,7 +739,11 @@ class _MapDialogueOverlayState extends State<_MapDialogueOverlay> {
           left: bubbleLeft,
           top: bubbleTop,
           child: IgnorePointer(
-            child: _DialogueBubbleImage(width: bubbleWidth, message: message),
+            child: _DialogueBubbleImage(
+              width: bubbleWidth,
+              message: message,
+              hint: widget.step == 0 ? _tapHint : null,
+            ),
           ),
         ),
         if (widget.step == 1)
@@ -961,8 +977,13 @@ class _TutorialTargetLevelButtonState extends State<_TutorialTargetLevelButton>
 class _DialogueBubbleImage extends StatelessWidget {
   final double width;
   final String message;
+  final String? hint;
 
-  const _DialogueBubbleImage({required this.width, required this.message});
+  const _DialogueBubbleImage({
+    required this.width,
+    required this.message,
+    this.hint,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -984,15 +1005,33 @@ class _DialogueBubbleImage extends StatelessWidget {
               width * .14,
               width * .20,
             ),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                color: TudloColors.ink,
-                fontSize: (width * .095).clamp(15.0, 20.0),
-                height: 1.16,
-                fontWeight: FontWeight.w900,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.ink,
+                    fontSize: (width * .09).clamp(15.0, 20.0),
+                    height: 1.1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (hint != null) ...[
+                  SizedBox(height: width * .035),
+                  Text(
+                    hint!,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      color: TudloColors.muted,
+                      fontSize: (width * .052).clamp(11.0, 14.0),
+                      height: 1.05,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -2165,7 +2204,7 @@ Future<void> _showDailyWordPopup(
 
 LessonTerm _dailyWord() {
   final terms = _dailyWordTerms;
-  final day = DateTime.now().difference(DateTime(2026, 1, 1)).inDays;
+  final day = AppData.dailyWordNow().difference(DateTime(2026, 1, 1)).inDays;
   return terms[day.abs() % terms.length];
 }
 

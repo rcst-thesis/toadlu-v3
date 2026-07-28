@@ -74,7 +74,7 @@ class _EnergyIndicatorState extends State<EnergyIndicator> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '${AppData.currentEnergy}',
+                    AppData.developerMode ? '∞' : '${AppData.currentEnergy}',
                     style: TextStyle(
                       color: foreground,
                       fontSize: 18,
@@ -157,7 +157,9 @@ class _EnergyScreenState extends State<_EnergyScreen> {
         final full = AppData.timeUntilFullEnergy();
         // Time calculation: CHARGING shows the full-recharge countdown. The
         // next +1 timing still follows the same 24-minute interval in AppData.
-        final chargingTime = AppData.formatDurationShort(full);
+        final chargingTime = AppData.developerMode
+            ? 'Unlimited'
+            : AppData.formatDurationShort(full);
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -263,7 +265,7 @@ class _EnergyScreenState extends State<_EnergyScreen> {
                           current: AppData.currentEnergy,
                           max: AppData.maxEnergy,
                         ),
-                        if (widget.lowEnergy) ...[
+                        if (widget.lowEnergy && !AppData.developerMode) ...[
                           SizedBox(height: compactHeight ? 22 : 28),
                           _LowEnergyMessage(
                             nextEnergyIn: AppData.formatDurationShort(next),
@@ -291,10 +293,9 @@ class _EnergyChargeBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Max energy rule: Tudlo caps energy at 30, unlike the 25 shown in the
-    // reference. Users need at least 15 energy to start and finish 1 unit.
+    // Max energy rule: Tudlo caps energy at 30. A lesson costs 10 energy.
     final fill = max == 0 ? 0.0 : (current / max).clamp(0.0, 1.0);
-    final full = current >= max;
+    final full = current >= max || AppData.developerMode;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -326,7 +327,7 @@ class _EnergyChargeBar extends StatelessWidget {
                       child: Align(
                         alignment: Alignment.center,
                         child: Text(
-                          '$current / $max',
+                          AppData.developerMode ? 'DEV ∞' : '$current / $max',
                           style: TextStyle(
                             color: full ? Colors.white : TudloColors.ink,
                             fontSize: 23,
@@ -395,7 +396,7 @@ class _LowEnergyMessage extends StatelessWidget {
         border: Border.all(color: TudloColors.green.withValues(alpha: .24)),
       ),
       child: Text(
-        "You're low on energy!\nYou need at least ${AppData.minimumEnergyToStartUnit} energy to start this unit.\nNext +1 in $nextEnergyIn.",
+        "You're low on energy!\nYou need ${AppData.minimumEnergyToStartUnit} energy to start this lesson.\nNext +1 in $nextEnergyIn.",
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: TudloColors.forest,
