@@ -4608,7 +4608,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
       ),
       _UnitOneSpellingActivity(
         key: ValueKey('unit1-spell-${widget.content.id}'),
-        prompt: 'Sino ini? Tapusa ang tinaga.',
+        prompt: 'Pamatia ang tinaga. Pilia ang kulang nga letra.',
         progress: 2 / _lessonQuizCount,
         word: spellingAnchor.word,
         imageAsset: spellingAnchor.imageAsset,
@@ -4618,7 +4618,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
       ),
       _UnitOneHiddenSearchActivity(
         key: ValueKey('unit1-search-${widget.content.id}'),
-        prompt: 'Nadula ang mga letra ni Koka! Pangitaa sila.',
+        prompt: 'Unahon ta pangitaon ang letra nga mabatian mo.',
         progress: 3 / _lessonQuizCount,
         targetLetters: _quizTargets,
         onAttempt: (correct) => widget.onQuizAttempt(2, correct),
@@ -5268,17 +5268,71 @@ class _UnitOneTapChoiceActivity extends StatefulWidget {
       _UnitOneTapChoiceActivityState();
 }
 
-class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity> {
+class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity>
+    with SingleTickerProviderStateMixin {
   String? _selected;
   bool _wrong = false;
   bool _done = false;
+  bool _showSpeakerHint = false;
+  Timer? _hideHintTimer;
+  Timer? _inactiveHintTimer;
+  late final AnimationController _tapHintController;
+  late final Animation<double> _tapScale;
+  late final Animation<Offset> _tapOffset;
 
   @override
   void initState() {
     super.initState();
+    _tapHintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..repeat(reverse: true);
+    final curve = CurvedAnimation(
+      parent: _tapHintController,
+      curve: Curves.easeInOut,
+    );
+    _tapScale = Tween<double>(begin: 1, end: .86).animate(curve);
+    _tapOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-8, -8),
+    ).animate(curve);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _showHintBriefly();
       unawaited(_playPrompt());
+    });
+  }
+
+  @override
+  void dispose() {
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    _tapHintController.dispose();
+    super.dispose();
+  }
+
+  void _showHintBriefly() {
+    if (widget.listenText == null || _done) return;
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    if (mounted) setState(() => _showSpeakerHint = true);
+    _hideHintTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _showSpeakerHint = false);
+    });
+    _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted && !_done) _showHintBriefly();
+    });
+  }
+
+  void _hideHintUntilInactive() {
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    if (mounted && _showSpeakerHint) {
+      setState(() => _showSpeakerHint = false);
+    }
+    if (widget.listenText == null || _done) return;
+    _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted && !_done) _showHintBriefly();
     });
   }
 
@@ -5293,6 +5347,7 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity> {
   Future<void> _replayListenText() async {
     await AppAudioService.instance.playTap();
     if (!mounted) return;
+    _hideHintUntilInactive();
     await TudloVoiceButton.speak(
       context,
       widget.listenText ?? widget.prompt,
@@ -5322,6 +5377,7 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity> {
     setState(() {
       _wrong = !correct;
       _done = correct;
+      if (correct) _showSpeakerHint = false;
     });
     unawaited(
       correct
@@ -5335,6 +5391,8 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity> {
     );
     if (!mounted) return;
     if (correct) {
+      _hideHintTimer?.cancel();
+      _inactiveHintTimer?.cancel();
       Future<void>.delayed(const Duration(milliseconds: 950), () {
         if (mounted && _done) widget.onDone();
       });
@@ -5386,7 +5444,13 @@ class _UnitOneTapChoiceActivityState extends State<_UnitOneTapChoiceActivity> {
                   ),
                   if (widget.listenText != null) ...[
                     const SizedBox(height: 12),
-                    _UnitOneReplayButton(onTap: _replayListenText),
+                    _PresentationSpeakerHint(
+                      size: 82,
+                      showFinger: _showSpeakerHint,
+                      tapScale: _tapScale,
+                      tapOffset: _tapOffset,
+                      onTap: _replayListenText,
+                    ),
                   ],
                 ],
               ),
@@ -5450,49 +5514,6 @@ class _UnitOneCountingChoiceActivity extends StatelessWidget {
       icon: icon,
       onAttempt: onAttempt,
       onDone: onDone,
-    );
-  }
-}
-
-class _UnitOneReplayButton extends StatelessWidget {
-  static const _assetBase = 'assets/images/level_game/lesson-game-assets';
-
-  final FutureOr<void> Function() onTap;
-
-  const _UnitOneReplayButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => unawaited(Future<void>.sync(onTap)),
-      child: Container(
-        width: 74,
-        height: 74,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .92),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: TudloColors.green.withValues(alpha: .24),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Image.asset(
-          '$_assetBase/speaker.png',
-          width: 44,
-          height: 44,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-          errorBuilder: (_, __, ___) => const Icon(
-            Icons.volume_up_rounded,
-            color: TudloColors.green,
-            size: 38,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -5576,20 +5597,31 @@ class _UnitOneSpellingActivity extends StatefulWidget {
       _UnitOneSpellingActivityState();
 }
 
-class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity> {
-  final List<String> _filled = [];
+class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity>
+    with SingleTickerProviderStateMixin {
+  String? _selectedChoice;
   String? _wrongChoice;
   bool _done = false;
+  bool _showSpeakerHint = true;
+  Timer? _hideHintTimer;
+  Timer? _inactiveHintTimer;
+  late final AnimationController _tapHintController;
+  late final Animation<double> _tapScale;
+  late final Animation<Offset> _tapOffset;
 
   late final List<String> _letters = widget.word
       .replaceAll(RegExp(r'\s+'), '')
       .characters
       .map((letter) => letter.toUpperCase())
       .toList();
+  late final int _missingIndex = _letters.length <= 2
+      ? 0
+      : _letters.length ~/ 2;
+  late final String _missingLetter = _letters[_missingIndex];
 
   late final List<String> _choices = _shuffledChoices(
     {
-      ..._letters,
+      _missingLetter,
       ...const ['A', 'N', 'T', 'Y', 'I', 'D', 'O', 'M', 'K', 'U'],
     }.take(math.max(5, _letters.toSet().length + 2)),
   ).toList();
@@ -5597,39 +5629,114 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity> {
   @override
   void initState() {
     super.initState();
+    _tapHintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..repeat(reverse: true);
+    final curve = CurvedAnimation(
+      parent: _tapHintController,
+      curve: Curves.easeInOut,
+    );
+    _tapScale = Tween<double>(begin: 1, end: .86).animate(curve);
+    _tapOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-8, -8),
+    ).animate(curve);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _showHintBriefly();
       unawaited(TudloVoiceButton.speak(context, widget.prompt));
     });
   }
 
-  Future<void> _tapLetter(String letter) async {
+  @override
+  void dispose() {
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    _tapHintController.dispose();
+    super.dispose();
+  }
+
+  void _showHintBriefly() {
     if (_done) return;
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    if (mounted) setState(() => _showSpeakerHint = true);
+    _hideHintTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _showSpeakerHint = false);
+    });
+    _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted && !_done) _showHintBriefly();
+    });
+  }
+
+  void _hideHintUntilInactive() {
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    if (mounted && _showSpeakerHint) {
+      setState(() => _showSpeakerHint = false);
+    }
+    if (_done) return;
+    _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted && !_done) _showHintBriefly();
+    });
+  }
+
+  Future<void> _playWord() async {
+    await AppAudioService.instance.playTap();
+    if (!mounted) return;
+    _hideHintUntilInactive();
+    await TudloVoiceButton.speak(
+      context,
+      widget.word,
+      hiligaynon: true,
+      waitForCompletion: true,
+    );
+  }
+
+  Future<void> _selectLetter(String letter) async {
+    if (_done) return;
+    await AppAudioService.instance.playTap();
+    setState(() {
+      _selectedChoice = letter;
+      _wrongChoice = null;
+    });
+  }
+
+  Future<void> _submitLetter() async {
+    if (_done || _selectedChoice == null) return;
     final spent = await AppData.spendQuestionEnergy();
     if (!mounted) return;
     if (!spent) {
       await showLowEnergyDialog(context);
       return;
     }
-    final expected = _letters[_filled.length];
-    final correct = letter == expected;
+    final letter = _selectedChoice!;
+    final correct = letter == _missingLetter;
     widget.onAttempt(correct);
     if (correct) {
       setState(() {
-        _filled.add(letter);
         _wrongChoice = null;
-        _done = _filled.length == _letters.length;
+        _done = true;
+        _showSpeakerHint = false;
       });
+      _hideHintTimer?.cancel();
+      _inactiveHintTimer?.cancel();
       unawaited(AppAudioService.instance.playCorrect());
-      if (_done) {
-        await TudloVoiceButton.speak(
-          context,
-          '${_titleCase(widget.word)}. Husto!',
-          hiligaynon: true,
-        );
-      }
+      await TudloVoiceButton.speak(
+        context,
+        '${_titleCase(widget.word)}. Husto!',
+        hiligaynon: true,
+      );
+      if (!mounted) return;
+      Future<void>.delayed(const Duration(milliseconds: 950), () {
+        if (mounted && _done) widget.onDone();
+      });
     } else {
-      setState(() => _wrongChoice = letter);
+      setState(() {
+        _wrongChoice = letter;
+        _selectedChoice = null;
+      });
       unawaited(AppAudioService.instance.playWrong());
       await TudloVoiceButton.speak(context, 'Sulayi liwat.', hiligaynon: true);
       Future<void>.delayed(const Duration(milliseconds: 650), () {
@@ -5647,54 +5754,117 @@ class _UnitOneSpellingActivityState extends State<_UnitOneSpellingActivity> {
           ? 'Koka: Nabuo mo ang ${_titleCase(widget.word)}!'
           : _wrongChoice != null
           ? 'Koka: Sulayi liwat.'
-          : 'Koka: Pindoton ang letra sa husto nga pagkasunod.',
+          : 'Koka: Pamatia anay ang tinaga, dayon pilia ang kulang nga letra.',
       child: Column(
         children: [
           SizedBox(
-            height: 185,
-            child: widget.imageAsset == null
-                ? Icon(widget.icon, color: TudloColors.green, size: 145)
-                : Image.asset(
-                    widget.imageAsset!,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                    errorBuilder: (_, __, ___) =>
-                        Icon(widget.icon, color: TudloColors.green, size: 140),
+            height: 198,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: widget.imageAsset == null
+                        ? Icon(widget.icon, color: TudloColors.green, size: 145)
+                        : Image.asset(
+                            widget.imageAsset!,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                            errorBuilder: (_, __, ___) => Icon(
+                              widget.icon,
+                              color: TudloColors.green,
+                              size: 140,
+                            ),
+                          ),
                   ),
+                  const SizedBox(height: 4),
+                  _PresentationSpeakerHint(
+                    size: 72,
+                    showFinger: _showSpeakerHint && !_done,
+                    tapScale: _tapScale,
+                    tapOffset: _tapOffset,
+                    onTap: _playWord,
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 8,
+            spacing: 6,
             runSpacing: 8,
             children: [
               for (var i = 0; i < _letters.length; i++)
-                _LetterSlot(label: i < _filled.length ? _filled[i] : ''),
+                if (i == _missingIndex)
+                  DragTarget<String>(
+                    onWillAcceptWithDetails: (_) => !_done,
+                    onAcceptWithDetails: (details) =>
+                        unawaited(_selectLetter(details.data)),
+                    builder: (context, candidates, rejected) {
+                      return AnimatedScale(
+                        duration: const Duration(milliseconds: 140),
+                        scale: candidates.isNotEmpty ? 1.08 : 1,
+                        child: _MissingLetterUnderlineSlot(
+                          label: _done ? _missingLetter : _selectedChoice ?? '',
+                          active:
+                              candidates.isNotEmpty || _selectedChoice != null,
+                        ),
+                      );
+                    },
+                  )
+                else
+                  _PlainAnswerLetter(label: _letters[i]),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           SizedBox(
-            height: 178,
+            height: 140,
             child: Center(
               child: Wrap(
                 alignment: WrapAlignment.center,
-                spacing: 18,
-                runSpacing: 8,
+                spacing: 16,
+                runSpacing: 0,
                 children: [
                   for (final letter in _choices)
-                    _UnitOneSymbolButton(
-                      label: letter,
-                      isLetter: true,
-                      assetSize: 86,
-                      wrong: _wrongChoice == letter,
-                      onTap: () => _tapLetter(letter),
+                    Draggable<String>(
+                      data: letter,
+                      feedback: Material(
+                        color: Colors.transparent,
+                        child: _UnitOneSymbolButton(
+                          label: letter,
+                          isLetter: true,
+                          assetSize: 82,
+                          onTap: () {},
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: .35,
+                        child: _UnitOneSymbolButton(
+                          label: letter,
+                          isLetter: true,
+                          assetSize: 82,
+                          onTap: () {},
+                        ),
+                      ),
+                      child: _UnitOneSymbolButton(
+                        label: letter,
+                        isLetter: true,
+                        assetSize: 82,
+                        selected: _selectedChoice == letter,
+                        wrong: _wrongChoice == letter,
+                        onTap: () => _selectLetter(letter),
+                      ),
                     ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          _UnitOneSubmitButton(enabled: _done, onPressed: widget.onDone),
+          const SizedBox(height: 8),
+          _UnitOneSubmitButton(
+            enabled: _selectedChoice != null && !_done,
+            onPressed: _submitLetter,
+          ),
         ],
       ),
     );
@@ -5723,10 +5893,17 @@ class _UnitOneHiddenSearchActivity extends StatefulWidget {
 }
 
 class _UnitOneHiddenSearchActivityState
-    extends State<_UnitOneHiddenSearchActivity> {
+    extends State<_UnitOneHiddenSearchActivity>
+    with SingleTickerProviderStateMixin {
   final Set<String> _found = {};
   String? _wrong;
   bool _done = false;
+  bool _showSpeakerHint = true;
+  Timer? _hideHintTimer;
+  Timer? _inactiveHintTimer;
+  late final AnimationController _tapHintController;
+  late final Animation<double> _tapScale;
+  late final Animation<Offset> _tapOffset;
 
   late final List<String> _targets = widget.targetLetters
       .map((letter) => letter.toUpperCase())
@@ -5747,6 +5924,83 @@ class _UnitOneHiddenSearchActivityState
     ].where((letter) => !_targets.contains(letter)).take(3),
   ]);
 
+  String? get _currentTarget => _done || _found.length >= _targets.length
+      ? null
+      : _targets[_found.length];
+
+  @override
+  void initState() {
+    super.initState();
+    _tapHintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..repeat(reverse: true);
+    final curve = CurvedAnimation(
+      parent: _tapHintController,
+      curve: Curves.easeInOut,
+    );
+    _tapScale = Tween<double>(begin: 1, end: .86).animate(curve);
+    _tapOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-8, -8),
+    ).animate(curve);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        TudloVoiceButton.speak(
+          context,
+          'Unahon ta pangitaon ang letra nga mabatian mo.',
+          hiligaynon: true,
+        ),
+      );
+      _showHintBriefly();
+    });
+  }
+
+  @override
+  void dispose() {
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    _tapHintController.dispose();
+    super.dispose();
+  }
+
+  void _showHintBriefly() {
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    if (mounted) setState(() => _showSpeakerHint = true);
+    _hideHintTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _showSpeakerHint = false);
+    });
+    _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted && !_done) _showHintBriefly();
+    });
+  }
+
+  void _hideHintUntilInactive() {
+    _hideHintTimer?.cancel();
+    _inactiveHintTimer?.cancel();
+    if (mounted && _showSpeakerHint) {
+      setState(() => _showSpeakerHint = false);
+    }
+    if (_done) return;
+    _inactiveHintTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted && !_done) _showHintBriefly();
+    });
+  }
+
+  Future<void> _playCurrentLetter() async {
+    await AppAudioService.instance.playTap();
+    final target = _currentTarget;
+    if (!mounted || target == null) return;
+    _hideHintUntilInactive();
+    await TudloVoiceButton.speak(
+      context,
+      _letterSoundText(target),
+      hiligaynon: true,
+    );
+  }
+
   Future<void> _tapHidden(String letter) async {
     if (_done || _found.contains(letter)) return;
     final spent = await AppData.spendQuestionEnergy();
@@ -5755,21 +6009,26 @@ class _UnitOneHiddenSearchActivityState
       await showLowEnergyDialog(context);
       return;
     }
-    final correct = _targets.contains(letter);
+    final correct = letter == _currentTarget;
     widget.onAttempt(correct);
     if (correct) {
       setState(() {
         _found.add(letter);
         _wrong = null;
         _done = _found.length == _targets.length;
+        _showSpeakerHint = !_done;
       });
       unawaited(AppAudioService.instance.playCorrect());
       if (_done) {
+        _hideHintTimer?.cancel();
+        _inactiveHintTimer?.cancel();
         await TudloVoiceButton.speak(
           context,
           'Ara na tanan nga letra!',
           hiligaynon: true,
         );
+      } else {
+        _showHintBriefly();
       }
     } else {
       setState(() => _wrong = letter);
@@ -5778,6 +6037,7 @@ class _UnitOneHiddenSearchActivityState
       Future<void>.delayed(const Duration(milliseconds: 650), () {
         if (mounted) setState(() => _wrong = null);
       });
+      _showHintBriefly();
     }
   }
 
@@ -5790,34 +6050,119 @@ class _UnitOneHiddenSearchActivityState
           ? 'Koka: Nakita mo sila tanan!'
           : _wrong != null
           ? 'Koka: Indi ina ang ginapangita.'
-          : 'Koka: Pangitaa ang mga letra kag ibutang sa kahon.',
+          : 'Koka: Unahon ta pangitaon ang letra nga mabatian mo.',
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 8),
+          SizedBox(
+            height: 290,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final height = constraints.maxHeight;
+                const letterPlacements = [
+                  Offset(.00, .18),
+                  Offset(.64, .02),
+                  Offset(.83, .34),
+                  Offset(.18, .56),
+                  Offset(.50, .62),
+                  Offset(.03, .44),
+                  Offset(.68, .68),
+                ];
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    for (var index = 0; index < _hiddenLetters.length; index++)
+                      Positioned(
+                        left:
+                            width *
+                            letterPlacements[index % letterPlacements.length]
+                                .dx,
+                        top:
+                            height *
+                            letterPlacements[index % letterPlacements.length]
+                                .dy,
+                        child: _HiddenLetterButton(
+                          letter: _hiddenLetters[index],
+                          found: _found.contains(_hiddenLetters[index]),
+                          wrong: _wrong == _hiddenLetters[index],
+                          onTap: () => _tapHidden(_hiddenLetters[index]),
+                        ),
+                      ),
+                    Positioned(
+                      left: -width * .03,
+                      top: height * .47,
+                      child: const _HiddenSceneCover(
+                        asset: 'assets/images/game_map/tree1.png',
+                        width: 154,
+                      ),
+                    ),
+                    Positioned(
+                      right: -width * .02,
+                      top: height * .16,
+                      child: const _HiddenSceneCover(
+                        asset: 'assets/images/game_map/tree2.png',
+                        width: 160,
+                      ),
+                    ),
+                    Positioned(
+                      left: width * .00,
+                      bottom: height * .06,
+                      child: const _HiddenSceneCover(
+                        asset: 'assets/images/game_map/grass.png',
+                        width: 152,
+                      ),
+                    ),
+                    Positioned(
+                      right: width * .02,
+                      bottom: height * .10,
+                      child: const _HiddenSceneCover(
+                        asset: 'assets/images/game_map/rock.png',
+                        width: 126,
+                      ),
+                    ),
+                    Positioned(
+                      left: width * .53,
+                      top: height * .58,
+                      child: const _HiddenSceneCover(
+                        asset: 'assets/images/game_map/grass.png',
+                        width: 118,
+                      ),
+                    ),
+                    Positioned(
+                      right: width * .16,
+                      top: height * .43,
+                      child: const _HiddenSceneCover(
+                        asset: 'assets/images/game_map/rock.png',
+                        width: 92,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 2),
+          _PresentationSpeakerHint(
+            size: 108,
+            showFinger: _showSpeakerHint && !_done,
+            tapScale: _tapScale,
+            tapOffset: _tapOffset,
+            onTap: _playCurrentLetter,
+          ),
+          const SizedBox(height: 0),
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 10,
+            spacing: 12,
             children: [
               for (final target in _targets)
-                _LetterSlot(label: _found.contains(target) ? target : ''),
-            ],
-          ),
-          const SizedBox(height: 34),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 18,
-            runSpacing: 18,
-            children: [
-              for (final letter in _hiddenLetters)
-                _HiddenLeafButton(
-                  letter: letter,
-                  found: _found.contains(letter),
-                  wrong: _wrong == letter,
-                  onTap: () => _tapHidden(letter),
+                _LetterSlot(
+                  label: _found.contains(target) ? target : '',
+                  large: true,
                 ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           _UnitOneSubmitButton(enabled: _done, onPressed: widget.onDone),
         ],
       ),
@@ -6263,15 +6608,22 @@ class _UnitOneSymbolButton extends StatelessWidget {
 class _LetterSlot extends StatelessWidget {
   final String label;
   final bool isNumber;
+  final bool large;
 
-  const _LetterSlot({required this.label, this.isNumber = false});
+  const _LetterSlot({
+    required this.label,
+    this.isNumber = false,
+    this.large = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final width = large ? 72.0 : (isNumber ? 64.0 : 58.0);
+    final height = large ? 76.0 : 64.0;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
-      width: isNumber ? 64 : 58,
-      height: 64,
+      width: width,
+      height: height,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: label.isEmpty
@@ -6286,20 +6638,12 @@ class _LetterSlot extends StatelessWidget {
         ),
       ),
       child: label.isEmpty
-          ? Text(
-              '.',
-              style: GoogleFonts.nunito(
-                color: TudloColors.green.withValues(alpha: .50),
-                fontSize: 32,
-                height: 1,
-                fontWeight: FontWeight.w900,
-              ),
-            )
+          ? const SizedBox.shrink()
           : Text(
               label,
               style: GoogleFonts.nunito(
                 color: TudloColors.forest,
-                fontSize: isNumber ? 28 : 32,
+                fontSize: large ? 38 : (isNumber ? 28 : 32),
                 height: 1,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -6309,13 +6653,122 @@ class _LetterSlot extends StatelessWidget {
   }
 }
 
-class _HiddenLeafButton extends StatelessWidget {
+class _PlainAnswerLetter extends StatelessWidget {
+  final String label;
+
+  const _PlainAnswerLetter({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 50,
+      height: 62,
+      child: Center(
+        child: Text(
+          label,
+          style: GoogleFonts.nunito(
+            color: Colors.white,
+            fontSize: 46,
+            height: 1,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+            shadows: const [
+              Shadow(
+                color: Color(0xFF459B27),
+                blurRadius: 0,
+                offset: Offset(2, 2),
+              ),
+              Shadow(color: Colors.white, blurRadius: 1),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MissingLetterUnderlineSlot extends StatelessWidget {
+  final String label;
+  final bool active;
+
+  const _MissingLetterUnderlineSlot({
+    required this.label,
+    required this.active,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = label.isNotEmpty;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      width: 60,
+      height: 62,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: TudloColors.blue, width: active ? 7 : 6),
+        ),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: TudloColors.blue.withValues(alpha: .30),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: filled
+          ? Text(
+              label,
+              style: GoogleFonts.nunito(
+                color: Colors.white,
+                fontSize: 46,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+                shadows: const [
+                  Shadow(
+                    color: Color(0xFF459B27),
+                    blurRadius: 0,
+                    offset: Offset(2, 2),
+                  ),
+                  Shadow(color: Colors.white, blurRadius: 1),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+}
+
+class _HiddenSceneCover extends StatelessWidget {
+  final String asset;
+  final double width;
+
+  const _HiddenSceneCover({required this.asset, required this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Image.asset(
+        asset,
+        width: width,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      ),
+    );
+  }
+}
+
+class _HiddenLetterButton extends StatelessWidget {
   final String letter;
   final bool found;
   final bool wrong;
   final VoidCallback onTap;
 
-  const _HiddenLeafButton({
+  const _HiddenLetterButton({
     required this.letter,
     required this.found,
     required this.wrong,
@@ -6329,43 +6782,32 @@ class _HiddenLeafButton extends StatelessWidget {
       wrong: wrong,
       child: GestureDetector(
         onTap: found ? null : onTap,
-        child: AnimatedContainer(
+        child: AnimatedScale(
           duration: const Duration(milliseconds: 180),
-          width: 96,
-          height: 88,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: found
-                ? TudloColors.softGreen
-                : wrong
-                ? TudloColors.coral.withValues(alpha: .18)
-                : const Color(0xFFD7F5A2),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(52),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(18),
-              bottomRight: Radius.circular(52),
-            ),
-            border: Border.all(
-              color: found
-                  ? TudloColors.green
-                  : wrong
-                  ? TudloColors.coral
-                  : TudloColors.green.withValues(alpha: .20),
-              width: 3,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: TudloColors.green.withValues(alpha: .12),
-                blurRadius: 14,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+          scale: found ? .72 : 1,
           child: AnimatedOpacity(
-            opacity: found || wrong ? 1 : .18,
+            opacity: found ? .22 : 1,
             duration: const Duration(milliseconds: 160),
-            child: _IntroLetterArt(letter: letter, size: 72),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  if (wrong)
+                    BoxShadow(
+                      color: TudloColors.coral.withValues(alpha: .36),
+                      blurRadius: 22,
+                      spreadRadius: 4,
+                    )
+                  else
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: .24),
+                      blurRadius: 18,
+                      spreadRadius: 2,
+                    ),
+                ],
+              ),
+              child: _IntroLetterArt(letter: letter, size: 82),
+            ),
           ),
         ),
       ),
@@ -6608,6 +7050,9 @@ class _AlphabetPresentationSlideState extends State<_AlphabetPresentationSlide>
   AnimationController? _tapHintController;
   Animation<double>? _tapScale;
   Animation<Offset>? _tapOffset;
+  Timer? _hideSpeakerHintTimer;
+  Timer? _inactiveSpeakerHintTimer;
+  bool _showSpeakerHint = false;
 
   Animation<double> get _safeTapScale =>
       _tapScale ?? const AlwaysStoppedAnimation<double>(1);
@@ -6632,6 +7077,7 @@ class _AlphabetPresentationSlideState extends State<_AlphabetPresentationSlide>
       begin: Offset.zero,
       end: const Offset(-8, -8),
     ).animate(curve);
+    _configureSpeakerHint();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       Future<void>.delayed(const Duration(milliseconds: 260), () {
@@ -6641,9 +7087,49 @@ class _AlphabetPresentationSlideState extends State<_AlphabetPresentationSlide>
   }
 
   @override
+  void didUpdateWidget(covariant _AlphabetPresentationSlide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.stepNumber != widget.stepNumber ||
+        oldWidget.data.type != widget.data.type) {
+      _configureSpeakerHint();
+    }
+  }
+
+  @override
   void dispose() {
+    _hideSpeakerHintTimer?.cancel();
+    _inactiveSpeakerHintTimer?.cancel();
     _tapHintController?.dispose();
     super.dispose();
+  }
+
+  void _configureSpeakerHint() {
+    _hideSpeakerHintTimer?.cancel();
+    _inactiveSpeakerHintTimer?.cancel();
+    final shouldShow = widget.stepNumber == 1;
+    _showSpeakerHint = shouldShow;
+    if (shouldShow) {
+      _hideSpeakerHintTimer = Timer(const Duration(seconds: 4), () {
+        if (mounted) setState(() => _showSpeakerHint = false);
+      });
+    }
+  }
+
+  void _hideSpeakerHintUntilInactive() {
+    _hideSpeakerHintTimer?.cancel();
+    _inactiveSpeakerHintTimer?.cancel();
+    if (mounted && _showSpeakerHint) {
+      setState(() => _showSpeakerHint = false);
+    }
+    if (widget.stepNumber != 1) return;
+    _inactiveSpeakerHintTimer = Timer(const Duration(seconds: 7), () {
+      if (!mounted) return;
+      setState(() => _showSpeakerHint = true);
+      _hideSpeakerHintTimer?.cancel();
+      _hideSpeakerHintTimer = Timer(const Duration(seconds: 4), () {
+        if (mounted) setState(() => _showSpeakerHint = false);
+      });
+    });
   }
 
   Future<void> _speak() async {
@@ -6656,6 +7142,7 @@ class _AlphabetPresentationSlideState extends State<_AlphabetPresentationSlide>
   }
 
   Future<void> _speakSoundOnly() async {
+    _hideSpeakerHintUntilInactive();
     await TudloVoiceButton.speak(
       context,
       widget.data.soundText,
@@ -6754,7 +7241,7 @@ class _AlphabetPresentationSlideState extends State<_AlphabetPresentationSlide>
                   bottom: height * .235,
                   child: _AlphabetPresentationBoard(
                     data: data,
-                    showSpeakerHint: widget.stepNumber == 1,
+                    showSpeakerHint: _showSpeakerHint,
                     tapScale: _safeTapScale,
                     tapOffset: _safeTapOffset,
                     onReplay: _speakSoundOnly,
@@ -7530,6 +8017,10 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
         final safeTop = MediaQuery.paddingOf(context).top;
+        final topButtonSize = math
+            .min(width * .14, height * .075)
+            .clamp(48.0, 66.0)
+            .toDouble();
         return SizedBox(
           width: width,
           height: height,
@@ -7541,6 +8032,16 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
                 filterQuality: FilterQuality.high,
+              ),
+              Positioned(
+                left: width * .06,
+                top: safeTop + height * .025,
+                child: _PresentationImageButton(
+                  asset: '${_QuizTimeSplash._assetBase}/exit-page.png',
+                  size: topButtonSize,
+                  onTap: () => Navigator.maybePop(context),
+                  tooltip: 'Balik',
+                ),
               ),
               Positioned(
                 left: width * .28,
@@ -7557,9 +8058,42 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
                 ),
               ),
               Positioned(
+                right: width * .055,
+                top: safeTop + height * .026,
+                child: Transform.scale(
+                  scale: .78,
+                  alignment: Alignment.topRight,
+                  child: const EnergyIndicator(),
+                ),
+              ),
+              Positioned(
+                left: width * .10,
+                right: width * .10,
+                top: safeTop + height * .13,
+                child: Text(
+                  'Oras na sang Pagtilaw!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: Colors.white,
+                    fontSize: (width * .082).clamp(30.0, 46.0),
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                    shadows: const [
+                      Shadow(
+                        color: Color(0xFF459B27),
+                        blurRadius: 0,
+                        offset: Offset(2, 2),
+                      ),
+                      Shadow(color: Colors.white, blurRadius: 1),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
                 left: 0,
                 right: 0,
-                top: height * .30,
+                top: height * .34,
                 child: Center(
                   child: TudloMascot(
                     size: (width * .62).clamp(230.0, 330.0),

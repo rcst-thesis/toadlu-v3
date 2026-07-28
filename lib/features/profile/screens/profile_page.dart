@@ -54,20 +54,6 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _ProfileActionBar(
-                    onSwitch: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileSelectionScreen(),
-                        ),
-                        (route) => false,
-                      );
-                    },
-                    onRename: () => _showRenameDialog(context),
-                    onClear: () => _confirmClearProfile(context),
-                  ),
-                  const SizedBox(height: 10),
                   _MainProfileCard(
                     username: username,
                     gradeLabel: appState.gradeLabel,
@@ -164,38 +150,63 @@ class _ProfilePageState extends State<ProfilePage> {
               borderRadius: BorderRadius.circular(28),
               border: Border.all(color: TudloColors.forest, width: 3),
             ),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 14,
-              runSpacing: 14,
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                for (final avatar in _profileAvatars)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(24),
-                    onTap: () async {
-                      await appState.setProfileAvatar(avatar);
-                      if (dialogContext.mounted) Navigator.pop(dialogContext);
-                    },
-                    child: Container(
-                      width: 96,
-                      height: 96,
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: TudloColors.softGreen,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: appState.activeProfile?.avatarAsset == avatar
-                              ? Color.fromARGB(255, 37, 125, 24)
-                              : Colors.transparent,
-                          width: 4,
+                Padding(
+                  padding: const EdgeInsets.only(top: 22),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 14,
+                    runSpacing: 14,
+                    children: [
+                      for (final avatar in _profileAvatars)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(24),
+                          onTap: () async {
+                            await appState.setProfileAvatar(avatar);
+                            if (dialogContext.mounted) {
+                              Navigator.pop(dialogContext);
+                            }
+                          },
+                          child: Container(
+                            width: 96,
+                            height: 96,
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: TudloColors.softGreen,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color:
+                                    appState.activeProfile?.avatarAsset ==
+                                        avatar
+                                    ? Color.fromARGB(255, 37, 125, 24)
+                                    : Colors.transparent,
+                                width: 4,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(18),
+                              child: Image.asset(avatar, fit: BoxFit.cover),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Image.asset(avatar, fit: BoxFit.cover),
-                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: -6,
+                  right: -6,
+                  child: IconButton(
+                    tooltip: _profileText(context, hil: 'Sirad-i', en: 'Close'),
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: TudloColors.forest,
+                      size: 32,
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -207,6 +218,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _showRenameDialog(BuildContext context) async {
     final appState = AppStateScope.of(context);
     final isHiligaynon = appState.isHiligaynon;
+    final messenger = ScaffoldMessenger.of(context);
     final updatedName = await showDialog<String>(
       context: context,
       builder: (_) {
@@ -223,6 +235,15 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
     if (!mounted || updatedName == null || updatedName.trim().isEmpty) return;
+    if (appState.isUsernameTaken(
+      updatedName,
+      exceptProfileId: appState.activeProfileId,
+    )) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Username is taken')),
+      );
+      return;
+    }
     appState.setUsername(updatedName);
   }
 }
@@ -614,87 +635,6 @@ class _AudioSwitchTile extends StatelessWidget {
   }
 }
 
-class _ProfileActionBar extends StatelessWidget {
-  final VoidCallback onSwitch;
-  final VoidCallback onRename;
-  final VoidCallback onClear;
-
-  const _ProfileActionBar({
-    required this.onSwitch,
-    required this.onRename,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _ProfileTopIconButton(
-          icon: Icons.menu_rounded,
-          tooltip: _profileText(
-            context,
-            hil: 'Islan ang profile',
-            en: 'Switch profile',
-          ),
-          onTap: onSwitch,
-        ),
-        const Spacer(),
-        _ProfileTopIconButton(
-          icon: Icons.cleaning_services_rounded,
-          tooltip: _profileText(
-            context,
-            hil: 'Papasa ang datos',
-            en: 'Clear data',
-          ),
-          onTap: onClear,
-        ),
-        const SizedBox(width: 12),
-        _ProfileTopIconButton(
-          icon: Icons.edit_rounded,
-          tooltip: _profileText(
-            context,
-            hil: 'Islan ang ngalan',
-            en: 'Rename profile',
-          ),
-          onTap: onRename,
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfileTopIconButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  const _ProfileTopIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.white.withValues(alpha: .92),
-        shape: const CircleBorder(),
-        elevation: 0,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox.square(
-            dimension: 48,
-            child: Icon(icon, color: TudloColors.forest, size: 28),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MainProfileCard extends StatelessWidget {
   final String username;
   final String gradeLabel;
@@ -773,10 +713,10 @@ class _MainProfileCard extends StatelessWidget {
                 child: IconButton.filled(
                   tooltip: _profileText(
                     context,
-                    hil: 'Islan ang profile',
-                    en: 'Edit profile',
+                    hil: 'Islan ang litrato',
+                    en: 'Change avatar',
                   ),
-                  onPressed: onRename,
+                  onPressed: onAvatarTap,
                   style: IconButton.styleFrom(
                     backgroundColor: TudloColors.gold,
                     foregroundColor: TudloColors.forest,
@@ -790,17 +730,45 @@ class _MainProfileCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        Text(
-          username,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.nunito(
-            color: Colors.white,
-            fontSize: 34,
-            height: 1,
-            fontWeight: FontWeight.w900,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                username,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.nunito(
+                  color: Colors.white,
+                  fontSize: 34,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: _profileText(
+                context,
+                hil: 'Islan ang ngalan',
+                en: 'Rename profile',
+              ),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onRename,
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.edit_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -834,8 +802,8 @@ class _ProfileProgressRail extends StatelessWidget {
           child: LinearProgressIndicator(
             value: AppData.overallProgress,
             minHeight: 18,
-            color: TudloColors.green,
-            backgroundColor: Colors.white.withValues(alpha: .55),
+            color: TudloColors.blue,
+            backgroundColor: Colors.white,
           ),
         ),
         const SizedBox(height: 8),
@@ -865,34 +833,25 @@ class _AboutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final streak = StreakHelper.current().days;
-    final scores = AppData.lessonScores.values.toList();
-    final accuracy = scores.isEmpty
-        ? 0
-        : (scores.fold<int>(0, (sum, score) => sum + score.bestAccuracy) /
-                  scores.length)
-              .round();
     return Row(
       children: [
+        const Spacer(),
         Expanded(
+          flex: 3,
           child: _ProfileStatCircle(
             value: '${AppData.completedLevels.length}',
             label: _profileText(context, hil: 'Leksiyon', en: 'Lessons'),
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 28),
         Expanded(
-          child: _ProfileStatCircle(
-            value: '$accuracy%',
-            label: _profileText(context, hil: 'Kahustoan', en: 'Accuracy'),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
+          flex: 3,
           child: _ProfileStatCircle(
             value: '$streak',
             label: _profileText(context, hil: 'Streak', en: 'Streak'),
           ),
         ),
+        const Spacer(),
       ],
     );
   }
@@ -969,20 +928,6 @@ class _WeeklyStreakCard extends StatelessWidget {
       decoration: _softCardDecoration(radius: 24),
       child: Row(
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: const BoxDecoration(
-              color: TudloColors.gold,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_rounded,
-              color: Colors.white,
-              size: 38,
-            ),
-          ),
-          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1066,16 +1011,6 @@ class _FavoritesCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: TudloColors.forest, width: 6),
-            ),
-          ),
-          const SizedBox(height: 12),
           Text(
             _profileText(context, hil: 'Koleksyon', en: 'Collection'),
             textAlign: TextAlign.center,

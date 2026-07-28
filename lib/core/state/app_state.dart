@@ -29,6 +29,19 @@ class AppState extends ChangeNotifier {
   bool get isHiligaynon => appLanguage == 'Hiligaynon';
   bool get canCreateProfile => true;
 
+  String _normalizedName(String value) =>
+      value.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+  bool isUsernameTaken(String value, {String? exceptProfileId}) {
+    final normalized = _normalizedName(value);
+    if (normalized.isEmpty) return false;
+    return profiles.any(
+      (profile) =>
+          profile.id != exceptProfileId &&
+          _normalizedName(profile.name) == normalized,
+    );
+  }
+
   LearnerProfile? get activeProfile {
     for (final profile in profiles) {
       if (profile.id == activeProfileId) return profile;
@@ -48,6 +61,9 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> addProfile({required String name, required String grade}) async {
+    if (isUsernameTaken(name)) {
+      throw StateError('Username is taken');
+    }
     final profile = LearnerProfile.newProfile(name: name, gradeLevel: grade);
     profiles.add(profile);
     _applyProfile(profile);

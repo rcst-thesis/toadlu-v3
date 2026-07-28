@@ -43,6 +43,13 @@ class _GradeLevelScreenState extends State<GradeLevelScreen> {
     final name = widget.learnerName?.trim();
     await AppAudioService.instance.playTap();
     if (name != null && name.isNotEmpty) {
+      if (appState.isUsernameTaken(name)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Username is taken')));
+        return;
+      }
       await appState.addProfile(name: name, grade: selectedGrade.label);
     } else {
       appState.setGradeLevel(selectedGrade.label);

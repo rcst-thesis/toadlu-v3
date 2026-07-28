@@ -34,7 +34,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'Welcome to Tudlo! Here, you can learn Hiligaynon through lessons, stories, examples, and fun activities. Let us start learning!',
       color: TudloColors.green,
       accent: TudloColors.gold,
-      illustration: _OnboardingIllustration.lesson,
     ),
     _TudloOnboardingPageData(
       hiligaynonTitle: 'Tinaga',
@@ -49,7 +48,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'You can search for words in Hiligaynon and English. Listen to their correct pronunciation and discover new words every day.',
       color: TudloColors.blue,
       accent: TudloColors.softGreen,
-      illustration: _OnboardingIllustration.dictionary,
     ),
     _TudloOnboardingPageData(
       hiligaynonTitle: 'Hubad',
@@ -64,7 +62,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'You can translate words and simple sentences from Hiligaynon to English, and from English to Hiligaynon anytime.',
       color: TudloColors.coral,
       accent: TudloColors.sky,
-      illustration: _OnboardingIllustration.translate,
     ),
   ];
 
@@ -250,20 +247,25 @@ class _TudloOnboardingPage extends StatelessWidget {
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeOut,
       margin: const EdgeInsets.symmetric(horizontal: 2),
-      padding: EdgeInsets.fromLTRB(22, compact ? 18 : 26, 22, 22),
+      padding: EdgeInsets.fromLTRB(24, compact ? 22 : 30, 24, 28),
       decoration: BoxDecoration(
-        color: data.accent.withValues(alpha: .24),
-        borderRadius: BorderRadius.circular(34),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.green.withValues(alpha: .10),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Expanded(
             child: Center(
-              child: _OnboardingIllustrationArt(
-                type: data.illustration,
-                color: data.color,
-                accent: data.accent,
-                compact: compact,
+              child: TudloMascot(
+                size: compact ? 210 : 270,
+                mood: KokaMood.idle,
               ),
             ),
           ),
@@ -272,219 +274,27 @@ class _TudloOnboardingPage extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.nunito(
               color: TudloColors.ink,
-              fontSize: compact ? 31 : 36,
-              height: 1,
+              fontSize: compact ? 36 : 42,
+              height: 1.02,
               fontWeight: FontWeight.w900,
+              letterSpacing: 0,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           Text(
             data.descriptionText(hiligaynon),
             textAlign: TextAlign.center,
-            maxLines: compact ? 4 : 5,
+            maxLines: compact ? 5 : 6,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.nunito(
               color: TudloColors.muted,
-              fontSize: compact ? 17 : 19,
-              height: 1.24,
+              fontSize: compact ? 20 : 23,
+              height: 1.20,
               fontWeight: FontWeight.w800,
+              letterSpacing: 0,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _OnboardingIllustrationArt extends StatelessWidget {
-  final _OnboardingIllustration type;
-  final Color color;
-  final Color accent;
-  final bool compact;
-
-  const _OnboardingIllustrationArt({
-    required this.type,
-    required this.color,
-    required this.accent,
-    required this.compact,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final size = compact ? 230.0 : 282.0;
-    return SizedBox.square(
-      dimension: size,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: size * .88,
-            height: size * .88,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: .78),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: .18),
-                  blurRadius: 28,
-                  offset: const Offset(0, 14),
-                ),
-              ],
-            ),
-          ),
-          if (type == _OnboardingIllustration.lesson) ...[
-            Positioned(
-              top: size * .06,
-              child: TudloMascot(size: size * .48),
-            ),
-            Positioned(
-              bottom: size * .14,
-              left: size * .13,
-              child: _FeatureBubble(
-                icon: Icons.menu_book_rounded,
-                color: color,
-                size: size * .28,
-              ),
-            ),
-            Positioned(
-              bottom: size * .08,
-              right: size * .14,
-              child: _FeatureBubble(
-                icon: Icons.extension_rounded,
-                color: accent,
-                size: size * .26,
-              ),
-            ),
-          ] else if (type == _OnboardingIllustration.dictionary) ...[
-            Positioned(
-              top: size * .12,
-              child: Image.asset(
-                'assets/images/level_game/book.png',
-                width: size * .48,
-                height: size * .48,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Icon(
-                  Icons.menu_book_rounded,
-                  color: color,
-                  size: size * .38,
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: size * .16,
-              left: size * .14,
-              child: _FeatureBubble(
-                icon: Icons.search_rounded,
-                color: color,
-                size: size * .27,
-              ),
-            ),
-            Positioned(
-              bottom: size * .10,
-              right: size * .15,
-              child: _FeatureBubble(
-                icon: Icons.abc_rounded,
-                color: TudloColors.green,
-                size: size * .26,
-              ),
-            ),
-          ] else ...[
-            Positioned(
-              top: size * .12,
-              left: size * .20,
-              child: _LanguageCard(
-                label: 'HIL',
-                color: color,
-                size: size * .34,
-              ),
-            ),
-            Positioned(
-              top: size * .30,
-              right: size * .18,
-              child: _LanguageCard(
-                label: 'EN',
-                color: TudloColors.blue,
-                size: size * .34,
-              ),
-            ),
-            Positioned(
-              bottom: size * .14,
-              child: _FeatureBubble(
-                icon: Icons.swap_horiz_rounded,
-                color: accent,
-                size: size * .34,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _FeatureBubble extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final double size;
-
-  const _FeatureBubble({
-    required this.icon,
-    required this.color,
-    required this.size,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: .30),
-            blurRadius: 18,
-            offset: const Offset(0, 9),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: Colors.white, size: size * .52),
-    );
-  }
-}
-
-class _LanguageCard extends StatelessWidget {
-  final String label;
-  final Color color;
-  final double size;
-
-  const _LanguageCard({
-    required this.label,
-    required this.color,
-    required this.size,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size * 1.25,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: color, width: 4),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: GoogleFonts.nunito(
-            color: color,
-            fontSize: size * .32,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
       ),
     );
   }
@@ -520,8 +330,6 @@ class _OnboardingDots extends StatelessWidget {
   }
 }
 
-enum _OnboardingIllustration { lesson, dictionary, translate }
-
 class _TudloOnboardingPageData {
   final String hiligaynonTitle;
   final String englishTitle;
@@ -531,7 +339,6 @@ class _TudloOnboardingPageData {
   final String englishVoice;
   final Color color;
   final Color accent;
-  final _OnboardingIllustration illustration;
 
   const _TudloOnboardingPageData({
     required this.hiligaynonTitle,
@@ -542,7 +349,6 @@ class _TudloOnboardingPageData {
     required this.englishVoice,
     required this.color,
     required this.accent,
-    required this.illustration,
   });
 
   String titleText(bool hiligaynon) =>
