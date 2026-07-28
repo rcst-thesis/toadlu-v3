@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,17 +10,17 @@ import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
+import 'package:tudloapp/features/translation/services/nmt_translation_service.dart';
 
 class _TranslateStyle {
   static const softBg = TudloColors.paper;
 }
 
-/// Simple local translation screen.
-///
-/// It uses the word-based DictionaryData source, plus a few simple phrase
-/// mappings. It does not depend on lesson question data.
+/// Local dictionary translation with an offline English-to-Hiligaynon model.
 class TranslationPage extends StatefulWidget {
-  const TranslationPage({super.key});
+  final Future<String> Function(String)? translateEnglish;
+
+  const TranslationPage({super.key, this.translateEnglish});
 
   @override
   State<TranslationPage> createState() => _TranslationPageState();
@@ -32,69 +34,70 @@ class _TranslationPageState extends State<TranslationPage> {
   String toLanguage = 'English';
   bool showHelpOverlay = !AppData.translateHelpDone;
   bool _isUpdating = false;
+  bool _isTranslating = false;
+  bool _nmtRunning = false;
+  bool _disposed = false;
+  int _requestId = 0;
+  Timer? _translationDebounce;
+  String? _translationError;
+  ({String text, int requestId, String fallback})? _pendingRequest;
+  NmtTranslationService? _nmtService;
+  late final Future<String> Function(String) _translateEnglish;
 
   @override
   void initState() {
     super.initState();
+    _nmtService = widget.translateEnglish == null
+        ? NmtTranslationService()
+        : null;
+    _translateEnglish = widget.translateEnglish ?? _nmtService!.translate;
     topController.addListener(_onInputChanged);
   }
 
   void _onInputChanged() {
-    // The input listener updates the translation field immediately as the user
-    // types. `_isUpdating` prevents controller changes from causing loops.
     if (_isUpdating) return;
 
     final input = topController.text;
-    final result = _translate(input);
+    final requestId = ++_requestId;
+    _translationDebounce?.cancel();
+    _pendingRequest = null;
+    final translation = _dictionaryTranslation(input);
+
     _isUpdating = true;
-    bottomController.text = result.translation;
+    bottomController.text = translation;
     _isUpdating = false;
 
-    if (input.trim().isNotEmpty && !AppData.translateHelpDone) {
-      setState(() {
+    setState(() {
+      _isTranslating = false;
+      _translationError = null;
+      if (input.trim().isNotEmpty && !AppData.translateHelpDone) {
         showHelpOverlay = false;
         AppData.translateHelpDone = true;
+      }
+    });
+
+    if (fromLanguage == 'English' &&
+        input.trim().isNotEmpty &&
+        translation == 'Translation not found yet.') {
+      _translationDebounce = Timer(const Duration(milliseconds: 450), () {
+        if (!_isCurrent(input, requestId)) return;
+        _pendingRequest = (
+          text: input,
+          requestId: requestId,
+          fallback: translation,
+        );
+        unawaited(_drainNmtRequests());
       });
-    } else {
-      setState(() {});
     }
   }
 
-  _TranslationResult _translate(String value) {
-    // Detect direction by scoring both dictionaries, then use the dictionary
-    // with the stronger match.
+  String _dictionaryTranslation(String value) {
     final clean = DictionaryData.normalizeForSearch(value);
-    if (clean.isEmpty) {
-      return const _TranslationResult('', 'Hiligaynon', 'English');
-    }
-
-    final hilScore = _score(clean, DictionaryData.hiligaynonToEnglish);
-    final engScore = _score(clean, DictionaryData.englishToHiligaynon);
-    final fromHil = hilScore >= engScore;
-    final dictionary = fromHil
+    if (clean.isEmpty) return '';
+    final dictionary = fromLanguage == 'Hiligaynon'
         ? DictionaryData.hiligaynonToEnglish
         : DictionaryData.englishToHiligaynon;
-    final translation = _lookup(clean, dictionary);
-
-    fromLanguage = fromHil ? 'Hiligaynon' : 'English';
-    toLanguage = fromHil ? 'English' : 'Hiligaynon';
-
-    return _TranslationResult(translation, fromLanguage, toLanguage);
-  }
-
-  int _score(String value, Map<String, String> dictionary) {
-    // Exact phrase matches score higher than individual word matches.
-    final normalized = DictionaryData.normalizeForSearch(value);
-    var score =
-        dictionary.containsKey(normalized) ||
-            DictionaryData.phraseTranslations.containsKey(normalized)
-        ? 5
-        : 0;
-    final words = _words(value);
-    for (final word in words) {
-      if (dictionary.containsKey(word)) score++;
-    }
-    return score;
+    return _lookup(clean, dictionary);
   }
 
   String _lookup(String value, Map<String, String> dictionary) {
@@ -104,6 +107,9 @@ class _TranslationPageState extends State<TranslationPage> {
     final exact =
         DictionaryData.phraseTranslations[normalized] ?? dictionary[normalized];
     if (exact != null) return _matchCase(exact, value);
+    if (value.contains(RegExp(r'\s'))) {
+      return _lookupPhraseWords(value, dictionary);
+    }
 
     final translatedWords = value.split(RegExp(r'(\s+)')).map((part) {
       if (part.trim().isEmpty) return part;
@@ -122,11 +128,65 @@ class _TranslationPageState extends State<TranslationPage> {
         : translatedWords;
   }
 
-  List<String> _words(String value) {
-    return DictionaryData.normalizeForSearch(value)
-        .split(RegExp(r'[^a-zA-Z\-]+'))
-        .where((word) => word.trim().isNotEmpty)
-        .toList();
+  String _lookupPhraseWords(String value, Map<String, String> dictionary) {
+    final translated = value.splitMapJoin(
+      RegExp(r'\S+'),
+      onMatch: (match) {
+        final part = match.group(0)!;
+        final core = part
+            .replaceAll(RegExp(r'^[^\w]+|[^\w]+$'), '')
+            .toLowerCase();
+        final replacement = dictionary[DictionaryData.normalizeForSearch(core)];
+        if (replacement == null) return part;
+        final prefix = RegExp(r'^[^\w]+').firstMatch(part)?.group(0) ?? '';
+        final suffix = RegExp(r'[^\w]+$').firstMatch(part)?.group(0) ?? '';
+        return '$prefix$replacement$suffix';
+      },
+    );
+    return translated == value ? 'Translation not found yet.' : translated;
+  }
+
+  Future<void> _drainNmtRequests() async {
+    if (_nmtRunning) return;
+    _nmtRunning = true;
+    try {
+      while (_pendingRequest != null) {
+        final request = _pendingRequest!;
+        _pendingRequest = null;
+        if (!_isCurrent(request.text, request.requestId)) continue;
+        setState(() => _isTranslating = true);
+        try {
+          final translation = (await _translateEnglish(request.text)).trim();
+          if (!_isCurrent(request.text, request.requestId)) continue;
+          setState(() {
+            bottomController.text = translation.isEmpty
+                ? request.fallback
+                : translation;
+            _translationError = null;
+          });
+        } catch (_) {
+          if (!_isCurrent(request.text, request.requestId)) continue;
+          setState(() {
+            bottomController.text = request.fallback;
+            _translationError = 'Offline translation unavailable. Try again.';
+          });
+        } finally {
+          if (_isCurrent(request.text, request.requestId)) {
+            setState(() => _isTranslating = false);
+          }
+        }
+      }
+    } finally {
+      _nmtRunning = false;
+    }
+  }
+
+  bool _isCurrent(String text, int requestId) {
+    return !_disposed &&
+        mounted &&
+        requestId == _requestId &&
+        topController.text == text &&
+        fromLanguage == 'English';
   }
 
   String _matchCase(String translation, String source) {
@@ -137,12 +197,15 @@ class _TranslationPageState extends State<TranslationPage> {
   }
 
   void swapLanguages() {
-    // Swap both the language labels and the text fields so users can reverse a
-    // translation quickly.
+    _translationDebounce?.cancel();
+    _pendingRequest = null;
+    _requestId++;
     setState(() {
       final tempLang = fromLanguage;
       fromLanguage = toLanguage;
       toLanguage = tempLang;
+      _isTranslating = false;
+      _translationError = null;
 
       final tempText = topController.text;
       _isUpdating = true;
@@ -154,6 +217,13 @@ class _TranslationPageState extends State<TranslationPage> {
 
   @override
   void dispose() {
+    _disposed = true;
+    _requestId++;
+    _translationDebounce?.cancel();
+    _pendingRequest = null;
+    topController.removeListener(_onInputChanged);
+    final service = _nmtService;
+    if (service != null) unawaited(service.close());
     topController.dispose();
     bottomController.dispose();
     super.dispose();
@@ -229,6 +299,23 @@ class _TranslationPageState extends State<TranslationPage> {
                               setState(() => bottomController.clear());
                             },
                           ),
+                          if (_isTranslating)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 12),
+                              child: LinearProgressIndicator(),
+                            ),
+                          if (_translationError != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                _translationError!,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.nunito(
+                                  color: TudloColors.coral,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -385,18 +472,6 @@ class _TranslateBackgroundPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _TranslationResult {
-  final String translation;
-  final String fromLanguage;
-  final String toLanguage;
-
-  const _TranslationResult(
-    this.translation,
-    this.fromLanguage,
-    this.toLanguage,
-  );
 }
 
 class _TranslationLanguageCard extends StatelessWidget {
