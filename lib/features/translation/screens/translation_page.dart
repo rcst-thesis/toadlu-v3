@@ -10,6 +10,7 @@ import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
+import 'package:tudloapp/features/translation/services/child_safety_filter.dart';
 import 'package:tudloapp/features/translation/services/nmt_translation_service.dart';
 
 class _TranslateStyle {
@@ -37,6 +38,8 @@ class _TranslationPageState extends State<TranslationPage> {
   bool _isTranslating = false;
   bool _nmtRunning = false;
   bool _disposed = false;
+  bool _safetyReady = false;
+  bool _inputBlocked = false;
   int _requestId = 0;
   Timer? _translationDebounce;
   String? _translationError;
@@ -52,22 +55,46 @@ class _TranslationPageState extends State<TranslationPage> {
         : null;
     _translateEnglish = widget.translateEnglish ?? _nmtService!.translate;
     topController.addListener(_onInputChanged);
+    _safetyReady = ChildSafetyFilter.isReady;
+    if (!_safetyReady) {
+      ChildSafetyFilter.initialize().then(
+        (_) {
+          if (mounted) setState(() => _safetyReady = true);
+        },
+        onError: (_) {
+          if (mounted) {
+            setState(() {
+              _translationError =
+                  'Child-safe translation is unavailable. Try again.';
+            });
+          }
+        },
+      );
+    }
   }
 
   void _onInputChanged() {
-    if (_isUpdating) return;
+    if (_isUpdating || !_safetyReady) return;
 
     final input = topController.text;
     final requestId = ++_requestId;
     _translationDebounce?.cancel();
     _pendingRequest = null;
-    final translation = _dictionaryTranslation(input);
+    final inputBlocked = ChildSafetyFilter.isUnsafe(input);
+    final dictionaryResult = inputBlocked ? '' : _dictionaryTranslation(input);
+    final outputBlocked =
+        dictionaryResult.isNotEmpty &&
+        ChildSafetyFilter.isUnsafe(dictionaryResult);
+    final translation = inputBlocked || outputBlocked
+        ? ChildSafetyFilter.blockedMessage
+        : dictionaryResult;
 
     _isUpdating = true;
     bottomController.text = translation;
     _isUpdating = false;
 
     setState(() {
+      _inputBlocked = inputBlocked;
       _isTranslating = false;
       _translationError = null;
       if (input.trim().isNotEmpty && !AppData.translateHelpDone) {
@@ -76,7 +103,9 @@ class _TranslationPageState extends State<TranslationPage> {
       }
     });
 
-    if (fromLanguage == 'English' &&
+    if (!inputBlocked &&
+        !outputBlocked &&
+        fromLanguage == 'English' &&
         input.trim().isNotEmpty &&
         translation == 'Translation not found yet.') {
       _translationDebounce = Timer(const Duration(milliseconds: 450), () {
@@ -158,10 +187,11 @@ class _TranslationPageState extends State<TranslationPage> {
         try {
           final translation = (await _translateEnglish(request.text)).trim();
           if (!_isCurrent(request.text, request.requestId)) continue;
+          final output = translation.isEmpty ? request.fallback : translation;
           setState(() {
-            bottomController.text = translation.isEmpty
-                ? request.fallback
-                : translation;
+            bottomController.text = ChildSafetyFilter.isUnsafe(output)
+                ? ChildSafetyFilter.blockedMessage
+                : output;
             _translationError = null;
           });
         } catch (_) {
@@ -197,6 +227,7 @@ class _TranslationPageState extends State<TranslationPage> {
   }
 
   void swapLanguages() {
+    if (!_safetyReady || _inputBlocked) return;
     _translationDebounce?.cancel();
     _pendingRequest = null;
     _requestId++;
@@ -205,6 +236,7 @@ class _TranslationPageState extends State<TranslationPage> {
       fromLanguage = toLanguage;
       toLanguage = tempLang;
       _isTranslating = false;
+      _inputBlocked = false;
       _translationError = null;
 
       final tempText = topController.text;
@@ -281,6 +313,8 @@ class _TranslationPageState extends State<TranslationPage> {
                                 ? 'Type Hiligaynon'
                                 : 'Type English',
                             readOnly: false,
+                            inputEnabled: _safetyReady,
+                            safeActions: !_inputBlocked,
                             onClear: topController.clear,
                           ),
                           SizedBox(height: availableWidth >= 700 ? 18 : 14),
@@ -295,11 +329,13 @@ class _TranslationPageState extends State<TranslationPage> {
                                 ? 'Hiligaynon translation'
                                 : 'English translation',
                             readOnly: true,
+                            inputEnabled: true,
+                            safeActions: true,
                             onClear: () {
                               setState(() => bottomController.clear());
                             },
                           ),
-                          if (_isTranslating)
+                          if (!_safetyReady || _isTranslating)
                             const Padding(
                               padding: EdgeInsets.only(top: 12),
                               child: LinearProgressIndicator(),
@@ -479,6 +515,8 @@ class _TranslationLanguageCard extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final bool readOnly;
+  final bool inputEnabled;
+  final bool safeActions;
   final VoidCallback onClear;
 
   const _TranslationLanguageCard({
@@ -486,6 +524,8 @@ class _TranslationLanguageCard extends StatelessWidget {
     required this.controller,
     required this.hint,
     required this.readOnly,
+    required this.inputEnabled,
+    required this.safeActions,
     required this.onClear,
   });
 
@@ -565,11 +605,11 @@ class _TranslationLanguageCard extends StatelessWidget {
                   IconButton(
                     tooltip: 'Listen',
                     iconSize: 30 * scale,
-                    onPressed: text.isEmpty
+                    onPressed: text.isEmpty || !safeActions
                         ? null
                         : () => TudloVoiceButton.speak(context, text),
                     icon: Opacity(
-                      opacity: text.isEmpty ? .35 : 1,
+                      opacity: text.isEmpty || !safeActions ? .35 : 1,
                       child: TudloSpeakerIcon(size: 24 * scale),
                     ),
                   ),
@@ -599,6 +639,7 @@ class _TranslationLanguageCard extends StatelessWidget {
                     )
                   : TextField(
                       controller: controller,
+                      enabled: inputEnabled,
                       maxLines: null,
                       minLines: 1,
                       style: GoogleFonts.nunito(
@@ -632,7 +673,7 @@ class _TranslationLanguageCard extends StatelessWidget {
                       tooltip: 'Copy text',
                       icon: Icons.copy_rounded,
                       color: TudloColors.forest,
-                      enabled: text.isNotEmpty,
+                      enabled: text.isNotEmpty && safeActions,
                       scale: scale,
                       onTap: () => _copyText(context, controller.text),
                     ),

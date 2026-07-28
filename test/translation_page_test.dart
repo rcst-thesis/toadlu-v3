@@ -5,11 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/features/translation/screens/translation_page.dart';
+import 'package:tudloapp/features/translation/services/child_safety_filter.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(DictionaryData.initialize);
+  setUpAll(() async {
+    await DictionaryData.initialize();
+    await ChildSafetyFilter.initialize();
+  });
 
   setUp(() {
     AppData.translateHelpDone = true;
@@ -27,6 +31,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
 
     await tester.enterText(find.byType(TextField), 'maayong aga');
     await tester.pump();
@@ -50,6 +55,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
 
     await tester.tap(find.byIcon(Icons.swap_vert_rounded));
     await tester.pump();
@@ -79,5 +85,63 @@ void main() {
     await tester.pump();
     expect(find.text('bag-o nga sabat'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+
+  testWidgets('blocks unsafe input and model output', (tester) async {
+    var nmtCalls = 0;
+    var modelOutput = 'safe';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TranslationPage(
+          translateEnglish: (text) async {
+            nmtCalls++;
+            return modelOutput;
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.swap_vert_rounded));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'f@ck!');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text(ChildSafetyFilter.blockedMessage), findsOneWidget);
+    expect(nmtCalls, 0);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.ancestor(
+              of: find.byTooltip('Listen').first,
+              matching: find.byType(IconButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.byIcon(Icons.swap_vert_rounded));
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).decoration?.hintText,
+      'Type English',
+    );
+
+    await tester.enterText(find.byType(TextField), 'qzxv blorf');
+    await tester.pump(const Duration(milliseconds: 451));
+    await tester.pump();
+    expect(nmtCalls, 1);
+
+    modelOutput = 'yawa';
+    await tester.enterText(find.byType(TextField), 'wugga zibble');
+    await tester.pump(const Duration(milliseconds: 451));
+    await tester.pump();
+    expect(find.text(ChildSafetyFilter.blockedMessage), findsOneWidget);
+    expect(find.text('yawa'), findsNothing);
+  });
+
+  test('matches unsafe whole words without blocking safe substrings', () {
+    expect(ChildSafetyFilter.isUnsafe('YAWA!'), isTrue);
+    expect(ChildSafetyFilter.isUnsafe('f@ck!'), isTrue);
+    expect(ChildSafetyFilter.isUnsafe('classroom grass'), isFalse);
   });
 }
