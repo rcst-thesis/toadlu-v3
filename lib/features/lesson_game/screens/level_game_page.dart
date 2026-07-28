@@ -170,6 +170,8 @@ Future<bool> _showLessonExitConfirmation(BuildContext context) async {
 Future<void> _exitLessonFromContext(BuildContext context) async {
   final shouldExit = await _showLessonExitConfirmation(context);
   if (!context.mounted || !shouldExit) return;
+  await TudloVoiceButton.stop();
+  if (!context.mounted) return;
   Navigator.pop(context);
 }
 
@@ -219,6 +221,12 @@ class _LevelGamePageState extends State<LevelGamePage> {
       return content;
     }();
     _levelStartedAt = DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
   }
 
   bool _claimRewardsOnce() {
@@ -4575,6 +4583,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
   void _goToStep(int index, int maxIndex) {
     final next = index.clamp(0, maxIndex);
     if (next == _stepIndex) return;
+    unawaited(TudloVoiceButton.stop());
     setState(() => _stepIndex = next);
     _notifyPresentationChrome(next);
   }
@@ -4591,6 +4600,7 @@ class _GradeOneAlphabetLessonState extends State<_GradeOneAlphabetLesson> {
 
   @override
   void dispose() {
+    unawaited(TudloVoiceButton.stop());
     _lastPresentationChrome = false;
     widget.onPresentationChromeChanged(false);
     super.dispose();
@@ -5178,7 +5188,14 @@ class _GradeOneNumberLessonState extends State<_GradeOneNumberLesson> {
   void _goToStep(int index, int maxIndex) {
     final next = index.clamp(0, maxIndex);
     if (next == _stepIndex) return;
+    unawaited(TudloVoiceButton.stop());
     setState(() => _stepIndex = next);
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
   }
 
   void _advanceAfterCorrect(int maxIndex) {
@@ -5365,7 +5382,14 @@ class _GradeOneUnitOneReviewLessonState
   void _goToStep(int index, int maxIndex) {
     final next = index.clamp(0, maxIndex);
     if (next == _stepIndex) return;
+    unawaited(TudloVoiceButton.stop());
     setState(() => _stepIndex = next);
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
   }
 
   void _advanceAfterCorrect(int maxIndex) {
@@ -5888,22 +5912,27 @@ class _AnimatedFruitCountState extends State<_AnimatedFruitCount> {
     final count = widget.number.clamp(1, 10).toInt();
     final columns = count <= 2
         ? count
-        : count <= 4
+        : count <= 5
         ? 2
         : 3;
     final rows = (count / columns).ceil();
     return LayoutBuilder(
       builder: (context, constraints) {
+        const spacing = 5.0;
+        final maxFruitWidth =
+            (constraints.maxWidth - (columns - 1) * spacing) / columns;
+        final maxFruitHeight =
+            (constraints.maxHeight - (rows - 1) * spacing) / rows;
         final fruitSize = math
-            .min(constraints.maxWidth / columns, constraints.maxHeight / rows)
-            .clamp(58.0, 140.0)
+            .min(maxFruitWidth, maxFruitHeight)
+            .clamp(44.0, 140.0)
             .toDouble();
         return Center(
           child: Wrap(
             alignment: WrapAlignment.center,
             runAlignment: WrapAlignment.center,
-            spacing: 5,
-            runSpacing: 5,
+            spacing: spacing,
+            runSpacing: spacing,
             children: [
               for (var index = 0; index < count; index++)
                 AnimatedScale(
@@ -5933,9 +5962,7 @@ class _AnimatedFruitCountState extends State<_AnimatedFruitCount> {
 }
 
 String _fruitAssetForNumber(int number) {
-  if (number <= 2) return 'assets/images/level_game/banana.png';
-  if (number <= 5) return 'assets/images/level_game/mango.png';
-  return 'assets/images/level_game/fruits.png';
+  return 'assets/images/level_game/apple.png';
 }
 
 String _numberMatchingFruitAsset() {
