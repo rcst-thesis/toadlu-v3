@@ -29,7 +29,11 @@ class NmtTranslationService {
 
   Future<String> _translate(String text) async {
     final resources = await _getResources();
-    var sourceIds = resources.tokenizer.encode(text).ids.toList();
+    var sourceIds = [
+      _bosId,
+      ...resources.tokenizer.encode(text, addSpecialTokens: false).ids,
+      _eosId,
+    ];
     if (sourceIds.length > _maxSourceLength) {
       sourceIds = sourceIds.sublist(0, _maxSourceLength);
       sourceIds[_maxSourceLength - 1] = _eosId;
@@ -98,10 +102,7 @@ class NmtTranslationService {
         data.offsetInBytes,
         data.lengthInBytes,
       );
-      final tokenizer = SentencePieceTokenizer.fromBytes(
-        bytes,
-        config: const SentencePieceConfig(addBosToken: true, addEosToken: true),
-      );
+      final tokenizer = SentencePieceTokenizer.fromBytes(bytes);
       return (session: session, tokenizer: tokenizer);
     } catch (_) {
       await session.close();
