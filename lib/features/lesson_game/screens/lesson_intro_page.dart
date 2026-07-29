@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
+import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
@@ -26,7 +27,11 @@ class _LessonIntroPageState extends State<LessonIntroPage> {
   @override
   void initState() {
     super.initState();
-    _contentFuture = LessonBank.loadLevelContentForLevel(widget.level);
+    _contentFuture = () async {
+      final content = await LessonBank.loadLevelContentForLevel(widget.level);
+      await AppAudioService.instance.preloadLessonAudio(content.audioAssets);
+      return content;
+    }();
     unawaited(DictionaryData.initialize());
   }
 

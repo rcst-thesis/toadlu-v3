@@ -16,6 +16,15 @@ class AppAudioService {
   static const lessonUnlock = 'audio/effects/lesson_unlock.mp3';
   static const lessonComplete = 'audio/effects/lesson_complete.mp3';
   static const star = 'audio/effects/star.mp3';
+  static const _initialAssets = [
+    tap,
+    correct,
+    wrong,
+    syllableTap,
+    lessonUnlock,
+    lessonComplete,
+    star,
+  ];
 
   static const _soundEffectsKey = 'audio.soundEffectsEnabled';
   static const _musicKey = 'audio.musicEnabled';
@@ -49,6 +58,25 @@ class AppAudioService {
     soundEffectsEnabledNotifier.value = prefs.getBool(_soundEffectsKey) ?? true;
     musicEnabledNotifier.value = prefs.getBool(_musicKey) ?? true;
     voiceOverEnabledNotifier.value = prefs.getBool(_voiceOverKey) ?? true;
+    try {
+      await AudioCache.instance.loadAll(_initialAssets);
+    } catch (_) {
+      // Missing optional audio must not block app startup.
+    }
+  }
+
+  Future<void> preloadLessonAudio(Iterable<String> assetPaths) async {
+    final paths = assetPaths
+        .map((path) => path.startsWith('assets/') ? path.substring(7) : path)
+        .where((path) => path.isNotEmpty)
+        .toSet()
+        .take(5)
+        .toList();
+    try {
+      await AudioCache.instance.loadAll(paths);
+    } catch (_) {
+      // Lessons can fall back to text-to-speech when recordings are absent.
+    }
   }
 
   Future<void> playSoundEffect(

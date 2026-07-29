@@ -211,6 +211,15 @@ class LevelContent {
     required this.quizItems,
     this.storyImageAsset,
   });
+
+  Iterable<String> get audioAssets sync* {
+    for (final example in examples) {
+      if (example.audioAsset case final asset?) yield asset;
+    }
+    for (final quiz in quizItems) {
+      if (quiz.audioAsset case final asset?) yield asset;
+    }
+  }
 }
 
 enum QuizType {

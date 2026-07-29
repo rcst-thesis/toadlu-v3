@@ -47,6 +47,46 @@ void main() {
     expect(DictionaryData.meaningFor('abogado'), contains('lawyer'));
   });
 
+  test('lesson audio assets keep their playback order', () {
+    const content = LevelContent(
+      id: 'test',
+      gradeLevel: 1,
+      unitNumber: 1,
+      lessonNumber: 1,
+      title: 'Test',
+      lesson: 'Test',
+      examples: [
+        LessonExample(
+          hiligaynon: 'isa',
+          english: 'one',
+          audioAsset: 'audio/one.mp3',
+        ),
+      ],
+      quizItems: [
+        QuizItem(
+          id: 'quiz',
+          type: QuizType.listenAndChoose,
+          question: 'Listen',
+          choices: ['isa'],
+          answer: 'isa',
+          audioAsset: 'audio/quiz.mp3',
+        ),
+      ],
+    );
+
+    expect(content.audioAssets, ['audio/one.mp3', 'audio/quiz.mp3']);
+  });
+
+  test('bundled audio uses non-empty MP3 files', () {
+    final audio = Directory(
+      'assets/audio',
+    ).listSync(recursive: true).whereType<File>();
+
+    expect(audio, isNotEmpty);
+    expect(audio.every((file) => file.path.endsWith('.mp3')), isTrue);
+    expect(audio.every((file) => file.lengthSync() > 100), isTrue);
+  });
+
   test('dictionary index follows the section nearest the top', () {
     expect(
       activeDictionarySection(const [

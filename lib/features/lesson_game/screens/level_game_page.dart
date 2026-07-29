@@ -216,6 +216,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       final contentFuture = LessonBank.loadLevelContentForLevel(widget.level);
       await DictionaryData.initialize();
       final content = await contentFuture;
+      await AppAudioService.instance.preloadLessonAudio(content.audioAssets);
       questions = _quizQuestionsFor(content, _quizQuestionCountFor(content));
       _scoreTracker.expectedActivities = questions.length;
       return content;
