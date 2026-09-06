@@ -297,6 +297,7 @@ void main() {
     );
 
     expect(find.byKey(const Key('learner-card')), findsOneWidget);
+    expect(find.byKey(const Key('learner-card-holofoil')), findsOneWidget);
     final learnerCard = tester.widget<Container>(
       find.byKey(const Key('learner-card')),
     );
@@ -360,7 +361,7 @@ void main() {
         find.byKey(Key('learner-card-progress-segment-$index')),
       );
       final decoration = segment.decoration as BoxDecoration;
-      expect(decoration.color, const Color(0xFFA2A1A1));
+      expect(decoration.color, const Color(0xFF8EA7BB));
     }
     final progressTrack = tester.getRect(
       find.byKey(const Key('learner-card-energy')),

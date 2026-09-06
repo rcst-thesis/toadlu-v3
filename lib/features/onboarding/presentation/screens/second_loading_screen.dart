@@ -56,18 +56,15 @@ class _SecondLoadingScreenState extends State<SecondLoadingScreen> {
   }
 
   Future<void> _warmNextStageAssets() async {
-    const assets = <String>[
-      'assets/images/toadlu_icon.png',
-      'assets/images/koka_green.png',
-      'assets/images/koka_blue.png',
-      'assets/images/koka_red.png',
-      'assets/images/name_character.png',
-      'assets/images/grade_1_header.png',
-      'assets/images/grade_2_header.png',
-      'assets/images/grade_3_header.png',
-      'assets/images/energy_heading.png',
-      'assets/images/energy_bubble_label.png',
-      'assets/images/energy_instructions.png',
+    final kokaAsset = switch (widget.grade) {
+      2 => 'assets/images/koka_blue.png',
+      3 => 'assets/images/koka_red.png',
+      _ => 'assets/images/koka_green.png',
+    };
+    final assets = <String>[
+      'assets/images/learner_card_earned.png',
+      kokaAsset,
+      for (var badge = 1; badge <= 8; badge++) 'assets/images/badge_$badge.png',
     ];
     await Future.wait<void>(
       assets.map((asset) => precacheImage(AssetImage(asset), context)),

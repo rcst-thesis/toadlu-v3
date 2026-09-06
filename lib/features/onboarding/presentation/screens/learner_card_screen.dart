@@ -381,6 +381,46 @@ class _ResetDialogButton extends StatelessWidget {
   }
 }
 
+class _LearnerCardPalette {
+  const _LearnerCardPalette({
+    required this.card,
+    required this.panel,
+    required this.badges,
+    required this.surface,
+    required this.inactive,
+  });
+
+  final Color card;
+  final Color panel;
+  final Color badges;
+  final Color surface;
+  final Color inactive;
+
+  static _LearnerCardPalette forGrade(int grade) => switch (grade) {
+        2 => const _LearnerCardPalette(
+            card: Color(0xFFEAF3FA),
+            panel: Color(0xFFB5CCE0),
+            badges: Color(0xFFA7BED3),
+            surface: Color(0xFFEDF4FA),
+            inactive: Color(0xFF8EA7BB),
+          ),
+        3 => const _LearnerCardPalette(
+            card: Color(0xFFFAEDEB),
+            panel: Color(0xFFDDB8B4),
+            badges: Color(0xFFD0A6A3),
+            surface: Color(0xFFF9EEEC),
+            inactive: Color(0xFFB68F8C),
+          ),
+        _ => const _LearnerCardPalette(
+            card: Color(0xFFF3F7E8),
+            panel: Color(0xFFB8CDB0),
+            badges: Color(0xFFAFC3A7),
+            surface: Color(0xFFF0F5E7),
+            inactive: Color(0xFF91A68C),
+          ),
+      };
+}
+
 class _LearnerCard extends StatelessWidget {
   const _LearnerCard({
     required this.learnerName,
@@ -400,13 +440,14 @@ class _LearnerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _LearnerCardPalette.forGrade(grade);
     return Container(
       key: const Key('learner-card'),
       width: 352,
       height: 561,
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9),
-        border: Border.all(color: Colors.black),
+        color: palette.card,
+        border: Border.all(color: const Color(0xFF24361F), width: 1.2),
         borderRadius: BorderRadius.circular(17),
         boxShadow: const [
           BoxShadow(
@@ -458,7 +499,7 @@ class _LearnerCard extends StatelessWidget {
             child: DecoratedBox(
               key: const Key('learner-card-portrait-panel'),
               decoration: BoxDecoration(
-                color: const Color(0xFFA2A1A1),
+                color: palette.panel,
                 borderRadius: BorderRadius.circular(7),
               ),
               child: Padding(
@@ -482,6 +523,7 @@ class _LearnerCard extends StatelessWidget {
               grade: grade,
               energy: energy,
               gradeColor: gradeColor,
+              palette: palette,
             ),
           ),
           Positioned(
@@ -492,7 +534,11 @@ class _LearnerCard extends StatelessWidget {
             child: _BadgesPanel(
               earnedBadgeCount: earnedBadgeCount,
               earnedColor: gradeColor,
+              backgroundColor: palette.badges,
             ),
+          ),
+          Positioned.fill(
+            child: _HolofoilOverlay(accent: gradeColor),
           ),
         ],
       ),
@@ -506,6 +552,7 @@ class _DetailsPanel extends StatelessWidget {
     required this.grade,
     required this.energy,
     required this.gradeColor,
+    required this.palette,
     super.key,
   });
 
@@ -513,12 +560,13 @@ class _DetailsPanel extends StatelessWidget {
   final int grade;
   final int energy;
   final Color gradeColor;
+  final _LearnerCardPalette palette;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFA2A1A1),
+        color: palette.panel,
         borderRadius: BorderRadius.circular(7),
       ),
       clipBehavior: Clip.antiAlias,
@@ -574,22 +622,36 @@ class _DetailsPanel extends StatelessWidget {
             top: 66,
             width: 282,
             height: 15,
-            child: _SegmentedProgress(value: energy, color: gradeColor),
+            child: _SegmentedProgress(
+              value: energy,
+              color: gradeColor,
+              trackColor: palette.surface,
+              inactiveColor: palette.inactive,
+            ),
           ),
-          const Positioned(
+          Positioned(
             left: 23,
             top: 89,
-            child: _CounterTile(label: 'words saved'),
+            child: _CounterTile(
+              label: 'words saved',
+              backgroundColor: palette.surface,
+            ),
           ),
-          const Positioned(
+          Positioned(
             left: 122,
             top: 89,
-            child: _CounterTile(label: 'stickers'),
+            child: _CounterTile(
+              label: 'stickers',
+              backgroundColor: palette.surface,
+            ),
           ),
-          const Positioned(
+          Positioned(
             left: 221,
             top: 89,
-            child: _CounterTile(label: 'lessons finished'),
+            child: _CounterTile(
+              label: 'lessons finished',
+              backgroundColor: palette.surface,
+            ),
           ),
         ],
       ),
@@ -598,10 +660,17 @@ class _DetailsPanel extends StatelessWidget {
 }
 
 class _SegmentedProgress extends StatelessWidget {
-  const _SegmentedProgress({required this.value, required this.color});
+  const _SegmentedProgress({
+    required this.value,
+    required this.color,
+    required this.trackColor,
+    required this.inactiveColor,
+  });
 
   final int value;
   final Color color;
+  final Color trackColor;
+  final Color inactiveColor;
 
   @override
   Widget build(BuildContext context) {
@@ -611,7 +680,7 @@ class _SegmentedProgress extends StatelessWidget {
         key: const Key('learner-card-energy'),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
-          color: const Color(0xFFD9D9D9),
+          color: trackColor,
           borderRadius: BorderRadius.circular(8),
         ),
         clipBehavior: Clip.antiAlias,
@@ -623,7 +692,7 @@ class _SegmentedProgress extends StatelessWidget {
                   child: DecoratedBox(
                     key: Key('learner-card-progress-segment-$index'),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFA2A1A1),
+                      color: inactiveColor,
                       borderRadius: BorderRadius.circular(1.5),
                     ),
                   ),
@@ -639,9 +708,10 @@ class _SegmentedProgress extends StatelessWidget {
 }
 
 class _CounterTile extends StatelessWidget {
-  const _CounterTile({required this.label});
+  const _CounterTile({required this.label, required this.backgroundColor});
 
   final String label;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -649,7 +719,7 @@ class _CounterTile extends StatelessWidget {
       width: 84,
       height: 70,
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(3),
       ),
       clipBehavior: Clip.antiAlias,
@@ -700,6 +770,7 @@ class _BadgesPanel extends StatelessWidget {
   const _BadgesPanel({
     required this.earnedBadgeCount,
     required this.earnedColor,
+    required this.backgroundColor,
   });
 
   static const _assets = <String>[
@@ -715,11 +786,12 @@ class _BadgesPanel extends StatelessWidget {
 
   final int earnedBadgeCount;
   final Color earnedColor;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFA2A1A1),
+      color: backgroundColor,
       child: Stack(
         children: [
           const Positioned(
@@ -774,6 +846,276 @@ class _BadgesPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+class _HolofoilOverlay extends StatefulWidget {
+  const _HolofoilOverlay({required this.accent});
+
+  final Color accent;
+
+  @override
+  State<_HolofoilOverlay> createState() => _HolofoilOverlayState();
+}
+
+class _HolofoilOverlayState extends State<_HolofoilOverlay>
+    with SingleTickerProviderStateMixin {
+  static const _targetFramesPerSecond = 30;
+  static const _animationSeconds = 14;
+  static const _frameCount = _targetFramesPerSecond * _animationSeconds;
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: _animationSeconds),
+  );
+  final ValueNotifier<double> _paintProgress = ValueNotifier<double>(0);
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_scheduleFoilFrame);
+  }
+
+  void _scheduleFoilFrame() {
+    final quantized = (_controller.value * _frameCount).floor() / _frameCount;
+    if (quantized != _paintProgress.value) {
+      _paintProgress.value = quantized;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (_reduceMotion) {
+      _controller
+        ..stop()
+        ..value = 0.42;
+      _paintProgress.value = 0.42;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_scheduleFoilFrame);
+    _controller.dispose();
+    _paintProgress.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: IgnorePointer(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const RepaintBoundary(
+              child: CustomPaint(painter: _FoilGrainPainter()),
+            ),
+            AnimatedBuilder(
+              animation: _paintProgress,
+              builder: (context, child) => CustomPaint(
+                key: const Key('learner-card-holofoil'),
+                isComplex: true,
+                willChange: true,
+                painter: _HolofoilPainter(
+                  progress: _paintProgress.value,
+                  accent: widget.accent,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const _foilColors = <Color>[
+  Color(0xFF00D9FF),
+  Color(0xFF596CFF),
+  Color(0xFFB64DFF),
+  Color(0xFFFF4FA3),
+  Color(0xFFFF8A3D),
+  Color(0xFFFFE94A),
+  Color(0xFF55F27C),
+];
+
+double _foilNoise(int seed) {
+  final value = math.sin(seed * 12.9898) * 43758.5453;
+  return value - value.floorToDouble();
+}
+
+double _foilSmoothstep(double value) {
+  final clamped = value.clamp(0.0, 1.0);
+  return clamped * clamped * (3 - 2 * clamped);
+}
+
+class _FoilGrainPainter extends CustomPainter {
+  const _FoilGrainPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    for (var index = 0; index < 70; index++) {
+      final center = Offset(
+        _foilNoise(index * 47 + 5) * size.width,
+        _foilNoise(index * 61 + 19) * size.height,
+      );
+      paint.color =
+          _foilColors[(index * 3) % _foilColors.length].withValues(alpha: 0.34);
+      canvas.drawCircle(
+        center,
+        0.55 + _foilNoise(index * 23 + 2) * 0.9,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FoilGrainPainter oldDelegate) => false;
+}
+
+class _HolofoilPainter extends CustomPainter {
+  const _HolofoilPainter({required this.progress, required this.accent});
+
+  final double progress;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final bounds = Offset.zero & size;
+    final time = progress * math.pi * 2;
+
+    // Each patch fades out completely before receiving a new deterministic
+    // random position. This creates soft spawning across the whole card with
+    // no visible teleporting and a perfectly seamless loop.
+    const patchSlots = 8;
+    const patchCyclesPerLoop = 2;
+    for (var index = 0; index < patchSlots; index++) {
+      final cycle = progress * patchCyclesPerLoop + index / patchSlots;
+      final generation = cycle.floor();
+      final phase = cycle - generation;
+      final opacity = switch (phase) {
+        < 0.18 => _foilSmoothstep(phase / 0.18),
+        < 0.48 => 1.0,
+        < 0.78 => 1 - _foilSmoothstep((phase - 0.48) / 0.30),
+        _ => 0.0,
+      };
+      if (opacity <= 0.001) continue;
+
+      final spawn = index * 101 + (generation % patchCyclesPerLoop) * 977;
+      final center = Offset(
+        (0.02 + _foilNoise(spawn + 11) * 0.96) * size.width,
+        (0.02 + _foilNoise(spawn + 23) * 0.96) * size.height,
+      );
+      final radiusX = 68.0 + _foilNoise(spawn + 37) * 82;
+      final radiusY = radiusX * (0.72 + _foilNoise(spawn + 41) * 0.55);
+      final patchRect = Rect.fromCenter(
+        center: center,
+        width: radiusX * 2,
+        height: radiusY * 2,
+      );
+      final color = _foilColors[
+          (_foilNoise(spawn + 53) * _foilColors.length).floor() %
+              _foilColors.length];
+      final patchPaint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            color.withValues(alpha: 0.28 * opacity),
+            color.withValues(alpha: 0.15 * opacity),
+            color.withValues(alpha: 0),
+          ],
+          stops: const [0, 0.48, 1],
+        ).createShader(patchRect);
+      final angle = (_foilNoise(spawn + 67) - 0.5) * math.pi;
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(angle);
+      canvas.translate(-center.dx, -center.dy);
+      canvas.drawOval(patchRect, patchPaint);
+      canvas.restore();
+    }
+
+    // Bright four-point stars twinkle independently at deterministic random
+    // positions, avoiding visual jumps between animation frames.
+    for (var index = 0; index < 38; index++) {
+      final phaseA = _foilNoise(index * 59 + 7) * math.pi * 2;
+      final phaseB = _foilNoise(index * 67 + 23) * math.pi * 2;
+      final frequencyA = 1.0 + (_foilNoise(index * 71 + 29) * 3).floor();
+      final frequencyB = frequencyA + 1.0 + index % 2;
+      final wave = math.sin(time * frequencyA + phaseA) * 0.68 +
+          math.sin(time * frequencyB + phaseB) * 0.32;
+      final twinkle = math
+          .pow(
+            math.max(0.0, wave),
+            3,
+          )
+          .toDouble();
+      if (twinkle < 0.025) continue;
+      final baseCenter = Offset(
+        _foilNoise(index * 73 + 13) * size.width,
+        _foilNoise(index * 89 + 31) * size.height,
+      );
+      final center = baseCenter +
+          Offset(
+            math.sin(time * (1 + index % 2) + phaseB) * 3.2,
+            math.cos(time * (1 + (index + 1) % 2) + phaseA) * 2.6,
+          );
+      final radius = (1.4 + _foilNoise(index * 37 + 17) * 3.8) * twinkle;
+      final sparkleColor = Color.lerp(
+        Colors.white,
+        _foilColors[(index + 2) % _foilColors.length],
+        0.24,
+      )!;
+      canvas.drawCircle(
+        center,
+        radius * 2.2,
+        Paint()..color = sparkleColor.withValues(alpha: 0.12 * twinkle),
+      );
+      canvas.drawPath(
+        Path()
+          ..moveTo(center.dx, center.dy - radius * 1.9)
+          ..lineTo(center.dx + radius * 0.34, center.dy - radius * 0.34)
+          ..lineTo(center.dx + radius * 1.9, center.dy)
+          ..lineTo(center.dx + radius * 0.34, center.dy + radius * 0.34)
+          ..lineTo(center.dx, center.dy + radius * 1.9)
+          ..lineTo(center.dx - radius * 0.34, center.dy + radius * 0.34)
+          ..lineTo(center.dx - radius * 1.9, center.dy)
+          ..lineTo(center.dx - radius * 0.34, center.dy - radius * 0.34)
+          ..close(),
+        Paint()..color = sparkleColor.withValues(alpha: 0.82 * twinkle),
+      );
+    }
+
+    final borderRect = bounds.deflate(1.4);
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..shader = SweepGradient(
+        transform: GradientRotation(progress * math.pi * 2),
+        colors: [
+          accent.withValues(alpha: 0.70),
+          const Color(0xB36DEBFF),
+          const Color(0xB3D983FF),
+          const Color(0xB3FFE36D),
+          const Color(0xB3FF7AA8),
+          accent.withValues(alpha: 0.70),
+        ],
+      ).createShader(bounds);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(borderRect, const Radius.circular(15.6)),
+      borderPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HolofoilPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.accent != accent;
 }
 
 class _ContinueButton extends StatelessWidget {

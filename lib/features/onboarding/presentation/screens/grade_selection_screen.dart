@@ -352,29 +352,29 @@ class _AnimatedGradeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final left = switch (slot) {
-      _CarouselSlot.left => 20.5,
+      _CarouselSlot.left => 24.0,
       _CarouselSlot.center => 92.0,
-      _CarouselSlot.right => 207.5,
+      _CarouselSlot.right => 208.0,
     };
-    final top = slot == _CarouselSlot.center ? 468.0 : 447.5;
+    final top = slot == _CarouselSlot.center ? 468.0 : 460.0;
     final width = slot == _CarouselSlot.center ? 228.0 : 180.0;
     final height = slot == _CarouselSlot.center ? 311.57 : 249.0;
     final turn = switch (slot) {
-      _CarouselSlot.left => -0.035,
+      _CarouselSlot.left => -0.018,
       _CarouselSlot.center => 0.0,
-      _CarouselSlot.right => 0.035,
+      _CarouselSlot.right => 0.018,
     };
 
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeInOutCubic,
+      duration: const Duration(milliseconds: 460),
+      curve: Curves.easeOutCubic,
       left: left,
       top: top,
       width: width,
       height: height,
       child: AnimatedRotation(
-        duration: const Duration(milliseconds: 420),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 460),
+        curve: Curves.easeOutCubic,
         turns: turn,
         child: _GradeCard(
           grade: grade,
@@ -404,8 +404,8 @@ class _GradeCard extends StatelessWidget {
       selected: selected,
       label: 'Grade ${grade.number}${selected ? ', selected' : ''}',
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 420),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 460),
+        curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(6),
           boxShadow: selected
