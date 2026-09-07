@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/features/home/presentation/screens/home_loading_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 
 class LearnerCardScreen extends StatelessWidget {
@@ -39,7 +40,16 @@ class LearnerCardScreen extends StatelessWidget {
       callback();
       return;
     }
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    Navigator.of(context).pushAndRemoveUntil(
+      FadePageRoute<void>(
+        page: HomeLoadingScreen(
+          learnerName: learnerName,
+          grade: grade,
+          energy: energy,
+        ),
+      ),
+      (route) => false,
+    );
   }
 
   Future<void> _reset(BuildContext context) async {

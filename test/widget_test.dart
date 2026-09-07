@@ -459,6 +459,47 @@ void main() {
     expect(find.byKey(const Key('learner-reset-dialog')), findsNothing);
   });
 
+  testWidgets('learner card continues through loading 3 to home',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: LearnerCardScreen(
+          learnerName: 'Maya',
+          grade: 2,
+          energy: 80,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('learner-card-continue-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(HomeLoadingScreen), findsOneWidget);
+    expect(find.byType(LearnerCardScreen), findsNothing);
+    expect(
+      find.bySemanticsLabel('Koka third loading screen'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Hopping in...'), findsOneWidget);
+    expect(find.byKey(const Key('home-loading-koka')), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('home-loading-artwork-frame'))).width,
+      104,
+    );
+    await tester.pump(const Duration(milliseconds: 2150));
+    await tester.pump();
+    expect(find.bySemanticsLabel('Packing lessons...'), findsOneWidget);
+    expect(
+      Navigator.of(tester.element(find.byType(HomeLoadingScreen))).canPop(),
+      isFalse,
+    );
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(PlaceholderScreen), findsOneWidget);
+    expect(find.byType(AdaptiveBackButtonPlacement), findsNothing);
+  });
+
   testWidgets('learner card tilts toward a tapped corner and rebalances',
       (tester) async {
     await tester.pumpWidget(

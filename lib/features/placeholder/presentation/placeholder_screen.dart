@@ -9,12 +9,14 @@ class PlaceholderScreen extends StatelessWidget {
     required this.title,
     required this.description,
     required this.icon,
+    this.showBackButton = true,
     super.key,
   });
 
   final String title;
   final String description;
   final IconData icon;
+  final bool showBackButton;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +50,10 @@ class PlaceholderScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              AdaptiveBackButtonPlacement(
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+              if (showBackButton)
+                AdaptiveBackButtonPlacement(
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
             ],
           ),
         ),
