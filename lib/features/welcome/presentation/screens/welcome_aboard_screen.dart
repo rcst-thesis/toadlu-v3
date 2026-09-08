@@ -121,15 +121,15 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
                           skyIdleAssets: useWideFarm
                               ? const [
                                   'assets/images/welcome_sky_base_wide_v1.svg',
-                                  'assets/images/welcome_sky_sun_wide_v1.svg',
-                                  'assets/images/welcome_sky_cloud_right_wide_v6.svg',
+                                  'assets/images/welcome_sky_sun_responsive.svg',
+                                  'assets/images/welcome_sky_cloud_right_responsive.svg',
                                   'assets/images/welcome_sky_cloud_middle_wide_v1.svg',
                                   'assets/images/welcome_sky_cloud_left_wide_v1.svg',
                                 ]
                               : const [
                                   'assets/images/welcome_sky_base_v1.svg',
-                                  'assets/images/welcome_sky_sun_v1.svg',
-                                  'assets/images/welcome_sky_cloud_right_v6.svg',
+                                  'assets/images/welcome_sky_sun_responsive.svg',
+                                  'assets/images/welcome_sky_cloud_right_responsive.svg',
                                   'assets/images/welcome_sky_cloud_middle_v1.svg',
                                   'assets/images/welcome_sky_cloud_left_v1.svg',
                                 ],

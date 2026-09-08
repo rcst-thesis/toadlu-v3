@@ -326,77 +326,119 @@ class _FarmDepthBackgroundState extends State<FarmDepthBackground>
     double x,
     double y,
   ) {
-    final isWide = assets.first.contains('_wide_');
-    final sunPivot = isWide
-        ? const FractionalOffset(0.7187, 0.1063)
-        : const FractionalOffset(0.7836, 0.1063);
-
     Widget skyPart(String asset) => _buildLayer(asset, x, y, 0.25);
-    Widget edgeSafeSkyPart(String asset) => Transform.translate(
-          offset: Offset(x * 0.25, y * 0.155),
-          child: RepaintBoundary(
-            child: SvgPicture.asset(
-              asset,
-              fit: BoxFit.contain,
-              alignment: Alignment.bottomCenter,
-              renderingStrategy: RenderingStrategy.raster,
-            ),
-          ),
-        );
-    final sun = skyPart(assets[1]);
-    // The right cloud uses an unscaled sprite layer. The regular depth layer
-    // adds 2.5% overscan, which enlarged the cloud past its SVG viewport and
-    // visibly sliced its right edge.
-    final rightCloud = edgeSafeSkyPart(assets[2]);
     final middleCloud = skyPart(assets[3]);
     final leftCloud = skyPart(assets[4]);
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        skyPart(assets[0]),
-        RepaintBoundary(
-          child: AnimatedBuilder(
-            animation: _ambientController,
-            builder: (context, child) {
-              final phase = _ambientController.value * math.pi * 2;
-              final cloudDrift = math.sin(phase);
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  Transform.translate(
-                    offset: const Offset(-10, 0),
-                    child: Transform.rotate(
-                      key: const Key('welcome-sun-idle-rotation'),
-                      angle: phase,
-                      alignment: sunPivot,
-                      filterQuality: FilterQuality.medium,
-                      child: sun,
-                    ),
-                  ),
-                  _smoothTranslate(
-                    key: const Key('welcome-cloud-right-idle'),
-                    // Drift toward the left and return to the far-right resting
-                    // point. It never travels beyond the complete SVG bounds.
-                    dx: (cloudDrift - 1) * 6,
-                    child: rightCloud,
-                  ),
-                  _smoothTranslate(
-                    key: const Key('welcome-cloud-middle-idle'),
-                    dx: cloudDrift * -8,
-                    child: middleCloud,
-                  ),
-                  _smoothTranslate(
-                    key: const Key('welcome-cloud-left-idle'),
-                    dx: cloudDrift * 6,
-                    child: leftCloud,
-                  ),
-                ],
-              );
-            },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sceneScale = constraints.maxWidth / 412;
+        // Figma displays the celestial pair at 84% of the replacement SVG's
+        // raw dimensions. Scale both objects together to preserve their
+        // overlap and proportions at every viewport width.
+        final celestialScale = sceneScale * 0.84;
+        final cloudWidth = 219.319 * celestialScale;
+        final cloudHeight = cloudWidth * 96.469 / 219.319;
+        final skyGroupLeft = 274 * sceneScale;
+        final skyGroupTop = constraints.maxHeight * 3 / 552;
+        final skyGroupTravel = 3 * celestialScale;
+        final sunSize = 88 * celestialScale;
+        final sunLeft = 5.5 * celestialScale;
+        final cloudTop = 8.231 * celestialScale;
+        final sun = RepaintBoundary(
+          child: SvgPicture.asset(
+            assets[1],
+            fit: BoxFit.contain,
+            renderingStrategy: RenderingStrategy.raster,
           ),
-        ),
-      ],
+        );
+        final rightCloud = RepaintBoundary(
+          child: SvgPicture.asset(
+            assets[2],
+            fit: BoxFit.contain,
+            renderingStrategy: RenderingStrategy.raster,
+          ),
+        );
+
+        return Stack(
+          fit: StackFit.expand,
+          clipBehavior: Clip.none,
+          children: [
+            skyPart(assets[0]),
+            RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _ambientController,
+                builder: (context, child) {
+                  final phase = _ambientController.value * math.pi * 2;
+                  final cloudDrift = math.sin(phase);
+                  return Stack(
+                    fit: StackFit.expand,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: skyGroupLeft,
+                        top: skyGroupTop,
+                        width: cloudWidth,
+                        height: math.max(sunSize, cloudTop + cloudHeight),
+                        child: Transform.translate(
+                          // Sun and cloud share this transform, so responsive
+                          // resizing and idle motion cannot separate them.
+                          offset: Offset(
+                            x * 0.25 + cloudDrift * skyGroupTravel,
+                            y * 0.155,
+                          ),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Positioned(
+                                left: sunLeft,
+                                top: 0,
+                                width: sunSize,
+                                height: sunSize,
+                                child: Transform.rotate(
+                                  key: const Key(
+                                    'welcome-sun-idle-rotation',
+                                  ),
+                                  angle: phase,
+                                  alignment: Alignment.center,
+                                  filterQuality: FilterQuality.medium,
+                                  child: sun,
+                                ),
+                              ),
+                              Positioned(
+                                left: 0,
+                                top: cloudTop,
+                                width: cloudWidth,
+                                height: cloudHeight,
+                                child: KeyedSubtree(
+                                  key: const Key(
+                                    'welcome-cloud-right-idle',
+                                  ),
+                                  child: rightCloud,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      _smoothTranslate(
+                        key: const Key('welcome-cloud-middle-idle'),
+                        dx: cloudDrift * -8,
+                        child: middleCloud,
+                      ),
+                      _smoothTranslate(
+                        key: const Key('welcome-cloud-left-idle'),
+                        dx: cloudDrift * 6,
+                        child: leftCloud,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
