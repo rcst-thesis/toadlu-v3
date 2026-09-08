@@ -1,10 +1,67 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudlo/tudlo.dart';
 
 void main() {
+  testWidgets('welcome farm keeps its SVG proportions and depth interaction',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SizedBox(
+          width: 412,
+          height: 552,
+          child: FarmDepthBackground(enableHardwareTilt: false),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('welcome-farm-svg')), findsOneWidget);
+    expect(
+      tester.widget<SvgPicture>(find.byKey(const Key('welcome-farm-svg'))).fit,
+      BoxFit.contain,
+    );
+    expect(
+      find.byKey(const Key('welcome-farm-perspective-transform')),
+      findsOneWidget,
+    );
+    await tester.tapAt(const Offset(350, 450));
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('welcome upper sky drives the farm depth interaction',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: WelcomeAboardScreen()));
+    await tester.pump();
+
+    final transformFinder =
+        find.byKey(const Key('welcome-farm-perspective-transform'));
+    final before = tester.widget<Transform>(transformFinder).transform.clone();
+    final interactionSurface =
+        find.byKey(const Key('welcome-depth-interaction-surface'));
+    final upperLeft =
+        tester.getTopLeft(interactionSurface) + const Offset(8, 8);
+    final gesture = await tester.startGesture(upperLeft);
+    await tester.pump();
+    expect(
+      tester
+          .widget<FarmDepthBackground>(find.byType(FarmDepthBackground))
+          .tiltTarget,
+      isNot(Offset.zero),
+    );
+    await tester.pump(const Duration(milliseconds: 700));
+    final after = tester.widget<Transform>(transformFinder).transform;
+
+    expect(after.storage, isNot(equals(before.storage)));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('startup shows both timed splashes then the menu',
       (tester) async {
     await tester.pumpWidget(
@@ -461,26 +518,34 @@ void main() {
 
   testWidgets('learner card continues through loading 3 to home',
       (tester) async {
+    var welcomePrecacheCalls = 0;
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: LearnerCardScreen(
           learnerName: 'Maya',
           grade: 2,
           energy: 80,
+          precacheWelcomeVectors: (_) async {
+            welcomePrecacheCalls++;
+          },
         ),
       ),
     );
 
+    // Welcome artwork must stay cold throughout boot, the main menu, and the
+    // onboarding screens. Loading 3 is its sole preload boundary.
+    expect(welcomePrecacheCalls, 0);
     await tester.tap(find.byKey(const Key('learner-card-continue-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(HomeLoadingScreen), findsOneWidget);
+    expect(welcomePrecacheCalls, 1);
     expect(find.byType(LearnerCardScreen), findsNothing);
     expect(
       find.bySemanticsLabel('Koka third loading screen'),
       findsOneWidget,
     );
-    expect(find.bySemanticsLabel('Hopping in...'), findsOneWidget);
+    expect(find.bySemanticsLabel('hopping in...'), findsOneWidget);
     expect(find.byKey(const Key('home-loading-koka')), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const Key('home-loading-artwork-frame'))).width,
@@ -488,15 +553,35 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 2150));
     await tester.pump();
-    expect(find.bySemanticsLabel('Packing lessons...'), findsOneWidget);
+    expect(find.bySemanticsLabel('packing lessons...'), findsOneWidget);
+    for (var frame = 0; frame < 140; frame++) {
+      await tester.pump(const Duration(microseconds: 16667));
+      expect(tester.takeException(), isNull);
+    }
     expect(
       Navigator.of(tester.element(find.byType(HomeLoadingScreen))).canPop(),
       isFalse,
     );
 
     await tester.pump(const Duration(seconds: 5));
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.byType(PlaceholderScreen), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(WelcomeAboardScreen), findsOneWidget);
+    expect(find.byKey(const Key('welcome-aboard-heading')), findsOneWidget);
+    expect(find.byKey(const Key('welcome-farm-svg')), findsOneWidget);
+    final welcomeFarmSize =
+        tester.getSize(find.byKey(const Key('welcome-farm-frame')));
+    expect(
+      welcomeFarmSize.width / welcomeFarmSize.height,
+      closeTo(535 / 552, 0.001),
+    );
+    expect(
+      tester
+          .widget<FarmDepthBackground>(find.byType(FarmDepthBackground))
+          .enableHardwareTilt,
+      isFalse,
+    );
+    expect(find.byKey(const Key('welcome-aboard-next-button')), findsOneWidget);
+    expect(find.byKey(const Key('welcome-aboard-skip-button')), findsOneWidget);
     expect(find.byType(AdaptiveBackButtonPlacement), findsNothing);
   });
 

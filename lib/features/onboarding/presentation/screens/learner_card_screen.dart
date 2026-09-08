@@ -6,6 +6,7 @@ import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/home/presentation/screens/home_loading_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
+import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
 
 class LearnerCardScreen extends StatelessWidget {
   const LearnerCardScreen({
@@ -14,6 +15,7 @@ class LearnerCardScreen extends StatelessWidget {
     required this.energy,
     this.earnedBadgeCount = 0,
     this.onContinue,
+    this.precacheWelcomeVectors,
     super.key,
   });
 
@@ -22,6 +24,7 @@ class LearnerCardScreen extends StatelessWidget {
   final int energy;
   final int earnedBadgeCount;
   final VoidCallback? onContinue;
+  final Future<void> Function(BuildContext context)? precacheWelcomeVectors;
 
   Color get _gradeColor => switch (grade) {
         2 => const Color(0xFF3E75A6),
@@ -46,6 +49,7 @@ class LearnerCardScreen extends StatelessWidget {
           learnerName: learnerName,
           grade: grade,
           energy: energy,
+          precacheWelcomeVectors: precacheWelcomeVectors,
         ),
       ),
       (route) => false,
@@ -124,28 +128,13 @@ class LearnerCardScreen extends StatelessWidget {
                     Positioned(
                       left: 30,
                       top: 811,
-                      child: _ContinueButton(onPressed: () => _finish(context)),
-                    ),
-                    Positioned(
-                      left: 146,
-                      top: 861,
-                      width: 120,
-                      height: 44,
-                      child: TextButton(
-                        key: const Key('learner-card-reset-button'),
-                        onPressed: () => _reset(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xB3000000),
-                          padding: EdgeInsets.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          textStyle: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            decoration: TextDecoration.underline,
-                            decorationThickness: 1.2,
-                          ),
-                        ),
-                        child: const Text('reset'),
+                      child: OnboardingBottomActions(
+                        primaryKey: const Key('learner-card-continue-button'),
+                        secondaryKey: const Key('learner-card-reset-button'),
+                        primaryLabel: 'hop. hop. hop. lets gooo',
+                        secondaryLabel: 'reset',
+                        onPrimaryPressed: () => _finish(context),
+                        onSecondaryPressed: () => _reset(context),
                       ),
                     ),
                   ],
@@ -1126,58 +1115,6 @@ class _HolofoilPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _HolofoilPainter oldDelegate) =>
       oldDelegate.progress != progress || oldDelegate.accent != accent;
-}
-
-class _ContinueButton extends StatelessWidget {
-  const _ContinueButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      key: const Key('learner-card-continue-button'),
-      width: 352.295,
-      height: 44,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            top: 4.373,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.darkGreen,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            bottom: 4.373,
-            child: FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: AppColors.green,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'hop. hop. hop. lets gooo',
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _RaysPainter extends CustomPainter {

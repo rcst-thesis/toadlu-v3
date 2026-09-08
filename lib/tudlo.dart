@@ -14,5 +14,7 @@ export 'features/onboarding/presentation/screens/name_screen.dart';
 export 'features/onboarding/presentation/screens/second_loading_screen.dart';
 export 'features/placeholder/presentation/placeholder_screen.dart';
 export 'features/startup/presentation/startup_flow.dart';
+export 'features/welcome/presentation/widgets/farm_depth_background.dart';
+export 'features/welcome/presentation/screens/welcome_aboard_screen.dart';
 export 'shared/widgets/design_navigation_button.dart';
 export 'shared/widgets/rive_placeholder.dart';

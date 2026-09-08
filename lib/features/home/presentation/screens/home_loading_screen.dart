@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
-import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
+import 'package:tudlo/features/welcome/presentation/screens/welcome_aboard_screen.dart';
 
 class HomeLoadingScreen extends StatefulWidget {
   const HomeLoadingScreen({
@@ -15,6 +16,7 @@ class HomeLoadingScreen extends StatefulWidget {
     this.minimumDisplayDuration = const Duration(seconds: 5),
     this.preparationTimeout = const Duration(seconds: 30),
     this.prepareHome,
+    this.precacheWelcomeVectors,
     this.homeBuilder,
     super.key,
   });
@@ -25,6 +27,7 @@ class HomeLoadingScreen extends StatefulWidget {
   final Duration minimumDisplayDuration;
   final Duration preparationTimeout;
   final Future<void> Function()? prepareHome;
+  final Future<void> Function(BuildContext context)? precacheWelcomeVectors;
   final WidgetBuilder? homeBuilder;
 
   @override
@@ -33,9 +36,9 @@ class HomeLoadingScreen extends StatefulWidget {
 
 class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
   static const _loadingLabels = <String>[
-    'Hopping in...',
-    'Packing lessons...',
-    'Almost ready...',
+    'hopping in...',
+    'packing lessons...',
+    'almost ready...',
   ];
 
   static const _onboardingAssets = <String>[
@@ -66,6 +69,29 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
     'assets/images/badge_6.png',
     'assets/images/badge_7.png',
     'assets/images/badge_8.png',
+  ];
+
+  static const _welcomeVectorAssets = <String>[
+    'assets/images/welcome_farm_background.svg',
+    'assets/images/welcome_farm_background_wide.svg',
+    'assets/images/welcome_farm_far_v3.svg',
+    'assets/images/welcome_farm_mountains_v3.svg',
+    'assets/images/welcome_farm_fields_v3.svg',
+    'assets/images/welcome_farm_subject_v3.svg',
+    'assets/images/welcome_farm_far_wide_v3.svg',
+    'assets/images/welcome_farm_mountains_wide_v3.svg',
+    'assets/images/welcome_farm_fields_wide_v3.svg',
+    'assets/images/welcome_farm_subject_wide_v3.svg',
+    'assets/images/welcome_sky_base_v1.svg',
+    'assets/images/welcome_sky_sun_v1.svg',
+    'assets/images/welcome_sky_cloud_right_v6.svg',
+    'assets/images/welcome_sky_cloud_middle_v1.svg',
+    'assets/images/welcome_sky_cloud_left_v1.svg',
+    'assets/images/welcome_sky_base_wide_v1.svg',
+    'assets/images/welcome_sky_sun_wide_v1.svg',
+    'assets/images/welcome_sky_cloud_right_wide_v6.svg',
+    'assets/images/welcome_sky_cloud_middle_wide_v1.svg',
+    'assets/images/welcome_sky_cloud_left_wide_v1.svg',
   ];
 
   bool _started = false;
@@ -108,7 +134,11 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
     await WidgetsBinding.instance.endOfFrame;
     await Future<void>.delayed(const Duration(milliseconds: 400));
     await _releaseOnboardingAssets();
-    await (widget.prepareHome?.call() ?? _waitForNextFrame());
+    if (!mounted) return;
+    await Future.wait<void>([
+      widget.precacheWelcomeVectors?.call(context) ?? _precacheWelcomeVectors(),
+      widget.prepareHome?.call() ?? _waitForNextFrame(),
+    ]);
   }
 
   Future<void> _releaseOnboardingAssets() async {
@@ -117,18 +147,21 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
     }
   }
 
+  Future<void> _precacheWelcomeVectors() async {
+    await Future.wait<void>([
+      for (final asset in _welcomeVectorAssets)
+        SvgAssetLoader(asset).loadBytes(context).then<void>((_) {}),
+    ]);
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
   Future<void> _waitForNextFrame() async {
     await WidgetsBinding.instance.endOfFrame;
   }
 
   Widget _buildHome(BuildContext context) {
     if (widget.homeBuilder case final builder?) return builder(context);
-    return const PlaceholderScreen(
-      title: 'home screen',
-      description: 'The Tudlo home experience will appear here.',
-      icon: Icons.home_rounded,
-      showBackButton: false,
-    );
+    return const WelcomeAboardScreen();
   }
 
   @override
@@ -305,6 +338,7 @@ class _WaveLabelPainter extends CustomPainter {
     fontSize: 15,
     height: 1,
     fontWeight: FontWeight.w700,
+    fontFamily: 'ComicRelief',
   );
 
   final String label;
@@ -317,11 +351,16 @@ class _WaveLabelPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final waveProgress = animate ? waveAnimation.value : 0.5;
-    final labelProgress = animate ? labelAnimation.value : 0.5;
+    final labelProgress =
+        (animate ? labelAnimation.value : 0.5).clamp(0.0, 1.0);
     final opacity = switch (labelProgress) {
-      < 0.16 => Curves.easeInOutSine.transform(labelProgress / 0.16),
-      > 0.84 =>
-        1 - Curves.easeInOutSine.transform((labelProgress - 0.84) / 0.16),
+      < 0.16 => Curves.easeInOutSine.transform(
+          (labelProgress / 0.16).clamp(0.0, 1.0),
+        ),
+      > 0.84 => 1 -
+          Curves.easeInOutSine.transform(
+            ((labelProgress - 0.84) / 0.16).clamp(0.0, 1.0),
+          ),
       _ => 1.0,
     };
     canvas.saveLayer(
