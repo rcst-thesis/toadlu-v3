@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/features/home/presentation/screens/home_screen.dart';
 import 'package:tudlo/features/load/presentation/load_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
@@ -127,15 +128,7 @@ class MainMenuScreen extends StatelessWidget {
                     height: 44,
                     child: _hitTarget(
                       label: 'continue',
-                      onTap: () => _open(
-                        context,
-                        const PlaceholderScreen(
-                          title: 'Continue',
-                          description:
-                              'Continue flow placeholder. Connect saved progress here.',
-                          icon: Icons.play_circle_outline_rounded,
-                        ),
-                      ),
+                      onTap: () => _open(context, const HomeScreen()),
                     ),
                   ),
                   Positioned(

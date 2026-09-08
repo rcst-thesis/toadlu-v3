@@ -62,6 +62,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('welcome next opens the tutorial placeholder', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: WelcomeAboardScreen()));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('welcome-aboard-next-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(PlaceholderScreen), findsOneWidget);
+    expect(find.text('Tutorial'), findsOneWidget);
+    expect(
+        find.text('New learner tutorial will be built here.'), findsOneWidget);
+  });
+
   testWidgets('startup shows both timed splashes then the menu',
       (tester) async {
     await tester.pumpWidget(
@@ -124,6 +138,16 @@ void main() {
       find.bySemanticsLabel('maayong pag balik! Load saved progress'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('main menu continue temporarily opens Home', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MainMenuScreen()));
+
+    await tester.tap(find.text('continue'));
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(find.byKey(const Key('home-screen')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('start new koka opens the functional name screen',

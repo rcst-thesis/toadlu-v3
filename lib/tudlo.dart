@@ -3,6 +3,8 @@ export 'core/navigation/fade_page_route.dart';
 export 'core/theme/app_colors.dart';
 export 'features/load/domain/save_preview.dart';
 export 'features/home/presentation/screens/home_loading_screen.dart';
+export 'features/home/presentation/screens/home_screen.dart';
+export 'features/home/presentation/widgets/home_bottom_navigation.dart';
 export 'features/load/presentation/load_screen.dart';
 export 'features/load/presentation/widgets/load_confirmation_dialog.dart';
 export 'features/load/presentation/widgets/save_card.dart';

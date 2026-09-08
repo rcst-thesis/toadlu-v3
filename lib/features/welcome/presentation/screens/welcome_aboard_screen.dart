@@ -3,6 +3,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:tudlo/core/navigation/fade_page_route.dart';
+import 'package:tudlo/features/home/presentation/screens/home_screen.dart';
+import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/welcome/presentation/widgets/farm_depth_background.dart';
 import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
 
@@ -19,6 +22,31 @@ class WelcomeAboardScreen extends StatefulWidget {
 class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
   Offset _farmTilt = Offset.zero;
   Timer? _recenterTimer;
+  bool _openingTutorial = false;
+  bool _openingHome = false;
+
+  Future<void> _openTutorialPlaceholder() async {
+    if (_openingTutorial) return;
+    _openingTutorial = true;
+    await Navigator.of(context).push(
+      FadePageRoute<void>(
+        page: const PlaceholderScreen(
+          title: 'Tutorial',
+          description: 'New learner tutorial will be built here.',
+          icon: Icons.school_rounded,
+        ),
+      ),
+    );
+    _openingTutorial = false;
+  }
+
+  Future<void> _openHome() async {
+    if (_openingHome) return;
+    _openingHome = true;
+    await Navigator.of(context).pushReplacement(
+      FadePageRoute<void>(page: const HomeScreen()),
+    );
+  }
 
   void _tiltFarm(PointerEvent event, Size size) {
     _recenterTimer?.cancel();
@@ -62,8 +90,8 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
                 .clamp(0.78, 1.08);
             final verticalScale =
                 (constraints.maxHeight / 917).clamp(0.62, 1.08);
-            final useWideFarm = compact ||
-                constraints.maxWidth / constraints.maxHeight > 0.52;
+            final useWideFarm =
+                compact || constraints.maxWidth / constraints.maxHeight > 0.52;
             final farmAspectRatio = useWideFarm ? 535 / 552 : 412 / 552;
             final farmWidth = math.min(
               constraints.maxWidth,
@@ -209,8 +237,9 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
                             primaryLabel: 'next',
                             secondaryLabel: 'skip',
                             primaryStyle: OnboardingPrimaryButtonStyle.white,
-                            onPrimaryPressed: widget.onNext ?? () {},
-                            onSecondaryPressed: widget.onSkip ?? () {},
+                            onPrimaryPressed:
+                                widget.onNext ?? _openTutorialPlaceholder,
+                            onSecondaryPressed: widget.onSkip ?? _openHome,
                           ),
                         ),
                       ),
