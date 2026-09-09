@@ -75,18 +75,231 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home settings button opens the existing Settings destination',
+  testWidgets('Home bookshelf uses the 412-wide Figma placement',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final bookshelf = find.byKey(const Key('home-bookshelf'));
+    expect(tester.getSize(bookshelf), const Size(160, 37));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home standing lamp uses the chained Figma size',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final lamp = find.byKey(const Key('home-standing-lamp'));
+    expect(tester.getSize(lamp), const Size(36.25, 126));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home drawer uses the chained Figma size', (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final drawer = find.byKey(const Key('home-drawer'));
+    expect(tester.getSize(drawer), const Size(52, 41));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home couch uses the chained Figma size', (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final couch = find.byKey(const Key('home-couch'));
+    expect(tester.getSize(couch), const Size(152, 79));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home lily mat uses the chained Figma size', (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final lilyMat = find.byKey(const Key('home-lily-mat'));
+    expect(tester.getSize(lilyMat), const Size(361, 88));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home room surfaces keep the cream border behind the floor',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final creamWall = tester.widget<ColoredBox>(
+      find.byKey(const Key('home-cream-wall')),
+    );
+    final floor = tester.widget<ColoredBox>(
+      find.byKey(const Key('home-floor')),
+    );
+    expect(creamWall.color, const Color(0xFFFBF3E4));
+    expect(floor.color, const Color(0xFFB88956));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home settings button opens the existing Settings destination',
+      (tester) async {
+    final animationController = AppAnimationController();
+    await tester.pumpWidget(
+      AppAnimationScope(
+        controller: animationController,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
 
     final settingsButton = find.byKey(const Key('home-settings-button'));
     expect(settingsButton, findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
 
     await tester.tap(settingsButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('Settings screen placeholder'), findsOneWidget);
+    expect(find.text('animations'), findsOneWidget);
+    expect(find.byKey(const Key('settings-animation-switch')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Settings animation switch controls app-wide motion',
+      (tester) async {
+    final animationController = AppAnimationController();
+    await tester.pumpWidget(
+      AppAnimationScope(
+        controller: animationController,
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('settings-animation-switch')));
+    await tester.pump();
+
+    expect(animationController.isEnabled, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home door opens the temporary Map destination', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    expect(find.byKey(const Key('home-door')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('home-door-button')));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Temporary Map shell'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home bookshelf books open the temporary Lessons destination',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('home-bookshelf-books-button')));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Temporary Lessons shell'), findsOneWidget);
+    final lessonsTile = tester.widget<Material>(
+      find.byKey(const Key('home-nav-tile-lessons')),
+    );
+    expect(lessonsTile.color, const Color(0xFF966E42));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home Map navigation opens the selected Map placeholder',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('home-nav-map')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Temporary Map shell'), findsOneWidget);
+    expect(find.byKey(const Key('home-bottom-navigation')), findsOneWidget);
+    final mapTile = tester.widget<Material>(
+      find.byKey(const Key('home-nav-tile-map')),
+    );
+    expect(mapTile.color, const Color(0xFF966E42));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home navigation tabs do not stack Lessons behind Map',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('home-nav-lessons')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Temporary Lessons shell'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('home-nav-map')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Temporary Map shell'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('home-nav-home')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const Key('home-screen')), findsOneWidget);
+    expect(find.text('Temporary Lessons shell'), findsNothing);
+    expect(find.text('Temporary Map shell'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home door repeats a short exploration hint', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final nudge = tester.widget<Transform>(
+      find.byKey(const Key('home-door-hint-nudge')),
+    );
+    expect(nudge.transform.storage[12], 0);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      tester
+          .widget<Transform>(find.byKey(const Key('home-door-hint-nudge')))
+          .transform
+          .storage[12]
+          .abs(),
+      greaterThan(0),
+    );
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('explore!'), findsOneWidget);
+    expect(find.byKey(const Key('home-door-hint-phrase')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 class HomeBottomNavigation extends StatelessWidget {
-  const HomeBottomNavigation({this.onItemTapped, super.key});
+  const HomeBottomNavigation({
+    this.onItemTapped,
+    this.selectedIndex = 0,
+    super.key,
+  }) : assert(selectedIndex >= 0 && selectedIndex < 6);
 
   final ValueChanged<int>? onItemTapped;
+  final int selectedIndex;
 
   static const _items = <_HomeNavigationItem>[
     _HomeNavigationItem(
@@ -46,12 +51,15 @@ class HomeBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      key: const Key('home-bottom-navigation'),
-      color: const Color(0xFFBD8C57),
-      elevation: 8,
-      shadowColor: const Color(0x55000000),
-      child: SafeArea(
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    return SizedBox(
+      height: 66 + bottomInset,
+      child: Material(
+        key: const Key('home-bottom-navigation'),
+        color: const Color(0xFFBD8C57),
+        elevation: 8,
+        shadowColor: const Color(0x55000000),
+        child: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -75,7 +83,7 @@ class HomeBottomNavigation extends StatelessWidget {
                             Expanded(
                               child: _NavigationButton(
                                 item: _items[index],
-                                selected: index == 0,
+                                selected: index == selectedIndex,
                                 labelFontSize: labelFontSize,
                                 onTap: () => onItemTapped?.call(index),
                               ),
@@ -88,6 +96,7 @@ class HomeBottomNavigation extends StatelessWidget {
               ),
             ),
           ),
+        ),
         ),
       ),
     );
@@ -142,6 +151,7 @@ class _NavigationButton extends StatelessWidget {
         child: AspectRatio(
           aspectRatio: .92,
           child: Material(
+            key: Key('home-nav-tile-${item.label}'),
             color: selected ? const Color(0xFF966E42) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             clipBehavior: Clip.antiAlias,

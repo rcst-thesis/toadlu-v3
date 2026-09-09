@@ -10,8 +10,14 @@ import 'package:tudlo/features/welcome/presentation/widgets/farm_depth_backgroun
 import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
 
 class WelcomeAboardScreen extends StatefulWidget {
-  const WelcomeAboardScreen({this.onNext, this.onSkip, super.key});
+  const WelcomeAboardScreen({
+    this.learnerName = '',
+    this.onNext,
+    this.onSkip,
+    super.key,
+  });
 
+  final String learnerName;
   final VoidCallback? onNext;
   final VoidCallback? onSkip;
 
@@ -43,8 +49,10 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
   Future<void> _openHome() async {
     if (_openingHome) return;
     _openingHome = true;
-    await Navigator.of(context).pushReplacement(
-      FadePageRoute<void>(page: const HomeScreen()),
+    unawaited(
+      Navigator.of(context).pushReplacement(
+        FadePageRoute<void>(page: HomeScreen(learnerName: widget.learnerName)),
+      ),
     );
   }
 

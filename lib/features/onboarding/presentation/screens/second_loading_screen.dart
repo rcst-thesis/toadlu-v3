@@ -28,6 +28,8 @@ class SecondLoadingScreen extends StatefulWidget {
 
 class _SecondLoadingScreenState extends State<SecondLoadingScreen> {
   bool _started = false;
+  bool _preparing = false;
+  Object? _preparationError;
 
   @override
   void didChangeDependencies() {
@@ -38,21 +40,36 @@ class _SecondLoadingScreenState extends State<SecondLoadingScreen> {
   }
 
   Future<void> _prepareAndContinue() async {
-    await Future.wait<void>([
-      Future<void>.delayed(widget.minimumDisplayDuration),
-      widget.prepareNextStage?.call() ?? _warmNextStageAssets(),
-    ]);
-    if (!mounted) return;
+    if (_preparing) return;
+    setState(() {
+      _preparing = true;
+      _preparationError = null;
+    });
+    try {
+      await Future.wait<void>([
+        Future<void>.delayed(widget.minimumDisplayDuration),
+        widget.prepareNextStage?.call() ?? _warmNextStageAssets(),
+      ]);
+      if (!mounted) return;
 
-    await Navigator.of(context).pushReplacement(
-      FadePageRoute<void>(
-        page: LearnerCardScreen(
-          learnerName: widget.learnerName,
-          grade: widget.grade,
-          energy: widget.energy,
+      unawaited(
+        Navigator.of(context).pushReplacement(
+          FadePageRoute<void>(
+            page: LearnerCardScreen(
+              learnerName: widget.learnerName,
+              grade: widget.grade,
+              energy: widget.energy,
+            ),
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _preparing = false;
+        _preparationError = error;
+      });
+    }
   }
 
   Future<void> _warmNextStageAssets() async {
@@ -85,21 +102,40 @@ class _SecondLoadingScreenState extends State<SecondLoadingScreen> {
               final artworkWidth =
                   (constraints.maxWidth * 125 / 412).clamp(99.0, 172.0);
               return Center(
-                child: Semantics(
-                  label: 'Koka second loading screen',
-                  image: true,
-                  child: SizedBox(
-                    key: const Key('second-loading-artwork-frame'),
-                    width: artworkWidth,
-                    child: const Image(
-                      image: AssetImage(
-                        'assets/images/second_loading_koka.png',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Semantics(
+                      label: 'Koka second loading screen',
+                      image: true,
+                      child: SizedBox(
+                        key: const Key('second-loading-artwork-frame'),
+                        width: artworkWidth,
+                        child: const Image(
+                          image: AssetImage(
+                            'assets/images/second_loading_koka.png',
+                          ),
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          excludeFromSemantics: true,
+                        ),
                       ),
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
-                      excludeFromSemantics: true,
                     ),
-                  ),
+                    if (_preparationError != null) ...[
+                      const SizedBox(height: 18),
+                      const Text('wala natapos ang paghanda'),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        key: const Key('second-loading-retry-button'),
+                        onPressed: _prepareAndContinue,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('try liwat'),
+                      ),
+                    ],
+                  ],
                 ),
               );
             },

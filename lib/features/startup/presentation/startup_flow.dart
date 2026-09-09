@@ -23,6 +23,8 @@ class StartupFlow extends StatefulWidget {
 
 class _StartupFlowState extends State<StartupFlow> {
   int _stage = 0;
+  bool _running = false;
+  Object? _startupError;
 
   @override
   void initState() {
@@ -33,46 +35,44 @@ class _StartupFlowState extends State<StartupFlow> {
   }
 
   Future<void> _runStartup() async {
-    // Maral remains visible for the full minimum duration while the next
-    // splash is decoded into Flutter's image cache.
-    await Future.wait<void>([
-      Future<void>.delayed(widget.splashDuration),
-      widget.splashWarmup?.call() ??
-          precacheImage(
-            const AssetImage('assets/images/loading_logo.png'),
-            context,
-          ),
-    ]);
-    if (!mounted) return;
-    setState(() => _stage = 1);
+    if (_running) return;
+    _running = true;
+    try {
+      // Maral remains visible for the full minimum duration while the next
+      // splash is decoded into Flutter's image cache.
+      await Future.wait<void>([
+        Future<void>.delayed(widget.splashDuration),
+        widget.splashWarmup?.call() ??
+            precacheImage(
+              const AssetImage('assets/images/loading_logo.png'),
+              context,
+            ),
+      ]);
+      if (!mounted) return;
+      setState(() => _stage = 1);
 
-    // Tudlo remains visible for at least five seconds. It stays on screen
-    // longer when application asset preparation has not completed yet.
-    final minimumDisplay = Future<void>.delayed(widget.splashDuration);
-    final assetWarmup = widget.assetWarmup?.call() ?? _precacheAppAssets();
-    await Future.wait<void>([minimumDisplay, assetWarmup]);
-    if (!mounted) return;
-    setState(() => _stage = 2);
+      // Tudlo remains visible for at least five seconds. It stays on screen
+      // longer when the Main Menu's immediate artwork is not ready yet.
+      final minimumDisplay = Future<void>.delayed(widget.splashDuration);
+      final assetWarmup = widget.assetWarmup?.call() ?? _precacheMenuAssets();
+      await Future.wait<void>([minimumDisplay, assetWarmup]);
+      if (!mounted) return;
+      setState(() => _stage = 2);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _startupError = error);
+    } finally {
+      _running = false;
+    }
   }
 
-  Future<void> _precacheAppAssets() async {
+  Future<void> _precacheMenuAssets() async {
+    // Later screens own their load boundaries; do not retain onboarding art
+    // at app launch when the Main Menu is the only immediate destination.
     const assets = <String>[
       'assets/images/main_menu_reference.png',
       'assets/images/onboarding_footer.png',
       'assets/images/onboarding_logo.png',
-      'assets/images/load_logo.png',
-      'assets/images/toadlu_icon.png',
-      'assets/images/koka_green.png',
-      'assets/images/koka_blue.png',
-      'assets/images/koka_red.png',
-      'assets/images/name_character.png',
-      'assets/images/grade_1_header.png',
-      'assets/images/grade_2_header.png',
-      'assets/images/grade_3_header.png',
-      'assets/images/energy_instructions.png',
-      'assets/images/energy_heading.png',
-      'assets/images/energy_bubble_label.png',
-      'assets/images/second_loading_koka.png',
     ];
     await Future.wait<void>(
       assets.map((asset) => precacheImage(AssetImage(asset), context)),
@@ -81,6 +81,30 @@ class _StartupFlowState extends State<StartupFlow> {
 
   @override
   Widget build(BuildContext context) {
+    if (_startupError != null) {
+      return ColoredBox(
+        color: AppColors.mint,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('wala natapos ang paghanda'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () {
+                  setState(() {
+                    _stage = 0;
+                    _startupError = null;
+                  });
+                  unawaited(_runStartup());
+                },
+                child: const Text('try liwat'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 550),
       switchInCurve: Curves.easeOutCubic,

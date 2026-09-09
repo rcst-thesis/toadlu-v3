@@ -18,6 +18,10 @@ class HomeLoadingScreen extends StatefulWidget {
     this.prepareHome,
     this.precacheWelcomeVectors,
     this.homeBuilder,
+    this.artworkAsset = 'assets/images/koka_blue_2_loading.png',
+    this.artworkIsSvg = false,
+    this.artworkWidthFactor = 0.73,
+    this.artworkSemanticsLabel = 'Koka third loading screen',
     super.key,
   });
 
@@ -29,6 +33,10 @@ class HomeLoadingScreen extends StatefulWidget {
   final Future<void> Function()? prepareHome;
   final Future<void> Function(BuildContext context)? precacheWelcomeVectors;
   final WidgetBuilder? homeBuilder;
+  final String artworkAsset;
+  final bool artworkIsSvg;
+  final double artworkWidthFactor;
+  final String artworkSemanticsLabel;
 
   @override
   State<HomeLoadingScreen> createState() => _HomeLoadingScreenState();
@@ -72,8 +80,6 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
   ];
 
   static const _welcomeVectorAssets = <String>[
-    'assets/images/welcome_farm_background.svg',
-    'assets/images/welcome_farm_background_wide.svg',
     'assets/images/welcome_farm_far_v3.svg',
     'assets/images/welcome_farm_mountains_v3.svg',
     'assets/images/welcome_farm_fields_v3.svg',
@@ -116,8 +122,10 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
         _prepareHomeResources().timeout(widget.preparationTimeout),
       ]);
       if (!mounted) return;
-      await Navigator.of(context).pushReplacement(
-        FadePageRoute<void>(page: _buildHome(context)),
+      unawaited(
+        Navigator.of(context).pushReplacement(
+          FadePageRoute<void>(page: _buildHome(context)),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -129,12 +137,16 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
   }
 
   Future<void> _prepareHomeResources() async {
+    // Let the loading state paint once, then start preparation immediately.
+    // The configured minimum display duration is the only intentional delay.
     await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 400));
     await _releaseOnboardingAssets();
     if (!mounted) return;
     await Future.wait<void>([
-      widget.precacheWelcomeVectors?.call(context) ?? _precacheWelcomeVectors(),
+      widget.precacheWelcomeVectors?.call(context) ??
+          (widget.homeBuilder == null
+              ? _precacheWelcomeVectors()
+              : Future<void>.value()),
       widget.prepareHome?.call() ?? _waitForNextFrame(),
     ]);
   }
@@ -159,7 +171,7 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
 
   Widget _buildHome(BuildContext context) {
     if (widget.homeBuilder case final builder?) return builder(context);
-    return const WelcomeAboardScreen();
+    return WelcomeAboardScreen(learnerName: widget.learnerName);
   }
 
   @override
@@ -185,17 +197,24 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Semantics(
-                            label: 'Koka third loading screen',
+                            label: widget.artworkSemanticsLabel,
                             image: true,
                             child: FractionallySizedBox(
-                              widthFactor: 0.73,
-                              child: Image.asset(
-                                'assets/images/koka_blue_2_loading.png',
-                                key: const Key('home-loading-koka'),
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                                excludeFromSemantics: true,
-                              ),
+                              widthFactor: widget.artworkWidthFactor,
+                              child: widget.artworkIsSvg
+                                  ? SvgPicture.asset(
+                                      widget.artworkAsset,
+                                      key: const Key('home-loading-koka'),
+                                      fit: BoxFit.contain,
+                                      excludeFromSemantics: true,
+                                    )
+                                  : Image.asset(
+                                      widget.artworkAsset,
+                                      key: const Key('home-loading-koka'),
+                                      fit: BoxFit.contain,
+                                      filterQuality: FilterQuality.high,
+                                      excludeFromSemantics: true,
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 3),

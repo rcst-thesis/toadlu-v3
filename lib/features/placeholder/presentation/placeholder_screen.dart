@@ -9,6 +9,7 @@ class PlaceholderScreen extends StatelessWidget {
     required this.title,
     required this.description,
     required this.icon,
+    this.bottomNavigationBar,
     this.showBackButton = true,
     super.key,
   });
@@ -16,14 +17,17 @@ class PlaceholderScreen extends StatelessWidget {
   final String title;
   final String description;
   final IconData icon;
+  final Widget? bottomNavigationBar;
   final bool showBackButton;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: bottomNavigationBar,
       body: ColoredBox(
         color: AppColors.mint,
         child: SafeArea(
+          bottom: bottomNavigationBar == null,
           child: Stack(
             children: [
               Positioned.fill(

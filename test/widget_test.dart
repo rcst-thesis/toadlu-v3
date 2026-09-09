@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tudlo/tudlo.dart';
 
 void main() {
@@ -128,6 +128,30 @@ void main() {
     expect(find.text('start new koka'), findsOneWidget);
   });
 
+  testWidgets('startup exposes a retry when critical preparation fails',
+      (tester) async {
+    var attempts = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StartupFlow(
+          splashDuration: Duration.zero,
+          splashWarmup: () async {},
+          assetWarmup: () async {
+            attempts++;
+            if (attempts == 1) throw StateError('missing critical asset');
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.text('wala natapos ang paghanda'), findsOneWidget);
+    await tester.tap(find.text('try liwat'));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.text('start new koka'), findsOneWidget);
+  });
+
   testWidgets('main menu buttons open their screens', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: MainMenuScreen()));
     await tester.tap(find.text('load'));
@@ -140,13 +164,50 @@ void main() {
     );
   });
 
-  testWidgets('main menu continue temporarily opens Home', (tester) async {
+  testWidgets('main menu continue opens loading 4', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: MainMenuScreen()));
 
     await tester.tap(find.text('continue'));
     await tester.pump(const Duration(milliseconds: 350));
 
+    expect(find.byType(FourthLoadingScreen), findsOneWidget);
+    expect(find.byKey(const Key('fourth-loading-screen')), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Koka fourth loading screen'),
+      findsOneWidget,
+    );
+    expect(
+      (tester.widget<Image>(find.byKey(const Key('home-loading-koka'))).image
+              as AssetImage)
+          .assetName,
+      'assets/images/koka_red_loading.png',
+    );
+    expect(find.bySemanticsLabel('hopping in...'), findsOneWidget);
+    expect(find.byType(MainMenuScreen), findsNothing);
+    expect(
+      Navigator.of(tester.element(find.byType(FourthLoadingScreen))).canPop(),
+      isFalse,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('loading 4 finishes on the current Home screen', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FourthLoadingScreen(
+          minimumDisplayDuration: Duration.zero,
+          prepareHome: () async {},
+          precacheHomeAssets: (_) async {},
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 401));
+    await tester.pump(const Duration(milliseconds: 350));
+
     expect(find.byKey(const Key('home-screen')), findsOneWidget);
+    expect(find.byType(FourthLoadingScreen), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -362,6 +423,35 @@ void main() {
     expect(find.text('Maya'), findsOneWidget);
     expect(find.text('grade 3'), findsOneWidget);
     expect(find.bySemanticsLabel('70 percent learning energy'), findsOneWidget);
+  });
+
+  testWidgets('second loading exposes a retry when preparation fails',
+      (tester) async {
+    var attempts = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SecondLoadingScreen(
+          learnerName: 'Maya',
+          grade: 1,
+          energy: 60,
+          minimumDisplayDuration: Duration.zero,
+          prepareNextStage: () async {
+            attempts++;
+            if (attempts == 1) throw StateError('missing learner card asset');
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(
+      find.byKey(const Key('second-loading-retry-button')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('second-loading-retry-button')));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.byType(LearnerCardScreen), findsOneWidget);
   });
 
   testWidgets('learner card displays the saved learner details',

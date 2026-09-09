@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
-import 'package:tudlo/features/home/presentation/screens/home_screen.dart';
+import 'package:tudlo/features/home/presentation/screens/fourth_loading_screen.dart';
 import 'package:tudlo/features/load/presentation/load_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
-import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
+import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
 
   void _open(BuildContext context, Widget screen) {
     Navigator.of(context).push(FadePageRoute<void>(page: screen));
+  }
+
+  void _replaceWith(BuildContext context, Widget screen) {
+    Navigator.of(context).pushReplacement(FadePageRoute<void>(page: screen));
   }
 
   Widget _hitTarget({
@@ -103,11 +107,7 @@ class MainMenuScreen extends StatelessWidget {
                       label: 'Settings',
                       onTap: () => _open(
                         context,
-                        const PlaceholderScreen(
-                          title: 'Settings',
-                          description: 'Settings screen placeholder',
-                          icon: Icons.settings_rounded,
-                        ),
+                        const SettingsScreen(),
                       ),
                     ),
                   ),
@@ -128,7 +128,8 @@ class MainMenuScreen extends StatelessWidget {
                     height: 44,
                     child: _hitTarget(
                       label: 'continue',
-                      onTap: () => _open(context, const HomeScreen()),
+                      onTap: () =>
+                          _replaceWith(context, const FourthLoadingScreen()),
                     ),
                   ),
                   Positioned(
