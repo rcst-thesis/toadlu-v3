@@ -14,14 +14,31 @@ import 'package:tudlo/features/home/presentation/widgets/home_lily_mat.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_koka_mascot.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_settings_button.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_standing_lamp.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_word_of_the_day.dart';
 import 'package:tudlo/features/home/presentation/widgets/interactive_home_lamp.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({this.learnerName = '', super.key});
 
   final String learnerName;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  static const _upperNavigationMaxOpacity = .84;
+  static const _upperNavigationRevealStartFraction = .45;
+
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _openSettings(BuildContext context) {
     Navigator.of(context).push(
@@ -34,17 +51,17 @@ class HomeScreen extends StatelessWidget {
   void _openMap(BuildContext context, {bool replaceCurrent = false}) {
     final route = FadePageRoute<void>(
       page: PlaceholderScreen(
-          title: 'Map',
-          description: 'Temporary Map shell',
-          icon: Icons.map_rounded,
-          bottomNavigationBar: HomeBottomNavigation(
-            selectedIndex: 3,
-            onItemTapped: (index) {
-              if (index == 0) _openHome(context);
-              if (index == 2) _openLessons(context, replaceCurrent: true);
-            },
-          ),
+        title: 'Map',
+        description: 'Temporary Map shell',
+        icon: Icons.map_rounded,
+        bottomNavigationBar: HomeBottomNavigation(
+          selectedIndex: 3,
+          onItemTapped: (index) {
+            if (index == 0) _openHome(context);
+            if (index == 2) _openLessons(context, replaceCurrent: true);
+          },
         ),
+      ),
     );
     if (replaceCurrent) {
       Navigator.of(context).pushReplacement<void, void>(route);
@@ -56,17 +73,17 @@ class HomeScreen extends StatelessWidget {
   void _openLessons(BuildContext context, {bool replaceCurrent = false}) {
     final route = FadePageRoute<void>(
       page: PlaceholderScreen(
-          title: 'Lessons',
-          description: 'Temporary Lessons shell',
-          icon: Icons.menu_book_rounded,
-          bottomNavigationBar: HomeBottomNavigation(
-            selectedIndex: 2,
-            onItemTapped: (index) {
-              if (index == 0) _openHome(context);
-              if (index == 3) _openMap(context, replaceCurrent: true);
-            },
-          ),
+        title: 'Lessons',
+        description: 'Temporary Lessons shell',
+        icon: Icons.menu_book_rounded,
+        bottomNavigationBar: HomeBottomNavigation(
+          selectedIndex: 2,
+          onItemTapped: (index) {
+            if (index == 0) _openHome(context);
+            if (index == 3) _openMap(context, replaceCurrent: true);
+          },
         ),
+      ),
     );
     if (replaceCurrent) {
       Navigator.of(context).pushReplacement<void, void>(route);
@@ -97,6 +114,7 @@ class HomeScreen extends StatelessWidget {
                     Positioned.fill(
                       child: SingleChildScrollView(
                         key: const Key('home-content-scroll-view'),
+                        controller: _scrollController,
                         child: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 720),
@@ -145,8 +163,9 @@ class HomeScreen extends StatelessWidget {
                                             sceneScale,
                                         width: _HomeSceneLayout.lilyMat.width *
                                             sceneScale,
-                                        height: _HomeSceneLayout.lilyMat.height *
-                                            sceneScale,
+                                        height:
+                                            _HomeSceneLayout.lilyMat.height *
+                                                sceneScale,
                                         child: const HomeLilyMat(),
                                       ),
                                       const Positioned(
@@ -177,9 +196,9 @@ class HomeScreen extends StatelessWidget {
                                         width:
                                             _HomeSceneLayout.bookshelf.width *
                                                 sceneScale,
-                                        height: _HomeSceneLayout
-                                                .bookshelf.height *
-                                            sceneScale,
+                                        height:
+                                            _HomeSceneLayout.bookshelf.height *
+                                                sceneScale,
                                         child: HomeBookshelf(
                                           onTap: () => _openLessons(context),
                                         ),
@@ -196,8 +215,9 @@ class HomeScreen extends StatelessWidget {
                                         child: const HomeCouch(),
                                       ),
                                       Positioned(
-                                        left: _HomeSceneLayout.standingLamp.left *
-                                            sceneScale,
+                                        left:
+                                            _HomeSceneLayout.standingLamp.left *
+                                                sceneScale,
                                         top: _HomeSceneLayout.standingLamp.top *
                                             sceneScale,
                                         width: _HomeSceneLayout
@@ -224,15 +244,15 @@ class HomeScreen extends StatelessWidget {
                                             sceneScale,
                                         top: _HomeSceneLayout.kokaMascot.top *
                                             sceneScale,
-                                        width: _HomeSceneLayout
-                                                .kokaMascot.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout
-                                                .kokaMascot.height *
-                                            sceneScale,
+                                        width:
+                                            _HomeSceneLayout.kokaMascot.width *
+                                                sceneScale,
+                                        height:
+                                            _HomeSceneLayout.kokaMascot.height *
+                                                sceneScale,
                                         child: HomeKokaMascot(
                                           key: const Key('home-koka-mascot'),
-                                          learnerName: learnerName,
+                                          learnerName: widget.learnerName,
                                         ),
                                       ),
                                       Positioned(
@@ -249,12 +269,58 @@ class HomeScreen extends StatelessWidget {
                                           onTap: () => _openMap(context),
                                         ),
                                       ),
+                                      Positioned(
+                                        left:
+                                            _HomeSceneLayout.wordOfTheDay.left *
+                                                sceneScale,
+                                        top: _HomeSceneLayout.wordOfTheDay.top *
+                                            sceneScale,
+                                        width: _HomeSceneLayout
+                                                .wordOfTheDay.width *
+                                            sceneScale,
+                                        height: _HomeSceneLayout
+                                                .wordOfTheDay.height *
+                                            sceneScale,
+                                        child: const HomeWordOfTheDay(),
+                                      ),
                                     ],
                                   );
                                 },
                               ),
                             ),
                           ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 108 * topControlScale,
+                      child: IgnorePointer(
+                        child: AnimatedBuilder(
+                          animation: _scrollController,
+                          builder: (context, child) {
+                            final floorScrollOffset = _HomeSceneLayout
+                                    .floorTop *
+                                (canvasWidth / _HomeSceneLayout.designWidth);
+                            final revealStart = floorScrollOffset *
+                                _upperNavigationRevealStartFraction;
+                            final revealRange = floorScrollOffset - revealStart;
+                            final scrollOffset = _scrollController.hasClients
+                                ? _scrollController.offset
+                                : 0.0;
+                            final progress =
+                                ((scrollOffset - revealStart) / revealRange)
+                                    .clamp(0.0, 1.0);
+                            return Opacity(
+                              key: const Key('home-upper-navigation-bar'),
+                              opacity: progress * _upperNavigationMaxOpacity,
+                              child: const ColoredBox(
+                                color: Color(0xFFB88956),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -385,6 +451,18 @@ abstract final class _HomeSceneLayout {
     top: 260,
     width: kokaMascotHeight * _kokaMascotAspectRatio,
     height: kokaMascotHeight,
+  );
+
+  // Word of the Day card. Change wordOfTheDayWidth to resize the card; its
+  // height follows the supplied 378 x 216 SVG ratio automatically.
+  static const double wordOfTheDayWidth = 378;
+  static const double _wordOfTheDayAspectRatio = 216 / 378;
+
+  static const wordOfTheDay = _HomeSceneItemLayout(
+    left: 17,
+    top: 480,
+    width: wordOfTheDayWidth,
+    height: wordOfTheDayWidth * _wordOfTheDayAspectRatio,
   );
 
   static const double creamFloorBorderTop = 346;

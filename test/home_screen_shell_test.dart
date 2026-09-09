@@ -44,6 +44,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Home upper navigation materializes as the floor is reached',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final navigationBar = find.byKey(const Key('home-upper-navigation-bar'));
+    expect(tester.widget<Opacity>(navigationBar).opacity, 0);
+
+    await tester.drag(
+      find.byKey(const Key('home-content-scroll-view')),
+      const Offset(0, -500),
+    );
+    await tester.pump();
+
+    final revealedOpacity = tester.widget<Opacity>(navigationBar).opacity;
+    expect(revealedOpacity, greaterThan(0));
+    expect(revealedOpacity, lessThan(.85));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Home shell avoids overflow on phone and tablet sizes',
       (tester) async {
     for (final size in const [
@@ -90,8 +115,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home standing lamp uses the chained Figma size',
-      (tester) async {
+  testWidgets('Home standing lamp uses the chained Figma size', (tester) async {
     tester.view.physicalSize = const Size(412, 917);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -144,6 +168,23 @@ void main() {
 
     final lilyMat = find.byKey(const Key('home-lily-mat'));
     expect(tester.getSize(lilyMat), const Size(361, 88));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home Word of the Day uses the chained Figma size',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final card = find.byKey(const Key('home-word-of-the-day'));
+    expect(tester.getSize(card), const Size(378, 216));
+    expect(find.text('word of the day'), findsOneWidget);
+    expect(find.text('balay'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
