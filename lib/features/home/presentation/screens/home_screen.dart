@@ -7,6 +7,7 @@ import 'package:tudlo/features/home/presentation/widgets/animated_home_window.da
 import 'package:tudlo/features/home/presentation/widgets/home_bottom_navigation.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bookshelf.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_couch.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_content_footer.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_door.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_drawer.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_energy_indicator.dart';
@@ -101,14 +102,21 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: const Key('home-screen'),
       backgroundColor: const Color(0xFFEADF99),
-      body: Column(
-        children: [
-          Expanded(
-            child: LayoutBuilder(
+      bottomNavigationBar: HomeBottomNavigation(
+        onItemTapped: (index) {
+          if (index == 2) _openLessons(context);
+          if (index == 3) _openMap(context);
+        },
+      ),
+      body: LayoutBuilder(
               builder: (context, viewport) {
                 final canvasWidth = math.min(viewport.maxWidth, 720.0);
                 final canvasSideInset = (viewport.maxWidth - canvasWidth) / 2;
                 final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
+                final sceneScale = canvasWidth / _HomeSceneLayout.designWidth;
+                final contentEndSceneHeight =
+                    _HomeSceneLayout.footerBottom * sceneScale;
+                final minimumScrollableSceneHeight = viewport.maxHeight * 1.5;
                 return Stack(
                   children: [
                     Positioned.fill(
@@ -120,8 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             constraints: const BoxConstraints(maxWidth: 720),
                             child: SizedBox(
                               height: math.max(
-                                720,
-                                viewport.maxHeight * 1.5,
+                                minimumScrollableSceneHeight,
+                                contentEndSceneHeight,
                               ),
                               width: double.infinity,
                               child: LayoutBuilder(
@@ -283,6 +291,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                             sceneScale,
                                         child: const HomeWordOfTheDay(),
                                       ),
+                                      Positioned(
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        height: _HomeSceneLayout.footerHeight *
+                                            sceneScale,
+                                        child: const HomeContentFooter(),
+                                      ),
                                     ],
                                   );
                                 },
@@ -350,15 +366,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-          ),
-          HomeBottomNavigation(
-            onItemTapped: (index) {
-              if (index == 2) _openLessons(context);
-              if (index == 3) _openMap(context);
-            },
-          ),
-        ],
-      ),
     );
   }
 }
@@ -464,6 +471,14 @@ abstract final class _HomeSceneLayout {
     width: wordOfTheDayWidth,
     height: wordOfTheDayWidth * _wordOfTheDayAspectRatio,
   );
+
+  // The scrollable Home footer uses its own width-relative painted wave.
+  static const double footerHeight = 48;
+
+  // Update contentBottom when a new Home item extends below the Word card.
+  // The scroll scene will then automatically grow to fit it and the footer.
+  static final double contentBottom = wordOfTheDay.top + wordOfTheDay.height;
+  static final double footerBottom = contentBottom + footerHeight;
 
   static const double creamFloorBorderTop = 346;
   static const double floorTop = 350;

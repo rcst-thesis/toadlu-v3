@@ -188,6 +188,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Home content footer closes the scrolling scene', (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+
+    final footer = find.byKey(const Key('home-content-footer'));
+    expect(tester.getSize(footer), const Size(412, 48));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home footer meets the fixed navigation without a gap',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump();
+    await tester.drag(
+      find.byKey(const Key('home-content-scroll-view')),
+      const Offset(0, -2000),
+    );
+    await tester.pump();
+
+    final footer = tester.getRect(find.byKey(const Key('home-content-footer')));
+    final navigation =
+        tester.getRect(find.byKey(const Key('home-bottom-navigation')));
+    expect(footer.bottom, moreOrLessEquals(navigation.top));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Home room surfaces keep the cream border behind the floor',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
