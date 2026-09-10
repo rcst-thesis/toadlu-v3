@@ -13,6 +13,8 @@ import 'package:tudlo/features/home/presentation/widgets/home_drawer.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_energy_indicator.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lily_mat.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_koka_mascot.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_lesson_preview_dialog.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_settings_button.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_standing_lamp.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_word_of_the_day.dart';
@@ -21,9 +23,10 @@ import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart'
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({this.learnerName = '', super.key});
+  const HomeScreen({this.learnerName = '', this.energy = 60, super.key});
 
   final String learnerName;
+  final int energy;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -97,6 +100,29 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  void _showLessonPreview(HomeLessonPreview lesson) {
+    showHomeLessonPreviewDialog(
+      context: context,
+      lesson: lesson,
+      onStart: () {
+        Navigator.of(context).pop();
+        _openLessons(context);
+      },
+      onBrowseLessons: () {
+        Navigator.of(context).pop();
+        _openLessons(context);
+      },
+      onSetGoal: () {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${lesson.unitTitle} is your goal for today.'),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,8 +140,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 final canvasSideInset = (viewport.maxWidth - canvasWidth) / 2;
                 final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
                 final sceneScale = canvasWidth / _HomeSceneLayout.designWidth;
+                final lessonPanelHeight =
+                    HomeLessonPanel.designHeightForEnergy(widget.energy);
                 final contentEndSceneHeight =
-                    _HomeSceneLayout.footerBottom * sceneScale;
+                    _HomeSceneLayout.footerBottomFor(lessonPanelHeight) *
+                        sceneScale;
                 final minimumScrollableSceneHeight = viewport.maxHeight * 1.5;
                 return Stack(
                   children: [
@@ -290,6 +319,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 .wordOfTheDay.height *
                                             sceneScale,
                                         child: const HomeWordOfTheDay(),
+                                      ),
+                                      Positioned(
+                                        left: _HomeSceneLayout.lessonPanel.left *
+                                            sceneScale,
+                                        top: _HomeSceneLayout.lessonPanel.top *
+                                            sceneScale,
+                                        width:
+                                            _HomeSceneLayout.lessonPanel.width *
+                                                sceneScale,
+                                        height: lessonPanelHeight * sceneScale,
+                                        child: HomeLessonPanel(
+                                          key: const Key('home-lesson-panel'),
+                                          energy: widget.energy,
+                                          onLessonTap: _showLessonPreview,
+                                        ),
                                       ),
                                       Positioned(
                                         left: 0,
@@ -472,13 +516,21 @@ abstract final class _HomeSceneLayout {
     height: wordOfTheDayWidth * _wordOfTheDayAspectRatio,
   );
 
+  // Availability heading and lesson preview directly below Word of the Day.
+  static const lessonPanel = _HomeSceneItemLayout(
+    left: 17,
+    top: 706,
+    width: 378,
+    height: 130,
+  );
+
   // The scrollable Home footer uses its own width-relative painted wave.
   static const double footerHeight = 48;
 
-  // Update contentBottom when a new Home item extends below the Word card.
+  // Update contentBottom when a new Home item extends below this section.
   // The scroll scene will then automatically grow to fit it and the footer.
-  static final double contentBottom = wordOfTheDay.top + wordOfTheDay.height;
-  static final double footerBottom = contentBottom + footerHeight;
+  static double footerBottomFor(double lessonPanelHeight) =>
+      lessonPanel.top + lessonPanelHeight + footerHeight;
 
   static const double creamFloorBorderTop = 346;
   static const double floorTop = 350;

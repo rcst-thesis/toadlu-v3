@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudlo/tudlo.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart';
 
 void main() {
   testWidgets('Home content scrolls while bottom navigation remains fixed',
@@ -185,6 +186,96 @@ void main() {
     expect(tester.getSize(card), const Size(378, 216));
     expect(find.text('word of the day'), findsOneWidget);
     expect(find.text('balay'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home lesson availability is derived from Energy', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 10)));
+    expect(find.text('1 lesson subong nga adlaw!'), findsOneWidget);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 60)));
+    expect(find.text('6 lessons subong nga adlaw!'), findsOneWidget);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 100)));
+    expect(find.text('6 lessons subong nga adlaw!'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home lesson deck collapses from its section chevron',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 378,
+            child: HomeLessonPanel(
+              energy: 60,
+              additionalLessons: [
+                HomeLessonPreview(
+                  unitTitle: 'yunit 2',
+                  category: 'MGA KULAY',
+                  status: HomeLessonStatus.available,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-deck-layer-1')), findsNothing);
+
+    final toggle = find.byKey(const Key('home-lesson-collapse-toggle'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-deck-layer-1')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-section-label')), findsNothing);
+    expect(find.byKey(const Key('home-lesson-collapse-toggle')), findsNothing);
+    expect(find.byKey(const Key('home-lesson-summary-title')), findsOneWidget);
+    expect(
+      find.byKey(const Key('home-lesson-summary-categories')),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Lesson completed'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const Key('home-lesson-collapsed-deck-toggle')),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-deck-layer-1')), findsNothing);
+    expect(find.byKey(const Key('home-lesson-section-label')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-summary-title')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('A single available lesson has no collapse control',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 10)));
+
+    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-collapse-toggle')), findsNothing);
+    expect(find.byKey(const Key('home-lesson-deck-layer-1')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Tapping a lesson opens its preview and close dismisses it',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 10)));
+
+    final lessonCard = find.byKey(const Key('home-lesson-card-0'));
+    await tester.ensureVisible(lessonCard);
+    await tester.tap(lessonCard);
+    await tester.pumpAndSettle();
+
+    expect(find.text('lesson mo subong nga adlaw'), findsOneWidget);
+    expect(find.text('10% energy'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('home-lesson-preview-close')));
+    await tester.pumpAndSettle();
+    expect(find.text('lesson mo subong nga adlaw'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

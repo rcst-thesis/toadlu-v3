@@ -22,6 +22,8 @@ class FourthLoadingScreen extends StatelessWidget {
     'assets/images/home_door.svg',
     'assets/images/home_lamp.svg',
     'assets/images/home_energy_indicator.svg',
+    'assets/images/home_lesson_more_dots.svg',
+    'assets/images/home_lesson_divider.svg',
     'assets/images/home_settings_button.svg',
   ];
 
@@ -29,6 +31,8 @@ class FourthLoadingScreen extends StatelessWidget {
     'assets/images/home_nav_home.png',
     'assets/images/home_nav_translate.png',
     'assets/images/home_nav_lessons.png',
+    'assets/images/home_bookshelf_outline_white.png',
+    'assets/images/home_lesson_category.png',
     'assets/images/home_nav_map.png',
     'assets/images/home_nav_dictionary.png',
     'assets/images/home_nav_me.png',
