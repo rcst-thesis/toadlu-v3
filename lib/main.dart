@@ -9,7 +9,13 @@ import 'package:tudloapp/features/splash/screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await rive.RiveNative.init();
+  try {
+    await rive.RiveNative.init();
+  } catch (error, stackTrace) {
+    debugPrint('Rive startup failed; continuing with mascot fallback.');
+    debugPrint('$error');
+    debugPrint('$stackTrace');
+  }
   await AppData.initialize();
   await AppAudioService.instance.initialize();
   runApp(const TudloApp());

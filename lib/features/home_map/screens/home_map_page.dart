@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
@@ -13,9 +14,92 @@ import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
 import 'package:tudloapp/features/lesson_game/screens/lesson_intro_page.dart';
+import 'package:tudloapp/features/lesson_game/screens/level_game_page.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 
 const double _mapHeaderHeight = 340;
+const Size _barangayMapViewBox = Size(2400, 1400);
+const String _barangayMapAsset = 'assets/images/level_game/backgrounds/tudlomap.svg';
+
+enum MapLocation {
+  house,
+  school,
+  classroom,
+  market,
+  farm,
+  park,
+  hospital,
+  church,
+  beach,
+}
+
+class MapAnchor {
+  final Offset normalizedPosition;
+  final double focusScale;
+  final String label;
+  final Size hitArea;
+
+  const MapAnchor({
+    required this.normalizedPosition,
+    required this.focusScale,
+    required this.label,
+    this.hitArea = const Size(150, 150),
+  });
+}
+
+const mapAnchors = <MapLocation, MapAnchor>{
+  MapLocation.house: MapAnchor(
+    normalizedPosition: Offset(.30, .44),
+    focusScale: 2.35,
+    label: 'Balay',
+  ),
+  MapLocation.school: MapAnchor(
+    normalizedPosition: Offset(.54, .88),
+    focusScale: 2.15,
+    label: 'Eskwelahan',
+    hitArea: Size(220, 170),
+  ),
+  MapLocation.classroom: MapAnchor(
+    normalizedPosition: Offset(.54, .88),
+    focusScale: 2.15,
+    label: 'Eskwelahan',
+    hitArea: Size(220, 170),
+  ),
+  MapLocation.market: MapAnchor(
+    normalizedPosition: Offset(.83, .33),
+    focusScale: 2.25,
+    label: 'Tinda',
+  ),
+  MapLocation.farm: MapAnchor(
+    normalizedPosition: Offset(.90, .72),
+    focusScale: 2.05,
+    label: 'Uma',
+    hitArea: Size(240, 180),
+  ),
+  MapLocation.park: MapAnchor(
+    normalizedPosition: Offset(.63, .43),
+    focusScale: 2.45,
+    label: 'Plasa',
+    hitArea: Size(240, 210),
+  ),
+  MapLocation.hospital: MapAnchor(
+    normalizedPosition: Offset(.56, .70),
+    focusScale: 2.25,
+    label: 'Ospital',
+    hitArea: Size(230, 160),
+  ),
+  MapLocation.church: MapAnchor(
+    normalizedPosition: Offset(.16, .17),
+    focusScale: 2.25,
+    label: 'Simbahan',
+  ),
+  MapLocation.beach: MapAnchor(
+    normalizedPosition: Offset(.14, .84),
+    focusScale: 2.05,
+    label: 'Baybay',
+    hitArea: Size(260, 180),
+  ),
+};
 
 /// Interactive Home Map screen.
 ///
@@ -165,13 +249,26 @@ class _HomeMapPageState extends State<HomeMapPage> {
   static const double _topPad = 250;
   static const double _bottomPad = 330;
   final ScrollController _scrollController = ScrollController();
+  late final PageController _lessonCarouselController;
   bool _showScrollTopButton = false;
   int _mapHelpStep = 0;
   int? _activeLevel;
+  int _selectedUnitNumber = 1;
+  int _selectedLessonIndex = 0;
+  bool _launchingLevel = false;
 
   @override
   void initState() {
     super.initState();
+    _selectedUnitNumber = AppData.unitForLevel(
+      AppData.firstUnlockedIncompleteLevel,
+    ).number;
+    _selectedLessonIndex =
+        AppData.lessonNumberForLevel(AppData.firstUnlockedIncompleteLevel) - 1;
+    _lessonCarouselController = PageController(
+      viewportFraction: .88,
+      initialPage: _selectedLessonIndex,
+    );
     _scrollController.addListener(_handleScroll);
   }
 
@@ -180,6 +277,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
     _scrollController
       ..removeListener(_handleScroll)
       ..dispose();
+    _lessonCarouselController.dispose();
     super.dispose();
   }
 
@@ -228,6 +326,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 
   Future<void> _startLevel(int level) async {
+    if (_launchingLevel) return;
+    _launchingLevel = true;
     // Start button in the level popup:
     // Refresh real-time energy before gating access. If the learner has less
     // than the fixed lesson cost, the unit does not start.
@@ -236,6 +336,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
     final spent = await AppData.spendLessonEnergy();
     if (!mounted) return;
     if (!spent) {
+      _launchingLevel = false;
       _closeLevelPopup();
       await showLowEnergyDialog(context);
       return;
@@ -246,14 +347,207 @@ class _HomeMapPageState extends State<HomeMapPage> {
     // before the game screen.
     _closeLevelPopup();
     if (!mounted) return;
-    Navigator.push(
+    final useReferenceFlow =
+        AppData.selectedGradeLevel == GradeLevel.grade1 &&
+        (level == 1 || level == 7 || level == 10 || level == 13);
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => LessonIntroPage(level: level)),
+      MaterialPageRoute(
+        builder: (_) => useReferenceFlow
+            ? LevelGamePage(level: level)
+            : LessonIntroPage(level: level),
+      ),
+    );
+    if (mounted) {
+      setState(() => _launchingLevel = false);
+    } else {
+      _launchingLevel = false;
+    }
+  }
+
+  Future<void> _showUnitPicker() async {
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _GradeOneUnitSheet(
+        selectedUnit: _selectedUnitNumber,
+        units: AppData.units,
+      ),
+    );
+    if (selected == null || selected == _selectedUnitNumber) return;
+    final unit = AppData.unitForNumber(selected);
+    if (!AppData.isLevelUnlocked(unit.startLevel)) return;
+    setState(() {
+      _selectedUnitNumber = selected;
+      _selectedLessonIndex = 0;
+    });
+    _lessonCarouselController.jumpToPage(0);
+  }
+
+  void _moveLessonCarousel(int delta) {
+    final unit = AppData.unitForNumber(_selectedUnitNumber);
+    final next = (_selectedLessonIndex + delta).clamp(0, unit.lessonCount - 1);
+    if (next == _selectedLessonIndex) return;
+    _lessonCarouselController.animateToPage(
+      next,
+      duration: const Duration(milliseconds: 360),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Widget _buildGradeOneDashboard(BuildContext context) {
+    return _buildGradeOneDashboardOld(context);
+  }
+
+  // Used by the reusable lesson-map stage when it is inserted into lessons.
+  // ignore: unused_element
+  MapLocation _mapLocationForLevel(int level) {
+    final unit = AppData.unitForLevel(level);
+    final lesson = AppData.lessonNumberForLevel(level);
+    return switch ((unit.number, lesson)) {
+      (1, _) => MapLocation.classroom,
+      (2, _) => MapLocation.house,
+      (3, 1) => MapLocation.classroom,
+      (3, 2) => MapLocation.market,
+      (3, _) => MapLocation.farm,
+      (4, 1) => MapLocation.farm,
+      (4, 2) => MapLocation.farm,
+      (4, _) => MapLocation.beach,
+      (5, 1) => MapLocation.house,
+      (5, 2) => MapLocation.market,
+      (5, _) => MapLocation.farm,
+      _ => MapLocation.park,
+    };
+  }
+
+  Widget _buildGradeOneDashboardOld(BuildContext context) {
+    final unit = AppData.unitForNumber(_selectedUnitNumber);
+    final completedInUnit = [
+      for (var level = unit.startLevel; level <= unit.endLevel; level++)
+        if (AppData.completedLevels.contains(level)) level,
+    ].length;
+    final badges = AppData.levelStars.values.where((stars) => stars > 0).length;
+    final completedLessons = AppData.completedLevelCount;
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: SvgPicture.asset(
+              'assets/images/game_map/backgroundv3.svg',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final h = constraints.maxHeight;
+                final compact = h < 790;
+                final horizontal = constraints.maxWidth.clamp(360.0, 520.0);
+                final sidePadding =
+                    (constraints.maxWidth - horizontal) / 2 + 22;
+                final topPadding = compact ? 8.0 : 14.0;
+                final gap = compact ? 8.0 : 12.0;
+                final bottomReserve = compact ? 104.0 : 112.0;
+                final carouselHeight =
+                    (h -
+                            topPadding -
+                            (compact ? 56.0 : 66.0) -
+                            (compact ? 80.0 : 90.0) -
+                            (compact ? 74.0 : 86.0) -
+                            gap * 3 -
+                            bottomReserve)
+                        .clamp(310.0, compact ? 430.0 : 540.0);
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    sidePadding,
+                    topPadding,
+                    sidePadding,
+                    bottomReserve,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _GradeOneHeader(gradeLabel: 'Grade 1', compact: compact),
+                      SizedBox(height: gap),
+                      _GradeOneUnitSelector(
+                        unit: unit,
+                        completed: completedInUnit,
+                        compact: compact,
+                        onTap: _showUnitPicker,
+                      ),
+                      SizedBox(height: gap),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _GradeOneStatCard(
+                              icon: Icons.menu_book_rounded,
+                              value: '${unit.number}',
+                              label: 'yunit',
+                              compact: compact,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _GradeOneStatCard(
+                              icon: Icons.star_rounded,
+                              value: '$badges',
+                              label: 'badges',
+                              compact: compact,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _GradeOneStatCard(
+                              icon: Icons.grid_view_rounded,
+                              value: '$completedLessons/${AppData.maxLevel}',
+                              label: 'lessons',
+                              compact: compact,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: gap),
+                      SizedBox(
+                        height: carouselHeight,
+                        child: _GradeOneLessonCarousel(
+                          height: carouselHeight,
+                          controller: _lessonCarouselController,
+                          unit: unit,
+                          selectedIndex: _selectedLessonIndex,
+                          launching: _launchingLevel,
+                          onPageChanged: (index) =>
+                              setState(() => _selectedLessonIndex = index),
+                          onCenterCard: (index) {
+                            _lessonCarouselController.animateToPage(
+                              index,
+                              duration: const Duration(milliseconds: 320),
+                              curve: Curves.easeOutCubic,
+                            );
+                          },
+                          onPlay: (level) => _startLevel(level),
+                          onArrow: _moveLessonCarousel,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (AppData.selectedGradeLevel == GradeLevel.grade1) {
+      return _buildGradeOneDashboard(context);
+    }
+
     final showMapHelp = !AppData.developerMode && !AppData.mapHelpDone;
     final currentLevel = AppData.firstUnlockedIncompleteLevel;
     // The scrollable map needs a fixed content height so decorations, road,
@@ -293,11 +587,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
               padding: const EdgeInsets.only(bottom: 110),
               child: Column(
                 children: [
-                  _MapHeader(
-                    currentLevel: currentLevel,
-                    username: username,
-                    dailyWord: showMapHelp ? null : _dailyWord(),
-                  ),
+                  _MapHeader(username: username),
                   SizedBox(
                     height: mapHeight,
                     child: LayoutBuilder(
@@ -408,20 +698,1370 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 }
 
-class _MapHeader extends StatelessWidget {
-  final int currentLevel;
-  final String username;
-  final LessonTerm? dailyWord;
+class _LessonMapScreen extends StatefulWidget {
+  final String lessonId;
+  final int level;
+  final MapLocation targetLocation;
+  final VoidCallback onDestinationTap;
+  final VoidCallback onBack;
 
-  const _MapHeader({
-    required this.currentLevel,
-    required this.username,
-    required this.dailyWord,
+  const _LessonMapScreen({
+    required this.lessonId,
+    required this.level,
+    required this.targetLocation,
+    required this.onDestinationTap,
+    required this.onBack,
+  });
+
+  @override
+  State<_LessonMapScreen> createState() => _LessonMapScreenState();
+}
+
+class _LessonMapScreenState extends State<_LessonMapScreen>
+    with TickerProviderStateMixin {
+  static final Map<String, Matrix4> _savedTransforms = {};
+  static final Set<String> _focusedLessons = {};
+
+  late final TransformationController _transformationController;
+  late final AnimationController _cameraController;
+  late final AnimationController _pulseController;
+  Animation<Matrix4>? _cameraAnimation;
+  Size _viewportSize = Size.zero;
+  Size _sceneSize = Size.zero;
+  bool _pinVisible = false;
+  bool _destinationSelected = false;
+
+  MapAnchor get _anchor => mapAnchors[widget.targetLocation]!;
+
+  @override
+  void initState() {
+    super.initState();
+    _transformationController = TransformationController(
+      _savedTransforms[widget.lessonId] ?? Matrix4.identity(),
+    )..addListener(_saveTransform);
+    _cameraController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1050),
+    );
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 960),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LessonMapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.lessonId != widget.lessonId) {
+      _pinVisible = false;
+      _destinationSelected = false;
+      _transformationController.value =
+          _savedTransforms[widget.lessonId] ?? Matrix4.identity();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _focusTarget());
+    }
+  }
+
+  @override
+  void dispose() {
+    _transformationController.removeListener(_saveTransform);
+    _saveTransform();
+    _cameraController.dispose();
+    _pulseController.dispose();
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _saveTransform() {
+    _savedTransforms[widget.lessonId] = Matrix4.copy(
+      _transformationController.value,
+    );
+  }
+
+  void _maybeFocusTarget() {
+    if (_viewportSize == Size.zero || _sceneSize == Size.zero) return;
+    if (_focusedLessons.contains(widget.lessonId)) {
+      if (!_pinVisible) setState(() => _pinVisible = true);
+      return;
+    }
+    _focusedLessons.add(widget.lessonId);
+    Future<void>.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) _focusTarget();
+    });
+  }
+
+  void _focusTarget({double? scale}) {
+    if (_viewportSize == Size.zero || _sceneSize == Size.zero) return;
+    final targetScale = scale ?? _anchor.focusScale;
+    final target = Offset(
+      _anchor.normalizedPosition.dx * _sceneSize.width,
+      _anchor.normalizedPosition.dy * _sceneSize.height,
+    );
+    final usableCenter = Offset(
+      _viewportSize.width / 2,
+      (_viewportSize.height - 118) / 2,
+    );
+    final dx = usableCenter.dx - target.dx * targetScale;
+    final dy = usableCenter.dy - target.dy * targetScale;
+    final targetMatrix = Matrix4.identity();
+    targetMatrix.storage[0] = targetScale;
+    targetMatrix.storage[5] = targetScale;
+    targetMatrix.storage[12] = dx;
+    targetMatrix.storage[13] = dy;
+
+    _cameraController
+      ..stop()
+      ..reset();
+    _cameraAnimation = Matrix4Tween(
+      begin: _transformationController.value,
+      end: targetMatrix,
+    ).animate(
+      CurvedAnimation(parent: _cameraController, curve: Curves.easeInOutCubic),
+    )..addListener(() {
+        _transformationController.value = _cameraAnimation!.value;
+      });
+    _cameraController.forward().whenComplete(() {
+      if (mounted) setState(() => _pinVisible = true);
+    });
+  }
+
+  void _zoomBy(double delta) {
+    final current = _transformationController.value.getMaxScaleOnAxis();
+    final next = (current + delta).clamp(.8, 4.5);
+    _focusTarget(scale: next.toDouble());
+  }
+
+  Future<void> _handleDestinationTap() async {
+    if (_destinationSelected) return;
+    setState(() => _destinationSelected = true);
+    await AppAudioService.instance.playCorrect();
+    if (!mounted) return;
+    widget.onDestinationTap();
+  }
+
+  Future<void> _handleWrongTap() async {
+    await TudloVoiceButton.stop();
+    if (!mounted) return;
+    unawaited(
+      TudloVoiceButton.speak(
+        context,
+        'Pangitaa ang ${_anchor.label.toLowerCase()}.',
+        hiligaynon: true,
+      ),
+    );
+    _pulseController
+      ..reset()
+      ..repeat(reverse: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final level = widget.level;
+    final unit = AppData.unitForLevel(level);
+    final lesson = AppData.lessonNumberForLevel(level);
+    final progress = AppData.maxLevel == 0 ? 0.0 : level / AppData.maxLevel;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFBDE8A7),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          _viewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+          final sceneWidth = math.max(
+            _viewportSize.width * 3.1,
+            _barangayMapViewBox.width * .62,
+          );
+          _sceneSize = Size(
+            sceneWidth,
+            sceneWidth * _barangayMapViewBox.height / _barangayMapViewBox.width,
+          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _maybeFocusTarget();
+          });
+
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _handleWrongTap,
+                  child: InteractiveViewer(
+                    transformationController: _transformationController,
+                    minScale: .8,
+                    maxScale: 4.5,
+                    panEnabled: true,
+                    scaleEnabled: true,
+                    constrained: false,
+                    boundaryMargin: const EdgeInsets.all(180),
+                    clipBehavior: Clip.hardEdge,
+                    child: SizedBox(
+                      width: _sceneSize.width,
+                      height: _sceneSize.height,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: SvgPicture.asset(
+                              _barangayMapAsset,
+                              fit: BoxFit.contain,
+                              alignment: Alignment.center,
+                            ),
+                          ),
+                          _DestinationMarker(
+                            anchor: _anchor,
+                            sceneSize: _sceneSize,
+                            visible: _pinVisible,
+                            selected: _destinationSelected,
+                            pulse: _pulseController,
+                            onTap: _handleDestinationTap,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                  child: Row(
+                    children: [
+                      _MapCircleButton(
+                        icon: Icons.arrow_back_rounded,
+                        tooltip: 'Balik',
+                        onTap: widget.onBack,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            value: progress.clamp(0, 1),
+                            minHeight: 14,
+                            backgroundColor: Colors.white,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              TudloColors.brightGreen,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      TudloVoiceButton(
+                        message: 'Pangitaa ang ${_anchor.label.toLowerCase()}.',
+                        tooltip: 'Pamatii liwat',
+                        hiligaynon: true,
+                        size: 60,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 20,
+                right: 20,
+                top: MediaQuery.paddingOf(context).top + 82,
+                child: IgnorePointer(
+                  child: _MapInstructionCard(
+                    text: 'Yunit ${unit.number} • Leksyon ${unit.number}.$lesson',
+                    instruction: 'Pangitaa ang ${_anchor.label}.',
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 18,
+                bottom: 124,
+                child: Column(
+                  children: [
+                    _MapCircleButton(
+                      icon: Icons.add_rounded,
+                      tooltip: 'Padakuon',
+                      onTap: () => _zoomBy(.45),
+                    ),
+                    const SizedBox(height: 10),
+                    _MapCircleButton(
+                      icon: Icons.remove_rounded,
+                      tooltip: 'Pagamayon',
+                      onTap: () => _zoomBy(-.45),
+                    ),
+                    const SizedBox(height: 10),
+                    _MapCircleButton(
+                      icon: Icons.my_location_rounded,
+                      tooltip: 'Balik sa lugar',
+                      onTap: () => _focusTarget(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DestinationMarker extends StatelessWidget {
+  final MapAnchor anchor;
+  final Size sceneSize;
+  final bool visible;
+  final bool selected;
+  final Animation<double> pulse;
+  final VoidCallback onTap;
+
+  const _DestinationMarker({
+    required this.anchor,
+    required this.sceneSize,
+    required this.visible,
+    required this.selected,
+    required this.pulse,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final palette = _HomeTimePalette.current();
+    final center = Offset(
+      anchor.normalizedPosition.dx * sceneSize.width,
+      anchor.normalizedPosition.dy * sceneSize.height,
+    );
+    return Positioned(
+      left: center.dx - anchor.hitArea.width / 2,
+      top: center.dy - anchor.hitArea.height / 2,
+      width: anchor.hitArea.width,
+      height: anchor.hitArea.height,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: const Duration(milliseconds: 280),
+          child: AnimatedBuilder(
+            animation: pulse,
+            builder: (context, child) {
+              final glow = selected ? 1.28 : 1 + pulse.value * .18;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  Transform.scale(
+                    scale: glow,
+                    child: Container(
+                      width: anchor.hitArea.width * .74,
+                      height: anchor.hitArea.height * .58,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: TudloColors.gold.withValues(alpha: .28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: TudloColors.brightGreen.withValues(
+                              alpha: selected ? .72 : .42,
+                            ),
+                            blurRadius: selected ? 48 : 34,
+                            spreadRadius: selected ? 13 : 7,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Transform.translate(
+                    offset: const Offset(0, -42),
+                    child: Icon(
+                      Icons.location_on_rounded,
+                      size: 78,
+                      color: selected
+                          ? TudloColors.brightGreen
+                          : const Color(0xFFE94343),
+                      shadows: [
+                        Shadow(
+                          color: TudloColors.ink.withValues(alpha: .22),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .94),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        anchor.label,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapInstructionCard extends StatelessWidget {
+  final String text;
+  final String instruction;
+
+  const _MapInstructionCard({required this.text, required this.instruction});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .90),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.ink.withValues(alpha: .14),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.nunito(
+              color: TudloColors.blue,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            instruction,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.nunito(
+              color: TudloColors.ink,
+              fontSize: 22,
+              height: 1,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapCircleButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _MapCircleButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filled(
+      tooltip: tooltip,
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.white.withValues(alpha: .92),
+        foregroundColor: TudloColors.blue,
+        minimumSize: const Size(58, 58),
+        elevation: 6,
+        shadowColor: TudloColors.ink.withValues(alpha: .18),
+      ),
+      icon: Icon(icon, size: 34),
+    );
+  }
+}
+
+class _GradeOneHeader extends StatelessWidget {
+  final String gradeLabel;
+  final bool compact;
+
+  const _GradeOneHeader({required this.gradeLabel, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            gradeLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.nunito(
+              color: Colors.white,
+              fontSize: compact ? 46 : 56,
+              height: .95,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  color: TudloColors.ink.withValues(alpha: .42),
+                  offset: const Offset(2, 5),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        const Padding(
+          padding: EdgeInsets.only(top: 4),
+          child: EnergyIndicator(light: true),
+        ),
+      ],
+    );
+  }
+}
+
+class _GradeOneUnitSelector extends StatelessWidget {
+  final AppUnit unit;
+  final int completed;
+  final bool compact;
+  final VoidCallback onTap;
+
+  const _GradeOneUnitSelector({
+    required this.unit,
+    required this.completed,
+    required this.compact,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = unit.lessonCount <= 0 ? 0.0 : completed / unit.lessonCount;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(28),
+        onTap: onTap,
+        child: Ink(
+          height: compact ? 80 : 90,
+          padding: EdgeInsets.fromLTRB(
+            18,
+            compact ? 8 : 12,
+            16,
+            compact ? 8 : 12,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .92),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.forest.withValues(alpha: .16),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: compact ? 72 : 86,
+                height: compact ? 54 : 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4D1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: const [
+                    Positioned(
+                      left: 14,
+                      child: _TinyLetterTile(
+                        letter: 'A',
+                        color: Color(0xFFFF62A6),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      child: _TinyLetterTile(
+                        letter: 'B',
+                        color: Color(0xFF1998FF),
+                      ),
+                    ),
+                    Positioned(
+                      right: 14,
+                      child: _TinyLetterTile(
+                        letter: 'C',
+                        color: Color(0xFFFF9D24),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Yunit ${unit.number}',
+                          style: GoogleFonts.nunito(
+                            color: TudloColors.ink,
+                            fontSize: compact ? 25 : 30,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Container(
+                          width: 2,
+                          height: compact ? 34 : 42,
+                          margin: EdgeInsets.symmetric(
+                            horizontal: compact ? 10 : 16,
+                          ),
+                          color: TudloColors.muted.withValues(alpha: .45),
+                        ),
+                        Expanded(
+                          child: Text(
+                            unit.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.nunito(
+                              color: const Color(0xFF045941),
+                              fontSize: compact ? 16 : 19,
+                              height: .98,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          completed == unit.lessonCount
+                              ? Icons.check_rounded
+                              : Icons.expand_more_rounded,
+                          color: TudloColors.forest,
+                          size: compact ? 32 : 40,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: compact ? 5 : 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: compact ? 9 : 12,
+                        value: progress.clamp(0, 1),
+                        backgroundColor: TudloColors.line.withValues(
+                          alpha: .75,
+                        ),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          TudloColors.forest,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TinyLetterTile extends StatelessWidget {
+  final String letter;
+  final Color color;
+
+  const _TinyLetterTile({required this.letter, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: letter == 'A'
+          ? -.18
+          : letter == 'C'
+          ? .18
+          : 0,
+      child: Container(
+        width: 34,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .16),
+              blurRadius: 4,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Text(
+          letter,
+          style: GoogleFonts.nunito(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GradeOneStatCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final bool compact;
+
+  const _GradeOneStatCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.compact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: compact ? 74 : 86,
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 8 : 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE7FCFF).withValues(alpha: .92),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: .72),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: TudloColors.ink.withValues(alpha: .08),
+            blurRadius: 12,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: TudloColors.forest, size: compact ? 24 : 30),
+            Text(
+              value,
+              style: GoogleFonts.nunito(
+                color: const Color(0xFF075744),
+                fontSize: compact ? 28 : 34,
+                height: .95,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                color: const Color(0xFF075744),
+                fontSize: compact ? 14 : 17,
+                height: 1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GradeOneLessonCarousel extends StatelessWidget {
+  final double height;
+  final PageController controller;
+  final AppUnit unit;
+  final int selectedIndex;
+  final bool launching;
+  final ValueChanged<int> onPageChanged;
+  final ValueChanged<int> onCenterCard;
+  final ValueChanged<int> onPlay;
+  final ValueChanged<int> onArrow;
+
+  const _GradeOneLessonCarousel({
+    required this.height,
+    required this.controller,
+    required this.unit,
+    required this.selectedIndex,
+    required this.launching,
+    required this.onPageChanged,
+    required this.onCenterCard,
+    required this.onPlay,
+    required this.onArrow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final levels = [
+      for (var level = unit.startLevel; level <= unit.endLevel; level++) level,
+    ];
+    return Column(
+      children: [
+        SizedBox(
+          height: math.max(0, height - 28),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              PageView.builder(
+                controller: controller,
+                itemCount: levels.length,
+                clipBehavior: Clip.none,
+                padEnds: true,
+                onPageChanged: onPageChanged,
+                itemBuilder: (context, index) {
+                  final level = levels[index];
+                  return AnimatedBuilder(
+                    animation: controller,
+                    builder: (context, child) {
+                      var page = controller.initialPage.toDouble();
+                      if (controller.hasClients &&
+                          controller.position.hasContentDimensions) {
+                        page = controller.page ?? page;
+                      }
+                      final distance = (page - index).clamp(-2.0, 2.0);
+                      final isActive = distance.abs() < .5;
+                      return Transform.translate(
+                        offset: Offset(distance * 28, distance.abs() * 18),
+                        child: Transform.rotate(
+                          angle: distance * -.075,
+                          child: AnimatedScale(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            scale: isActive ? 1 : .90,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 180),
+                              opacity: isActive ? 1 : .74,
+                              child: child,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    child: _GradeOneLessonCard(
+                      level: level,
+                      unit: unit,
+                      active: index == selectedIndex,
+                      launching: launching,
+                      onTapCard: () => onCenterCard(index),
+                      onPlay: () => onPlay(level),
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                left: 0,
+                child: _GradeOneCarouselArrow(
+                  visible: selectedIndex > 0,
+                  left: true,
+                  onTap: () => onArrow(-1),
+                ),
+              ),
+              Positioned(
+                right: 0,
+                child: _GradeOneCarouselArrow(
+                  visible: selectedIndex < levels.length - 1,
+                  left: false,
+                  onTap: () => onArrow(1),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        _GradeOneDots(count: levels.length, active: selectedIndex),
+      ],
+    );
+  }
+}
+
+class _GradeOneLessonCard extends StatelessWidget {
+  final int level;
+  final AppUnit unit;
+  final bool active;
+  final bool launching;
+  final VoidCallback onTapCard;
+  final VoidCallback onPlay;
+
+  const _GradeOneLessonCard({
+    required this.level,
+    required this.unit,
+    required this.active,
+    required this.launching,
+    required this.onTapCard,
+    required this.onPlay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final unlocked = AppData.isLevelUnlocked(level);
+    final completed = AppData.completedLevels.contains(level);
+    final lessonNumber = AppData.lessonNumberForLevel(level);
+    final title = _lessonTitleForDashboard(level);
+    final thumbnail = _lessonThumbnailForDashboard(unit.number, lessonNumber);
+    final contentPreview = _lessonPreviewForLevel(level);
+
+    return GestureDetector(
+      onTap: active ? null : onTapCard,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: Colors.white,
+          border: Border.all(color: Colors.white, width: 5),
+          boxShadow: [
+            BoxShadow(
+              color: TudloColors.forest.withValues(alpha: .25),
+              blurRadius: 18,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: ColorFiltered(
+            colorFilter: unlocked
+                ? const ColorFilter.mode(Colors.transparent, BlendMode.dst)
+                : const ColorFilter.matrix(<double>[
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    .62,
+                    0,
+                  ]),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.white, Color(0xFFE9FFE6)],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Yunit ${unit.number} • ${unit.title}',
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.nunito(
+                          color: const Color(0xFF075744),
+                          fontSize: 18,
+                          height: 1.05,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              _DashboardSvgImage(asset: thumbnail),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.white.withValues(alpha: .18),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        'Lesson ${unit.number}.$lessonNumber',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.nunito(
+                          color: const Color(0xFF075744),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.nunito(
+                          color: const Color(0xFF075744),
+                          fontSize: 22,
+                          height: 1.02,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Semantics(
+                        button: true,
+                        enabled: active && unlocked && !launching,
+                        label: unlocked ? 'Open $title' : '$title locked',
+                        child: ElevatedButton(
+                          onPressed: active && unlocked && !launching
+                              ? onPlay
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF008E63),
+                            disabledBackgroundColor: Colors.white70,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(66, 66),
+                            shape: const CircleBorder(),
+                            elevation: 8,
+                            shadowColor: TudloColors.ink.withValues(alpha: .28),
+                          ),
+                          child: Icon(
+                            completed
+                                ? Icons.check_rounded
+                                : unlocked
+                                ? Icons.play_arrow_rounded
+                                : Icons.lock_rounded,
+                            size: 44,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!unlocked)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.white.withValues(alpha: .42),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.lock_rounded,
+                        size: 64,
+                        color: TudloColors.ink,
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  left: 18,
+                  right: 18,
+                  bottom: 94,
+                  child: Text(
+                    contentPreview,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.nunito(
+                      color: Colors.white.withValues(alpha: .85),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      shadows: const [
+                        Shadow(color: TudloColors.ink, offset: Offset(1, 1)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardSvgImage extends StatelessWidget {
+  final String asset;
+
+  const _DashboardSvgImage({required this.asset});
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.asset(
+      asset,
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      placeholderBuilder: (_) => Container(
+        color: const Color(0xFFE7FCFF),
+        child: const Center(child: TudloMascot(size: 120, mood: KokaMood.hi)),
+      ),
+    );
+  }
+}
+
+class _GradeOneCarouselArrow extends StatelessWidget {
+  final bool visible;
+  final bool left;
+  final VoidCallback onTap;
+
+  const _GradeOneCarouselArrow({
+    required this.visible,
+    required this.left,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: visible ? 1 : 0,
+      duration: const Duration(milliseconds: 180),
+      child: IgnorePointer(
+        ignoring: !visible,
+        child: IconButton.filled(
+          tooltip: left ? 'Previous lesson' : 'Next lesson',
+          onPressed: onTap,
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: TudloColors.forest,
+            minimumSize: const Size(58, 58),
+            shadowColor: TudloColors.ink.withValues(alpha: .18),
+            elevation: 5,
+          ),
+          icon: Icon(
+            left ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded,
+            size: 42,
+            weight: 900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GradeOneDots extends StatelessWidget {
+  final int count;
+  final int active;
+
+  const _GradeOneDots({required this.count, required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var index = 0; index < count; index++)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            width: index == active ? 20 : 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: index == active ? TudloColors.forest : Colors.white,
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: [
+                BoxShadow(
+                  color: TudloColors.ink.withValues(alpha: .14),
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _GradeOneUnitSheet extends StatelessWidget {
+  final int selectedUnit;
+  final List<AppUnit> units;
+
+  const _GradeOneUnitSheet({required this.selectedUnit, required this.units});
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return SafeArea(
+      child: Container(
+        constraints: BoxConstraints(maxHeight: view.height * .74),
+        margin: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .18),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              'Pili-a ang yunit',
+              style: GoogleFonts.nunito(
+                color: TudloColors.ink,
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemCount: units.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final unit = units[index];
+                  return _GradeOneUnitSheetTile(
+                    unit: unit,
+                    selected: unit.number == selectedUnit,
+                    unlocked: AppData.isLevelUnlocked(unit.startLevel),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GradeOneUnitSheetTile extends StatelessWidget {
+  final AppUnit unit;
+  final bool selected;
+  final bool unlocked;
+
+  const _GradeOneUnitSheetTile({
+    required this.unit,
+    required this.selected,
+    required this.unlocked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: unlocked ? () => Navigator.pop(context, unit.number) : null,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: selected
+                ? TudloColors.brightGreen.withValues(alpha: .18)
+                : const Color(0xFFF1FFF4),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? TudloColors.forest : TudloColors.line,
+              width: selected ? 3 : 2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                unlocked ? Icons.menu_book_rounded : Icons.lock_rounded,
+                color: unlocked ? TudloColors.forest : Colors.grey,
+                size: 34,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Yunit ${unit.number}',
+                      style: GoogleFonts.nunito(
+                        color: TudloColors.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      unit.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.nunito(
+                        color: unlocked ? TudloColors.muted : Colors.grey,
+                        fontSize: 16,
+                        height: 1.05,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: TudloColors.forest,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _lessonTitleForDashboard(int level) {
+  final unit = AppData.unitForLevel(level);
+  final lesson = AppData.lessonNumberForLevel(level);
+  return switch ((unit.number, lesson)) {
+    (1, 1) => 'Ang Nadula nga mga Letra ni Koka',
+    (1, 7) => 'Isa tubtob Lima',
+    (2, 1) => 'Kilalahon ta ang Pamilya',
+    (2, 4) => 'Nagtipon ang Pamilya sa Picnic',
+    _ => LessonBank.lessonTitleForLevel(level),
+  };
+}
+
+String _lessonThumbnailForDashboard(int unitNumber, int lessonNumber) {
+  return switch ((unitNumber, lessonNumber)) {
+    (1, 1) => 'assets/images/level_game/backgrounds/classroom.svg',
+    (1, 7) => 'assets/images/level_game/backgrounds/beach.svg',
+    (2, _) => 'assets/images/level_game/backgrounds/house.svg',
+    (3, _) => 'assets/images/level_game/backgrounds/lesson3-popup.svg',
+    (4, _) => 'assets/images/level_game/backgrounds/lesson4-popup.svg',
+    _ => 'assets/images/level_game/backgrounds/classroom.svg',
+  };
+}
+
+class _MapHeader extends StatelessWidget {
+  final String username;
+
+  const _MapHeader({required this.username});
+
+  @override
+  Widget build(BuildContext context) {
     // Header uses a real image asset instead of painted shapes so it can be
     // easily swapped by replacing the game_map header asset.
     return Container(
@@ -450,12 +2090,7 @@ class _MapHeader extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: EnergyIndicator(light: true),
                   ),
-                  if (dailyWord != null) ...[
-                    const SizedBox(height: 22),
-                    _HomeDailyWordCard(word: dailyWord!, palette: palette),
-                    const Spacer(),
-                  ] else
-                    const Spacer(),
+                  const Spacer(),
                   Text(
                     _homeText(
                       context,
@@ -532,88 +2167,6 @@ class _HomeKokaGuideState extends State<_HomeKokaGuide> {
       child: TudloMascot(size: mascotSize, mood: _mood),
     );
   }
-}
-
-class _HomeTimePalette {
-  final Color card;
-  final Color accent;
-  final Color button;
-  final Color buttonIcon;
-  final Color shadow;
-  final bool dark;
-
-  const _HomeTimePalette({
-    required this.card,
-    required this.accent,
-    required this.button,
-    required this.buttonIcon,
-    required this.shadow,
-    required this.dark,
-  });
-
-  static _HomeTimePalette current([DateTime? dateTime]) {
-    final hour = (dateTime ?? DateTime.now()).hour;
-    if (hour >= 5 && hour < 7) return dawn;
-    if (hour >= 7 && hour < 11) return morning;
-    if (hour >= 11 && hour < 14) return noon;
-    if (hour >= 14 && hour < 17) return afternoon;
-    if (hour >= 17 && hour < 20) return evening;
-    return night;
-  }
-
-  static const dawn = _HomeTimePalette(
-    card: Color(0xFFE96F50),
-    accent: Color(0xFFFFE7B0),
-    button: Color(0xFFFFE8DE),
-    buttonIcon: Color(0xFFE8503A),
-    shadow: Color(0x663C1D24),
-    dark: false,
-  );
-
-  static const morning = _HomeTimePalette(
-    card: Color(0xFFF5B85A),
-    accent: Color(0xFFFFF2B2),
-    button: Color(0xFFFFF6D9),
-    buttonIcon: Color(0xFFD9781B),
-    shadow: Color(0x553C2E12),
-    dark: false,
-  );
-
-  static const noon = _HomeTimePalette(
-    card: Color(0xFFF8C91A),
-    accent: Color(0xFFFFFFFF),
-    button: Color(0xFFFFF9C2),
-    buttonIcon: Color(0xFFB68700),
-    shadow: Color(0x55382700),
-    dark: false,
-  );
-
-  static const afternoon = _HomeTimePalette(
-    card: Color(0xFFE86600),
-    accent: Color(0xFFFFF0A8),
-    button: Color(0xFFFFE2C3),
-    buttonIcon: Color(0xFFE05A00),
-    shadow: Color(0x66351200),
-    dark: false,
-  );
-
-  static const evening = _HomeTimePalette(
-    card: Color(0xFF5734A4),
-    accent: Color(0xFFBDEFFF),
-    button: Color(0xFFE9DCFF),
-    buttonIcon: Color(0xFF5734A4),
-    shadow: Color(0x77190F33),
-    dark: true,
-  );
-
-  static const night = _HomeTimePalette(
-    card: Color(0xFF102F4C),
-    accent: Color(0xFFD8F35B),
-    button: Color(0xFFE5F3FF),
-    buttonIcon: Color(0xFF102F4C),
-    shadow: Color(0x88101E30),
-    dark: true,
-  );
 }
 
 class _MapDialogueOverlay extends StatefulWidget {
@@ -1845,462 +3398,6 @@ class _UnitMessageCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _HomeDailyWordCard extends StatelessWidget {
-  final LessonTerm word;
-  final _HomeTimePalette palette;
-
-  const _HomeDailyWordCard({required this.word, required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(32);
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          InkWell(
-            borderRadius: radius,
-            onTap: () => _showDailyWordPopup(context, word, palette),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 92),
-              padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
-              decoration: BoxDecoration(
-                color: palette.card,
-                borderRadius: radius,
-                boxShadow: [
-                  BoxShadow(
-                    color: palette.shadow,
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _homeText(
-                            context,
-                            hil: 'Tinaga subong nga adlaw',
-                            en: 'Word of the Day',
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.nunito(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w900,
-                            shadows: const [
-                              Shadow(
-                                color: TudloColors.ink,
-                                offset: Offset(1.4, 1.8),
-                                blurRadius: 0,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          word.hil,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.nunito(
-                            color: palette.accent,
-                            fontSize: 34,
-                            height: .95,
-                            fontWeight: FontWeight.w900,
-                            shadows: const [
-                              Shadow(
-                                color: TudloColors.ink,
-                                offset: Offset(1, 2),
-                                blurRadius: 0,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton.filled(
-                    tooltip: _homeText(
-                      context,
-                      hil: 'Buksi ang Tinaga subong nga adlaw',
-                      en: 'Open Word of the Day',
-                    ),
-                    onPressed: () =>
-                        _showDailyWordPopup(context, word, palette),
-                    style: IconButton.styleFrom(
-                      backgroundColor: palette.button,
-                      foregroundColor: palette.buttonIcon,
-                      minimumSize: const Size(58, 58),
-                    ),
-                    icon: Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 50,
-                      weight: 900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-Future<void> _showDailyWordPopup(
-  BuildContext context,
-  LessonTerm word, [
-  _HomeTimePalette? palette,
-]) {
-  final appState = AppStateScope.of(context);
-  final exampleHil =
-      word.exampleSentenceHiligaynon ??
-      word.missingSentence?.replaceAll('___', word.missingAnswer ?? '') ??
-      'Nagakaon ako sang mansanas.';
-  final exampleEng = word.exampleSentenceEnglish ?? 'I am eating an apple.';
-  final pronunciation = word.pronunciation ?? _pronunciationFor(word.hil);
-  var kokaTapCount = 0;
-  var kokaMood = KokaMood.idle;
-
-  KokaMood moodForTapCount(int taps) {
-    if (taps >= 5) return KokaMood.annoyed;
-    if (taps >= 3) return KokaMood.curious;
-    return KokaMood.hi;
-  }
-
-  return showDialog<void>(
-    context: context,
-    barrierColor: Colors.black.withValues(alpha: .38),
-    builder: (dialogContext) {
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-        child: StatefulBuilder(
-          builder: (context, setDialogState) {
-            final saved = appState.isFavoriteWord(word.hil);
-            const bedroomGreen = Color(0xFFC9EFC7);
-            const wordInk = Color(0xFF101522);
-            return ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: 430,
-                maxHeight: MediaQuery.sizeOf(context).height * .86,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: Material(
-                  color: bedroomGreen,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          alignment: Alignment.bottomCenter,
-                          children: [
-                            AspectRatio(
-                              aspectRatio: 1.42,
-                              child: Image.asset(
-                                'assets/images/word-of-the-day/bedroom-koka.jpg',
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                filterQuality: FilterQuality.high,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const ColoredBox(
-                                    color: bedroomGreen,
-                                    child: Center(
-                                      child: TudloMascot(
-                                        size: 172,
-                                        mood: KokaMood.idle,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            Positioned(
-                              left: 10,
-                              top: 10,
-                              child: IconButton(
-                                tooltip: saved
-                                    ? _homeText(
-                                        context,
-                                        hil: 'Kuhaa sa paborito',
-                                        en: 'Remove favorite',
-                                      )
-                                    : _homeText(
-                                        context,
-                                        hil: 'Tipigi sa paborito',
-                                        en: 'Save favorite',
-                                      ),
-                                onPressed: () async {
-                                  await appState.toggleFavoriteWord(word.hil);
-                                  setDialogState(() {});
-                                },
-                                icon: Icon(
-                                  saved
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: Colors.white,
-                                  size: 34,
-                                  shadows: const [
-                                    Shadow(
-                                      color: Color(0x66000000),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 10,
-                              top: 10,
-                              child: IconButton(
-                                tooltip: _homeText(
-                                  context,
-                                  hil: 'Sirad-i',
-                                  en: 'Close',
-                                ),
-                                onPressed: () => Navigator.pop(dialogContext),
-                                icon: const Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.white,
-                                  size: 36,
-                                  shadows: [
-                                    Shadow(
-                                      color: Color(0x66000000),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 8,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () {
-                                  setDialogState(() {
-                                    kokaTapCount += 1;
-                                    kokaMood = moodForTapCount(kokaTapCount);
-                                  });
-                                },
-                                child: TudloMascot(size: 150, mood: kokaMood),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                          decoration: BoxDecoration(
-                            color: bedroomGreen,
-                            borderRadius: BorderRadius.circular(22),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: .10),
-                                blurRadius: 16,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _homeText(
-                                  context,
-                                  hil: 'Tinaga subong nga adlaw',
-                                  en: 'Word of the day',
-                                ),
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
-                                  color: wordInk,
-                                  fontSize: 28,
-                                  height: 1,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                word.hil.toLowerCase(),
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
-                                  color: Colors.black,
-                                  fontSize: 54,
-                                  height: .95,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                pronunciation,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
-                                  color: wordInk,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Text(
-                                _meaningSentenceFor(context, word),
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
-                                  color: wordInk,
-                                  fontSize: 18,
-                                  height: 1.18,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Text(
-                                _homeText(
-                                  context,
-                                  hil: 'Halimbawa:',
-                                  en: 'Example:',
-                                ),
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
-                                  color: wordInk.withValues(alpha: .58),
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                exampleHil,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.nunito(
-                                  color: wordInk,
-                                  fontSize: 18,
-                                  height: 1.18,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              if (!appState.isHiligaynon)
-                                Text(
-                                  exampleEng,
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.nunito(
-                                    color: wordInk.withValues(alpha: .78),
-                                    fontSize: 17,
-                                    height: 1.18,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    },
-  );
-}
-
-LessonTerm _dailyWord() {
-  final terms = _dailyWordTerms;
-  final day = AppData.dailyWordNow().difference(DateTime(2026, 1, 1)).inDays;
-  return terms[day.abs() % terms.length];
-}
-
-const _dailyWordTerms = [
-  LessonTerm(
-    unitNumber: 5,
-    unitTitle: 'Daily Life',
-    gradeLevel: 3,
-    type: LessonContentType.word,
-    hil: 'Kaon',
-    eng: 'Eat',
-    pronunciation: 'Ka-on',
-    exampleSentenceHiligaynon: 'Nagakaon ako sang mansanas.',
-    exampleSentenceEnglish: 'I am eating an apple.',
-  ),
-  LessonTerm(
-    unitNumber: 1,
-    unitTitle: 'Everyday Conversation',
-    gradeLevel: 1,
-    type: LessonContentType.word,
-    hil: 'Balay',
-    eng: 'House',
-    pronunciation: 'Ba-lay',
-    exampleSentenceHiligaynon: 'Ang balay daku.',
-    exampleSentenceEnglish: 'The house is big.',
-  ),
-  LessonTerm(
-    unitNumber: 5,
-    unitTitle: 'Daily Life',
-    gradeLevel: 1,
-    type: LessonContentType.word,
-    hil: 'Tubig',
-    eng: 'Water',
-    pronunciation: 'Tu-big',
-    exampleSentenceHiligaynon: 'Nag-inom ako sang tubig.',
-    exampleSentenceEnglish: 'I drank water.',
-  ),
-  LessonTerm(
-    unitNumber: 5,
-    unitTitle: 'Daily Life',
-    gradeLevel: 1,
-    type: LessonContentType.word,
-    hil: 'Libro',
-    eng: 'Book',
-    pronunciation: 'Lib-ro',
-    exampleSentenceHiligaynon: 'May libro ako.',
-    exampleSentenceEnglish: 'I have a book.',
-  ),
-  LessonTerm(
-    unitNumber: 5,
-    unitTitle: 'Daily Life',
-    gradeLevel: 1,
-    type: LessonContentType.word,
-    hil: 'Ido',
-    eng: 'Dog',
-    pronunciation: 'I-do',
-    exampleSentenceHiligaynon: 'Ang ido nagadalagan.',
-    exampleSentenceEnglish: 'The dog is running.',
-  ),
-];
-
-String _pronunciationFor(String word) {
-  if (word.length <= 3) return word;
-  final midpoint = (word.length / 2).round();
-  return '${word.substring(0, midpoint)}-${word.substring(midpoint)}';
-}
-
-String _meaningSentenceFor(BuildContext context, LessonTerm word) {
-  if (word.hil == 'Kaon') {
-    return _homeText(
-      context,
-      hil:
-          'Ang kaon nagakahulugan sang pagbutang sang pagkaon sa baba, pag-usap, kag pagtulon sini.',
-      en: 'Kaon means to eat.',
-    );
-  }
-  return _homeText(
-    context,
-    hil: 'Ang ${word.hil} isa ka tinaga sa Hiligaynon.',
-    en: '${word.hil} means "${word.eng}".',
-  );
 }
 
 class _LevelPositionedButton extends StatefulWidget {

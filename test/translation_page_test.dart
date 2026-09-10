@@ -57,7 +57,7 @@ void main() {
 
     expect(
       tester.widget<TextField>(find.byType(TextField)).decoration?.hintText,
-      'Type English',
+      'Isulat ang Ingles',
     );
     await tester.enterText(find.byType(TextField), 'qzxv blorf');
     await tester.pump(const Duration(milliseconds: 449));

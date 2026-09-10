@@ -44,6 +44,8 @@ dependencies:
   path_provider: ^2.1.5
   rive: ^0.14.10
   safe_text: ^2.1.6
+  flutter_svg: ^2.3.0
+  vector_graphics: ^1.2.3
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +80,7 @@ flutter:
     - assets/images/onbaording/
     - assets/images/profile/
     - assets/images/level_game/
+    - assets/images/level_game/backgrounds/
     - assets/images/level_game/animals/
     - assets/images/level_game/letters/
     - assets/images/level_game/numbers/
