@@ -9544,7 +9544,7 @@ class _FamilyReferenceMapStep extends StatelessWidget {
                 await AppAudioService.instance.playCorrect();
                 onNext();
               },
-              child: const ColoredBox(color: Colors.transparent),
+              child: const _LessonOneMapDestinationCue(),
             ),
           ),
         ],
@@ -10449,6 +10449,7 @@ class _PicnicMapStep extends StatelessWidget {
               },
               child: Stack(
                 alignment: Alignment.center,
+                clipBehavior: Clip.none,
                 children: [
                   Container(
                     decoration: BoxDecoration(
@@ -10458,6 +10459,20 @@ class _PicnicMapStep extends StatelessWidget {
                           color: TudloColors.green.withValues(alpha: .55),
                           blurRadius: 30,
                           spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: -view.width * .13,
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: TudloColors.blue,
+                      size: view.width * .18,
+                      shadows: [
+                        Shadow(
+                          color: Colors.white.withValues(alpha: .9),
+                          blurRadius: 10,
                         ),
                       ],
                     ),
