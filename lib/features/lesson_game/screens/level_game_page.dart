@@ -5238,12 +5238,32 @@ class _GradeOneUnitOneLessonOneFlow extends StatefulWidget {
 
 class _GradeOneUnitOneLessonOneFlowState
     extends State<_GradeOneUnitOneLessonOneFlow> {
+  static const _voiceBase = 'audio/VO-final';
   static const _letters = ['A', 'N', 'T'];
+  static const _choiceQuestions = [
+    _LessonOneChoiceQuestion(
+      word: 'NANAY',
+      answer: 'N',
+      prompt: 'Ano ang una nga letra sang nanay?',
+      imageAsset: 'assets/images/level_game/people/nanay.svg',
+      highlightIndex: 0,
+    ),
+  ];
+  static const _arrangeQuestions = [
+    _LessonOneArrangeQuestion(
+      prompt: 'Ihan-ay ang N, A, kag T.',
+      word: 'NAT',
+      fixedLetters: {},
+      missingLetters: ['N', 'A', 'T'],
+    ),
+  ];
   int _stepIndex = 0;
   final Set<String> _foundLetters = {};
   String? _selectedChoice;
   final List<String> _arrangedLetters = [];
   String? _wrongLetter;
+  int _choiceIndex = 0;
+  int _arrangeIndex = 0;
   bool _completed = false;
 
   @override
@@ -5270,6 +5290,11 @@ class _GradeOneUnitOneLessonOneFlowState
       _stepIndex = next;
       _selectedChoice = null;
       _wrongLetter = null;
+      if (next == 3) _choiceIndex = 0;
+      if (next == 4) {
+        _arrangeIndex = 0;
+        _arrangedLetters.clear();
+      }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _speakForStep();
@@ -5277,39 +5302,77 @@ class _GradeOneUnitOneLessonOneFlowState
   }
 
   Future<void> _speakForStep() async {
-    await TudloVoiceButton.speak(
-      context,
-      switch (_stepIndex) {
-        0 => 'Ay! Nadula ang A, N, kag T. Buligi ako mangita.',
-        1 => 'I-tap ang eskwelahan sa mapa. Didto ta mangita.',
-        2 => 'Pangitaa ang nadula nga mga letra!',
-        3 => 'Ano ang una nga letra sang nanay?',
-        4 => 'Ihan-ay ang N, A, kag T.',
-        _ => 'Yehey! Nabalik na ang mga letra!',
-      },
-      hiligaynon: true,
-      waitForCompletion: true,
-    );
+    final assets = switch (_stepIndex) {
+      0 => const [2],
+      1 => const [3],
+      2 => const [4, 8],
+      3 => const [9],
+      4 => const [12, 13],
+      _ => const [14],
+    };
+    try {
+      await _playLessonOneVoice(assets);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_stepIndex) {
+          0 => 'Ay! Nadula ang A, N, kag T. Buligi ako mangita.',
+          1 => 'I-tap ang eskwelahan sa mapa. Didto ta mangita.',
+          2 => 'Pangitaa ang tatlo ka card sang letra.',
+          3 => _choiceQuestions[_choiceIndex].prompt,
+          4 => _arrangeQuestions[_arrangeIndex].prompt,
+          _ => 'Yehey! Nabalik na ang mga letra!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+    }
+  }
+
+  Future<void> _playLessonOneVoice(List<int> clipNumbers) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clipNumbers) '$_voiceBase/Gr_1_Les_1_1_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
+  }
+
+  int? _letterSearchVoiceClip(String letter) {
+    return switch (letter) {
+      'A' => 5,
+      'N' => 6,
+      'T' => 7,
+      _ => null,
+    };
   }
 
   Future<void> _tapFoundLetter(String letter) async {
-    if (_foundLetters.contains(letter)) return;
+    final clip = _letterSearchVoiceClip(letter);
+    if (_foundLetters.contains(letter)) {
+      if (clip != null) {
+        await _playLessonOneVoice([clip]);
+      }
+      return;
+    }
     widget.onQuizAttempt(0, true);
     await AppAudioService.instance.playCorrect();
     if (!mounted) return;
     setState(() => _foundLetters.add(letter));
-    await TudloVoiceButton.speak(
-      context,
-      _letterSoundText(letter),
-      hiligaynon: true,
-      waitForCompletion: true,
-    );
+    if (clip != null) {
+      await _playLessonOneVoice([clip]);
+    }
   }
 
   Future<void> _chooseFirstLetter(String letter) async {
     if (_selectedChoice != null) return;
-    final correct = letter == 'N';
-    widget.onQuizAttempt(1, correct);
+    final question = _choiceQuestions[_choiceIndex];
+    final correct = letter == question.answer;
+    final quizIndex = math.min(_choiceIndex + 1, _lessonQuizCount - 1);
+    widget.onQuizAttempt(quizIndex, correct);
     setState(() {
       _selectedChoice = letter;
       _wrongLetter = correct ? null : letter;
@@ -5319,10 +5382,25 @@ class _GradeOneUnitOneLessonOneFlowState
         : AppAudioService.instance.playWrong());
     if (!mounted) return;
     if (correct) {
+      await _playLessonOneVoice([10]);
+      if (!mounted) return;
+      widget.onQuizCorrect(quizIndex);
       await Future<void>.delayed(const Duration(milliseconds: 650));
-      if (mounted) _goToStep(4);
+      if (!mounted) return;
+      if (_choiceIndex >= _choiceQuestions.length - 1) {
+        _goToStep(4);
+      } else {
+        setState(() {
+          _choiceIndex++;
+          _selectedChoice = null;
+          _wrongLetter = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _speakForStep();
+        });
+      }
     } else {
-      await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
+      await _playLessonOneVoice([11]);
       await Future<void>.delayed(const Duration(milliseconds: 550));
       if (mounted) {
         setState(() {
@@ -5334,14 +5412,13 @@ class _GradeOneUnitOneLessonOneFlowState
   }
 
   Future<void> _addArrangeLetter(String letter) async {
-    if (_arrangedLetters.length >= _letters.length ||
-        _arrangedLetters.contains(letter)) {
+    final question = _arrangeQuestions[_arrangeIndex];
+    if (_arrangedLetters.length >= question.missingLetters.length) {
       return;
     }
-    const expectedOrder = ['N', 'A', 'T'];
-    final expected = expectedOrder[_arrangedLetters.length];
+    final expected = question.missingLetters[_arrangedLetters.length];
     final correct = letter == expected;
-    widget.onQuizAttempt(2, correct);
+    widget.onQuizAttempt(_lessonQuizCount - 1, correct);
     if (!correct) {
       setState(() => _wrongLetter = letter);
       await AppAudioService.instance.playWrong();
@@ -5357,9 +5434,22 @@ class _GradeOneUnitOneLessonOneFlowState
       _arrangedLetters.add(letter);
       _wrongLetter = null;
     });
-    if (_arrangedLetters.length == _letters.length) {
+    if (_arrangedLetters.length == question.missingLetters.length) {
       await Future<void>.delayed(const Duration(milliseconds: 750));
-      if (mounted) _goToStep(5);
+      if (!mounted) return;
+      if (_arrangeIndex >= _arrangeQuestions.length - 1) {
+        widget.onQuizCorrect(_lessonQuizCount - 1);
+        _goToStep(5);
+      } else {
+        setState(() {
+          _arrangeIndex++;
+          _arrangedLetters.clear();
+          _wrongLetter = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _speakForStep();
+        });
+      }
     }
   }
 
@@ -5394,6 +5484,7 @@ class _GradeOneUnitOneLessonOneFlowState
           ),
           2 => _LessonOneSearchStep(
             progress: _progress,
+            letters: _letters,
             foundLetters: _foundLetters,
             onExit: widget.onExit,
             onReplay: _speakForStep,
@@ -5404,6 +5495,8 @@ class _GradeOneUnitOneLessonOneFlowState
           ),
           3 => _LessonOneChoiceStep(
             progress: _progress,
+            question: _choiceQuestions[_choiceIndex],
+            choices: _letters,
             selected: _selectedChoice,
             wrongLetter: _wrongLetter,
             onExit: widget.onExit,
@@ -5412,6 +5505,7 @@ class _GradeOneUnitOneLessonOneFlowState
           ),
           4 => _LessonOneArrangeStep(
             progress: _progress,
+            question: _arrangeQuestions[_arrangeIndex],
             arrangedLetters: _arrangedLetters,
             wrongLetter: _wrongLetter,
             onExit: widget.onExit,
@@ -5428,6 +5522,36 @@ class _GradeOneUnitOneLessonOneFlowState
       ),
     );
   }
+}
+
+class _LessonOneChoiceQuestion {
+  final String word;
+  final String answer;
+  final String prompt;
+  final String imageAsset;
+  final int highlightIndex;
+
+  const _LessonOneChoiceQuestion({
+    required this.word,
+    required this.answer,
+    required this.prompt,
+    required this.imageAsset,
+    required this.highlightIndex,
+  });
+}
+
+class _LessonOneArrangeQuestion {
+  final String prompt;
+  final String word;
+  final Map<int, String> fixedLetters;
+  final List<String> missingLetters;
+
+  const _LessonOneArrangeQuestion({
+    required this.prompt,
+    required this.word,
+    required this.fixedLetters,
+    required this.missingLetters,
+  });
 }
 
 class _LessonOneChrome extends StatelessWidget {
@@ -5657,13 +5781,13 @@ class _LessonOneIntroStep extends StatelessWidget {
               ],
             ),
             SizedBox(height: view.height * .035),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
               children: const [
                 _LessonOneMysteryCard(),
-                SizedBox(width: 12),
                 _LessonOneMysteryCard(),
-                SizedBox(width: 12),
                 _LessonOneMysteryCard(),
               ],
             ),
@@ -5871,6 +5995,7 @@ class _LessonOneMapDestinationCueState
 
 class _LessonOneSearchStep extends StatelessWidget {
   final double progress;
+  final List<String> letters;
   final Set<String> foundLetters;
   final VoidCallback onExit;
   final VoidCallback onReplay;
@@ -5879,6 +6004,7 @@ class _LessonOneSearchStep extends StatelessWidget {
 
   const _LessonOneSearchStep({
     required this.progress,
+    required this.letters,
     required this.foundLetters,
     required this.onExit,
     required this.onReplay,
@@ -5891,6 +6017,18 @@ class _LessonOneSearchStep extends StatelessWidget {
     final view = MediaQuery.sizeOf(context);
     final top = MediaQuery.paddingOf(context).top;
     final letterSize = (view.width * .19).clamp(64.0, 104.0).toDouble();
+    final positions = {
+      'A': Rect.fromLTWH(view.width * .16, view.height * .61, 1, 1),
+      'N': Rect.fromLTWH(view.width * .70, top + view.height * .38, 1, 1),
+      'T': Rect.fromLTWH(view.width * .50, view.height * .70, 1, 1),
+    };
+    String? activeLetter;
+    for (final letter in letters) {
+      if (!foundLetters.contains(letter)) {
+        activeLetter = letter;
+        break;
+      }
+    }
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -5903,45 +6041,27 @@ class _LessonOneSearchStep extends StatelessWidget {
             right: view.width * .06,
             top: top + view.height * .125,
             child: _LessonOneMessageCard(
-              message: 'Pangitaa ang nadula nga mga letra!',
+              message: 'Pangitaa ang tatlo ka card sang letra.',
             ),
           ),
+          for (final letter in letters)
+            if (activeLetter == letter)
+              Positioned(
+                left: positions[letter]!.left,
+                top: positions[letter]!.top,
+                child: _LessonOneHotspotLetter(
+                  letter: letter,
+                  size: letterSize,
+                  found: foundLetters.contains(letter),
+                  onTap: () => onLetterTap(letter),
+                ),
+              ),
           Positioned(
-            left: view.width * .16,
-            bottom: view.height * .245,
-            child: _LessonOneHotspotLetter(
-              letter: 'A',
-              size: letterSize,
-              found: foundLetters.contains('A'),
-              onTap: () => onLetterTap('A'),
-            ),
-          ),
-          Positioned(
-            right: view.width * .15,
-            top: top + view.height * .38,
-            child: _LessonOneHotspotLetter(
-              letter: 'N',
-              size: letterSize,
-              found: foundLetters.contains('N'),
-              onTap: () => onLetterTap('N'),
-            ),
-          ),
-          Positioned(
-            left: -view.width * .035,
-            bottom: view.height * .035,
+            left: view.width * .045,
+            top: top + view.height * .285,
             child: TudloMascot(
-              size: (view.width * .34).clamp(124.0, 178.0),
+              size: (view.width * .28).clamp(104.0, 145.0),
               mood: KokaMood.hi,
-            ),
-          ),
-          Positioned(
-            left: view.width * .50,
-            bottom: view.height * .175,
-            child: _LessonOneHotspotLetter(
-              letter: 'T',
-              size: letterSize,
-              found: foundLetters.contains('T'),
-              onTap: () => onLetterTap('T'),
             ),
           ),
           Positioned(
@@ -5949,8 +6069,10 @@ class _LessonOneSearchStep extends StatelessWidget {
             right: view.width * .035,
             bottom: view.height * .02,
             child: _LessonOneSearchTray(
+              letters: letters,
               foundLetters: foundLetters,
               onNext: onNext,
+              onLetterTap: onLetterTap,
             ),
           ),
         ],
@@ -5961,6 +6083,8 @@ class _LessonOneSearchStep extends StatelessWidget {
 
 class _LessonOneChoiceStep extends StatelessWidget {
   final double progress;
+  final _LessonOneChoiceQuestion question;
+  final List<String> choices;
   final String? selected;
   final String? wrongLetter;
   final VoidCallback onExit;
@@ -5969,6 +6093,8 @@ class _LessonOneChoiceStep extends StatelessWidget {
 
   const _LessonOneChoiceStep({
     required this.progress,
+    required this.question,
+    required this.choices,
     required this.selected,
     required this.wrongLetter,
     required this.onExit,
@@ -6005,16 +6131,28 @@ class _LessonOneChoiceStep extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                'assets/images/level_game/people/nanay.png',
+              SizedBox(
                 height: (view.height * .19).clamp(130.0, 210.0),
-                fit: BoxFit.contain,
+                child: _LessonPictureAsset(
+                  asset: question.imageAsset,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_) => Icon(
+                    Icons.family_restroom_rounded,
+                    color: TudloColors.forest,
+                    size: view.width * .20,
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
-              _LessonOneNanayWord(),
+              _LessonOneHighlightedWord(
+                word: question.word,
+                highlightIndex: selected == question.answer
+                    ? question.highlightIndex
+                    : null,
+              ),
               const SizedBox(height: 10),
               Text(
-                'Ano ang una nga letra sang nanay?',
+                question.prompt,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   color: TudloColors.forest,
@@ -6028,10 +6166,11 @@ class _LessonOneChoiceStep extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  for (final letter in const ['A', 'N', 'T'])
+                  for (final letter in choices)
                     _LessonOneChoiceLetter(
                       letter: letter,
-                      selected: selected == letter,
+                      selected:
+                          selected == letter && selected == question.answer,
                       wrong: wrongLetter == letter,
                       onTap: () => onChoice(letter),
                     ),
@@ -6047,6 +6186,7 @@ class _LessonOneChoiceStep extends StatelessWidget {
 
 class _LessonOneArrangeStep extends StatelessWidget {
   final double progress;
+  final _LessonOneArrangeQuestion question;
   final List<String> arrangedLetters;
   final String? wrongLetter;
   final VoidCallback onExit;
@@ -6055,6 +6195,7 @@ class _LessonOneArrangeStep extends StatelessWidget {
 
   const _LessonOneArrangeStep({
     required this.progress,
+    required this.question,
     required this.arrangedLetters,
     required this.wrongLetter,
     required this.onExit,
@@ -6079,9 +6220,12 @@ class _LessonOneArrangeStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _LessonOneMessageCard(message: 'Ihan-ay ang N, A, kag T.'),
+            _LessonOneMessageCard(message: question.prompt),
             SizedBox(height: view.height * .07),
-            _LessonOneArrangeSlots(letters: arrangedLetters),
+            _LessonOneArrangeSlots(
+              question: question,
+              letters: arrangedLetters,
+            ),
             SizedBox(height: view.height * .06),
             Wrap(
               alignment: WrapAlignment.center,
@@ -6091,7 +6235,7 @@ class _LessonOneArrangeStep extends StatelessWidget {
                 for (final letter in const ['T', 'A', 'N'])
                   _LessonOneDraggableLetter(
                     letter: letter,
-                    used: arrangedLetters.contains(letter),
+                    used: false,
                     wrong: wrongLetter == letter,
                     onTap: () => onLetterTap(letter),
                   ),
@@ -6136,12 +6280,10 @@ class _LessonOneRewardStep extends StatelessWidget {
           children: [
             _LessonOneBlackboardLetters(),
             const Spacer(),
-            TudloMascot(
-              size: (view.width * .48).clamp(170.0, 260.0),
-              mood: KokaMood.hi,
+            _LessonOneSticker(
+              size: (view.width * .66).clamp(230.0, 340.0),
+              onTap: onDone,
             ),
-            const Spacer(),
-            _LessonOneSticker(),
             SizedBox(height: view.height * .02),
             _LessonOneMessageCard(message: 'Yehey! Nabalik na ang mga letra!'),
             SizedBox(height: view.height * .02),
@@ -6257,95 +6399,40 @@ class _LessonOneQuestionMarks extends StatelessWidget {
   }
 }
 
-class _LessonOneSearchTray extends StatelessWidget {
-  final Set<String> foundLetters;
-  final VoidCallback? onNext;
-
-  const _LessonOneSearchTray({
-    required this.foundLetters,
-    required this.onNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
-    final trayHeight = (view.height * .125).clamp(94.0, 128.0).toDouble();
-    final slotSize = (view.width * .18).clamp(56.0, 76.0).toDouble();
-    final arrowSize = (view.width * .20).clamp(70.0, 94.0).toDouble();
-
-    return Container(
-      height: trayHeight,
-      padding: EdgeInsets.symmetric(
-        horizontal: view.width * .045,
-        vertical: 12,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E6).withValues(alpha: .96),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .12),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (final letter in const ['A', 'N', 'T'])
-                  _LessonOneSearchTraySlot(
-                    letter: letter,
-                    found: foundLetters.contains(letter),
-                    size: slotSize,
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: view.width * .025),
-          _PresentationImageButton(
-            asset:
-                'assets/images/level_game/lesson-game-assets/next-lesson.png',
-            size: arrowSize,
-            enabled: onNext != null,
-            tooltip: 'Padayon',
-            onTap: onNext ?? () {},
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _LessonOneSearchTraySlot extends StatelessWidget {
   final String letter;
   final bool found;
   final double size;
+  final Future<void> Function()? onTap;
 
   const _LessonOneSearchTraySlot({
     required this.letter,
     required this.found,
     required this.size,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .56),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.withValues(alpha: .55), width: 2),
-      ),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 220),
-        opacity: found ? 1 : .25,
-        child: _IntroLetterArt(letter: letter, size: size * .56),
+    return GestureDetector(
+      onTap: found && onTap != null ? () => unawaited(onTap!()) : null,
+      child: Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .56),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.grey.withValues(alpha: .55),
+            width: 2,
+          ),
+        ),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 220),
+          opacity: found ? 1 : .25,
+          child: _IntroLetterArt(letter: letter, size: size * .56),
+        ),
       ),
     );
   }
@@ -6389,7 +6476,12 @@ class _LessonOneHotspotLetter extends StatelessWidget {
   }
 }
 
-class _LessonOneNanayWord extends StatelessWidget {
+class _LessonOneHighlightedWord extends StatelessWidget {
+  final String word;
+  final int? highlightIndex;
+
+  const _LessonOneHighlightedWord({required this.word, this.highlightIndex});
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -6403,12 +6495,84 @@ class _LessonOneNanayWord extends StatelessWidget {
           fontWeight: FontWeight.w900,
           letterSpacing: 0,
         ),
-        children: const [
-          TextSpan(
-            text: 'N',
-            style: TextStyle(color: TudloColors.coral),
+        children: [
+          for (var index = 0; index < word.length; index++)
+            TextSpan(
+              text: word[index],
+              style: TextStyle(
+                color: index == highlightIndex
+                    ? TudloColors.blue
+                    : TudloColors.ink,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LessonOneSearchTray extends StatelessWidget {
+  final List<String> letters;
+  final Set<String> foundLetters;
+  final VoidCallback? onNext;
+  final Future<void> Function(String letter) onLetterTap;
+
+  const _LessonOneSearchTray({
+    required this.letters,
+    required this.foundLetters,
+    required this.onNext,
+    required this.onLetterTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final trayHeight = (view.height * .125).clamp(94.0, 128.0).toDouble();
+    final slotSize = (view.width * .145).clamp(48.0, 66.0).toDouble();
+    final arrowSize = (view.width * .18).clamp(64.0, 88.0).toDouble();
+
+    return Container(
+      height: trayHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: view.width * .035,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E6).withValues(alpha: .96),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .12),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
-          TextSpan(text: 'ANAY'),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (final letter in letters)
+                  _LessonOneSearchTraySlot(
+                    letter: letter,
+                    found: foundLetters.contains(letter),
+                    size: slotSize,
+                    onTap: () => onLetterTap(letter),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: view.width * .018),
+          _PresentationImageButton(
+            asset:
+                'assets/images/level_game/lesson-game-assets/next-lesson.png',
+            size: arrowSize,
+            enabled: onNext != null,
+            tooltip: 'Padayon',
+            onTap: onNext ?? () {},
+          ),
         ],
       ),
     );
@@ -6461,7 +6625,16 @@ class _LessonOneChoiceLetter extends StatelessWidget {
                 ),
             ],
           ),
-          child: _IntroLetterArt(letter: letter, size: size * .72),
+          child: Text(
+            letter,
+            style: GoogleFonts.nunito(
+              color: TudloColors.ink,
+              fontSize: size * .62,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
         ),
       ),
     );
@@ -6469,13 +6642,14 @@ class _LessonOneChoiceLetter extends StatelessWidget {
 }
 
 class _LessonOneArrangeSlots extends StatelessWidget {
+  final _LessonOneArrangeQuestion question;
   final List<String> letters;
 
-  const _LessonOneArrangeSlots({required this.letters});
+  const _LessonOneArrangeSlots({required this.question, required this.letters});
 
   @override
   Widget build(BuildContext context) {
-    final size = (MediaQuery.sizeOf(context).width * .20).clamp(66.0, 94.0);
+    final size = (MediaQuery.sizeOf(context).width * .155).clamp(50.0, 74.0);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -6485,15 +6659,80 @@ class _LessonOneArrangeSlots extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          for (var i = 0; i < 3; i++) ...[
-            _ClassroomLetterTraySlot(
-              letter: i < letters.length ? letters[i] : '',
+          for (var i = 0; i < question.word.length; i++) ...[
+            _LessonOneArrangeSlot(
+              letter: question.fixedLetters[i] ?? _placedLetterForSlot(i),
               size: size,
+              fixed: question.fixedLetters.containsKey(i),
+              filled:
+                  question.fixedLetters.containsKey(i) ||
+                  _placedLetterForSlot(i).isNotEmpty,
             ),
-            if (i != 2) const SizedBox(width: 14),
+            if (i != question.word.length - 1) const SizedBox(width: 8),
           ],
         ],
       ),
+    );
+  }
+
+  String _placedLetterForSlot(int wordIndex) {
+    var missingBefore = 0;
+    for (var i = 0; i <= wordIndex; i++) {
+      if (!question.fixedLetters.containsKey(i)) missingBefore++;
+    }
+    final placedIndex = missingBefore - 1;
+    if (placedIndex < 0 || placedIndex >= letters.length) return '';
+    return letters[placedIndex];
+  }
+}
+
+class _LessonOneArrangeSlot extends StatelessWidget {
+  final String letter;
+  final double size;
+  final bool fixed;
+  final bool filled;
+
+  const _LessonOneArrangeSlot({
+    required this.letter,
+    required this.size,
+    required this.fixed,
+    required this.filled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: fixed
+            ? Colors.white.withValues(alpha: .80)
+            : filled
+            ? TudloColors.softGreen
+            : Colors.white.withValues(alpha: .54),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: fixed
+              ? TudloColors.blue.withValues(alpha: .28)
+              : filled
+              ? TudloColors.green
+              : Colors.grey.withValues(alpha: .55),
+          width: 3,
+        ),
+      ),
+      child: letter.isEmpty
+          ? const SizedBox.shrink()
+          : Text(
+              letter,
+              style: GoogleFonts.nunito(
+                color: fixed ? TudloColors.ink : TudloColors.blue,
+                fontSize: size * .58,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
     );
   }
 }
@@ -6556,34 +6795,57 @@ class _LessonOneBlackboardLetters extends StatelessWidget {
   }
 }
 
-class _LessonOneSticker extends StatelessWidget {
+class _LessonOneSticker extends StatefulWidget {
+  final double size;
+  final VoidCallback onTap;
+
+  const _LessonOneSticker({required this.size, required this.onTap});
+
+  @override
+  State<_LessonOneSticker> createState() => _LessonOneStickerState();
+}
+
+class _LessonOneStickerState extends State<_LessonOneSticker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    )..forward();
+    _scale = Tween<double>(
+      begin: .22,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    return Container(
-      width: (width * .58).clamp(210.0, 310.0),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E6),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFFFD94B), width: 5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFD94B).withValues(alpha: .55),
-            blurRadius: 28,
-            spreadRadius: 6,
+    return ScaleTransition(
+      scale: _scale,
+      child: GestureDetector(
+        onTap: () async {
+          await AppAudioService.instance.playTap();
+          widget.onTap();
+        },
+        child: SizedBox(
+          width: widget.size,
+          height: widget.size * .82,
+          child: SvgPicture.asset(
+            'assets/images/level_game/lesson-game-assets/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
           ),
-        ],
-      ),
-      child: Text(
-        'Letter\nFinder',
-        textAlign: TextAlign.center,
-        style: GoogleFonts.nunito(
-          color: TudloColors.blue,
-          fontSize: (width * .07).clamp(26.0, 36.0),
-          height: .95,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
         ),
       ),
     );
@@ -8896,8 +9158,6 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
         child: switch (_stepIndex) {
           0 => _FamilyReferenceIntroStep(
             progress: _progress,
-            portraitAsset:
-                'assets/images/level_game/people/family-portrait.svg',
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onNext: () => _goToStep(1),
@@ -9122,7 +9382,6 @@ class _GradeOneUnitTwoLessonTwoVisitorFlowState
             progress: _progress,
             message: 'May bisita kita!',
             backgroundAsset: 'assets/images/level_game/backgrounds/house.svg',
-            members: _learnMembers,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onNext: () => _goToStep(1),
@@ -9343,7 +9602,6 @@ class _GradeOneUnitTwoLessonThreePortraitFlowState
             progress: _progress,
             message: 'Maghimo kita sang litrato!',
             backgroundAsset: 'assets/images/level_game/backgrounds/house.svg',
-            members: _photoMembers,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onNext: () => _goToStep(1),
@@ -9404,8 +9662,6 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
   final double progress;
   final String message;
   final String backgroundAsset;
-  final List<_FamilyWord> members;
-  final String? portraitAsset;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onNext;
@@ -9415,8 +9671,6 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
     this.message = 'May bag-o ako nga litrato!',
     this.backgroundAsset =
         'assets/images/level_game/backgrounds/lesson2-popup.svg',
-    this.members = _GradeOneUnitTwoLessonOneFamilyReferenceFlowState._members,
-    this.portraitAsset,
     required this.onExit,
     required this.onReplay,
     required this.onNext,
@@ -9435,20 +9689,10 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
           Positioned(
             left: view.width * .22,
             right: view.width * .22,
-            top: view.height * .14,
+            top: view.height * .18,
             child: TudloMascot(
               size: (view.width * .42).clamp(150.0, 215.0),
               mood: KokaMood.hi,
-            ),
-          ),
-          Positioned(
-            left: view.width * .07,
-            right: view.width * .07,
-            top: view.height * .31,
-            child: _FamilyReferencePhotoFrame(
-              members: members,
-              hidden: true,
-              portraitAsset: portraitAsset,
             ),
           ),
           Positioned(
@@ -9472,40 +9716,22 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
 class _FamilyReferencePortraitImage extends StatelessWidget {
   final String asset;
   final double height;
-  final bool hidden;
 
   const _FamilyReferencePortraitImage({
     required this.asset,
     required this.height,
-    required this.hidden,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 220),
-      opacity: hidden ? .18 : 1,
-      child: hidden
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (var index = 0; index < 3; index++)
-                  Icon(
-                    Icons.person_rounded,
-                    color: Colors.grey.shade500,
-                    size: height * .36,
-                  ),
-              ],
-            )
-          : _LessonPictureAsset(
-              asset: asset,
-              fit: BoxFit.contain,
-              errorBuilder: (_) => Icon(
-                Icons.family_restroom_rounded,
-                color: TudloColors.forest,
-                size: height * .42,
-              ),
-            ),
+    return _LessonPictureAsset(
+      asset: asset,
+      fit: BoxFit.contain,
+      errorBuilder: (_) => Icon(
+        Icons.family_restroom_rounded,
+        color: TudloColors.forest,
+        size: height * .42,
+      ),
     );
   }
 }
@@ -9669,30 +9895,140 @@ class _FamilyReferenceFindStep extends StatelessWidget {
           children: [
             _LessonOneMessageCard(message: prompt),
             SizedBox(height: view.height * .025),
-            _FamilyReferencePhotoFrame(
+            _FamilyReferenceChoiceFrame(
               members: members,
-              highlight: answer,
-              compact: true,
+              answer: answer,
+              activeChoice: activeChoice,
+              wrongChoice: wrongChoice,
+              onChoose: onChoose,
             ),
             const Spacer(),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (final member in members)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: _FamilyReferenceChoiceCard(
-                        member: member,
-                        selected: activeChoice == member.hil,
-                        wrong: wrongChoice == member.hil,
-                        onTap: () => onChoose(member),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FamilyReferenceChoiceFrame extends StatelessWidget {
+  final List<_FamilyWord> members;
+  final String answer;
+  final String? activeChoice;
+  final String? wrongChoice;
+  final Future<void> Function(_FamilyWord member) onChoose;
+
+  const _FamilyReferenceChoiceFrame({
+    required this.members,
+    required this.answer,
+    required this.activeChoice,
+    required this.wrongChoice,
+    required this.onChoose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final height = (view.height * .24).clamp(160.0, 235.0);
+    return Container(
+      height: height,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E6).withValues(alpha: .92),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFD2B171), width: 5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .16),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          for (final member in members)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _FamilyReferenceInlineChoiceCard(
+                  member: member,
+                  correct: activeChoice == member.hil && member.hil == answer,
+                  wrong: wrongChoice == member.hil,
+                  onTap: () => onChoose(member),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FamilyReferenceInlineChoiceCard extends StatelessWidget {
+  final _FamilyWord member;
+  final bool correct;
+  final bool wrong;
+  final VoidCallback onTap;
+
+  const _FamilyReferenceInlineChoiceCard({
+    required this.member,
+    required this.correct,
+    required this.wrong,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _FeedbackMotion(
+      correct: correct,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: correct
+                ? const Color(0xFFE5FFD5)
+                : wrong
+                ? const Color(0xFFFFF1D8)
+                : Colors.white.withValues(alpha: .70),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: correct
+                  ? TudloColors.green
+                  : wrong
+                  ? TudloColors.coral
+                  : Colors.transparent,
+              width: 4,
+            ),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: _LessonPictureAsset(
+                  asset: member.imageAsset,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_) =>
+                      Icon(member.icon, color: TudloColors.forest),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                member.hil,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.blue,
+                  fontSize: (view.width * .041).clamp(15.0, 20.0),
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -9762,25 +10098,19 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
 
 class _FamilyReferencePhotoFrame extends StatelessWidget {
   final List<_FamilyWord> members;
-  final bool hidden;
-  final bool compact;
   final bool framed;
-  final String? highlight;
   final String? portraitAsset;
 
   const _FamilyReferencePhotoFrame({
     required this.members,
-    this.hidden = false,
-    this.compact = false,
     this.framed = false,
-    this.highlight,
     this.portraitAsset,
   });
 
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
-    final height = (view.height * (compact ? .22 : .25)).clamp(140.0, 235.0);
+    final height = (view.height * .25).clamp(140.0, 235.0);
     return Container(
       height: height,
       padding: const EdgeInsets.all(12),
@@ -9800,55 +10130,30 @@ class _FamilyReferencePhotoFrame extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (portraitAsset != null && highlight == null)
+          if (portraitAsset != null)
             Expanded(
               child: _FamilyReferencePortraitImage(
                 asset: portraitAsset!,
                 height: height,
-                hidden: hidden,
               ),
             )
           else
             for (final member in members)
               Expanded(
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 220),
-                  opacity: hidden ? .28 : 1,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      border: highlight == member.hil
-                          ? Border.all(color: TudloColors.green, width: 4)
-                          : null,
-                      boxShadow: highlight == member.hil
-                          ? [
-                              BoxShadow(
-                                color: TudloColors.green.withValues(alpha: .45),
-                                blurRadius: 18,
-                                spreadRadius: 3,
-                              ),
-                            ]
-                          : null,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: _LessonPictureAsset(
+                    asset: member.imageAsset,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_) => Icon(
+                      member.icon,
+                      color: TudloColors.forest,
+                      size: height * .42,
                     ),
-                    child: hidden
-                        ? Center(
-                            child: Icon(
-                              Icons.question_mark_rounded,
-                              color: Colors.grey.shade500,
-                              size: height * .34,
-                            ),
-                          )
-                        : _LessonPictureAsset(
-                            asset: member.imageAsset,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_) => Icon(
-                              member.icon,
-                              color: TudloColors.forest,
-                              size: height * .42,
-                            ),
-                          ),
                   ),
                 ),
               ),
@@ -23732,22 +24037,32 @@ class _LessonResultPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final top = MediaQuery.paddingOf(context).top;
     return SizedBox(
       width: size.width,
       height: size.height,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/level_game/lesson-game-assets/quiz-bg.jpg',
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            filterQuality: FilterQuality.high,
+          const _LessonBackgroundAsset(
+            asset: 'assets/images/level_game/backgrounds/garden.svg',
           ),
-          Container(color: Colors.white.withValues(alpha: .24)),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: .10),
+                  Colors.white.withValues(alpha: .02),
+                  TudloColors.softGreen.withValues(alpha: .12),
+                ],
+              ),
+            ),
+          ),
           Positioned(
             left: 24,
-            top: MediaQuery.paddingOf(context).top + 18,
+            top: top + 18,
             child: _PresentationImageButton(
               asset:
                   'assets/images/level_game/lesson-game-assets/exit-page.png',
@@ -23757,35 +24072,11 @@ class _LessonResultPage extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(24, 26, 24, 24 + bottom),
+            padding: EdgeInsets.fromLTRB(24, top + 92, 24, 24 + bottom),
             child: Column(
               children: [
-                const Spacer(),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Positioned(
-                      left: 26,
-                      top: 82,
-                      child: _ResultSparkle(),
-                    ),
-                    const Positioned(
-                      right: 36,
-                      top: 42,
-                      child: _ResultSparkle(),
-                    ),
-                    const Positioned(
-                      right: 24,
-                      bottom: 42,
-                      child: _ResultSparkle(),
-                    ),
-                    TudloMascot(
-                      size: (size.width * .62).clamp(230.0, 360.0),
-                      mood: KokaMood.hi,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 26),
+                const _ResultGoldStar(),
+                SizedBox(height: size.height * .025),
                 Text(
                   'Natapos mo na ang Leksyon!',
                   textAlign: TextAlign.center,
@@ -23797,9 +24088,9 @@ class _LessonResultPage extends StatelessWidget {
                     letterSpacing: 0,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 Text(
-                  accuracy == 100 ? 'Take a bow!' : 'Maayo gid!',
+                  'Maayo gid!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
                     color: TudloColors.forest,
@@ -23809,35 +24100,33 @@ class _LessonResultPage extends StatelessWidget {
                     letterSpacing: 0,
                   ),
                 ),
-                const Spacer(flex: 1),
-                Row(
+                const Spacer(),
+                Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
                   children: [
-                    Expanded(
-                      child: _ResultStatBox(
-                        label: 'KAHUSTOAN',
-                        value: '$accuracy%',
-                        icon: Icons.track_changes_rounded,
-                      ),
+                    const Positioned(
+                      left: 24,
+                      top: 34,
+                      child: _ResultSparkle(),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ResultStatBox(
-                        label: 'ORAS',
-                        value: durationLabel,
-                        icon: Icons.timer_rounded,
-                      ),
+                    const Positioned(
+                      right: 34,
+                      top: 4,
+                      child: _ResultSparkle(),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ResultStatBox(
-                        label: 'SA PAG LIWAT',
-                        value: '$mistakes',
-                        icon: Icons.refresh_rounded,
-                      ),
+                    const Positioned(
+                      right: 22,
+                      bottom: 22,
+                      child: _ResultSparkle(),
+                    ),
+                    TudloMascot(
+                      size: (size.width * .50).clamp(185.0, 300.0),
+                      mood: KokaMood.hi,
                     ),
                   ],
                 ),
-                const SizedBox(height: 34),
+                const Spacer(),
                 Row(
                   children: [
                     Expanded(
@@ -23983,6 +24272,38 @@ class _LessonStreakPage extends StatelessWidget {
   }
 }
 
+class _ResultGoldStar extends StatelessWidget {
+  const _ResultGoldStar();
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final size = (width * .25).clamp(92.0, 140.0);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Icon(
+          Icons.star_rounded,
+          color: const Color(0xFFFFD33D).withValues(alpha: .34),
+          size: size * 1.22,
+        ),
+        Icon(
+          Icons.star_rounded,
+          color: const Color(0xFFFFC928),
+          size: size,
+          shadows: [
+            Shadow(color: Colors.white.withValues(alpha: .95), blurRadius: 12),
+            Shadow(
+              color: const Color(0xFFFF9C00).withValues(alpha: .45),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _ResultSparkle extends StatelessWidget {
   const _ResultSparkle();
 
@@ -23992,80 +24313,6 @@ class _ResultSparkle extends StatelessWidget {
       Icons.auto_awesome_rounded,
       color: TudloColors.meadow.withValues(alpha: .78),
       size: 36,
-    );
-  }
-}
-
-class _ResultStatBox extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _ResultStatBox({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 116,
-      padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: TudloColors.forest.withValues(alpha: .16),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: GoogleFonts.nunito(
-                color: TudloColors.forest,
-                fontSize: 16,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .7,
-              ),
-            ),
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: TudloColors.forest, size: 30),
-              const SizedBox(width: 6),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
-                    maxLines: 1,
-                    style: GoogleFonts.nunito(
-                      color: TudloColors.forest,
-                      fontSize: 32,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-        ],
-      ),
     );
   }
 }

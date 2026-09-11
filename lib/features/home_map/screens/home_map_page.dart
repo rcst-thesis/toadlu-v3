@@ -19,7 +19,8 @@ import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 
 const double _mapHeaderHeight = 340;
 const Size _barangayMapViewBox = Size(2400, 1400);
-const String _barangayMapAsset = 'assets/images/level_game/backgrounds/tudlomap.svg';
+const String _barangayMapAsset =
+    'assets/images/level_game/backgrounds/tudlomap.svg';
 
 enum MapLocation {
   house,
@@ -136,7 +137,7 @@ String _lessonPreviewForLevel(int level) {
   final lesson = AppData.lessonNumberForLevel(level);
 
   final preview = switch ((AppData.selectedGradeLevel, unit.number, lesson)) {
-    (GradeLevel.grade1, 1, 1) => _joinLessonPreview(['A', 'N', 'T', 'Y']),
+    (GradeLevel.grade1, 1, 1) => _joinLessonPreview(['A', 'N', 'T']),
     (GradeLevel.grade1, 1, 2) => _joinLessonPreview(['I', 'D', 'O']),
     (GradeLevel.grade1, 1, 3) => _joinLessonPreview(['M', 'K', 'U']),
     (GradeLevel.grade1, 1, 4) => _joinLessonPreview(['B', 'L', 'S']),
@@ -256,6 +257,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
   int _selectedUnitNumber = 1;
   int _selectedLessonIndex = 0;
   bool _launchingLevel = false;
+  String? _lastLessonCardVoiceAsset;
 
   @override
   void initState() {
@@ -270,6 +272,9 @@ class _HomeMapPageState extends State<HomeMapPage> {
       initialPage: _selectedLessonIndex,
     );
     _scrollController.addListener(_handleScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _playSelectedLessonCardVoice();
+    });
   }
 
   @override
@@ -278,7 +283,37 @@ class _HomeMapPageState extends State<HomeMapPage> {
       ..removeListener(_handleScroll)
       ..dispose();
     _lessonCarouselController.dispose();
+    unawaited(AppAudioService.instance.stopVoice());
     super.dispose();
+  }
+
+  String? _lessonCardVoiceAssetForLevel(int level) {
+    final unit = AppData.unitForLevel(level);
+    final lesson = AppData.lessonNumberForLevel(level);
+    return switch ((AppData.selectedGradeLevel, unit.number, lesson)) {
+      (GradeLevel.grade1, 1, 1) => 'audio/VO-final/Gr_1_Les_1_1_1.wav',
+      _ => null,
+    };
+  }
+
+  Future<void> _playSelectedLessonCardVoice() async {
+    final unit = AppData.unitForNumber(_selectedUnitNumber);
+    final level = unit.startLevel + _selectedLessonIndex;
+    final asset = _lessonCardVoiceAssetForLevel(level);
+    if (asset == null) {
+      _lastLessonCardVoiceAsset = null;
+      return;
+    }
+    if (asset == _lastLessonCardVoiceAsset) return;
+    _lastLessonCardVoiceAsset = asset;
+    try {
+      await AppAudioService.instance.lowerBackgroundVolume();
+      await AppAudioService.instance.playVoiceAssets([asset]);
+    } catch (_) {
+      // Missing or unsupported card VO should not block lesson browsing.
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+    }
   }
 
   void _handleScroll() {
@@ -380,8 +415,10 @@ class _HomeMapPageState extends State<HomeMapPage> {
     setState(() {
       _selectedUnitNumber = selected;
       _selectedLessonIndex = 0;
+      _lastLessonCardVoiceAsset = null;
     });
     _lessonCarouselController.jumpToPage(0);
+    unawaited(_playSelectedLessonCardVoice());
   }
 
   void _moveLessonCarousel(int delta) {
@@ -518,8 +555,10 @@ class _HomeMapPageState extends State<HomeMapPage> {
                           unit: unit,
                           selectedIndex: _selectedLessonIndex,
                           launching: _launchingLevel,
-                          onPageChanged: (index) =>
-                              setState(() => _selectedLessonIndex = index),
+                          onPageChanged: (index) {
+                            setState(() => _selectedLessonIndex = index);
+                            unawaited(_playSelectedLessonCardVoice());
+                          },
                           onCenterCard: (index) {
                             _lessonCarouselController.animateToPage(
                               index,
@@ -811,14 +850,19 @@ class _LessonMapScreenState extends State<_LessonMapScreen>
     _cameraController
       ..stop()
       ..reset();
-    _cameraAnimation = Matrix4Tween(
-      begin: _transformationController.value,
-      end: targetMatrix,
-    ).animate(
-      CurvedAnimation(parent: _cameraController, curve: Curves.easeInOutCubic),
-    )..addListener(() {
-        _transformationController.value = _cameraAnimation!.value;
-      });
+    _cameraAnimation =
+        Matrix4Tween(
+            begin: _transformationController.value,
+            end: targetMatrix,
+          ).animate(
+            CurvedAnimation(
+              parent: _cameraController,
+              curve: Curves.easeInOutCubic,
+            ),
+          )
+          ..addListener(() {
+            _transformationController.value = _cameraAnimation!.value;
+          });
     _cameraController.forward().whenComplete(() {
       if (mounted) setState(() => _pinVisible = true);
     });
@@ -960,7 +1004,8 @@ class _LessonMapScreenState extends State<_LessonMapScreen>
                 top: MediaQuery.paddingOf(context).top + 82,
                 child: IgnorePointer(
                   child: _MapInstructionCard(
-                    text: 'Yunit ${unit.number} • Leksyon ${unit.number}.$lesson',
+                    text:
+                        'Yunit ${unit.number} • Leksyon ${unit.number}.$lesson',
                     instruction: 'Pangitaa ang ${_anchor.label}.',
                   ),
                 ),
