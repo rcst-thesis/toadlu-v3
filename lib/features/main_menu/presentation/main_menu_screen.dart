@@ -6,6 +6,8 @@ import 'package:tudlo/features/home/presentation/screens/fourth_loading_screen.d
 import 'package:tudlo/features/load/presentation/load_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
+import 'package:tudlo/shared/widgets/rive_long_button.dart';
+import 'package:tudlo/shared/widgets/rive_settings_button.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -16,25 +18,6 @@ class MainMenuScreen extends StatelessWidget {
 
   void _replaceWith(BuildContext context, Widget screen) {
     Navigator.of(context).pushReplacement(FadePageRoute<void>(page: screen));
-  }
-
-  Widget _hitTarget({
-    required String label,
-    required VoidCallback onTap,
-    Key? key,
-  }) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: Material(
-        key: key,
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Center(child: Opacity(opacity: 0, child: Text(label))),
-        ),
-      ),
-    );
   }
 
   @override
@@ -50,20 +33,6 @@ class MainMenuScreen extends StatelessWidget {
               height: 917,
               child: Stack(
                 children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/main_menu_reference.png',
-                      fit: BoxFit.fill,
-                      filterQuality: FilterQuality.high,
-                    ),
-                  ),
-                  const Positioned(
-                    left: 70,
-                    top: 270,
-                    width: 272,
-                    height: 300,
-                    child: ColoredBox(color: AppColors.mint),
-                  ),
                   Positioned(
                     key: const Key('main-menu-logo'),
                     left: 82,
@@ -76,13 +45,6 @@ class MainMenuScreen extends StatelessWidget {
                       filterQuality: FilterQuality.high,
                       semanticLabel: 'Tudlo logo and description',
                     ),
-                  ),
-                  const Positioned(
-                    left: 0,
-                    top: 815,
-                    width: 412,
-                    height: 48,
-                    child: ColoredBox(color: AppColors.mint),
                   ),
                   Positioned(
                     key: const Key('main-menu-footer'),
@@ -102,10 +64,9 @@ class MainMenuScreen extends StatelessWidget {
                     top: 51,
                     width: 47,
                     height: 49,
-                    child: _hitTarget(
+                    child: RiveSettingsButton(
                       key: const Key('main-settings-button'),
-                      label: 'Settings',
-                      onTap: () => _open(
+                      onPressed: () => _open(
                         context,
                         const SettingsScreen(),
                       ),
@@ -113,33 +74,33 @@ class MainMenuScreen extends StatelessWidget {
                   ),
                   Positioned(
                     left: 30,
-                    top: 633,
+                    top: 629,
                     width: 352.295,
-                    height: 44,
-                    child: _hitTarget(
+                    height: RiveLongButton.height,
+                    child: RiveLongButton(
                       label: 'start new koka',
-                      onTap: () => _open(context, const NameScreen()),
+                      onPressed: () => _open(context, const NameScreen()),
                     ),
                   ),
                   Positioned(
                     left: 30,
-                    top: 703,
+                    top: 699,
                     width: 352,
-                    height: 44,
-                    child: _hitTarget(
+                    height: RiveLongButton.height,
+                    child: RiveLongButton(
                       label: 'continue',
-                      onTap: () =>
+                      onPressed: () =>
                           _replaceWith(context, const FourthLoadingScreen()),
                     ),
                   ),
                   Positioned(
                     left: 30,
-                    top: 767,
+                    top: 763,
                     width: 352,
-                    height: 44,
-                    child: _hitTarget(
+                    height: RiveLongButton.height,
+                    child: RiveLongButton(
                       label: 'load',
-                      onTap: () => _open(context, const LoadScreen()),
+                      onPressed: () => _open(context, const LoadScreen()),
                     ),
                   ),
                 ],
@@ -147,33 +108,6 @@ class MainMenuScreen extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class MenuButton extends StatelessWidget {
-  const MenuButton({required this.label, required this.onPressed, super.key});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.green,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          elevation: 5,
-          shadowColor: AppColors.darkGreen,
-          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-        ),
-        child: Text(label),
       ),
     );
   }

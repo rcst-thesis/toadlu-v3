@@ -2,19 +2,48 @@
 
 ## Confirmed State
 
-There is no active Rive integration in this repository:
+The app uses `rive: ^0.14.10` (resolved to `0.14.11`) with the Flutter Rive
+renderer. Runtime assets are stored under `assets/images/`, which is already
+declared in `pubspec.yaml`. `main()` initializes `RiveNative` before the app
+is shown so the first Rive control does not need to initialize the renderer on
+its first interaction.
 
-- `pubspec.yaml` has no `rive` dependency.
-- `assets/` has no `.riv` files.
-- Dart creates no Rive widget, artboard, state machine, animation controller,
-  event listener, View Model, or data binding.
-- No artboard/state-machine/input/event/View Model names can be derived.
-
-The current runtime-contract inventory is therefore intentionally empty:
+The current runtime-contract inventory is:
 
 | `.riv` file | Artboard | State machine | Inputs/events/bindings | Flutter owner |
 | --- | --- | --- | --- | --- |
-| None | None | None | None | None |
+| `assets/images/koka_mascot.riv` | Default artboard | `State Machine 1` | Legacy triggers `Hi`, `Curious`, `Annoyed` | `HomeKokaMascot` |
+| `assets/images/longbtn.riv` | Default component artboard | Default exported machine | Data Binding: `buttonLabel` string, `activated` trigger; legacy `isPressed` drives press motion | `RiveLongButton` |
+| `assets/images/settings_button.riv` | `SettingsButton` | `SettingsButtonStateMachine` | Data Binding: `activated` trigger; legacy `isPressed` drives press and gear rotation | `RiveSettingsButton` |
+
+### Long button contract
+
+`RiveLongButton` in `lib/shared/widgets/rive_long_button.dart` is the only
+Flutter bridge for the exported long-button component. It deliberately uses
+the default artboard, default state machine, and `DataBind.auto()` because the
+export does not retain stable public names for those objects.
+
+- Rive owns the raised/down visual press and the displayed `buttonLabel`.
+- Flutter assigns `buttonLabel` and drives the component's exported legacy
+  `isPressed` input on touch down/up. It keeps `activated` available in the
+  asset for runtimes that consume it directly.
+- Flutter invokes the existing callback from its recognised tap gesture, so
+  navigation, form validation, persistence, and all application truth remain
+  reliable even when the exported trigger is not emitted by a component
+  listener.
+- The Rive artboard is 353 × 52. Consumers reserve 52 logical pixels and place
+  it four pixels higher than the legacy 44px visual slot, so the raised face
+  remains aligned while the pressed face can move down over its shadow.
+- The bridge preserves Flutter semantics and provides a static visual fallback
+  while the asset initializes.
+
+### Settings button contract
+
+`RiveSettingsButton` in `lib/shared/widgets/rive_settings_button.dart` is used
+by the Main Menu and Home Settings controls. It renders at 47 × 49 logical
+pixels with `Fit.contain`, preserving the circular button shape. Flutter sets
+the public `isPressed` input on touch down, clears it on up/cancel, and invokes
+the existing Settings navigation callback only on a completed Flutter tap.
 
 ## What Is Not Rive
 
@@ -101,4 +130,3 @@ defines no files or contracts. Do not replace working Flutter motion by default.
 - Selected Flutter Rive package/runtime version.
 - Per-component choice of legacy inputs versus data binding/View Models.
 - Fit, resize, orientation, SafeArea, fallback, and reduced-motion contracts.
-

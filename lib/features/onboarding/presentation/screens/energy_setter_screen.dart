@@ -4,6 +4,7 @@ import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/second_loading_screen.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
+import 'package:tudlo/shared/widgets/rive_long_button.dart';
 
 class EnergySetterScreen extends StatefulWidget {
   const EnergySetterScreen({
@@ -191,7 +192,7 @@ class _EnergySetterScreenState extends State<EnergySetterScreen> {
                           ),
                           Positioned(
                             left: 30,
-                            top: 811,
+                            top: 807,
                             child: _EnergyNextButton(onPressed: _continue),
                           ),
                         ],
@@ -467,41 +468,10 @@ class _EnergyNextButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return RiveLongButton(
       key: const Key('energy-next-button'),
-      width: 352.295,
-      height: 44,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            top: 4.3732,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.darkGreen,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            bottom: 4.3732,
-            child: FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: AppColors.green,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'next',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ],
-      ),
+      label: 'next',
+      onPressed: onPressed,
     );
   }
 }

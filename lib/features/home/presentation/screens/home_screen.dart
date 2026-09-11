@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _upperNavigationRevealStartFraction = .45;
 
   final _scrollController = ScrollController();
+  bool _lessonsCollapsed = false;
 
   @override
   void dispose() {
@@ -141,11 +142,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
                 final sceneScale = canvasWidth / _HomeSceneLayout.designWidth;
                 final lessonPanelHeight =
-                    HomeLessonPanel.designHeightForEnergy(widget.energy);
+                    HomeLessonPanel.designHeightForEnergy(
+                  widget.energy,
+                  isCollapsed: _lessonsCollapsed,
+                );
                 final contentEndSceneHeight =
                     _HomeSceneLayout.footerBottomFor(lessonPanelHeight) *
                         sceneScale;
-                final minimumScrollableSceneHeight = viewport.maxHeight * 1.5;
+                final minimumScrollableSceneHeight = viewport.maxHeight;
                 return Stack(
                   children: [
                     Positioned.fill(
@@ -155,7 +159,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 720),
-                            child: SizedBox(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 240),
+                              curve: Curves.easeOutCubic,
                               height: math.max(
                                 minimumScrollableSceneHeight,
                                 contentEndSceneHeight,
@@ -333,6 +339,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                           key: const Key('home-lesson-panel'),
                                           energy: widget.energy,
                                           onLessonTap: _showLessonPreview,
+                                          onCollapsedChanged: (isCollapsed) {
+                                            setState(() {
+                                              _lessonsCollapsed = isCollapsed;
+                                            });
+                                          },
                                         ),
                                       ),
                                       Positioned(

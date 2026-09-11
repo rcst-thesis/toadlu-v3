@@ -127,7 +127,7 @@ class LearnerCardScreen extends StatelessWidget {
                     ),
                     Positioned(
                       left: 30,
-                      top: 811,
+                      top: 807,
                       child: OnboardingBottomActions(
                         primaryKey: const Key('learner-card-continue-button'),
                         secondaryKey: const Key('learner-card-reset-button'),

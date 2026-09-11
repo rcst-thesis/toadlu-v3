@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/shared/widgets/rive_long_button.dart';
 
 enum OnboardingPrimaryButtonStyle { green, white }
 
@@ -30,9 +30,9 @@ class OnboardingBottomActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final white = primaryStyle == OnboardingPrimaryButtonStyle.white;
-    final frontColor = white ? Colors.white : AppColors.green;
-    final depthColor = white ? const Color(0xFFB8C3AF) : AppColors.darkGreen;
-    final foregroundColor = white ? Colors.black : Colors.white;
+    final frontColor = Colors.white;
+    final depthColor = const Color(0xFFB8C3AF);
+    final foregroundColor = Colors.black;
 
     return SizedBox(
       width: width,
@@ -42,46 +42,19 @@ class OnboardingBottomActions extends StatelessWidget {
           SizedBox(
             key: primaryKey,
             width: width,
-            height: 44,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  top: 4.373,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: depthColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  bottom: 4.373,
-                  child: FilledButton(
+            height: RiveLongButton.height,
+            child: white
+                ? _WhitePrimaryButton(
+                    label: primaryLabel,
                     onPressed: onPrimaryPressed,
-                    style: FilledButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: frontColor,
-                      foregroundColor: foregroundColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        primaryLabel,
-                        maxLines: 1,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                    frontColor: frontColor,
+                    depthColor: depthColor,
+                    foregroundColor: foregroundColor,
+                  )
+                : RiveLongButton(
+                    label: primaryLabel,
+                    onPressed: onPrimaryPressed,
                   ),
-                ),
-              ],
-            ),
           ),
           Positioned(
             left: (width - 120) / 2,
@@ -103,6 +76,68 @@ class OnboardingBottomActions extends StatelessWidget {
                 ),
               ),
               child: Text(secondaryLabel),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WhitePrimaryButton extends StatelessWidget {
+  const _WhitePrimaryButton({
+    required this.label,
+    required this.onPressed,
+    required this.frontColor,
+    required this.depthColor,
+    required this.foregroundColor,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final Color frontColor;
+  final Color depthColor;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            top: 4.373,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: depthColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            bottom: 4.373,
+            child: FilledButton(
+              onPressed: onPressed,
+              style: FilledButton.styleFrom(
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                backgroundColor: frontColor,
+                foregroundColor: foregroundColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
           ),
         ],

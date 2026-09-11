@@ -4,6 +4,7 @@ import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/grade_selection_screen.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
+import 'package:tudlo/shared/widgets/rive_long_button.dart';
 
 class NameScreen extends StatefulWidget {
   const NameScreen({this.voiceOverPlayer, super.key});
@@ -206,7 +207,7 @@ class _NameScreenState extends State<NameScreen> {
                           ),
                           Positioned(
                             left: 30,
-                            top: 811,
+                            top: 807,
                             child: _NextButton(onPressed: _continue),
                           ),
                         ],
@@ -235,47 +236,10 @@ class _NextButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const radius = BorderRadius.all(Radius.circular(8));
-    return SizedBox(
+    return RiveLongButton(
       key: const Key('name-next-button'),
-      width: 352.295,
-      height: 44,
-      child: Stack(
-        children: [
-          const Positioned(
-            left: 0,
-            right: 0,
-            top: 4.3732,
-            height: 39.6269,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.darkGreen,
-                borderRadius: radius,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            height: 39.6269,
-            child: FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: AppColors.green,
-                foregroundColor: Colors.white,
-                shape: const RoundedRectangleBorder(borderRadius: radius),
-              ),
-              child: const Text(
-                'next',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ],
-      ),
+      label: 'next',
+      onPressed: onPressed,
     );
   }
 }

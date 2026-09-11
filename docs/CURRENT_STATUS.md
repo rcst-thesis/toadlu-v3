@@ -70,8 +70,6 @@ This status is based only on current code and tests.
 
 ## Placeholder-Only
 
-- Main Menu Settings.
-- Home Settings.
 - Welcome Next/tutorial destination.
 - `RivePlaceholder` visuals in generic placeholder screens.
 

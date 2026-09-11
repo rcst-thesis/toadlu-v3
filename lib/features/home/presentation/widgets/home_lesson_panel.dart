@@ -12,6 +12,7 @@ class HomeLessonPanel extends StatefulWidget {
     ),
     this.additionalLessons = const [],
     this.onLessonTap,
+    this.onCollapsedChanged,
     super.key,
   });
 
@@ -19,11 +20,21 @@ class HomeLessonPanel extends StatefulWidget {
   final HomeLessonPreview lesson;
   final List<HomeLessonPreview> additionalLessons;
   final ValueChanged<HomeLessonPreview>? onLessonTap;
+  final ValueChanged<bool>? onCollapsedChanged;
 
   /// The Home scene uses this to reserve enough scroll height for every lesson
   /// Energy currently makes available.
-  static double designHeightForEnergy(int energy) {
+  static double designHeightForEnergy(
+    int energy, {
+    required bool isCollapsed,
+  }) {
     final lessonCount = (energy.clamp(0, 60) ~/ 10).clamp(0, 6);
+    if (isCollapsed && lessonCount > 1) {
+      return _HomeLessonPanelLayout.headingIconSize +
+          _HomeLessonPanelLayout.headingToSectionGap +
+          _HomeLessonPanelLayout.cardHeight +
+          _HomeLessonPanelLayout.deckVerticalOffset;
+    }
     final sectionHeight = lessonCount > 1
         ? _HomeLessonPanelLayout.headingToSectionGap +
             _HomeLessonPanelLayout.sectionChevronSize +
@@ -65,6 +76,12 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
   String get _summaryCategories {
     final categories = _visibleLessons.map((lesson) => lesson.category).toSet();
     return categories.join(', ');
+  }
+
+  void _setExpanded(bool expanded) {
+    if (_isExpanded == expanded) return;
+    setState(() => _isExpanded = expanded);
+    widget.onCollapsedChanged?.call(!expanded);
   }
 
   @override
@@ -125,7 +142,7 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
                     label: 'Collapse lessons',
                     child: InkResponse(
                       key: const Key('home-lesson-collapse-toggle'),
-                      onTap: () => setState(() => _isExpanded = false),
+                      onTap: () => _setExpanded(false),
                       radius: 14 * scale,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -197,7 +214,7 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
               scale: scale,
                 onTap: !_canCollapse
                     ? null
-                    : () => setState(() => _isExpanded = true),
+                    : () => _setExpanded(true),
               ),
             ],
           ),

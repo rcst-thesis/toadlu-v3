@@ -52,7 +52,6 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
   static const _onboardingAssets = <String>[
     'assets/images/maral_loading_logo.png',
     'assets/images/loading_logo.png',
-    'assets/images/main_menu_reference.png',
     'assets/images/onboarding_footer.png',
     'assets/images/onboarding_logo.png',
     'assets/images/load_logo.png',

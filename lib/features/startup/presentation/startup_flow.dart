@@ -70,7 +70,6 @@ class _StartupFlowState extends State<StartupFlow> {
     // Later screens own their load boundaries; do not retain onboarding art
     // at app launch when the Main Menu is the only immediate destination.
     const assets = <String>[
-      'assets/images/main_menu_reference.png',
       'assets/images/onboarding_footer.png',
       'assets/images/onboarding_logo.png',
     ];
