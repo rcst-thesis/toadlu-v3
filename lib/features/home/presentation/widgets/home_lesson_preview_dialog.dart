@@ -6,9 +6,8 @@ Future<void> showHomeLessonPreviewDialog({
   required BuildContext context,
   required HomeLessonPreview lesson,
   required Rect originRect,
+  required VoidCallback onRetry,
   required VoidCallback onStart,
-  required VoidCallback onBrowseLessons,
-  required VoidCallback onSetGoal,
 }) async {
   await showGeneralDialog<void>(
     context: context,
@@ -27,9 +26,8 @@ Future<void> showHomeLessonPreviewDialog({
               child: _HomeLessonPreviewDialog(
                 lesson: lesson,
                 originRect: originRect,
+                onRetry: onRetry,
                 onStart: onStart,
-                onBrowseLessons: onBrowseLessons,
-                onSetGoal: onSetGoal,
               ),
             ),
           ),
@@ -50,16 +48,14 @@ class _HomeLessonPreviewDialog extends StatefulWidget {
   const _HomeLessonPreviewDialog({
     required this.lesson,
     required this.originRect,
+    required this.onRetry,
     required this.onStart,
-    required this.onBrowseLessons,
-    required this.onSetGoal,
   });
 
   final HomeLessonPreview lesson;
   final Rect originRect;
+  final VoidCallback onRetry;
   final VoidCallback onStart;
-  final VoidCallback onBrowseLessons;
-  final VoidCallback onSetGoal;
 
   @override
   State<_HomeLessonPreviewDialog> createState() =>
@@ -230,71 +226,45 @@ class _HomeLessonPreviewDialogState extends State<_HomeLessonPreviewDialog> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                 _LessonPreviewAction(
-                  icon: Icons.flag_rounded,
-                  label: 'goal',
-                  color: const Color(0xFFEF7855),
+                  icon: Icons.refresh_rounded,
+                  label: 'retry',
+                  color: const Color(0xFF55A7D0),
                   size: 44,
-                  emoji: '🎯',
+                  emoji: '🔄',
+                  emojiScale: .64,
+                  emojiOffset: const Offset(0, 1),
                   showSurface: false,
                   verticalOffset: 8,
-                  onTap: widget.onSetGoal,
+                  onTap: widget.onRetry,
                 ),
                 _LessonPreviewAction(
                   icon: Icons.play_arrow_rounded,
-                  label: 'sugodan ta',
+                  label: 'suguran ta',
                   color: const Color(0xFF68B84D),
                   size: 56,
                   width: 66,
                   emoji: '▶',
+                  emojiScale: .48,
                   showSurface: true,
                   verticalOffset: 0,
                   onTap: widget.onStart,
                 ),
                 _LessonPreviewAction(
-                  icon: Icons.menu_book_rounded,
-                  label: 'silawon ta',
-                  color: const Color(0xFF55A7D0),
+                  icon: Icons.schedule_rounded,
+                  label: 'do it later',
+                  color: const Color(0xFF8B5D2B),
                   size: 44,
-                  emoji: '📚',
+                  emoji: '⏰',
+                  emojiScale: .64,
+                  emojiOffset: const Offset(0, 1),
                   showSurface: false,
                   verticalOffset: 8,
-                  onTap: widget.onBrowseLessons,
+                  onTap: () => Navigator.of(context).pop(),
                 ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            AnimatedOpacity(
-              duration: _actionRevealDuration,
-              opacity: _actionsAreVisible ? 1 : 0,
-              child: Semantics(
-                button: true,
-                label: 'Close lesson preview',
-                child: InkResponse(
-                  key: const Key('home-lesson-preview-close'),
-                  onTap: () => Navigator.of(context).pop(),
-                  radius: 28,
-                  child: const SizedBox(
-                    width: 42,
-                    height: 42,
-                    child: Center(
-                      child: CircleAvatar(
-                        radius: 11,
-                        backgroundColor: Color(0xFF5A5D60),
-                        child: Text(
-                          '✖️',
-                          style: TextStyle(
-                            fontSize: 12,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -310,6 +280,8 @@ class _LessonPreviewAction extends StatelessWidget {
     required this.size,
     this.width,
     this.emoji,
+    this.emojiScale = .72,
+    this.emojiOffset = Offset.zero,
     required this.showSurface,
     required this.verticalOffset,
     required this.onTap,
@@ -321,16 +293,20 @@ class _LessonPreviewAction extends StatelessWidget {
   final double size;
   final double? width;
   final String? emoji;
+  final double emojiScale;
+  final Offset emojiOffset;
   final bool showSurface;
   final double verticalOffset;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: Offset(0, verticalOffset),
-      child: Column(
-        children: [
+    return SizedBox(
+      width: 66,
+      child: Transform.translate(
+        offset: Offset(0, verticalOffset),
+        child: Column(
+          children: [
         Material(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(15),
@@ -356,19 +332,37 @@ class _LessonPreviewAction extends StatelessWidget {
                       child: emoji == null
                           ? Icon(icon, color: color, size: size * .53)
                           : Center(
-                              child: Text(
+                              child: Transform.translate(
+                                offset: emojiOffset,
+                                child: Text(
                                 emoji!,
                                 style: TextStyle(
                                   color: color,
-                                  fontSize: size * .48,
+                                  fontSize: size * emojiScale,
+                                  height: 1,
+                                ),
+                                textHeightBehavior: const TextHeightBehavior(
+                                  applyHeightToFirstAscent: false,
+                                  applyHeightToLastDescent: false,
+                                ),
                                 ),
                               ),
                             ),
                     )
                   : Center(
-                      child: Text(
-                        emoji ?? '',
-                        style: TextStyle(fontSize: size * .72),
+                      child: Transform.translate(
+                        offset: emojiOffset,
+                        child: Text(
+                          emoji ?? '',
+                          style: TextStyle(
+                            fontSize: size * emojiScale,
+                            height: 1,
+                          ),
+                          textHeightBehavior: const TextHeightBehavior(
+                            applyHeightToFirstAscent: false,
+                            applyHeightToLastDescent: false,
+                          ),
+                        ),
                       ),
                     ),
             ),
@@ -384,7 +378,8 @@ class _LessonPreviewAction extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        ],
+          ],
+        ),
       ),
     );
   }

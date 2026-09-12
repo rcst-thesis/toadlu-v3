@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/home/presentation/widgets/animated_home_window.dart';
+import 'package:tudlo/features/home/presentation/widgets/animated_glow_border.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bottom_navigation.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bookshelf.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_couch.dart';
@@ -137,21 +138,13 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       lesson: lesson,
       originRect: originRect,
+      onRetry: () {
+        Navigator.of(context).pop();
+        _openLessons(context);
+      },
       onStart: () {
         Navigator.of(context).pop();
         _openLessons(context);
-      },
-      onBrowseLessons: () {
-        Navigator.of(context).pop();
-        _openLessons(context);
-      },
-      onSetGoal: () {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${lesson.unitTitle} is your goal for today.'),
-          ),
-        );
       },
     );
   }
@@ -414,22 +407,34 @@ class _HomeScreenState extends State<HomeScreen> {
                                             sceneScale,
                                         height: _HomeSceneLayout.devPanelFrame.height *
                                             sceneScale,
-                                        child: Semantics(
-                                          button: true,
-                                          label: 'Open about Tudlo',
-                                          child: GestureDetector(
-                                            key: const Key('home-dev-panel-button'),
-                                            behavior: HitTestBehavior.opaque,
-                                            onTap: () => _openAbout(context),
-                                            child: const Stack(
-                                              children: [
-                                                Positioned.fill(
-                                                  child: HomeDevPanelFrame(),
-                                                ),
-                                                Positioned.fill(
-                                                  child: HomeDevPanelContent(),
-                                                ),
-                                              ],
+                                        child: AnimatedGlowBorder(
+                                          strokeWidth: 1.5 * sceneScale,
+                                          borderRadius: 11 * sceneScale,
+                                          duration: const Duration(seconds: 4),
+                                          gradientColors: const [
+                                            Color(0xFFF9C1CB),
+                                            Color(0xFFCBEAFA),
+                                            Color(0xFF98EF6F),
+                                          ],
+                                          child: Semantics(
+                                            button: true,
+                                            label: 'Open about Tudlo',
+                                            child: GestureDetector(
+                                              key: const Key(
+                                                'home-dev-panel-button',
+                                              ),
+                                              behavior: HitTestBehavior.opaque,
+                                              onTap: () => _openAbout(context),
+                                              child: const Stack(
+                                                children: [
+                                                  Positioned.fill(
+                                                    child: HomeDevPanelFrame(),
+                                                  ),
+                                                  Positioned.fill(
+                                                    child: HomeDevPanelContent(),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
