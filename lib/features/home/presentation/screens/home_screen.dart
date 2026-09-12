@@ -9,6 +9,9 @@ import 'package:tudlo/features/home/presentation/widgets/home_bookshelf.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_couch.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_content_footer.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_door.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_dev_panel_content.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_dev_panel_label.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_dev_panel_frame.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_drawer.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_energy_indicator.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lily_mat.dart';
@@ -110,6 +113,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openAbout(BuildContext context) {
+    Navigator.of(context).push(
+      FadePageRoute<void>(
+        page: const PlaceholderScreen(
+          title: 'About',
+          description: 'Temporary About screen shell',
+          icon: Icons.info_outline_rounded,
+        ),
+      ),
+    );
+  }
+
   void _openHome(BuildContext context) {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
@@ -165,6 +180,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
                 final stickerContainerTop =
                     _HomeSceneLayout.stickerContainerTopFor(lessonPanelHeight);
+                final devPanelLabelTop =
+                    _HomeSceneLayout.devPanelLabelTopFor(lessonPanelHeight);
+                final devPanelFrameTop =
+                    _HomeSceneLayout.devPanelFrameTopFor(lessonPanelHeight);
                 final contentEndSceneHeight =
                     _HomeSceneLayout.footerBottomFor(lessonPanelHeight) *
                         sceneScale;
@@ -378,6 +397,44 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                       Positioned(
+                                        left: _HomeSceneLayout.devPanelLabel.left *
+                                            sceneScale,
+                                        top: devPanelLabelTop * sceneScale,
+                                        width: _HomeSceneLayout.devPanelLabel.width *
+                                            sceneScale,
+                                        height: _HomeSceneLayout.devPanelLabel.height *
+                                            sceneScale,
+                                        child: const HomeDevPanelLabel(),
+                                      ),
+                                      Positioned(
+                                        left: _HomeSceneLayout.devPanelFrame.left *
+                                            sceneScale,
+                                        top: devPanelFrameTop * sceneScale,
+                                        width: _HomeSceneLayout.devPanelFrame.width *
+                                            sceneScale,
+                                        height: _HomeSceneLayout.devPanelFrame.height *
+                                            sceneScale,
+                                        child: Semantics(
+                                          button: true,
+                                          label: 'Open about Tudlo',
+                                          child: GestureDetector(
+                                            key: const Key('home-dev-panel-button'),
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: () => _openAbout(context),
+                                            child: const Stack(
+                                              children: [
+                                                Positioned.fill(
+                                                  child: HomeDevPanelFrame(),
+                                                ),
+                                                Positioned.fill(
+                                                  child: HomeDevPanelContent(),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
                                         left: 0,
                                         right: 0,
                                         bottom: 0,
@@ -561,7 +618,7 @@ abstract final class _HomeSceneLayout {
   // Availability heading and lesson preview directly below Word of the Day.
   static const lessonPanel = _HomeSceneItemLayout(
     left: 17,
-    top: 706,
+    top: 716,
     width: 378,
     height: 130,
   );
@@ -574,11 +631,37 @@ abstract final class _HomeSceneLayout {
     height: HomeStickerContainer.designHeight,
   );
 
-  static const double stickerContainerTopGap = 8;
-  static const double stickerLabelBottomGap = 8;
+  static const double stickerContainerTopGap = 20;
+
+  // Developer panel shell. Its logo and copy are intentionally added later.
+  static const devPanelLabel = _HomeSceneItemLayout(
+    left: 17,
+    top: 0,
+    width: HomeDevPanelLabel.designWidth,
+    height: HomeDevPanelLabel.designHeight,
+  );
+  static const double devPanelLabelTopGap = 28;
+  static const devPanelFrame = _HomeSceneItemLayout(
+    left: 17,
+    top: 0,
+    width: HomeDevPanelFrame.designWidth,
+    height: HomeDevPanelFrame.designHeight,
+  );
+  static const double devPanelFrameTopGap = 12;
+  static const double devPanelFrameBottomGap = 8;
 
   static double stickerContainerTopFor(double lessonPanelHeight) =>
       lessonPanel.top + lessonPanelHeight + stickerContainerTopGap;
+
+  static double devPanelLabelTopFor(double lessonPanelHeight) =>
+      stickerContainerTopFor(lessonPanelHeight) +
+      stickerContainer.height +
+      devPanelLabelTopGap;
+
+  static double devPanelFrameTopFor(double lessonPanelHeight) =>
+      devPanelLabelTopFor(lessonPanelHeight) +
+      devPanelLabel.height +
+      devPanelFrameTopGap;
 
   // The scrollable Home footer uses its own width-relative painted wave.
   static const double footerHeight = 48;
@@ -588,7 +671,11 @@ abstract final class _HomeSceneLayout {
   static double footerBottomFor(double lessonPanelHeight) =>
       stickerContainerTopFor(lessonPanelHeight) +
       stickerContainer.height +
-      stickerLabelBottomGap +
+      devPanelLabelTopGap +
+      devPanelLabel.height +
+      devPanelFrameTopGap +
+      devPanelFrame.height +
+      devPanelFrameBottomGap +
       footerHeight;
 
   static const double creamFloorBorderTop = 346;

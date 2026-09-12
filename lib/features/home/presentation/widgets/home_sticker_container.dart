@@ -29,7 +29,7 @@ class HomeStickerContainer extends StatelessWidget {
   static const double stickerScreenButtonWidth = 24;
   static const double stickerScreenButtonHeight = 33;
   static const double stickerScreenButtonOffsetX = 0;
-  static const double stickerScreenButtonBottomInset = 5;
+  static const double stickerScreenButtonBottomInset = 4;
 
   static const double designHeight =
       labelHeight + labelToFrameGap + frameHeight;

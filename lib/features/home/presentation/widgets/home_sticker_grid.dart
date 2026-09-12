@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_sticker_thumbnail_tile.dart';
 
 /// A bounded Home preview of the learner's sticker collection.
 ///
@@ -98,7 +99,7 @@ class HomeStickerGrid extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final sticker = stickers[index];
-              return RepaintBoundary(
+              return HomeStickerThumbnailTile(
                 child: Semantics(
                   image: true,
                   label: sticker.isEarned
@@ -117,7 +118,7 @@ class HomeStickerGrid extends StatelessWidget {
                           excludeFromSemantics: true,
                         ),
                         if (!sticker.isEarned)
-                          const ColoredBox(
+                          ColoredBox(
                             color: _unearnedOverlayColor,
                           ),
                       ],
