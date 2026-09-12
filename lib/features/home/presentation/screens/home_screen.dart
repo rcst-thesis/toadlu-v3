@@ -16,6 +16,7 @@ import 'package:tudlo/features/home/presentation/widgets/home_koka_mascot.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lesson_preview_dialog.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_settings_button.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_sticker_container.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_standing_lamp.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_word_of_the_day.dart';
 import 'package:tudlo/features/home/presentation/widgets/interactive_home_lamp.dart';
@@ -97,14 +98,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openStickerScreen(BuildContext context) {
+    Navigator.of(context).push(
+      FadePageRoute<void>(
+        page: const PlaceholderScreen(
+          title: 'Stickers',
+          description: 'Temporary sticker screen shell',
+          icon: Icons.style_rounded,
+        ),
+      ),
+    );
+  }
+
   void _openHome(BuildContext context) {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  void _showLessonPreview(HomeLessonPreview lesson) {
-    showHomeLessonPreviewDialog(
+  Future<void> _showLessonPreview(
+    HomeLessonPreview lesson,
+    Rect originRect,
+  ) async {
+    await showHomeLessonPreviewDialog(
       context: context,
       lesson: lesson,
+      originRect: originRect,
       onStart: () {
         Navigator.of(context).pop();
         _openLessons(context);
@@ -146,6 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   widget.energy,
                   isCollapsed: _lessonsCollapsed,
                 );
+                final stickerContainerTop =
+                    _HomeSceneLayout.stickerContainerTopFor(lessonPanelHeight);
                 final contentEndSceneHeight =
                     _HomeSceneLayout.footerBottomFor(lessonPanelHeight) *
                         sceneScale;
@@ -159,9 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 720),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 240),
-                              curve: Curves.easeOutCubic,
+                            child: SizedBox(
                               height: math.max(
                                 minimumScrollableSceneHeight,
                                 contentEndSceneHeight,
@@ -344,6 +361,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                               _lessonsCollapsed = isCollapsed;
                                             });
                                           },
+                                        ),
+                                      ),
+                                      Positioned(
+                                        left: _HomeSceneLayout.stickerContainer.left *
+                                            sceneScale,
+                                        top: stickerContainerTop * sceneScale,
+                                        width: _HomeSceneLayout.stickerContainer.width *
+                                            sceneScale,
+                                        height:
+                                            HomeStickerContainer.designHeight *
+                                                sceneScale,
+                                        child: HomeStickerContainer(
+                                          onOpenStickers: () =>
+                                              _openStickerScreen(context),
                                         ),
                                       ),
                                       Positioned(
@@ -535,13 +566,30 @@ abstract final class _HomeSceneLayout {
     height: 130,
   );
 
+  // The sticker container begins after the lesson panel's dynamic card area.
+  static const stickerContainer = _HomeSceneItemLayout(
+    left: 17,
+    top: 0,
+    width: HomeStickerContainer.designWidth,
+    height: HomeStickerContainer.designHeight,
+  );
+
+  static const double stickerContainerTopGap = 8;
+  static const double stickerLabelBottomGap = 8;
+
+  static double stickerContainerTopFor(double lessonPanelHeight) =>
+      lessonPanel.top + lessonPanelHeight + stickerContainerTopGap;
+
   // The scrollable Home footer uses its own width-relative painted wave.
   static const double footerHeight = 48;
 
   // Update contentBottom when a new Home item extends below this section.
   // The scroll scene will then automatically grow to fit it and the footer.
   static double footerBottomFor(double lessonPanelHeight) =>
-      lessonPanel.top + lessonPanelHeight + footerHeight;
+      stickerContainerTopFor(lessonPanelHeight) +
+      stickerContainer.height +
+      stickerLabelBottomGap +
+      footerHeight;
 
   static const double creamFloorBorderTop = 346;
   static const double floorTop = 350;

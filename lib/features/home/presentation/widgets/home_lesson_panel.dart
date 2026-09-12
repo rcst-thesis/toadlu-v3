@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// Responsive Home lesson preview using the supplied PNG artwork.
+typedef HomeLessonTapCallback = Future<void> Function(
+  HomeLessonPreview lesson,
+  Rect originRect,
+);
+
 class HomeLessonPanel extends StatefulWidget {
   const HomeLessonPanel({
     required this.energy,
@@ -19,7 +24,7 @@ class HomeLessonPanel extends StatefulWidget {
   final int energy;
   final HomeLessonPreview lesson;
   final List<HomeLessonPreview> additionalLessons;
-  final ValueChanged<HomeLessonPreview>? onLessonTap;
+  final HomeLessonTapCallback? onLessonTap;
   final ValueChanged<bool>? onCollapsedChanged;
 
   /// The Home scene uses this to reserve enough scroll height for every lesson
@@ -225,7 +230,7 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
 }
 
 /// Shows every currently available lesson while the section is expanded.
-class _LessonList extends StatelessWidget {
+class _LessonList extends StatefulWidget {
   const _LessonList({
     required this.lessons,
     required this.scale,
@@ -234,25 +239,57 @@ class _LessonList extends StatelessWidget {
 
   final List<HomeLessonPreview> lessons;
   final double scale;
-  final ValueChanged<HomeLessonPreview>? onLessonTap;
+  final HomeLessonTapCallback? onLessonTap;
+
+  @override
+  State<_LessonList> createState() => _LessonListState();
+}
+
+class _LessonListState extends State<_LessonList> {
+  int? _openingLessonIndex;
+
+  Future<void> _openLesson(
+    int index,
+    BuildContext cardContext,
+  ) async {
+    final callback = widget.onLessonTap;
+    if (callback == null || _openingLessonIndex != null) return;
+
+    final box = cardContext.findRenderObject()! as RenderBox;
+    final origin = box.localToGlobal(Offset.zero) & box.size;
+    setState(() => _openingLessonIndex = index);
+
+    // Hide the tapped Home card while its matching overlay card takes over.
+    await callback(widget.lessons[index], origin);
+    if (mounted) setState(() => _openingLessonIndex = null);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        for (var index = 0; index < lessons.length; index++) ...[
+        for (var index = 0; index < widget.lessons.length; index++) ...[
           SizedBox(
-            height: _HomeLessonPanelLayout.cardHeight * scale,
+            height: _HomeLessonPanelLayout.cardHeight * widget.scale,
             width: double.infinity,
-            child: GestureDetector(
-              key: Key('home-lesson-card-$index'),
-              onTap: onLessonTap == null ? null : () => onLessonTap!(lessons[index]),
-              behavior: HitTestBehavior.opaque,
-              child: _LessonPreviewCard(lesson: lessons[index]),
+            child: Builder(
+              builder: (cardContext) => Opacity(
+                opacity: _openingLessonIndex == index ? 0 : 1,
+                child: GestureDetector(
+                  key: Key('home-lesson-card-$index'),
+                  onTap: widget.onLessonTap == null
+                      ? null
+                      : () => _openLesson(index, cardContext),
+                  behavior: HitTestBehavior.opaque,
+                  child: _LessonPreviewCard(lesson: widget.lessons[index]),
+                ),
+              ),
             ),
           ),
-          if (index < lessons.length - 1)
-            SizedBox(height: _HomeLessonPanelLayout.lessonCardGap * scale),
+          if (index < widget.lessons.length - 1)
+            SizedBox(
+              height: _HomeLessonPanelLayout.lessonCardGap * widget.scale,
+            ),
         ],
       ],
     );

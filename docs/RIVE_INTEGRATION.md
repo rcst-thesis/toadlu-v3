@@ -15,6 +15,7 @@ The current runtime-contract inventory is:
 | `assets/images/koka_mascot.riv` | Default artboard | `State Machine 1` | Legacy triggers `Hi`, `Curious`, `Annoyed` | `HomeKokaMascot` |
 | `assets/images/longbtn.riv` | Default component artboard | Default exported machine | Data Binding: `buttonLabel` string, `activated` trigger; legacy `isPressed` drives press motion | `RiveLongButton` |
 | `assets/images/settings_button.riv` | `SettingsButton` | `SettingsButtonStateMachine` | Data Binding: `activated` trigger; legacy `isPressed` drives press and gear rotation | `RiveSettingsButton` |
+| `assets/images/settings_button_home.riv` | `SettingsButton` | `SettingsButtonStateMachine` | Home-specific Settings visual; same `activated` and `isPressed` contract | `HomeSettingsButton` |
 
 ### Long button contract
 
@@ -40,10 +41,12 @@ export does not retain stable public names for those objects.
 ### Settings button contract
 
 `RiveSettingsButton` in `lib/shared/widgets/rive_settings_button.dart` is used
-by the Main Menu and Home Settings controls. It renders at 47 × 49 logical
-pixels with `Fit.contain`, preserving the circular button shape. Flutter sets
-the public `isPressed` input on touch down, clears it on up/cancel, and invokes
-the existing Settings navigation callback only on a completed Flutter tap.
+by the Main Menu and Home Settings controls. The Main Menu uses
+`settings_button.riv`; Home uses `settings_button_home.riv`. It renders at
+47 × 49 logical pixels with `Fit.contain`, preserving the circular button
+shape. Flutter sets the public `isPressed` input on touch down, clears it on
+up/cancel, and invokes the existing Settings navigation callback only on a
+completed Flutter tap.
 
 ## What Is Not Rive
 

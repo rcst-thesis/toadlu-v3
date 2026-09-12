@@ -5,6 +5,7 @@ import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart'
 Future<void> showHomeLessonPreviewDialog({
   required BuildContext context,
   required HomeLessonPreview lesson,
+  required Rect originRect,
   required VoidCallback onStart,
   required VoidCallback onBrowseLessons,
   required VoidCallback onSetGoal,
@@ -14,7 +15,7 @@ Future<void> showHomeLessonPreviewDialog({
     barrierDismissible: true,
     barrierLabel: 'Close lesson preview',
     barrierColor: const Color(0xCC000000),
-    transitionDuration: const Duration(milliseconds: 220),
+    transitionDuration: const Duration(milliseconds: 300),
     pageBuilder: (dialogContext, _, __) => SafeArea(
       child: Stack(
         children: [
@@ -25,6 +26,7 @@ Future<void> showHomeLessonPreviewDialog({
             child: Center(
               child: _HomeLessonPreviewDialog(
                 lesson: lesson,
+                originRect: originRect,
                 onStart: onStart,
                 onBrowseLessons: onBrowseLessons,
                 onSetGoal: onSetGoal,
@@ -37,31 +39,71 @@ Future<void> showHomeLessonPreviewDialog({
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curve = CurvedAnimation(
         parent: animation,
-        curve: Curves.easeOutCubic,
+        curve: _HomeLessonPreviewDialogState._settleCurve,
       );
-      return FadeTransition(
-        opacity: curve,
-        child: ScaleTransition(
-          scale: Tween<double>(begin: .96, end: 1).animate(curve),
-          child: child,
-        ),
-      );
+      return FadeTransition(opacity: curve, child: child);
     },
   );
 }
 
-class _HomeLessonPreviewDialog extends StatelessWidget {
+class _HomeLessonPreviewDialog extends StatefulWidget {
   const _HomeLessonPreviewDialog({
     required this.lesson,
+    required this.originRect,
     required this.onStart,
     required this.onBrowseLessons,
     required this.onSetGoal,
   });
 
   final HomeLessonPreview lesson;
+  final Rect originRect;
   final VoidCallback onStart;
   final VoidCallback onBrowseLessons;
   final VoidCallback onSetGoal;
+
+  @override
+  State<_HomeLessonPreviewDialog> createState() =>
+      _HomeLessonPreviewDialogState();
+}
+
+class _HomeLessonPreviewDialogState extends State<_HomeLessonPreviewDialog> {
+  static const _settleCurve = Cubic(0.22, 0.82, 0.28, 1);
+  static const _cardExpansionDuration = Duration(milliseconds: 380);
+  static const _actionRevealDelay = Duration(milliseconds: 160);
+  static const _actionRevealDuration = Duration(milliseconds: 180);
+
+  final _cardKey = GlobalKey();
+  bool _cardIsOpen = false;
+  bool _actionsAreVisible = false;
+  Offset _launchTravel = Offset.zero;
+  double _launchScaleX = .9;
+  double _launchScaleY = .55;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final cardBox = _cardKey.currentContext?.findRenderObject() as RenderBox?;
+      if (!mounted || cardBox == null) return;
+      final cardRect = cardBox.localToGlobal(Offset.zero) & cardBox.size;
+      setState(() {
+        _launchTravel = widget.originRect.center - cardRect.center;
+        // Start as the actual tapped card: nearly its full width, but much
+        // shorter. The card then grows vertically while it travels to the
+        // preview position, instead of looking like a separate modal popping
+        // into view.
+        _launchScaleX = (widget.originRect.width / cardRect.width)
+            .clamp(.72, 1.18)
+            .toDouble();
+        _launchScaleY = (widget.originRect.height / cardRect.height)
+            .clamp(.38, .78)
+            .toDouble();
+        _cardIsOpen = true;
+      });
+      await Future<void>.delayed(_actionRevealDelay);
+      if (mounted) setState(() => _actionsAreVisible = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,21 +116,26 @@ class _HomeLessonPreviewDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    offset: Offset(0, 9),
-                    blurRadius: 0,
+            TweenAnimationBuilder<double>(
+              duration: _cardExpansionDuration,
+              curve: _settleCurve,
+              tween: Tween<double>(begin: 0, end: _cardIsOpen ? 1 : 0),
+              child: DecoratedBox(
+                  key: _cardKey,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        offset: Offset(0, 9),
+                        blurRadius: 0,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: SizedBox(
-                height: 124,
-                child: Padding(
+                  child: SizedBox(
+                    height: 124,
+                    child: Padding(
                   padding: const EdgeInsets.fromLTRB(15, 8, 12, 9),
                   child: Stack(
                   children: [
@@ -127,7 +174,7 @@ class _HomeLessonPreviewDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            lesson.unitTitle,
+                            widget.lesson.unitTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -153,13 +200,35 @@ class _HomeLessonPreviewDialog extends StatelessWidget {
                     ),
                   ],
                   ),
+                    ),
+                  ),
                 ),
-              ),
+              builder: (context, progress, child) {
+                final scaleX =
+                    _launchScaleX + ((1 - _launchScaleX) * progress);
+                final scaleY =
+                    _launchScaleY + ((1 - _launchScaleY) * progress);
+                return Transform.translate(
+                  offset: _launchTravel * (1 - progress),
+                  child: Transform.scale(
+                    scaleX: scaleX,
+                    scaleY: scaleY,
+                    child: child,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
+            AnimatedSlide(
+              duration: _actionRevealDuration,
+              curve: _settleCurve,
+              offset: _actionsAreVisible ? Offset.zero : const Offset(0, .12),
+              child: AnimatedOpacity(
+                duration: _actionRevealDuration,
+                opacity: _actionsAreVisible ? 1 : 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
                 _LessonPreviewAction(
                   icon: Icons.flag_rounded,
                   label: 'goal',
@@ -168,7 +237,7 @@ class _HomeLessonPreviewDialog extends StatelessWidget {
                   emoji: '🎯',
                   showSurface: false,
                   verticalOffset: 8,
-                  onTap: onSetGoal,
+                  onTap: widget.onSetGoal,
                 ),
                 _LessonPreviewAction(
                   icon: Icons.play_arrow_rounded,
@@ -179,7 +248,7 @@ class _HomeLessonPreviewDialog extends StatelessWidget {
                   emoji: '▶',
                   showSurface: true,
                   verticalOffset: 0,
-                  onTap: onStart,
+                  onTap: widget.onStart,
                 ),
                 _LessonPreviewAction(
                   icon: Icons.menu_book_rounded,
@@ -189,37 +258,43 @@ class _HomeLessonPreviewDialog extends StatelessWidget {
                   emoji: '📚',
                   showSurface: false,
                   verticalOffset: 8,
-                  onTap: onBrowseLessons,
+                  onTap: widget.onBrowseLessons,
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 10),
-            Semantics(
-              button: true,
-              label: 'Close lesson preview',
-              child: InkResponse(
-                key: const Key('home-lesson-preview-close'),
-                onTap: () => Navigator.of(context).pop(),
-                radius: 28,
-                child: const SizedBox(
-                  width: 42,
-                  height: 42,
-                  child: Center(
-                    child: CircleAvatar(
-                      radius: 11,
-                      backgroundColor: Color(0xFF5A5D60),
-                      child: Text(
-                        '✖️',
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1,
+            AnimatedOpacity(
+              duration: _actionRevealDuration,
+              opacity: _actionsAreVisible ? 1 : 0,
+              child: Semantics(
+                button: true,
+                label: 'Close lesson preview',
+                child: InkResponse(
+                  key: const Key('home-lesson-preview-close'),
+                  onTap: () => Navigator.of(context).pop(),
+                  radius: 28,
+                  child: const SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: Center(
+                      child: CircleAvatar(
+                        radius: 11,
+                        backgroundColor: Color(0xFF5A5D60),
+                        child: Text(
+                          '✖️',
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1,
+                          ),
                         ),
                       ),
                     ),
                   ),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

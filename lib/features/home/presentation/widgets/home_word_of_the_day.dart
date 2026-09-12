@@ -29,7 +29,7 @@ class HomeWordOfTheDay extends StatefulWidget {
 }
 
 class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
-  static const _backgroundColor = Color(0xFF8F6A42);
+  static const _backgroundColor = Color(0xFF8B5D2B);
   static const _artboardWidth = 378.0;
   static const _artboardHeight = 216.0;
   static const _heartColor = Color(0xFFEB5050);

@@ -104,6 +104,34 @@ own fades.
   sensors, and custom painters—not Rive.
 - Animated components should honor `MediaQuery.disableAnimations`.
 
+## Widget Composition and Rebuild Boundaries
+
+- Split a screen into focused `StatelessWidget` or `StatefulWidget` classes
+  when a region has independent state, a distinct lifecycle, an animation, a
+  reusable layout contract, or a stable visual responsibility. Keep the
+  `StatefulWidget` boundary as close as practical to the state it owns.
+- Use helper methods only for small, local structural fragments that depend on
+  the same state and are not useful as a separate boundary. A helper method is
+  not a rebuild boundary; extracting one mechanically does not improve runtime
+  work on its own.
+- Use `const` constructors and `const` child widgets whenever their inputs are
+  compile-time constants. This lets Flutter reuse the identical widget
+  configuration during an ancestor rebuild. Do not remove a needed runtime
+  input merely to make a widget `const`.
+- Keep fast-changing state local. For example, touch feedback belongs in the
+  control that renders it, and ambient animation should rebuild only through a
+  narrow `AnimatedBuilder`/`ListenableBuilder` subtree. Supply an invariant
+  `child` to those builders when possible.
+- A separate widget class improves organization and can create a useful state
+  boundary, but it does not automatically prevent its `build` method from
+  running when an ancestor supplies a new configuration. Measure before making
+  a performance-driven refactor; preserve stable keys, semantics, callbacks,
+  and responsive constraints.
+- Use `RepaintBoundary` around independently animated or expensive artwork
+  only when it limits repaint work without breaking compositing or memory
+  behavior. It is a paint optimization, not a substitute for correct rebuild
+  boundaries.
+
 ## Testing
 
 Tests import public API through `lib/tudlo.dart` or focused widgets directly.

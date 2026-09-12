@@ -11,15 +11,17 @@ import 'package:rive/rive.dart' as rive;
 class RiveSettingsButton extends StatefulWidget {
   const RiveSettingsButton({
     required this.onPressed,
+    this.assetPath = _defaultAssetPath,
     this.enabled = true,
     super.key,
   });
 
   static const width = 47.0;
   static const height = 49.0;
-  static const _assetPath = 'assets/images/settings_button.riv';
+  static const _defaultAssetPath = 'assets/images/settings_button.riv';
 
   final VoidCallback onPressed;
+  final String assetPath;
   final bool enabled;
 
   @override
@@ -40,7 +42,7 @@ class _RiveSettingsButtonState extends State<RiveSettingsButton> {
 
   Future<void> _load() async {
     final file = await rive.File.asset(
-      RiveSettingsButton._assetPath,
+      widget.assetPath,
       riveFactory: rive.Factory.flutter,
     );
     if (!mounted || file == null) {

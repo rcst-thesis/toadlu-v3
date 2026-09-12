@@ -10,6 +10,7 @@ class HomeSettingsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return RiveSettingsButton(
       key: const Key('home-settings-button'),
+      assetPath: 'assets/images/settings_button_home.riv',
       onPressed: onTap,
     );
   }
