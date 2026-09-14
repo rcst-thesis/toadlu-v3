@@ -14915,6 +14915,7 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
+    final showBackgroundPhotoFrame = showCoveredPhoto;
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -14922,31 +14923,36 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
       backgroundAsset: backgroundAsset,
       child: Stack(
         children: [
-          Positioned(
-            left: showCoveredPhoto ? view.width * .08 : view.width * .22,
-            right: showCoveredPhoto ? view.width * .08 : view.width * .22,
-            top: showCoveredPhoto ? view.height * .16 : view.height * .18,
-            child: showCoveredPhoto
-                ? const _CoveredFamilyPhoto(revealed: false)
-                : TudloMascot(
-                    size: (view.width * .42).clamp(150.0, 215.0),
-                    mood: KokaMood.hi,
-                  ),
-          ),
-          if (showCoveredPhoto)
+          if (!showBackgroundPhotoFrame)
             Positioned(
-              left: view.width * .07,
-              bottom: view.height * .30,
+              left: view.width * .22,
+              right: view.width * .22,
+              top: view.height * .18,
               child: TudloMascot(
-                size: (view.width * .36).clamp(130.0, 190.0),
+                size: (view.width * .42).clamp(150.0, 215.0),
+                mood: KokaMood.hi,
+              ),
+            ),
+          if (showBackgroundPhotoFrame)
+            Positioned(
+              left: view.width * .06,
+              bottom: view.height * .27,
+              child: TudloMascot(
+                size: (view.width * .50).clamp(178.0, 260.0),
                 mood: KokaMood.hi,
               ),
             ),
           Positioned(
-            left: view.width * .07,
-            right: view.width * .07,
+            left: showBackgroundPhotoFrame
+                ? view.width * .055
+                : view.width * .07,
+            right: showBackgroundPhotoFrame
+                ? view.width * .055
+                : view.width * .07,
             bottom: view.height * .14,
-            child: _LessonOneMessageCard(message: message),
+            child: showBackgroundPhotoFrame
+                ? _LargeFamilyIntroMessageCard(message: message)
+                : _LessonOneMessageCard(message: message),
           ),
           Positioned(
             left: view.width * .07,
@@ -14955,6 +14961,43 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
             child: _LessonOneBlueButton(label: 'Sige', onTap: onNext),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LargeFamilyIntroMessageCard extends StatelessWidget {
+  final String message;
+
+  const _LargeFamilyIntroMessageCard({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 22),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E6).withValues(alpha: .96),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .11),
+            blurRadius: 16,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.nunito(
+          color: TudloColors.ink,
+          fontSize: (width * .075).clamp(28.0, 38.0),
+          height: 1.02,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
       ),
     );
   }
