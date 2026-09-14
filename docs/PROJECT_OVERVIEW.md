@@ -5,10 +5,11 @@
 Tudlo is a Flutter learning application prototype for Grade 1–3 children. It
 currently covers an illustrated startup/onboarding experience, learner
 identity/grade/energy selection, save-slot presentation, a welcome scene, and a
-room-like Home shell intended to host future lessons.
+room-like Home scene with an incremental lesson-preview experience.
 
 This document reports only repository evidence. It does not claim persistence,
-curriculum, translation, backend, audio, or Rive systems exist.
+curriculum, translation, backend, or audio systems exist beyond what code and
+assets demonstrate.
 
 ## Platforms and Dependencies
 
@@ -22,9 +23,12 @@ Direct dependencies in `pubspec.yaml`:
 - `vector_graphics` — raster rendering strategy for complex SVG scenes.
 - `sensors_plus` — optional accelerometer input in `FarmDepthBackground`.
 
+The project also uses `rive` for its approved button and mascot components; its
+documented runtime contracts are in `docs/RIVE_INTEGRATION.md`.
+
 Development dependencies are `flutter_test` and `flutter_lints`. Dart is
 constrained to `>=3.3.0 <4.0.0`. The app uses Material 3 and bundled Comic Relief.
-There is no Rive, storage, networking, audio, state-management, or router package.
+There is no storage, networking, audio, state-management, or router package.
 
 ## Main User Flows
 
@@ -47,7 +51,7 @@ hit targets:
 - Start New Koka → `NameScreen`.
 - Continue → replaces Main Menu with `FourthLoadingScreen`, then Home.
 - Load → `LoadScreen`.
-- Settings → `PlaceholderScreen`.
+- Settings → temporary `SettingsScreen` with the app-wide animation switch.
 
 ### New Learner Onboarding
 
@@ -126,12 +130,15 @@ Room contents and lesson features remain unfinished.
 
 ## Status Summary
 
-Implemented and tested: timed startup, menu hit targets, new-learner UI flow,
-energy bounds, Loading 2/3/4 transitions, learner-card interactions, save grid
-and dialogs, Welcome motion, Home shell/fixed UI, lamp, and animated window.
+Implemented in code with widget-test coverage: timed startup, menu hit targets,
+new-learner UI flow, energy bounds, Loading 2/3/4 transitions, learner-card
+interactions, save grid and dialogs, Welcome motion, reusable Rive controls,
+Home Koka interaction, and the incremental Home room/lesson-preview UI.
 
-Partial or placeholder: Settings, tutorial, Home contents/tab routing,
-voice-over playback, persistence/save restoration, and lessons.
+Partial or placeholder: Settings beyond its animation switch, tutorial,
+Translate/Dictionary/Me content (bottom-navigation routing to all six tabs is
+complete), voice-over playback, persistence/save restoration, and production
+lesson content/progression.
 
 See `docs/CURRENT_STATUS.md` for a detailed inventory.
 

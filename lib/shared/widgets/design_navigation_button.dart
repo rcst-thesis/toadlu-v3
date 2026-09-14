@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/shared/widgets/rive_back_button.dart';
 
 class AdaptiveBackButtonPlacement extends StatelessWidget {
   const AdaptiveBackButtonPlacement({required this.onPressed, super.key});
@@ -43,9 +44,8 @@ class LoadBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DesignNavigationButton(
+    return RiveBackButton(
       key: const Key('load-back-button'),
-      icon: Icons.undo_rounded,
       onPressed: onPressed,
     );
   }

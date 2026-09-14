@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_sticker_thumbnail_tile.dart';
+import 'package:tudlo/shared/widgets/tilt_thumbnail_tile.dart';
 
 /// A bounded Home preview of the learner's sticker collection.
 ///
@@ -79,10 +79,9 @@ class HomeStickerGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final scale = constraints.maxWidth / designWidth;
-        final cacheHeight = (tileHeight *
-                scale *
-                MediaQuery.devicePixelRatioOf(context))
-            .round();
+        final cacheHeight =
+            (tileHeight * scale * MediaQuery.devicePixelRatioOf(context))
+                .round();
         return RepaintBoundary(
           child: GridView.builder(
             padding: EdgeInsets.zero,
@@ -99,7 +98,7 @@ class HomeStickerGrid extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final sticker = stickers[index];
-              return HomeStickerThumbnailTile(
+              return TiltThumbnailTile(
                 child: Semantics(
                   image: true,
                   label: sticker.isEarned

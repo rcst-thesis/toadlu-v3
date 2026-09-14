@@ -65,7 +65,8 @@ class _RiveLongButtonState extends State<RiveLongButton> {
       final viewModel = controller.dataBind(rive.DataBind.auto());
       final labelProperty = viewModel.string('buttonLabel');
       if (labelProperty == null || viewModel.trigger('activated') == null) {
-        throw StateError('longbtn.riv is missing its exported button contract.');
+        throw StateError(
+            'longbtn.riv is missing its exported button contract.');
       }
       labelProperty.value = widget.label;
       // The component's public press input is deliberately driven by Flutter.

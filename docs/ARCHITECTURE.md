@@ -57,8 +57,17 @@ Scaffold
     └── HomeBottomNavigation (stationary)
 ```
 
-`HomeBottomNavigation` exposes `ValueChanged<int>? onItemTapped`, but Home does
-not supply it yet. Home remains visually selected.
+`HomeBottomNavigation` exposes `ValueChanged<int>? onItemTapped` and an
+overridable `backgroundColor` (defaults to the established brown; the Me
+screen supplies its own darker tone). `AppBottomTabNavigation`
+(`lib/core/navigation/`) is the single source of truth for all six tabs: it
+owns the push-away-from-Home / replace-between-siblings / pop-to-Home
+decision and each tab's destination widget, so every screen that shows the
+bar (`HomeScreen`, the Lessons/Map/Translate/Dictionary shells, `MeScreen`)
+supplies only its own `currentIndex` instead of re-deriving routing. Lessons,
+Map, Translate, and Dictionary are `PlaceholderScreen` shells pending real
+content; Me is a real (incomplete) screen. Sibling tabs replace each other to
+avoid stacking routes; any tab's Home action pops to the root Home route.
 
 ## Loading Boundaries
 
@@ -79,7 +88,7 @@ preparation.
 ```text
 StartupFlow
 └── MainMenuScreen
-    ├── Settings → placeholder
+    ├── Settings → Settings screen (animation preference)
     ├── Load → LoadScreen
     ├── Start New Koka → Name → Grade → Energy → Loading 2
     │                   → Learner Card → Loading 3 → Welcome
@@ -88,8 +97,10 @@ StartupFlow
     └── Continue → Loading 4 → Home
 
 Home
-├── Settings → placeholder
-└── Bottom tabs → no HomeScreen routes/callback yet
+├── Settings → Settings screen (animation preference)
+├── Lessons/Map tabs and matching room objects → temporary shells
+├── Translate/Dictionary tabs → temporary shells
+└── Me tab → Me screen (Settings/Edit buttons only; rest incomplete)
 ```
 
 Page navigation uses `FadePageRoute`; dialogs and Startup switching use their
@@ -97,11 +108,15 @@ own fades.
 
 ## Rendering and Motion
 
+- Rive owns only approved component/character visuals: Main Menu/Home Settings,
+  long-button press/display state, and Koka State Machine reactions. Flutter
+  owns gestures, navigation, speech copy, accessibility, and application state.
+
 - PNGs use `Image.asset`, usually `BoxFit.contain`.
 - SVGs use `SvgPicture.asset`; layered scenes can request raster rendering via
   `vector_graphics`.
-- All motion currently uses Flutter controllers, transforms, implicit animation,
-  sensors, and custom painters—not Rive.
+- Other motion uses Flutter controllers, transforms, implicit animation,
+  sensors, and custom painters.
 - Animated components should honor `MediaQuery.disableAnimations`.
 
 ## Widget Composition and Rebuild Boundaries

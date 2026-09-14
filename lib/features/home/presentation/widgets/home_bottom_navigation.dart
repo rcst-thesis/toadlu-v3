@@ -4,11 +4,15 @@ class HomeBottomNavigation extends StatelessWidget {
   const HomeBottomNavigation({
     this.onItemTapped,
     this.selectedIndex = 0,
+    this.backgroundColor = _defaultBackgroundColor,
     super.key,
   }) : assert(selectedIndex >= 0 && selectedIndex < 6);
 
+  static const _defaultBackgroundColor = Color(0xFFBD8C57);
+
   final ValueChanged<int>? onItemTapped;
   final int selectedIndex;
+  final Color backgroundColor;
 
   static const _items = <_HomeNavigationItem>[
     _HomeNavigationItem(
@@ -56,47 +60,47 @@ class HomeBottomNavigation extends StatelessWidget {
       height: 66 + bottomInset,
       child: Material(
         key: const Key('home-bottom-navigation'),
-        color: const Color(0xFFBD8C57),
+        color: backgroundColor,
         elevation: 8,
         shadowColor: const Color(0x55000000),
         child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final labelFontSize = _sharedLabelFontSize(
-                    context,
-                    constraints.maxWidth,
-                  );
-                  return SizedBox(
-                    height: 66,
-                    child: Transform.translate(
-                      offset: const Offset(0, 2),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var index = 0; index < _items.length; index++)
-                            Expanded(
-                              child: _NavigationButton(
-                                item: _items[index],
-                                selected: index == selectedIndex,
-                                labelFontSize: labelFontSize,
-                                onTap: () => onItemTapped?.call(index),
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final labelFontSize = _sharedLabelFontSize(
+                      context,
+                      constraints.maxWidth,
+                    );
+                    return SizedBox(
+                      height: 66,
+                      child: Transform.translate(
+                        offset: const Offset(0, 2),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var index = 0; index < _items.length; index++)
+                              Expanded(
+                                child: _NavigationButton(
+                                  item: _items[index],
+                                  selected: index == selectedIndex,
+                                  labelFontSize: labelFontSize,
+                                  onTap: () => onItemTapped?.call(index),
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
         ),
       ),
     );

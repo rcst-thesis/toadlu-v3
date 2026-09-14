@@ -16,6 +16,9 @@ The current runtime-contract inventory is:
 | `assets/images/longbtn.riv` | Default component artboard | Default exported machine | Data Binding: `buttonLabel` string, `activated` trigger; legacy `isPressed` drives press motion | `RiveLongButton` |
 | `assets/images/settings_button.riv` | `SettingsButton` | `SettingsButtonStateMachine` | Data Binding: `activated` trigger; legacy `isPressed` drives press and gear rotation | `RiveSettingsButton` |
 | `assets/images/settings_button_home.riv` | `SettingsButton` | `SettingsButtonStateMachine` | Home-specific Settings visual; same `activated` and `isPressed` contract | `HomeSettingsButton` |
+| `assets/images/settings_button_me.riv` | `SettingsButton` | `SettingsButtonStateMachine` | View Model `SettingsButtonVM` (`activated` trigger); legacy `isPressed` boolean drives press and gear rotation | `MeSettingsButton` |
+| `assets/images/green_back_button.riv` | `Artboard` (93 × 44) | `State Machine 1` | View Model `Button` (`pressed` boolean only; no trigger) drives press motion | `RiveBackButton` |
+| `assets/images/edit_button_me.riv` | `Artboard` (190 × 198) | `State Machine 1` | View Model `Button` (`down` boolean only; no trigger) drives press motion | `RiveEditButton` (via `MeEditButton`) |
 
 ### Long button contract
 
@@ -41,12 +44,40 @@ export does not retain stable public names for those objects.
 ### Settings button contract
 
 `RiveSettingsButton` in `lib/shared/widgets/rive_settings_button.dart` is used
-by the Main Menu and Home Settings controls. The Main Menu uses
-`settings_button.riv`; Home uses `settings_button_home.riv`. It renders at
-47 × 49 logical pixels with `Fit.contain`, preserving the circular button
-shape. Flutter sets the public `isPressed` input on touch down, clears it on
-up/cancel, and invokes the existing Settings navigation callback only on a
-completed Flutter tap.
+by the Main Menu, Home, and Me Settings controls. The Main Menu uses
+`settings_button.riv`; Home uses `settings_button_home.riv`; Me uses
+`settings_button_me.riv` via `MeSettingsButton`. All three share the identical
+inspected contract (View Model `SettingsButtonVM` with an `activated` trigger,
+`SettingsButtonStateMachine` with a legacy `isPressed` boolean), just different
+exported visuals. It renders at 47 × 49 logical pixels with `Fit.contain`,
+preserving the circular button shape. Flutter sets the public `isPressed`
+input on touch down, clears it on up/cancel, and invokes the existing
+Settings navigation callback only on a completed Flutter tap.
+
+### Back button contract
+
+`RiveBackButton` in `lib/shared/widgets/rive_back_button.dart` is the runtime
+bridge for the exported green back-button component and is the sole
+implementation behind `LoadBackButton`/`AdaptiveBackButtonPlacement`, used on
+every screen with a back action (Name, Grade, Energy, Settings, Load, and
+generic `PlaceholderScreen` shells). Unlike the settings buttons, its View
+Model (`Button`) only exposes a `pressed` boolean — there is no `activated`
+trigger in this asset. Flutter's recognized tap fully owns invoking the
+existing `onPressed` callback; the `pressed` boolean only drives the visual
+press/release motion. It renders at 93 × 44 logical pixels with `Fit.contain`,
+matching the legacy `DesignNavigationButton` footprint it replaced, so callers
+did not need layout changes.
+
+### Edit button contract
+
+`RiveEditButton` in `lib/shared/widgets/rive_edit_button.dart` is the runtime
+bridge for the Me screen's exported edit-button component, used via
+`MeEditButton`. Same shape as the back button: its View Model (`Button`)
+exposes only a `down` boolean, no trigger, so Flutter's recognized tap fully
+owns invoking `onPressed`. The native artboard is 190 × 198 (~0.96 aspect,
+matching the 47 × 49 display slot closely), rendered with `Fit.contain` at
+47 × 49 logical pixels to align with `RiveSettingsButton`'s scale, per the
+existing "same scale as Settings" requirement for Me's top buttons.
 
 ## What Is Not Rive
 
@@ -122,9 +153,10 @@ Verify APIs against current official Rive Flutter documentation.
 
 ## Potential Replacement Points (Not Approved)
 
-The only explicit future placeholders are Settings (Main Menu/Home) and the
-Welcome tutorial destination. `RivePlaceholder` suggests future animation but
-defines no files or contracts. Do not replace working Flutter motion by default.
+The Welcome tutorial destination and other generic placeholder routes have no
+approved Rive contracts. `RivePlaceholder` suggests future animation but defines
+no files or contracts. Do not replace working Flutter motion by default.
+
 
 ## NEEDS PROJECT CONTEXT
 

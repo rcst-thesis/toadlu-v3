@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:tudlo/shared/widgets/svg_text_overlay.dart';
+
 /// Artwork from the Figma card with the readable card copy rendered by Flutter.
 class HomeWordOfTheDay extends StatefulWidget {
   const HomeWordOfTheDay({
@@ -91,13 +93,31 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
                 ),
                 // The supplied SVG turns its labels into paths. These masks
                 // keep its card artwork while Flutter owns readable text.
-                _TextMask(
-                    left: 40, top: 5, width: 300, height: 46, scale: scale),
-                _TextMask(
-                    left: 80, top: 92, width: 218, height: 78, scale: scale),
-                _TextMask(
-                    left: 76, top: 174, width: 226, height: 24, scale: scale),
-                _CardText(
+                SvgTextMask(
+                  left: 40,
+                  top: 5,
+                  width: 300,
+                  height: 46,
+                  scale: scale,
+                  color: _backgroundColor,
+                ),
+                SvgTextMask(
+                  left: 80,
+                  top: 92,
+                  width: 218,
+                  height: 78,
+                  scale: scale,
+                  color: _backgroundColor,
+                ),
+                SvgTextMask(
+                  left: 76,
+                  top: 174,
+                  width: 226,
+                  height: 24,
+                  scale: scale,
+                  color: _backgroundColor,
+                ),
+                SvgCardText(
                   text: 'word of the day',
                   left: 40,
                   top: 9,
@@ -106,7 +126,7 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
                   scale: scale,
                   fontSize: 29,
                 ),
-                _CardText(
+                SvgCardText(
                   text: widget.word,
                   left: 80,
                   top: 94,
@@ -116,7 +136,7 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
                   fontSize: 58,
                   autoFit: true,
                 ),
-                _CardText(
+                SvgCardText(
                   text: widget.definition,
                   left: 76,
                   top: 176,
@@ -127,8 +147,14 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
                 ),
                 // Replace the SVG's static heart with an interactive Flutter
                 // control while preserving the card's original location.
-                _TextMask(
-                    left: 304, top: 158, width: 58, height: 48, scale: scale),
+                SvgTextMask(
+                  left: 304,
+                  top: 158,
+                  width: 58,
+                  height: 48,
+                  scale: scale,
+                  color: _backgroundColor,
+                ),
                 Positioned(
                   left: 306 * scale,
                   top: 157 * scale,
@@ -206,33 +232,6 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
   }
 }
 
-class _TextMask extends StatelessWidget {
-  const _TextMask({
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.height,
-    required this.scale,
-  });
-
-  final double left;
-  final double top;
-  final double width;
-  final double height;
-  final double scale;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: left * scale,
-      top: top * scale,
-      width: width * scale,
-      height: height * scale,
-      child: const ColoredBox(color: _HomeWordOfTheDayState._backgroundColor),
-    );
-  }
-}
-
 class _WordCardIconButton extends StatelessWidget {
   const _WordCardIconButton({
     required this.semanticLabel,
@@ -263,60 +262,6 @@ class _WordCardIconButton extends StatelessWidget {
           containedInkWell: true,
           child: Center(child: child),
         ),
-      ),
-    );
-  }
-}
-
-class _CardText extends StatelessWidget {
-  const _CardText({
-    required this.text,
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.height,
-    required this.scale,
-    required this.fontSize,
-    this.autoFit = false,
-  });
-
-  final String text;
-  final double left;
-  final double top;
-  final double width;
-  final double height;
-  final double scale;
-  final double fontSize;
-  final bool autoFit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: left * scale,
-      top: top * scale,
-      width: width * scale,
-      height: height * scale,
-      child: autoFit
-          ? FittedBox(
-              fit: BoxFit.scaleDown,
-              child: _textWidget(),
-            )
-          : Center(child: _textWidget()),
-    );
-  }
-
-  Widget _textWidget() {
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        color: Colors.white,
-        fontFamily: 'ComicRelief',
-        fontSize: fontSize * scale,
-        fontWeight: FontWeight.w700,
-        height: 1,
       ),
     );
   }

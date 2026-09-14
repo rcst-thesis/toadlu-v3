@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 
-/// Decorative closing edge for the bottom of Home's scrollable content: a
-/// single wave, the lowest/front shape from the original layered design.
-class HomeContentFooter extends StatelessWidget {
-  const HomeContentFooter({super.key});
+/// Decorative closing edge for the bottom of the Me screen's scrollable
+/// content: a single wave, matching the lowest/front wave shape from
+/// Home's content footer, filled with this screen's #9D7C21.
+class MeContentFooter extends StatelessWidget {
+  const MeContentFooter({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const RepaintBoundary(
       child: CustomPaint(
-        key: Key('home-content-footer'),
-        painter: _HomeContentFooterPainter(),
+        key: Key('me-content-footer'),
+        painter: _MeContentFooterPainter(),
         child: SizedBox.expand(),
       ),
     );
   }
 }
 
-class _HomeContentFooterPainter extends CustomPainter {
-  const _HomeContentFooterPainter();
+class _MeContentFooterPainter extends CustomPainter {
+  const _MeContentFooterPainter();
 
-  static const _hillBrown = Color(0xFF9B672C);
+  static const _waveTone = Color(0xFF9D7C21);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -55,9 +56,9 @@ class _HomeContentFooterPainter extends CustomPainter {
       ..lineTo(width, height)
       ..lineTo(0, height)
       ..close();
-    canvas.drawPath(wave, Paint()..color = _hillBrown);
+    canvas.drawPath(wave, Paint()..color = _waveTone);
   }
 
   @override
-  bool shouldRepaint(_HomeContentFooterPainter oldDelegate) => false;
+  bool shouldRepaint(_MeContentFooterPainter oldDelegate) => false;
 }

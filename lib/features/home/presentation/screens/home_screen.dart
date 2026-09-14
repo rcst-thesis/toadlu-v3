@@ -2,10 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/home/presentation/widgets/animated_home_window.dart';
 import 'package:tudlo/features/home/presentation/widgets/animated_glow_border.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_bottom_navigation.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bookshelf.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_couch.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_content_footer.dart';
@@ -58,48 +58,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _openMap(BuildContext context, {bool replaceCurrent = false}) {
-    final route = FadePageRoute<void>(
-      page: PlaceholderScreen(
-        title: 'Map',
-        description: 'Temporary Map shell',
-        icon: Icons.map_rounded,
-        bottomNavigationBar: HomeBottomNavigation(
-          selectedIndex: 3,
-          onItemTapped: (index) {
-            if (index == 0) _openHome(context);
-            if (index == 2) _openLessons(context, replaceCurrent: true);
-          },
-        ),
-      ),
+  void _openMap(BuildContext context) {
+    Navigator.of(context).push(
+      FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(3)),
     );
-    if (replaceCurrent) {
-      Navigator.of(context).pushReplacement<void, void>(route);
-    } else {
-      Navigator.of(context).push(route);
-    }
   }
 
-  void _openLessons(BuildContext context, {bool replaceCurrent = false}) {
-    final route = FadePageRoute<void>(
-      page: PlaceholderScreen(
-        title: 'Lessons',
-        description: 'Temporary Lessons shell',
-        icon: Icons.menu_book_rounded,
-        bottomNavigationBar: HomeBottomNavigation(
-          selectedIndex: 2,
-          onItemTapped: (index) {
-            if (index == 0) _openHome(context);
-            if (index == 3) _openMap(context, replaceCurrent: true);
-          },
-        ),
-      ),
+  void _openLessons(BuildContext context) {
+    Navigator.of(context).push(
+      FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(2)),
     );
-    if (replaceCurrent) {
-      Navigator.of(context).pushReplacement<void, void>(route);
-    } else {
-      Navigator.of(context).push(route);
-    }
   }
 
   void _openStickerScreen(BuildContext context) {
@@ -126,10 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _openHome(BuildContext context) {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
   Future<void> _showLessonPreview(
     HomeLessonPreview lesson,
     Rect originRect,
@@ -154,366 +118,341 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: const Key('home-screen'),
       backgroundColor: const Color(0xFFEADF99),
-      bottomNavigationBar: HomeBottomNavigation(
-        onItemTapped: (index) {
-          if (index == 2) _openLessons(context);
-          if (index == 3) _openMap(context);
-        },
-      ),
+      bottomNavigationBar: const AppBottomTabNavigation(currentIndex: 0),
       body: LayoutBuilder(
-              builder: (context, viewport) {
-                final canvasWidth = math.min(viewport.maxWidth, 720.0);
-                final canvasSideInset = (viewport.maxWidth - canvasWidth) / 2;
-                final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
-                final sceneScale = canvasWidth / _HomeSceneLayout.designWidth;
-                final lessonPanelHeight =
-                    HomeLessonPanel.designHeightForEnergy(
-                  widget.energy,
-                  isCollapsed: _lessonsCollapsed,
-                );
-                final stickerContainerTop =
-                    _HomeSceneLayout.stickerContainerTopFor(lessonPanelHeight);
-                final devPanelLabelTop =
-                    _HomeSceneLayout.devPanelLabelTopFor(lessonPanelHeight);
-                final devPanelFrameTop =
-                    _HomeSceneLayout.devPanelFrameTopFor(lessonPanelHeight);
-                final contentEndSceneHeight =
-                    _HomeSceneLayout.footerBottomFor(lessonPanelHeight) *
-                        sceneScale;
-                final minimumScrollableSceneHeight = viewport.maxHeight;
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: SingleChildScrollView(
-                        key: const Key('home-content-scroll-view'),
-                        controller: _scrollController,
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 720),
-                            child: SizedBox(
-                              height: math.max(
-                                minimumScrollableSceneHeight,
-                                contentEndSceneHeight,
-                              ),
-                              width: double.infinity,
-                              child: LayoutBuilder(
-                                builder: (context, scene) {
-                                  final sceneScale = scene.maxWidth /
-                                      _HomeSceneLayout.designWidth;
-                                  return Stack(
-                                    children: [
-                                      const Positioned.fill(
-                                        child: _HomeWallBackground(),
-                                      ),
-                                      Positioned(
-                                        top: _HomeSceneLayout
-                                                .creamFloorBorderTop *
-                                            sceneScale,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        child: const ColoredBox(
-                                          key: Key('home-cream-wall'),
-                                          color: Color(0xFFFBF3E4),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: _HomeSceneLayout.floorTop *
-                                            sceneScale,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        child: const ColoredBox(
-                                          key: Key('home-floor'),
-                                          color: Color(0xFFB88956),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.lilyMat.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.lilyMat.top *
-                                            sceneScale,
-                                        width: _HomeSceneLayout.lilyMat.width *
-                                            sceneScale,
-                                        height:
-                                            _HomeSceneLayout.lilyMat.height *
-                                                sceneScale,
-                                        child: const HomeLilyMat(),
-                                      ),
-                                      const Positioned(
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: 424,
-                                        child: InteractiveHomeLamp(),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.window.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.window.top *
-                                            sceneScale,
-                                        width: _HomeSceneLayout.window.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout.window.height *
-                                            sceneScale,
-                                        child: const AnimatedHomeWindow(
-                                          key: Key('home-animated-window'),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.bookshelf.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.bookshelf.top *
-                                            sceneScale,
-                                        width:
-                                            _HomeSceneLayout.bookshelf.width *
-                                                sceneScale,
-                                        height:
-                                            _HomeSceneLayout.bookshelf.height *
-                                                sceneScale,
-                                        child: HomeBookshelf(
-                                          onTap: () => _openLessons(context),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.couch.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.couch.top *
-                                            sceneScale,
-                                        width: _HomeSceneLayout.couch.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout.couch.height *
-                                            sceneScale,
-                                        child: const HomeCouch(),
-                                      ),
-                                      Positioned(
-                                        left:
-                                            _HomeSceneLayout.standingLamp.left *
-                                                sceneScale,
-                                        top: _HomeSceneLayout.standingLamp.top *
-                                            sceneScale,
-                                        width: _HomeSceneLayout
-                                                .standingLamp.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout
-                                                .standingLamp.height *
-                                            sceneScale,
-                                        child: const HomeStandingLamp(),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.drawer.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.drawer.top *
-                                            sceneScale,
-                                        width: _HomeSceneLayout.drawer.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout.drawer.height *
-                                            sceneScale,
-                                        child: const HomeDrawer(),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.kokaMascot.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.kokaMascot.top *
-                                            sceneScale,
-                                        width:
-                                            _HomeSceneLayout.kokaMascot.width *
-                                                sceneScale,
-                                        height:
-                                            _HomeSceneLayout.kokaMascot.height *
-                                                sceneScale,
-                                        child: HomeKokaMascot(
-                                          key: const Key('home-koka-mascot'),
-                                          learnerName: widget.learnerName,
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.door.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.door.top *
-                                            sceneScale,
-                                        width: _HomeSceneLayout.door.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout.door.height *
-                                            sceneScale,
-                                        child: HomeDoor(
-                                          key: const Key('home-door'),
-                                          onTap: () => _openMap(context),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left:
-                                            _HomeSceneLayout.wordOfTheDay.left *
-                                                sceneScale,
-                                        top: _HomeSceneLayout.wordOfTheDay.top *
-                                            sceneScale,
-                                        width: _HomeSceneLayout
-                                                .wordOfTheDay.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout
-                                                .wordOfTheDay.height *
-                                            sceneScale,
-                                        child: const HomeWordOfTheDay(),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.lessonPanel.left *
-                                            sceneScale,
-                                        top: _HomeSceneLayout.lessonPanel.top *
-                                            sceneScale,
-                                        width:
-                                            _HomeSceneLayout.lessonPanel.width *
-                                                sceneScale,
-                                        height: lessonPanelHeight * sceneScale,
-                                        child: HomeLessonPanel(
-                                          key: const Key('home-lesson-panel'),
-                                          energy: widget.energy,
-                                          onLessonTap: _showLessonPreview,
-                                          onCollapsedChanged: (isCollapsed) {
-                                            setState(() {
-                                              _lessonsCollapsed = isCollapsed;
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.stickerContainer.left *
-                                            sceneScale,
-                                        top: stickerContainerTop * sceneScale,
-                                        width: _HomeSceneLayout.stickerContainer.width *
-                                            sceneScale,
-                                        height:
-                                            HomeStickerContainer.designHeight *
-                                                sceneScale,
-                                        child: HomeStickerContainer(
-                                          onOpenStickers: () =>
-                                              _openStickerScreen(context),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.devPanelLabel.left *
-                                            sceneScale,
-                                        top: devPanelLabelTop * sceneScale,
-                                        width: _HomeSceneLayout.devPanelLabel.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout.devPanelLabel.height *
-                                            sceneScale,
-                                        child: const HomeDevPanelLabel(),
-                                      ),
-                                      Positioned(
-                                        left: _HomeSceneLayout.devPanelFrame.left *
-                                            sceneScale,
-                                        top: devPanelFrameTop * sceneScale,
-                                        width: _HomeSceneLayout.devPanelFrame.width *
-                                            sceneScale,
-                                        height: _HomeSceneLayout.devPanelFrame.height *
-                                            sceneScale,
-                                        child: AnimatedGlowBorder(
-                                          strokeWidth: 1.5 * sceneScale,
-                                          borderRadius: 11 * sceneScale,
-                                          duration: const Duration(seconds: 4),
-                                          gradientColors: const [
-                                            Color(0xFFF9C1CB),
-                                            Color(0xFFCBEAFA),
-                                            Color(0xFF98EF6F),
-                                          ],
-                                          child: Semantics(
-                                            button: true,
-                                            label: 'Open about Tudlo',
-                                            child: GestureDetector(
-                                              key: const Key(
-                                                'home-dev-panel-button',
-                                              ),
-                                              behavior: HitTestBehavior.opaque,
-                                              onTap: () => _openAbout(context),
-                                              child: const Stack(
-                                                children: [
-                                                  Positioned.fill(
-                                                    child: HomeDevPanelFrame(),
-                                                  ),
-                                                  Positioned.fill(
-                                                    child: HomeDevPanelContent(),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        height: _HomeSceneLayout.footerHeight *
-                                            sceneScale,
-                                        child: const HomeContentFooter(),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
+        builder: (context, viewport) {
+          final canvasWidth = math.min(viewport.maxWidth, 720.0);
+          final canvasSideInset = (viewport.maxWidth - canvasWidth) / 2;
+          final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
+          final sceneScale = canvasWidth / _HomeSceneLayout.designWidth;
+          final lessonPanelHeight = HomeLessonPanel.designHeightForEnergy(
+            widget.energy,
+            isCollapsed: _lessonsCollapsed,
+          );
+          final stickerContainerTop =
+              _HomeSceneLayout.stickerContainerTopFor(lessonPanelHeight);
+          final devPanelLabelTop =
+              _HomeSceneLayout.devPanelLabelTopFor(lessonPanelHeight);
+          final devPanelFrameTop =
+              _HomeSceneLayout.devPanelFrameTopFor(lessonPanelHeight);
+          final contentEndSceneHeight =
+              _HomeSceneLayout.footerBottomFor(lessonPanelHeight) * sceneScale;
+          final minimumScrollableSceneHeight = viewport.maxHeight;
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  key: const Key('home-content-scroll-view'),
+                  controller: _scrollController,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: SizedBox(
+                        height: math.max(
+                          minimumScrollableSceneHeight,
+                          contentEndSceneHeight,
                         ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: 108 * topControlScale,
-                      child: IgnorePointer(
-                        child: AnimatedBuilder(
-                          animation: _scrollController,
-                          builder: (context, child) {
-                            final floorScrollOffset = _HomeSceneLayout
-                                    .floorTop *
-                                (canvasWidth / _HomeSceneLayout.designWidth);
-                            final revealStart = floorScrollOffset *
-                                _upperNavigationRevealStartFraction;
-                            final revealRange = floorScrollOffset - revealStart;
-                            final scrollOffset = _scrollController.hasClients
-                                ? _scrollController.offset
-                                : 0.0;
-                            final progress =
-                                ((scrollOffset - revealStart) / revealRange)
-                                    .clamp(0.0, 1.0);
-                            return Opacity(
-                              key: const Key('home-upper-navigation-bar'),
-                              opacity: progress * _upperNavigationMaxOpacity,
-                              child: const ColoredBox(
-                                color: Color(0xFFB88956),
-                              ),
+                        width: double.infinity,
+                        child: LayoutBuilder(
+                          builder: (context, scene) {
+                            final sceneScale =
+                                scene.maxWidth / _HomeSceneLayout.designWidth;
+                            return Stack(
+                              children: [
+                                const Positioned.fill(
+                                  child: _HomeWallBackground(),
+                                ),
+                                Positioned(
+                                  top: _HomeSceneLayout.creamFloorBorderTop *
+                                      sceneScale,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  child: const ColoredBox(
+                                    key: Key('home-cream-wall'),
+                                    color: Color(0xFFFBF3E4),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: _HomeSceneLayout.floorTop * sceneScale,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  child: const ColoredBox(
+                                    key: Key('home-floor'),
+                                    color: Color(0xFFB88956),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.lilyMat.left *
+                                      sceneScale,
+                                  top:
+                                      _HomeSceneLayout.lilyMat.top * sceneScale,
+                                  width: _HomeSceneLayout.lilyMat.width *
+                                      sceneScale,
+                                  height: _HomeSceneLayout.lilyMat.height *
+                                      sceneScale,
+                                  child: const HomeLilyMat(),
+                                ),
+                                const Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: 424,
+                                  child: InteractiveHomeLamp(),
+                                ),
+                                Positioned(
+                                  left:
+                                      _HomeSceneLayout.window.left * sceneScale,
+                                  top: _HomeSceneLayout.window.top * sceneScale,
+                                  width: _HomeSceneLayout.window.width *
+                                      sceneScale,
+                                  height: _HomeSceneLayout.window.height *
+                                      sceneScale,
+                                  child: const AnimatedHomeWindow(
+                                    key: Key('home-animated-window'),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.bookshelf.left *
+                                      sceneScale,
+                                  top: _HomeSceneLayout.bookshelf.top *
+                                      sceneScale,
+                                  width: _HomeSceneLayout.bookshelf.width *
+                                      sceneScale,
+                                  height: _HomeSceneLayout.bookshelf.height *
+                                      sceneScale,
+                                  child: HomeBookshelf(
+                                    onTap: () => _openLessons(context),
+                                  ),
+                                ),
+                                Positioned(
+                                  left:
+                                      _HomeSceneLayout.couch.left * sceneScale,
+                                  top: _HomeSceneLayout.couch.top * sceneScale,
+                                  width:
+                                      _HomeSceneLayout.couch.width * sceneScale,
+                                  height: _HomeSceneLayout.couch.height *
+                                      sceneScale,
+                                  child: const HomeCouch(),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.standingLamp.left *
+                                      sceneScale,
+                                  top: _HomeSceneLayout.standingLamp.top *
+                                      sceneScale,
+                                  width: _HomeSceneLayout.standingLamp.width *
+                                      sceneScale,
+                                  height: _HomeSceneLayout.standingLamp.height *
+                                      sceneScale,
+                                  child: const HomeStandingLamp(),
+                                ),
+                                Positioned(
+                                  left:
+                                      _HomeSceneLayout.drawer.left * sceneScale,
+                                  top: _HomeSceneLayout.drawer.top * sceneScale,
+                                  width: _HomeSceneLayout.drawer.width *
+                                      sceneScale,
+                                  height: _HomeSceneLayout.drawer.height *
+                                      sceneScale,
+                                  child: const HomeDrawer(),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.kokaMascot.left *
+                                      sceneScale,
+                                  top: _HomeSceneLayout.kokaMascot.top *
+                                      sceneScale,
+                                  width: _HomeSceneLayout.kokaMascot.width *
+                                      sceneScale,
+                                  height: _HomeSceneLayout.kokaMascot.height *
+                                      sceneScale,
+                                  child: HomeKokaMascot(
+                                    key: const Key('home-koka-mascot'),
+                                    learnerName: widget.learnerName,
+                                  ),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.door.left * sceneScale,
+                                  top: _HomeSceneLayout.door.top * sceneScale,
+                                  width:
+                                      _HomeSceneLayout.door.width * sceneScale,
+                                  height:
+                                      _HomeSceneLayout.door.height * sceneScale,
+                                  child: HomeDoor(
+                                    key: const Key('home-door'),
+                                    onTap: () => _openMap(context),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.wordOfTheDay.left *
+                                      sceneScale,
+                                  top: _HomeSceneLayout.wordOfTheDay.top *
+                                      sceneScale,
+                                  width: _HomeSceneLayout.wordOfTheDay.width *
+                                      sceneScale,
+                                  height: _HomeSceneLayout.wordOfTheDay.height *
+                                      sceneScale,
+                                  child: const HomeWordOfTheDay(),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.lessonPanel.left *
+                                      sceneScale,
+                                  top: _HomeSceneLayout.lessonPanel.top *
+                                      sceneScale,
+                                  width: _HomeSceneLayout.lessonPanel.width *
+                                      sceneScale,
+                                  height: lessonPanelHeight * sceneScale,
+                                  child: HomeLessonPanel(
+                                    key: const Key('home-lesson-panel'),
+                                    energy: widget.energy,
+                                    onLessonTap: _showLessonPreview,
+                                    onCollapsedChanged: (isCollapsed) {
+                                      setState(() {
+                                        _lessonsCollapsed = isCollapsed;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.stickerContainer.left *
+                                      sceneScale,
+                                  top: stickerContainerTop * sceneScale,
+                                  width:
+                                      _HomeSceneLayout.stickerContainer.width *
+                                          sceneScale,
+                                  height: HomeStickerContainer.designHeight *
+                                      sceneScale,
+                                  child: HomeStickerContainer(
+                                    onOpenStickers: () =>
+                                        _openStickerScreen(context),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.devPanelLabel.left *
+                                      sceneScale,
+                                  top: devPanelLabelTop * sceneScale,
+                                  width: _HomeSceneLayout.devPanelLabel.width *
+                                      sceneScale,
+                                  height:
+                                      _HomeSceneLayout.devPanelLabel.height *
+                                          sceneScale,
+                                  child: const HomeDevPanelLabel(),
+                                ),
+                                Positioned(
+                                  left: _HomeSceneLayout.devPanelFrame.left *
+                                      sceneScale,
+                                  top: devPanelFrameTop * sceneScale,
+                                  width: _HomeSceneLayout.devPanelFrame.width *
+                                      sceneScale,
+                                  height:
+                                      _HomeSceneLayout.devPanelFrame.height *
+                                          sceneScale,
+                                  child: AnimatedGlowBorder(
+                                    strokeWidth: 1.5 * sceneScale,
+                                    borderRadius: 11 * sceneScale,
+                                    duration: const Duration(seconds: 4),
+                                    gradientColors: const [
+                                      Color(0xFFF9C1CB),
+                                      Color(0xFFCBEAFA),
+                                      Color(0xFF98EF6F),
+                                    ],
+                                    child: Semantics(
+                                      button: true,
+                                      label: 'Open about Tudlo',
+                                      child: GestureDetector(
+                                        key: const Key(
+                                          'home-dev-panel-button',
+                                        ),
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () => _openAbout(context),
+                                        child: const Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: HomeDevPanelFrame(),
+                                            ),
+                                            Positioned.fill(
+                                              child: HomeDevPanelContent(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  height: _HomeSceneLayout.footerHeight *
+                                      sceneScale,
+                                  child: const HomeContentFooter(),
+                                ),
+                              ],
                             );
                           },
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 51 * topControlScale,
-                      right: canvasSideInset + (30 * topControlScale),
-                      width: 47 * topControlScale,
-                      height: 49 * topControlScale,
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: HomeSettingsButton(
-                          onTap: () => _openSettings(context),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 108 * topControlScale,
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _scrollController,
+                    builder: (context, child) {
+                      final floorScrollOffset = _HomeSceneLayout.floorTop *
+                          (canvasWidth / _HomeSceneLayout.designWidth);
+                      final revealStart = floorScrollOffset *
+                          _upperNavigationRevealStartFraction;
+                      final revealRange = floorScrollOffset - revealStart;
+                      final scrollOffset = _scrollController.hasClients
+                          ? _scrollController.offset
+                          : 0.0;
+                      final progress =
+                          ((scrollOffset - revealStart) / revealRange)
+                              .clamp(0.0, 1.0);
+                      return Opacity(
+                        key: const Key('home-upper-navigation-bar'),
+                        opacity: progress * _upperNavigationMaxOpacity,
+                        child: const ColoredBox(
+                          color: Color(0xFFB88956),
                         ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 47 * topControlScale,
-                      left: canvasSideInset + (30 * topControlScale),
-                      width: 78 * topControlScale,
-                      height: 52 * topControlScale,
-                      child: const FittedBox(
-                        fit: BoxFit.contain,
-                        child: HomeEnergyIndicator(),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 51 * topControlScale,
+                right: canvasSideInset + (30 * topControlScale),
+                width: 47 * topControlScale,
+                height: 49 * topControlScale,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: HomeSettingsButton(
+                    onTap: () => _openSettings(context),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 47 * topControlScale,
+                left: canvasSideInset + (30 * topControlScale),
+                width: 78 * topControlScale,
+                height: 52 * topControlScale,
+                child: const FittedBox(
+                  fit: BoxFit.contain,
+                  child: HomeEnergyIndicator(),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

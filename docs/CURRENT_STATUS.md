@@ -13,6 +13,8 @@ This status is based only on current code and tests.
 ### Main Menu
 
 - Reference composition with accessible hit targets.
+- Rive long-button controls and Rive Settings button, with Flutter retaining
+  gesture recognition and navigation ownership.
 - Start New Koka, Continue, Load, and Settings taps.
 - Continue uses Loading 4 as a hard navigation boundary.
 
@@ -57,13 +59,22 @@ This status is based only on current code and tests.
 - Scroll-bound lamp with toggleable beam.
 - Scroll-bound layered window at the 412-wide reference location.
 - Ten-second sun/cloud animation and reduced motion.
+- Furniture, door-to-Map action, bookshelf-to-Lessons action, word-of-the-day,
+  sticker container, developer panel, and scroll footer.
+- Rive Koka mascot reactions with Flutter speech bubbles and repeated-tap
+  escalation.
+- Energy-derived lesson availability, expandable/collapsible lesson cards, and
+  a Flutter lesson-preview dialog.
 
 ## Partial
 
 - Home scene height/content is temporary verification structure.
-- Home energy is hard-coded to 60, not connected to learner state.
-- Home navigation is tappable as a component, but `HomeScreen` supplies no
-  callback/routes; selection is fixed to Home.
+- Home energy defaults to 60 and is constructor-carried; it is not connected to
+  durable learner state.
+- All six bottom-navigation tabs now reach a destination via the centralized
+  `AppBottomTabNavigation` router. Lessons, Map, Translate, and Dictionary are
+  `PlaceholderScreen` shells pending real content; Me is a real screen shell
+  (Settings/Edit buttons only).
 - Voice-over callback UI exists without audio implementation.
 - Hardware sensor support exists but Welcome disables it in favor of touch.
 - Onboarding data is constructor-carried and not persisted.
@@ -75,15 +86,13 @@ This status is based only on current code and tests.
 
 ## Not Implemented
 
-- Production Rive runtime or `.riv` assets.
 - Persistent saves, actual load/delete mutation, Continue restoration.
 - Durable session/application state.
 - Backend, NMT, APIs, auth, synchronization, or offline storage.
 - Lesson models/repository/content/progression/completion.
-- Translate, Lessons, Map, Dictionary, and Me destinations.
-- Home room content beyond wall/window/lamp.
-- Dynamic Home energy/lesson count; Koka; door/map; Word of the Day;
-  speaker/favorite; lesson cards/availability; final ambient polish.
+- Real Translate, Dictionary, and Me content (all currently shells).
+- Dynamic Home energy/session state, production lesson model/content,
+  speaker/favorite behavior, and final ambient polish.
 - Audio assets/service.
 - Release identity/signing: Android is `com.maralmt.tudlo_prototype` and release
   currently uses debug signing.
@@ -93,8 +102,13 @@ This status is based only on current code and tests.
 - `test/widget_test.dart`: startup, menu, onboarding, loading, learner card,
   Load, Welcome, and portrait overflow.
 - `test/home_screen_shell_test.dart`: Home scrolling/fixed layout, responsive
-  overflow, window placement, Settings, energy, lamp, and navigation.
+  overflow, room placement, Settings, energy/lesson cards, lamp, and navigation.
 - `test/animated_home_window_test.dart`: window timing and reduced motion.
+- `test/home_word_of_the_day_test.dart`: word-of-the-day presentation.
+- `test/long_button_contract_test.dart`: long-button Data Binding and Flutter
+  action reachability.
+- `test/koka_mascot_contract_test.dart`: Koka State Machine contract and
+  escalating interaction behavior.
 
 Standard checks are `flutter analyze` and `flutter test`. This documentation
 task changes no Dart behavior; release work should still run the full suite.
