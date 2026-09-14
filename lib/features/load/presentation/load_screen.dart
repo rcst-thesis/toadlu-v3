@@ -5,6 +5,7 @@ import 'package:tudlo/features/load/domain/save_preview.dart';
 import 'package:tudlo/features/load/presentation/widgets/load_confirmation_dialog.dart';
 import 'package:tudlo/features/load/presentation/widgets/save_card.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
+import 'package:tudlo/shared/widgets/rive_load_nav_button.dart';
 
 class LoadScreen extends StatefulWidget {
   const LoadScreen({super.key});
@@ -198,9 +199,10 @@ class _LoadScreenState extends State<LoadScreen> {
                         children: [
                           _ScaledDesignControl(
                             scale: scale,
-                            child: DesignNavigationButton(
+                            child: RiveLoadNavButton(
                               key: const Key('load-previous-button'),
-                              label: 'previous',
+                              assetPath: 'assets/images/load_prev_button.riv',
+                              fallbackLabel: 'previous',
                               enabled: _currentPage > 0,
                               onPressed: () => _goToPage(_currentPage - 1),
                             ),
@@ -235,9 +237,10 @@ class _LoadScreenState extends State<LoadScreen> {
                           SizedBox(width: 20 * scale),
                           _ScaledDesignControl(
                             scale: scale,
-                            child: DesignNavigationButton(
+                            child: RiveLoadNavButton(
                               key: const Key('load-next-button'),
-                              label: 'next',
+                              assetPath: 'assets/images/load_next_button.riv',
+                              fallbackLabel: 'next',
                               enabled: _currentPage < _pageCount - 1,
                               onPressed: () => _goToPage(_currentPage + 1),
                             ),

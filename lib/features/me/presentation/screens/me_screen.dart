@@ -10,6 +10,7 @@ import 'package:tudlo/features/me/presentation/widgets/me_content_footer.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_daily_streak_card.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_edit_button.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_learner_card.dart';
+import 'package:tudlo/features/me/presentation/widgets/me_section_wave_divider.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_settings_button.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
@@ -87,113 +88,123 @@ class _MeScreenState extends State<MeScreen> {
         child: LayoutBuilder(
           builder: (context, viewport) {
             final canvasWidth = math.min(viewport.maxWidth, 720.0);
-            final canvasSideInset = (viewport.maxWidth - canvasWidth) / 2;
             final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
             final sceneScale = canvasWidth / MeScreen._designWidth;
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: SingleChildScrollView(
-                    key: const Key('me-content-scroll-view'),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: canvasWidth),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+            return SingleChildScrollView(
+              key: const Key('me-content-scroll-view'),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: canvasWidth),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ColoredBox(
+                        color: MeScreen._topBackgroundColor,
+                        child: Stack(
                           children: [
-                            ColoredBox(
-                              color: MeScreen._topBackgroundColor,
-                              child: Padding(
-                                padding: EdgeInsets.fromLTRB(
-                                  19 * sceneScale,
-                                  140 * sceneScale,
-                                  19 * sceneScale,
-                                  24 * sceneScale,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.fromLTRB(
+                                    19 * sceneScale,
+                                    140 * sceneScale,
+                                    19 * sceneScale,
+                                    24 * sceneScale,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      MeLearnerCard(
+                                        learnerName: widget.learnerName,
+                                        grade: widget.grade,
+                                        userCode: widget.userCode,
+                                        selectedTab: _selectedTab,
+                                        onTabSelected: (tab) => setState(
+                                          () => _selectedTab = tab,
+                                        ),
+                                        createdAt: widget.createdAt,
+                                        lessonsFinished: widget.lessonsFinished,
+                                        stickersEarned: widget.stickersEarned,
+                                        badgesEarned: widget.badgesEarned,
+                                      ),
+                                      SizedBox(height: 16 * sceneScale),
+                                      MeDailyStreakCard(
+                                        currentStreak: widget.currentStreak,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    MeLearnerCard(
-                                      learnerName: widget.learnerName,
-                                      grade: widget.grade,
-                                      userCode: widget.userCode,
-                                      selectedTab: _selectedTab,
-                                      onTabSelected: (tab) =>
-                                          setState(() => _selectedTab = tab),
-                                      createdAt: widget.createdAt,
-                                      lessonsFinished: widget.lessonsFinished,
-                                      stickersEarned: widget.stickersEarned,
-                                      badgesEarned: widget.badgesEarned,
-                                    ),
-                                    SizedBox(height: 16 * sceneScale),
-                                    MeDailyStreakCard(
-                                      currentStreak: widget.currentStreak,
-                                    ),
-                                  ],
+                                SizedBox(
+                                  height: 48 * sceneScale,
+                                  child: const MeSectionWaveDivider(
+                                    color: MeScreen._bottomBackgroundColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Positioned(
+                              top: 51 * topControlScale,
+                              left: 30 * topControlScale,
+                              width: RiveSettingsButton.width * topControlScale,
+                              height:
+                                  RiveSettingsButton.height * topControlScale,
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: MeSettingsButton(
+                                  onTap: () => _openSettings(context),
                                 ),
                               ),
                             ),
-                            ColoredBox(
-                              color: MeScreen._bottomBackgroundColor,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                      19 * sceneScale,
-                                      10 * sceneScale,
-                                      19 * sceneScale,
-                                      0,
-                                    ),
-                                    child: const MeCollectionsHeader(),
-                                  ),
-                                  SizedBox(height: 12 * sceneScale),
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 19 * sceneScale,
-                                    ),
-                                    child: const MeBadgeCollection(),
-                                  ),
-                                  SizedBox(height: 24 * sceneScale),
-                                  SizedBox(
-                                    height: 48 * sceneScale,
-                                    child: const MeContentFooter(),
-                                  ),
-                                ],
+                            Positioned(
+                              top: 51 * topControlScale,
+                              right: 30 * topControlScale,
+                              width: MeEditButton.width * topControlScale,
+                              height: MeEditButton.height * topControlScale,
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: MeEditButton(
+                                  onPressed: () => _openEdit(context),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
+                      ColoredBox(
+                        color: MeScreen._bottomBackgroundColor,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                19 * sceneScale,
+                                10 * sceneScale,
+                                19 * sceneScale,
+                                0,
+                              ),
+                              child: const MeCollectionsHeader(),
+                            ),
+                            SizedBox(height: 12 * sceneScale),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 19 * sceneScale,
+                              ),
+                              child: const MeBadgeCollection(),
+                            ),
+                            SizedBox(height: 24 * sceneScale),
+                            SizedBox(
+                              height: 48 * sceneScale,
+                              child: const MeContentFooter(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Positioned(
-                  top: 51 * topControlScale,
-                  left: canvasSideInset + (30 * topControlScale),
-                  width: RiveSettingsButton.width * topControlScale,
-                  height: RiveSettingsButton.height * topControlScale,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: MeSettingsButton(
-                      onTap: () => _openSettings(context),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 51 * topControlScale,
-                  right: canvasSideInset + (30 * topControlScale),
-                  width: MeEditButton.width * topControlScale,
-                  height: MeEditButton.height * topControlScale,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: MeEditButton(
-                      onPressed: () => _openEdit(context),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             );
           },
         ),

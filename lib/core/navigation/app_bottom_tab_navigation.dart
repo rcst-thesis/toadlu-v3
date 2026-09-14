@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bottom_navigation.dart';
+import 'package:tudlo/features/map/presentation/screens/map_screen.dart';
 import 'package:tudlo/features/me/presentation/screens/me_screen.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 
@@ -18,17 +19,36 @@ class AppBottomTabNavigation extends StatelessWidget {
   final int currentIndex;
 
   static const _defaultNavigationColor = Color(0xFFBD8C57);
-  static const _meNavigationColor = Color(0xFF7C6B41);
+  static const _meNavigationColor = Color(0xFFD9BF77);
+  static const _meSelectedTileColor = Color(0xFFFFE49A);
+  static const _meLabelColor = Color(0xFF664B00);
+  static const _mapLabelColor = Color(0xFF000000);
+  static const _mapNavigationColor = Color(0xFFD4CA8B);
+  static const _mapSelectedTileColor = Color(0xFFD2C15D);
+  static const _defaultSelectedTileColor = Color(0xFF966E42);
 
+  static const _mapTabIndex = 3;
   static const _meTabIndex = 5;
 
   @override
   Widget build(BuildContext context) {
     return HomeBottomNavigation(
       selectedIndex: currentIndex,
-      backgroundColor: currentIndex == _meTabIndex
-          ? _meNavigationColor
-          : _defaultNavigationColor,
+      backgroundColor: switch (currentIndex) {
+        _meTabIndex => _meNavigationColor,
+        _mapTabIndex => _mapNavigationColor,
+        _ => _defaultNavigationColor,
+      },
+      selectedTileColor: switch (currentIndex) {
+        _meTabIndex => _meSelectedTileColor,
+        _mapTabIndex => _mapSelectedTileColor,
+        _ => _defaultSelectedTileColor,
+      },
+      labelColor: switch (currentIndex) {
+        _meTabIndex => _meLabelColor,
+        _mapTabIndex => _mapLabelColor,
+        _ => Colors.white,
+      },
       onItemTapped: (index) => _navigate(context, index),
     );
   }
@@ -66,12 +86,7 @@ class AppBottomTabNavigation extends StatelessWidget {
           bottomNavigationBar: AppBottomTabNavigation(currentIndex: 2),
         );
       case 3:
-        return const PlaceholderScreen(
-          title: 'Map',
-          description: 'Temporary Map shell',
-          icon: Icons.map_rounded,
-          bottomNavigationBar: AppBottomTabNavigation(currentIndex: 3),
-        );
+        return const MapScreen();
       case 4:
         return const PlaceholderScreen(
           title: 'Dictionary',

@@ -5,14 +5,19 @@ class HomeBottomNavigation extends StatelessWidget {
     this.onItemTapped,
     this.selectedIndex = 0,
     this.backgroundColor = _defaultBackgroundColor,
+    this.selectedTileColor = _defaultSelectedTileColor,
+    this.labelColor = Colors.white,
     super.key,
   }) : assert(selectedIndex >= 0 && selectedIndex < 6);
 
   static const _defaultBackgroundColor = Color(0xFFBD8C57);
+  static const _defaultSelectedTileColor = Color(0xFF966E42);
 
   final ValueChanged<int>? onItemTapped;
   final int selectedIndex;
   final Color backgroundColor;
+  final Color selectedTileColor;
+  final Color labelColor;
 
   static const _items = <_HomeNavigationItem>[
     _HomeNavigationItem(
@@ -88,6 +93,8 @@ class HomeBottomNavigation extends StatelessWidget {
                                 child: _NavigationButton(
                                   item: _items[index],
                                   selected: index == selectedIndex,
+                                  selectedTileColor: selectedTileColor,
+                                  labelColor: labelColor,
                                   labelFontSize: labelFontSize,
                                   onTap: () => onItemTapped?.call(index),
                                 ),
@@ -138,12 +145,16 @@ class _NavigationButton extends StatelessWidget {
   const _NavigationButton({
     required this.item,
     required this.selected,
+    required this.selectedTileColor,
+    required this.labelColor,
     required this.labelFontSize,
     required this.onTap,
   });
 
   final _HomeNavigationItem item;
   final bool selected;
+  final Color selectedTileColor;
+  final Color labelColor;
   final double labelFontSize;
   final VoidCallback onTap;
 
@@ -156,7 +167,7 @@ class _NavigationButton extends StatelessWidget {
           aspectRatio: .92,
           child: Material(
             key: Key('home-nav-tile-${item.label}'),
-            color: selected ? const Color(0xFF966E42) : Colors.transparent,
+            color: selected ? selectedTileColor : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
@@ -200,7 +211,7 @@ class _NavigationButton extends StatelessWidget {
                         softWrap: false,
                         overflow: TextOverflow.clip,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: labelColor,
                           fontFamily: 'ComicRelief',
                           fontSize: labelFontSize,
                           height: 1,

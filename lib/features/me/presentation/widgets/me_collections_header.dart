@@ -11,8 +11,8 @@ class MeCollectionsHeader extends StatelessWidget {
       key: Key('me-collections-header'),
       style: TextStyle(
         fontFamily: 'ComicRelief',
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
+        fontSize: 17,
+        fontWeight: FontWeight.w900,
         color: Color(0xFF2A2A2A),
       ),
     );
