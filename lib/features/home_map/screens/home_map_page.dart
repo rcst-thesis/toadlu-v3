@@ -1688,7 +1688,28 @@ class _GradeOneLessonCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           child: ColorFiltered(
             colorFilter: playable
-                ? const ColorFilter.mode(Colors.transparent, BlendMode.dst)
+                ? const ColorFilter.matrix(<double>[
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                  ])
                 : const ColorFilter.matrix(<double>[
                     0.2126,
                     0.7152,
