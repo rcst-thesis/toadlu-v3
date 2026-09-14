@@ -1666,7 +1666,6 @@ class _GradeOneLessonCard extends StatelessWidget {
     final lessonNumber = AppData.lessonNumberForLevel(level);
     final title = _lessonTitleForDashboard(level);
     final thumbnail = _lessonThumbnailForDashboard(unit.number, lessonNumber);
-    final contentPreview = _lessonPreviewForLevel(level);
 
     return GestureDetector(
       onTap: active ? null : onTapCard,
@@ -1880,25 +1879,6 @@ class _GradeOneLessonCard extends StatelessWidget {
                             ),
                     ),
                   ),
-                Positioned(
-                  left: 18,
-                  right: 18,
-                  bottom: 94,
-                  child: Text(
-                    contentPreview,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.nunito(
-                      color: Colors.white.withValues(alpha: .85),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      shadows: const [
-                        Shadow(color: TudloColors.ink, offset: Offset(1, 1)),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

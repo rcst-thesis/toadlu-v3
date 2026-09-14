@@ -213,6 +213,51 @@ Future<void> _exitLessonFromContext(BuildContext context) async {
   Navigator.pop(context);
 }
 
+class _LessonKokaMascot extends StatefulWidget {
+  final double size;
+  final KokaMood mood;
+
+  const _LessonKokaMascot({this.size = 118, this.mood = KokaMood.idle});
+
+  @override
+  State<_LessonKokaMascot> createState() => _LessonKokaMascotState();
+}
+
+class _LessonKokaMascotState extends State<_LessonKokaMascot> {
+  bool _waving = false;
+  Timer? _waveTimer;
+
+  void _wave() {
+    _waveTimer?.cancel();
+    setState(() => _waving = true);
+    _waveTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _waving = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _waveTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Koka',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _wave,
+        child: TudloMascot(
+          size: widget.size,
+          mood: _waving ? KokaMood.hi : widget.mood,
+        ),
+      ),
+    );
+  }
+}
+
 /// Main lesson gameplay screen opened from the Home Map.
 ///
 /// A level receives grade-based content and generated questions from
@@ -1035,7 +1080,7 @@ class _LessonLoadingCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
-            TudloMascot(size: 126, mood: KokaMood.curious),
+            _LessonKokaMascot(size: 126, mood: KokaMood.idle),
             SizedBox(height: 14),
             Text(
               'Ginakuha ang leksiyon...',
@@ -1398,7 +1443,7 @@ class _Grade3IntroStep extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const TudloMascot(size: 150),
+          const _LessonKokaMascot(size: 150),
           const SizedBox(height: 18),
           Text(
             'Pamati kag Basaha',
@@ -1987,7 +2032,7 @@ class _Grade3CompletionStep extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const TudloMascot(size: 150),
+          const _LessonKokaMascot(size: 150),
           const SizedBox(height: 16),
           Text(
             'Maayo Gid!',
@@ -2695,9 +2740,9 @@ class _G2NewFriendIntroStep extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                TudloMascot(
+                _LessonKokaMascot(
                   size: (view.width * .38).clamp(145.0, 210.0),
-                  mood: KokaMood.hi,
+                  mood: KokaMood.idle,
                 ),
                 SizedBox(width: view.width * .04),
                 SizedBox(
@@ -2905,9 +2950,9 @@ class _G2MeetAnaStep extends StatelessWidget {
           Positioned(
             left: view.width * .10,
             bottom: view.height * .19,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: (view.width * .32).clamp(118.0, 170.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
           ),
           Positioned(
@@ -3016,9 +3061,9 @@ class _G2FriendChoiceStep extends StatelessWidget {
                   Positioned(
                     left: 0,
                     bottom: 0,
-                    child: TudloMascot(
+                    child: _LessonKokaMascot(
                       size: (view.width * .39).clamp(135.0, 210.0),
-                      mood: KokaMood.hi,
+                      mood: KokaMood.idle,
                     ),
                   ),
                   Positioned(
@@ -3871,9 +3916,9 @@ class _G2BirthdayInvitationStep extends StatelessWidget {
         child: Column(
           children: [
             const Spacer(),
-            TudloMascot(
+            _LessonKokaMascot(
               size: (view.width * .48).clamp(170.0, 250.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
             SizedBox(height: view.height * .02),
             GestureDetector(
@@ -4113,9 +4158,9 @@ class _G2BirthdayBalloonsStep extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                TudloMascot(
+                _LessonKokaMascot(
                   size: (view.width * .34).clamp(125.0, 180.0),
-                  mood: KokaMood.hi,
+                  mood: KokaMood.idle,
                 ),
                 Expanded(
                   child: Wrap(
@@ -4262,9 +4307,9 @@ class _G2BirthdayAskAgeStep extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                TudloMascot(
+                _LessonKokaMascot(
                   size: (view.width * .42).clamp(150.0, 220.0),
-                  mood: KokaMood.hi,
+                  mood: KokaMood.idle,
                 ),
                 const Spacer(),
                 SizedBox(
@@ -5316,9 +5361,9 @@ class _G2ParkGreetingIntroStep extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            TudloMascot(
+            _LessonKokaMascot(
               size: (view.width * .43).clamp(150.0, 230.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
             const Spacer(),
             const _LessonOneMessageCard(
@@ -5539,9 +5584,9 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
                   Positioned(
                     left: view.width * .03,
                     bottom: view.height * .04,
-                    child: TudloMascot(
+                    child: _LessonKokaMascot(
                       size: (view.width * .34).clamp(120.0, 175.0),
-                      mood: characterTapped ? KokaMood.hi : KokaMood.curious,
+                      mood: KokaMood.idle,
                     ),
                   ),
                   Positioned(
@@ -6474,9 +6519,9 @@ class _G2ParkDialogueIntroStep extends StatelessWidget {
         child: Column(
           children: [
             const Spacer(),
-            TudloMascot(
+            _LessonKokaMascot(
               size: (view.width * .46).clamp(165.0, 240.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
             const Spacer(),
             const _LessonOneMessageCard(
@@ -6696,9 +6741,9 @@ class _G2ParkQuestionStep extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                TudloMascot(
+                _LessonKokaMascot(
                   size: (view.width * .36).clamp(130.0, 190.0),
-                  mood: KokaMood.hi,
+                  mood: KokaMood.idle,
                 ),
                 const Spacer(),
                 SizedBox(
@@ -6772,9 +6817,9 @@ class _G2ParkAnswerChoiceStep extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  TudloMascot(
+                  _LessonKokaMascot(
                     size: (view.width * .34).clamp(120.0, 175.0),
-                    mood: KokaMood.hi,
+                    mood: KokaMood.idle,
                   ),
                   const Spacer(),
                   SizedBox(
@@ -7732,7 +7777,7 @@ class _GradeTwoDialogueChoiceCardState
               const SizedBox(height: 18),
               _GradeTwoAnswerBubble(text: _selected ?? ''),
               const SizedBox(height: 8),
-              const TudloMascot(size: 190),
+              const _LessonKokaMascot(size: 190),
               const SizedBox(height: 16),
               for (final choice in widget.plan.choices) ...[
                 _GradeTwoChoiceButton(
@@ -7807,7 +7852,7 @@ class _GradeTwoMissionCardState extends State<_GradeTwoMissionCard> {
           padding: const EdgeInsets.fromLTRB(10, 4, 10, 22),
           child: Column(
             children: [
-              const TudloMascot(size: 148),
+              const _LessonKokaMascot(size: 148),
               const SizedBox(height: 12),
               _GradeTwoSpeechBubble(text: widget.plan.missionPrompt),
               const SizedBox(height: 24),
@@ -8085,7 +8130,7 @@ class _GradeTwoFocusPicture extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (visual.isKoka)
-            const TudloMascot(size: 132, mood: KokaMood.curious)
+            const _LessonKokaMascot(size: 132, mood: KokaMood.idle)
           else if (visual.imageAsset != null)
             Image.asset(
               visual.imageAsset!,
@@ -8218,7 +8263,7 @@ class _GradeTwoTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (visual.isKoka) ...[
-                const TudloMascot(size: 82, mood: KokaMood.curious),
+                const _LessonKokaMascot(size: 82, mood: KokaMood.idle),
                 const SizedBox(height: 6),
               ] else if (visual.imageAsset != null) ...[
                 Image.asset(
@@ -8347,7 +8392,7 @@ class _GradeTwoChoiceButton extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (visual.isKoka)
-                      const TudloMascot(size: 58, mood: KokaMood.curious)
+                      const _LessonKokaMascot(size: 58, mood: KokaMood.idle)
                     else if (visual.imageAsset != null)
                       Image.asset(
                         visual.imageAsset!,
@@ -8467,7 +8512,7 @@ class _GradeTwoMissionArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (choice.isKoka) {
-      return TudloMascot(size: size, mood: KokaMood.curious);
+      return _LessonKokaMascot(size: size, mood: KokaMood.idle);
     }
     if (choice.imageAsset != null) {
       return Image.asset(
@@ -10732,9 +10777,9 @@ class _LessonOneIntroStep extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: TudloMascot(
+                  child: _LessonKokaMascot(
                     size: (view.width * .47).clamp(160.0, 240.0),
-                    mood: KokaMood.curious,
+                    mood: KokaMood.idle,
                   ),
                 ),
                 Positioned(
@@ -11023,9 +11068,9 @@ class _LessonOneSearchStep extends StatelessWidget {
           Positioned(
             left: view.width * .045,
             top: top + view.height * .285,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: (view.width * .28).clamp(104.0, 145.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
           ),
           Positioned(
@@ -12316,9 +12361,9 @@ class _LessonTwoIntroStep extends StatelessWidget {
                 children: [
                   Align(
                     alignment: const Alignment(-.72, .18),
-                    child: TudloMascot(
+                    child: _LessonKokaMascot(
                       size: (view.width * .48).clamp(170.0, 245.0),
-                      mood: KokaMood.hi,
+                      mood: KokaMood.idle,
                     ),
                   ),
                 ],
@@ -12389,9 +12434,9 @@ class _LessonTwoMapStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                TudloMascot(
+                _LessonKokaMascot(
                   size: (view.width * .40).clamp(140.0, 215.0),
-                  mood: KokaMood.hi,
+                  mood: KokaMood.idle,
                 ),
                 SizedBox(width: view.width * .02),
                 _LessonTwoDog(size: (view.width * .43).clamp(150.0, 225.0)),
@@ -12587,9 +12632,9 @@ class _LessonTwoTapTrailStep extends StatelessWidget {
             Positioned(
               left: -view.width * .07,
               bottom: view.height * .08,
-              child: TudloMascot(
+              child: _LessonKokaMascot(
                 size: (view.width * .44).clamp(150.0, 220.0),
-                mood: KokaMood.hi,
+                mood: KokaMood.idle,
               ),
             ),
           if (!choiceMode)
@@ -13324,9 +13369,9 @@ class _LessonFourReviewStep extends StatelessWidget {
           Positioned(
             left: -view.width * .08,
             top: view.height * .31,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: (view.width * .64).clamp(220.0, 330.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
           ),
           Positioned(
@@ -13413,9 +13458,9 @@ class _LessonFourChallengeStep extends StatelessWidget {
           Positioned(
             left: -view.width * .13,
             bottom: view.height * .20,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: (view.width * .42).clamp(150.0, 220.0),
-              mood: KokaMood.curious,
+              mood: KokaMood.idle,
             ),
           ),
           Positioned(
@@ -13520,9 +13565,9 @@ class _LessonFourListenStep extends StatelessWidget {
             SizedBox(height: view.height * .04),
             Align(
               alignment: Alignment.centerLeft,
-              child: TudloMascot(
+              child: _LessonKokaMascot(
                 size: (view.width * .34).clamp(120.0, 180.0),
-                mood: KokaMood.hi,
+                mood: KokaMood.idle,
               ),
             ),
             const Spacer(),
@@ -13590,9 +13635,9 @@ class _LessonFourGuidedStep extends StatelessWidget {
             const Spacer(),
             Align(
               alignment: Alignment.centerLeft,
-              child: TudloMascot(
+              child: _LessonKokaMascot(
                 size: (view.width * .42).clamp(150.0, 220.0),
-                mood: KokaMood.hi,
+                mood: KokaMood.idle,
               ),
             ),
             _LessonOneMessageCard(message: 'Pamatia ang /b/.', compact: true),
@@ -13671,9 +13716,9 @@ class _LessonFourScene extends StatelessWidget {
           Positioned(
             left: view.width * .16,
             bottom: 0,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: (view.width * .36).clamp(130.0, 190.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
           ),
         ],
@@ -14857,18 +14902,18 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
               left: view.width * .22,
               right: view.width * .22,
               top: view.height * .18,
-              child: TudloMascot(
+              child: _LessonKokaMascot(
                 size: (view.width * .42).clamp(150.0, 215.0),
-                mood: KokaMood.hi,
+                mood: KokaMood.idle,
               ),
             ),
           if (showBackgroundPhotoFrame)
             Positioned(
               left: view.width * .06,
               bottom: view.height * .27,
-              child: TudloMascot(
+              child: _LessonKokaMascot(
                 size: (view.width * .50).clamp(178.0, 260.0),
-                mood: KokaMood.hi,
+                mood: KokaMood.idle,
               ),
             ),
           Positioned(
@@ -15024,9 +15069,9 @@ class _FamilyPhotoRevealStepState extends State<_FamilyPhotoRevealStep>
           Positioned(
             left: view.width * .06,
             bottom: view.height * .18,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: (view.width * .34).clamp(125.0, 180.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
           ),
           Positioned(
@@ -15361,6 +15406,7 @@ class _FamilyReferenceFindStep extends StatelessWidget {
         ),
         child: Column(
           children: [
+            const Spacer(),
             _LessonOneMessageCard(message: prompt),
             SizedBox(height: view.height * .025),
             _FamilyReferenceChoiceFrame(
@@ -15370,7 +15416,7 @@ class _FamilyReferenceFindStep extends StatelessWidget {
               wrongChoice: wrongChoice,
               onChoose: onChoose,
             ),
-            const Spacer(),
+            const Spacer(flex: 2),
           ],
         ),
       ),
@@ -15447,7 +15493,6 @@ class _FamilyReferenceInlineChoiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _FeedbackMotion(
       correct: correct,
       wrong: wrong,
@@ -15472,30 +15517,10 @@ class _FamilyReferenceInlineChoiceCard extends StatelessWidget {
               width: 4,
             ),
           ),
-          child: Column(
-            children: [
-              Expanded(
-                child: _LessonPictureAsset(
-                  asset: member.imageAsset,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_) =>
-                      Icon(member.icon, color: TudloColors.forest),
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                member.hil,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.nunito(
-                  color: TudloColors.blue,
-                  fontSize: (view.width * .041).clamp(15.0, 20.0),
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                ),
-              ),
-            ],
+          child: _LessonPictureAsset(
+            asset: member.imageAsset,
+            fit: BoxFit.contain,
+            errorBuilder: (_) => Icon(member.icon, color: TudloColors.forest),
           ),
         ),
       ),
@@ -15870,13 +15895,7 @@ class _FamilyLabelMatchingStep extends StatelessWidget {
                         member: member,
                         hidden: !available.contains(member),
                         wrong: wrongLabel == member.hil,
-                        onTap: () {
-                          final target = slots.firstWhere(
-                            (slot) => !matches.containsKey(slot.hil),
-                            orElse: () => member,
-                          );
-                          onPlace(target.hil, member.hil);
-                        },
+                        onTap: () => onPlace(member.hil, member.hil),
                       ),
                     ),
                   ),
@@ -17378,9 +17397,9 @@ class _BeachIntroStep extends StatelessWidget {
             const Spacer(),
             Align(
               alignment: Alignment.centerLeft,
-              child: TudloMascot(
+              child: _LessonKokaMascot(
                 size: (view.width * .40).clamp(150.0, 225.0),
-                mood: KokaMood.curious,
+                mood: KokaMood.idle,
               ),
             ),
             const Spacer(),
@@ -17501,9 +17520,9 @@ class _BeachPathStep extends StatelessWidget {
                   Positioned(
                     left: view.width * (.06 + completedUpTo * .12),
                     top: view.height * .03,
-                    child: TudloMascot(
+                    child: _LessonKokaMascot(
                       size: (view.width * .30).clamp(116.0, 165.0),
-                      mood: KokaMood.hi,
+                      mood: KokaMood.idle,
                     ),
                   ),
                 ],
@@ -17559,9 +17578,9 @@ class _BeachReplayStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            TudloMascot(
+            _LessonKokaMascot(
               size: (view.width * .42).clamp(150.0, 225.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
             const Spacer(),
             _BeachPathNumbers(
@@ -17625,7 +17644,7 @@ class _BeachArrangeStep extends StatelessWidget {
             left: view.width * .34,
             right: view.width * .34,
             top: view.height * .20,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: (view.width * .26).clamp(104.0, 145.0),
               mood: KokaMood.idle,
             ),
@@ -19040,7 +19059,7 @@ class _UnitOneQuizStage extends StatelessWidget {
           Positioned(
             left: width * .005,
             top: safeTop + height * .115,
-            child: TudloMascot(size: mascotSize, mood: KokaMood.idle),
+            child: _LessonKokaMascot(size: mascotSize, mood: KokaMood.idle),
           ),
           Positioned(
             left: width * .31,
@@ -20871,7 +20890,7 @@ class _UnitOneHiddenSearchActivityState
           Positioned(
             left: -width * .025,
             bottom: height * .04,
-            child: TudloMascot(size: kokaSize, mood: KokaMood.hi),
+            child: _LessonKokaMascot(size: kokaSize, mood: KokaMood.idle),
           ),
           for (final letter in _hiddenLetters.where(_targets.contains))
             Positioned(
@@ -22369,7 +22388,10 @@ class _AlphabetPresentationSlideState extends State<_AlphabetPresentationSlide>
                 Positioned(
                   left: width * .005,
                   top: safeTop + height * .115,
-                  child: TudloMascot(size: mascotSize, mood: KokaMood.idle),
+                  child: _LessonKokaMascot(
+                    size: mascotSize,
+                    mood: KokaMood.idle,
+                  ),
                 ),
                 Positioned(
                   left: width * .31,
@@ -22413,9 +22435,9 @@ class _AlphabetPresentationSlideState extends State<_AlphabetPresentationSlide>
                   right: 0,
                   top: height * .39,
                   child: Center(
-                    child: TudloMascot(
+                    child: _LessonKokaMascot(
                       size: (mascotSize * 1.72).clamp(230.0, 380.0),
-                      mood: KokaMood.curious,
+                      mood: KokaMood.idle,
                     ),
                   ),
                 ),
@@ -23243,9 +23265,9 @@ class _QuizTimeSplashState extends State<_QuizTimeSplash> {
                 right: 0,
                 top: height * .39,
                 child: Center(
-                  child: TudloMascot(
+                  child: _LessonKokaMascot(
                     size: (width * .62).clamp(230.0, 330.0),
-                    mood: KokaMood.hi,
+                    mood: KokaMood.idle,
                   ),
                 ),
               ),
@@ -23620,9 +23642,9 @@ class _AlphabetMascotBubble extends StatelessWidget {
           Positioned(
             right: 0,
             bottom: 0,
-            child: TudloMascot(
+            child: _LessonKokaMascot(
               size: mascotSize,
-              mood: _messageLooksLikeRetry ? KokaMood.annoyed : KokaMood.hi,
+              mood: _messageLooksLikeRetry ? KokaMood.annoyed : KokaMood.idle,
             ),
           ),
         ],
@@ -26441,7 +26463,7 @@ class _PlaceOpeningCardState extends State<_PlaceOpeningCard> {
                 filterQuality: FilterQuality.high,
               ),
             ),
-            const Positioned(top: 118, child: TudloMascot(size: 190)),
+            const Positioned(top: 118, child: _LessonKokaMascot(size: 190)),
             Positioned(
               bottom: 46,
               child: SizedBox(
@@ -26664,16 +26686,16 @@ class _KokaTravelCardState extends State<_KokaTravelCard> {
                       data: widget.place.hil,
                       feedback: const Material(
                         color: Colors.transparent,
-                        child: TudloMascot(size: 142),
+                        child: _LessonKokaMascot(size: 142),
                       ),
                       childWhenDragging: const Opacity(
                         opacity: .24,
-                        child: TudloMascot(size: 132),
+                        child: _LessonKokaMascot(size: 132),
                       ),
                       onDragEnd: (details) {
                         if (!details.wasAccepted) _retry();
                       },
-                      child: const TudloMascot(size: 132),
+                      child: const _LessonKokaMascot(size: 132),
                     ),
             ),
             if (_arrived)
@@ -26682,7 +26704,7 @@ class _KokaTravelCardState extends State<_KokaTravelCard> {
                 top: 110,
                 child: Column(
                   children: [
-                    const TudloMascot(size: 104),
+                    const _LessonKokaMascot(size: 104),
                     Text(
                       'Welcome!',
                       style: GoogleFonts.nunito(
@@ -26805,7 +26827,7 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
                 const Positioned(
                   left: 142,
                   bottom: 16,
-                  child: TudloMascot(size: 78),
+                  child: _LessonKokaMascot(size: 78),
                 ),
                 for (var index = 0; index < widget.places.length; index++)
                   Positioned(
@@ -26825,7 +26847,7 @@ class _PlaceMapGuideCardState extends State<_PlaceMapGuideCard> {
                             const Positioned(
                               right: -10,
                               bottom: -8,
-                              child: TudloMascot(size: 54),
+                              child: _LessonKokaMascot(size: 54),
                             ),
                         ],
                       ),
@@ -26978,7 +27000,7 @@ class _PlaceSituationGameCardState extends State<_PlaceSituationGameCard> {
             ],
           ),
           const SizedBox(height: 26),
-          if (_arrivedHil != null) const TudloMascot(size: 118),
+          if (_arrivedHil != null) const _LessonKokaMascot(size: 118),
         ],
       ),
     );
@@ -31161,9 +31183,9 @@ class _LessonResultPage extends StatelessWidget {
                       bottom: 22,
                       child: _ResultSparkle(),
                     ),
-                    TudloMascot(
+                    _LessonKokaMascot(
                       size: (size.width * .50).clamp(185.0, 300.0),
-                      mood: KokaMood.hi,
+                      mood: KokaMood.idle,
                     ),
                   ],
                 ),
@@ -31253,9 +31275,9 @@ class _LessonStreakPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
-                TudloMascot(
+                _LessonKokaMascot(
                   size: (size.width * .58).clamp(220.0, 340.0),
-                  mood: KokaMood.curious,
+                  mood: KokaMood.idle,
                 ),
                 const SizedBox(height: 26),
                 Text(
@@ -31580,7 +31602,7 @@ class _ChoiceActivityCard extends StatelessWidget {
                   Positioned(
                     left: 8,
                     bottom: 0,
-                    child: TudloMascot(size: mascotSize),
+                    child: _LessonKokaMascot(size: mascotSize),
                   ),
                   Positioned(
                     left: mascotSize * .70,
@@ -31854,7 +31876,7 @@ class _PromptCard extends StatelessWidget {
             children: [
               const Align(
                 alignment: Alignment.centerLeft,
-                child: TudloMascot(size: 148),
+                child: _LessonKokaMascot(size: 148),
               ),
               Transform.translate(offset: const Offset(0, -14), child: bubble),
             ],
@@ -31869,7 +31891,7 @@ class _PromptCard extends StatelessWidget {
               height: 160,
               child: Align(
                 alignment: Alignment.bottomCenter,
-                child: TudloMascot(size: 150),
+                child: _LessonKokaMascot(size: 150),
               ),
             ),
             Expanded(
@@ -32882,9 +32904,9 @@ class _AnswerFeedbackPanel extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          TudloMascot(
+          _LessonKokaMascot(
             size: 102,
-            mood: correct ? KokaMood.hi : KokaMood.annoyed,
+            mood: correct ? KokaMood.idle : KokaMood.annoyed,
           ),
           const SizedBox(width: 14),
           Expanded(
