@@ -326,13 +326,32 @@ class AppData {
     return lessonNumberForLevel(level) == 1;
   }
 
+  static bool isProductionLessonAvailable(int level) {
+    if (level < 1 || level > maxLevel) return false;
+    final unit = unitForLevel(level);
+    final lesson = lessonNumberForLevel(level);
+    return switch ((selectedGradeLevel, unit.number, lesson)) {
+      (GradeLevel.grade1, 1, 1) ||
+      (GradeLevel.grade1, 1, 7) ||
+      (GradeLevel.grade1, 2, 1) ||
+      (GradeLevel.grade1, 2, 4) ||
+      (GradeLevel.grade2, 1, 1) ||
+      (GradeLevel.grade2, 1, 2) ||
+      (GradeLevel.grade2, 2, 1) ||
+      (GradeLevel.grade2, 2, 2) ||
+      (GradeLevel.grade3, 1, 1) ||
+      (GradeLevel.grade3, 1, 3) ||
+      (GradeLevel.grade3, 2, 1) ||
+      (GradeLevel.grade3, 2, 2) => true,
+      _ => false,
+    };
+  }
+
   static bool isLevelUnlocked(int level) {
     if (level < 1 || level > maxLevel) return false;
+    if (!isProductionLessonAvailable(level)) return false;
     if (developerMode) return true;
-    final lessonNumber = lessonNumberForLevel(level);
-    if (lessonNumber == 1) return true;
-    if (completedLevels.contains(level)) return true;
-    return completedLevels.contains(level - 1);
+    return true;
   }
 
   static String lessonIdForLevel(int level) {
@@ -354,7 +373,9 @@ class AppData {
   static int get firstUnlockedIncompleteLevel {
     for (final unit in units) {
       for (var level = unit.startLevel; level <= unit.endLevel; level++) {
-        if (isLevelUnlocked(level) && !completedLevels.contains(level)) {
+        if (isProductionLessonAvailable(level) &&
+            isLevelUnlocked(level) &&
+            !completedLevels.contains(level)) {
           return level;
         }
       }

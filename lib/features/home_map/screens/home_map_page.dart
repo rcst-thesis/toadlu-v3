@@ -288,6 +288,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 
   String? _lessonCardVoiceAssetForLevel(int level) {
+    if (!AppData.isProductionLessonAvailable(level)) return null;
     final unit = AppData.unitForLevel(level);
     final lesson = AppData.lessonNumberForLevel(level);
     return switch ((AppData.selectedGradeLevel, unit.number, lesson)) {
@@ -339,6 +340,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 
   void _openMapHelpTarget(int level, Offset nodeCenter) {
+    if (!AppData.isProductionLessonAvailable(level)) return;
     setState(() => AppData.mapHelpDone = true);
     unawaited(AppStateScope.of(context).markMapHelpSeen());
     _openLevel(level, nodeCenter);
@@ -355,6 +357,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 
   void _openLevel(int level, Offset nodeCenter) {
+    if (!AppData.isProductionLessonAvailable(level)) return;
     if (!AppData.mapHelpDone) {
       setState(() => AppData.mapHelpDone = true);
       unawaited(AppStateScope.of(context).markMapHelpSeen());
@@ -369,6 +372,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
 
   Future<void> _startLevel(int level) async {
     if (_launchingLevel) return;
+    if (!AppData.isProductionLessonAvailable(level)) return;
     _launchingLevel = true;
     // Start button in the level popup:
     // Refresh real-time energy before gating access. If the learner has less
@@ -674,22 +678,16 @@ class _HomeMapPageState extends State<HomeMapPage> {
                                 // Each button uses the same road coordinates as
                                 // the painter, which keeps nodes centered on the
                                 // trail instead of manually guessing positions.
-                                _LevelPositionedButton(
+                                _AvailableLevelPositionedButton(
                                   level: level,
                                   point: road.pointForLevel(level),
                                   unitColor: _MapUnitStyle.colorForLevel(level),
-                                  unlocked: AppData.isLevelUnlocked(level),
                                   current: level == currentLevel,
                                   completed: AppData.completedLevels.contains(
                                     level,
                                   ),
-                                  // Level button opens the level-start popup.
-                                  // Locked buttons pass null and cannot be
-                                  // tapped.
-                                  onTap: AppData.isLevelUnlocked(level)
-                                      ? (nodeCenter) =>
-                                            _openLevel(level, nodeCenter)
-                                      : null,
+                                  onTap: (nodeCenter) =>
+                                      _openLevel(level, nodeCenter),
                                 ),
                             if (_activeLevel != null)
                               _LevelStartOverlay(
@@ -1608,6 +1606,7 @@ class _GradeOneLessonCarousel extends StatelessWidget {
                       unit: unit,
                       active: index == selectedIndex,
                       launching: launching,
+                      available: AppData.isProductionLessonAvailable(level),
                       onTapCard: () => onCenterCard(index),
                       onPlay: () => onPlay(level),
                     ),
@@ -1645,6 +1644,7 @@ class _GradeOneLessonCard extends StatelessWidget {
   final AppUnit unit;
   final bool active;
   final bool launching;
+  final bool available;
   final VoidCallback onTapCard;
   final VoidCallback onPlay;
 
@@ -1653,6 +1653,7 @@ class _GradeOneLessonCard extends StatelessWidget {
     required this.unit,
     required this.active,
     required this.launching,
+    required this.available,
     required this.onTapCard,
     required this.onPlay,
   });
@@ -1660,6 +1661,7 @@ class _GradeOneLessonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unlocked = AppData.isLevelUnlocked(level);
+    final playable = available && unlocked;
     final completed = AppData.completedLevels.contains(level);
     final lessonNumber = AppData.lessonNumberForLevel(level);
     final title = _lessonTitleForDashboard(level);
@@ -1685,7 +1687,7 @@ class _GradeOneLessonCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),
           child: ColorFiltered(
-            colorFilter: unlocked
+            colorFilter: playable
                 ? const ColorFilter.mode(Colors.transparent, BlendMode.dst)
                 : const ColorFilter.matrix(<double>[
                     0.2126,
@@ -1788,10 +1790,14 @@ class _GradeOneLessonCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Semantics(
                         button: true,
-                        enabled: active && unlocked && !launching,
-                        label: unlocked ? 'Open $title' : '$title locked',
+                        enabled: active && playable && !launching,
+                        label: available
+                            ? playable
+                                  ? 'Open $title'
+                                  : '$title locked'
+                            : '$title unavailable',
                         child: ElevatedButton(
-                          onPressed: active && unlocked && !launching
+                          onPressed: active && playable && !launching
                               ? onPlay
                               : null,
                           style: ElevatedButton.styleFrom(
@@ -1806,6 +1812,8 @@ class _GradeOneLessonCard extends StatelessWidget {
                           child: Icon(
                             completed
                                 ? Icons.check_rounded
+                                : !available
+                                ? Icons.block_rounded
                                 : unlocked
                                 ? Icons.play_arrow_rounded
                                 : Icons.lock_rounded,
@@ -1816,16 +1824,39 @@ class _GradeOneLessonCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (!unlocked)
+                if (!playable)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.white.withValues(alpha: .42),
+                      color: available
+                          ? Colors.white.withValues(alpha: .42)
+                          : Colors.grey.shade500.withValues(alpha: .58),
                       alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.lock_rounded,
-                        size: 64,
-                        color: TudloColors.ink,
-                      ),
+                      child: available
+                          ? const Icon(
+                              Icons.lock_rounded,
+                              size: 64,
+                              color: TudloColors.ink,
+                            )
+                          : Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: .58),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                'Unavailable',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.nunito(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                 Positioned(
@@ -3473,6 +3504,39 @@ class _LevelPositionedButton extends StatefulWidget {
 
   @override
   State<_LevelPositionedButton> createState() => _LevelPositionedButtonState();
+}
+
+class _AvailableLevelPositionedButton extends StatelessWidget {
+  final int level;
+  final Offset point;
+  final Color unitColor;
+  final bool current;
+  final bool completed;
+  final ValueChanged<Offset> onTap;
+
+  const _AvailableLevelPositionedButton({
+    required this.level,
+    required this.point,
+    required this.unitColor,
+    required this.current,
+    required this.completed,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final available = AppData.isProductionLessonAvailable(level);
+    final unlocked = AppData.isLevelUnlocked(level);
+    return _LevelPositionedButton(
+      level: level,
+      point: point,
+      unitColor: available ? unitColor : Colors.grey.shade500,
+      unlocked: available && unlocked,
+      current: current && available,
+      completed: completed,
+      onTap: available && unlocked ? onTap : null,
+    );
+  }
 }
 
 class _LevelPositionedButtonState extends State<_LevelPositionedButton>
