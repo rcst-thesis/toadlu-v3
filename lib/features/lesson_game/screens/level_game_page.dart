@@ -47,116 +47,94 @@ List<T> _shuffledChoices<T>(Iterable<T> choices) {
 Future<bool> _showLessonExitConfirmation(BuildContext context) async {
   final shouldExit = await showDialog<bool>(
     context: context,
-    barrierColor: TudloColors.ink.withValues(alpha: .55),
+    barrierColor: TudloColors.ink.withValues(alpha: .62),
     builder: (dialogContext) {
+      final view = MediaQuery.sizeOf(dialogContext);
+      final width = math.min(view.width * .96, 560.0);
+      final height = width * 1.12;
       return Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
-          decoration: BoxDecoration(
-            color: TudloColors.paper,
-            borderRadius: BorderRadius.circular(34),
-            boxShadow: [
-              BoxShadow(
-                color: TudloColors.ink.withValues(alpha: .20),
-                blurRadius: 28,
-                offset: const Offset(0, 14),
-              ),
-            ],
-          ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 8),
+        child: SizedBox(
+          width: width,
+          height: height,
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Positioned(
-                right: -4,
-                top: -4,
-                child: IconButton(
-                  tooltip: 'Magpabilin',
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: TudloColors.muted,
-                    size: 30,
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/level_game/lesson-game-assets/pop-up-exit.png',
+                  fit: BoxFit.fill,
+                  errorBuilder: (_, __, ___) => DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: TudloColors.paper,
+                      borderRadius: BorderRadius.circular(34),
+                      border: Border.all(color: TudloColors.green, width: 8),
+                    ),
                   ),
                 ),
               ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 8),
-                  const TudloMascot(size: 138, mood: KokaMood.curious),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Mahalin ka na?',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: TudloColors.ink,
-                      fontSize: 29,
-                      height: 1.05,
-                      fontWeight: FontWeight.w900,
+              Positioned(
+                right: width * .02,
+                top: height * .18,
+                child: Semantics(
+                  button: true,
+                  label: 'Magpabilin',
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(dialogContext, false),
+                    child: Container(
+                      width: (width * .13).clamp(54.0, 76.0),
+                      height: (width * .13).clamp(54.0, 76.0),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFE56642),
+                        border: Border.all(
+                          color: const Color(0xFF7A3E29),
+                          width: 5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: .24),
+                            blurRadius: 0,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 42,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'Tapusa ang leksiyon, ukon madula ang imo progreso.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: TudloColors.muted,
-                      fontSize: 18,
-                      height: 1.25,
-                      fontWeight: FontWeight.w800,
+                ),
+              ),
+              Positioned(
+                left: width * .15,
+                right: width * .15,
+                bottom: height * .14,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _LessonExitPopupButton(
+                        label: 'Halin',
+                        backgroundColor: const Color(0xFFFFBA33),
+                        foregroundColor: TudloColors.ink,
+                        onTap: () => Navigator.pop(dialogContext, true),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 26),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 58,
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(dialogContext, true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: TudloColors.softGreen,
-                              foregroundColor: TudloColors.green,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            child: const Text('Halin'),
-                          ),
-                        ),
+                    SizedBox(width: width * .04),
+                    Expanded(
+                      child: _LessonExitPopupButton(
+                        label: 'Magpabilin',
+                        backgroundColor: const Color(0xFF58B33F),
+                        foregroundColor: Colors.white,
+                        onTap: () => Navigator.pop(dialogContext, false),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: SizedBox(
-                          height: 58,
-                          child: ElevatedButton(
-                            onPressed: () =>
-                                Navigator.pop(dialogContext, false),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: TudloColors.green,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            child: const Text('Magpabilin'),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -166,6 +144,65 @@ Future<bool> _showLessonExitConfirmation(BuildContext context) async {
   );
 
   return shouldExit == true;
+}
+
+class _LessonExitPopupButton extends StatelessWidget {
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onTap;
+
+  const _LessonExitPopupButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: (width * .13).clamp(54.0, 72.0),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF6E3F25), width: 5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .24),
+                blurRadius: 0,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: foregroundColor,
+                fontSize: 31,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+                shadows: const [
+                  Shadow(color: Colors.white54, offset: Offset(0, 1)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> _exitLessonFromContext(BuildContext context) async {
@@ -323,6 +360,17 @@ class _LevelGamePageState extends State<LevelGamePage> {
         if (mounted) _showCompleteDialog();
       });
     }
+  }
+
+  void _completeCustomLesson() {
+    if (_completeDialogShown) return;
+    _completeDialogShown = true;
+    _claimRewardsOnce();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 2)),
+      (route) => false,
+    );
   }
 
   void _handleGradeThreeQuestionCompleted(
@@ -833,7 +881,12 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                         onExit: _showPauseMenu,
                                         onQuizAttempt: _recordQuestionAttempt,
                                         onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
+                                            _handleQuestionChecked(
+                                              index,
+                                              true,
+                                              autoComplete: false,
+                                            ),
+                                        onLessonComplete: _completeCustomLesson,
                                       )
                                     : familyLesson &&
                                           levelContent.lessonNumber == 3
@@ -3408,72 +3461,16 @@ class _G2NewFriendRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .06,
-          view.height * .14,
-          view.width * .06,
-          view.height * .04,
-        ),
-        child: Column(
-          children: [
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                TudloMascot(
-                  size: (view.width * .34).clamp(125.0, 175.0),
-                  mood: KokaMood.hi,
-                ),
-                SizedBox(
-                  width: view.width * .28,
-                  height: view.height * .24,
-                  child: _LessonPictureAsset(
-                    asset: anaAsset,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: view.height * .015),
-            GestureDetector(
-              onTap: onDone,
-              child: SizedBox(
-                height: (view.height * .24).clamp(170.0, 250.0),
-                child: _LessonPictureAsset(
-                  asset: stickerAsset,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_) =>
-                      const _FamilyReferenceBadge(label: 'ABYAN\n1'),
-                ),
-              ),
-            ),
-            const Spacer(),
-            const _LessonOneMessageCard(
-              message: 'Nakilala mo ang bag-o nga abyan!',
-              compact: true,
-            ),
-            SizedBox(height: view.height * .018),
-            Row(
-              children: [
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
-                ),
-              ],
-            ),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        stickerAsset: stickerAsset,
+        fallback: const _FamilyReferenceBadge(label: 'ABYAN\n1'),
+        message: 'Nakilala mo ang bag-o nga abyan!',
+        onDone: onDone,
       ),
     );
   }
@@ -4773,72 +4770,16 @@ class _G2BirthdayRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: backgroundAsset,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .06,
-          view.height * .14,
-          view.width * .06,
-          view.height * .04,
-        ),
-        child: Column(
-          children: [
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                TudloMascot(
-                  size: (view.width * .34).clamp(125.0, 175.0),
-                  mood: KokaMood.hi,
-                ),
-                SizedBox(
-                  width: view.width * .28,
-                  height: view.height * .26,
-                  child: _LessonPictureAsset(
-                    asset: anaAsset,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: view.height * .01),
-            GestureDetector(
-              onTap: onDone,
-              child: SizedBox(
-                height: (view.height * .24).clamp(170.0, 250.0),
-                child: _LessonPictureAsset(
-                  asset: stickerAsset,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_) =>
-                      const _FamilyReferenceBadge(label: 'ABYAN\n2'),
-                ),
-              ),
-            ),
-            const Spacer(),
-            const _LessonOneMessageCard(
-              message: 'Makasiling ka na sang imo edad!',
-              compact: true,
-            ),
-            SizedBox(height: view.height * .018),
-            Row(
-              children: [
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
-                ),
-              ],
-            ),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        stickerAsset: stickerAsset,
+        fallback: const _FamilyReferenceBadge(label: 'ABYAN\n2'),
+        message: 'Makasiling ka na sang imo edad!',
+        onDone: onDone,
       ),
     );
   }
@@ -5866,99 +5807,17 @@ class _G2ParkGreetingRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _G2ParkScene(
       progress: progress,
       backgroundAsset: backgroundAsset,
       time: null,
       onExit: onExit,
       onReplay: onReplay,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .055,
-          view.height * .12,
-          view.width * .055,
-          view.height * .035,
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned(
-                    left: view.width * .02,
-                    bottom: view.height * .08,
-                    width: view.width * .26,
-                    height: view.height * .25,
-                    child: const _LessonPictureAsset(
-                      asset:
-                          'assets/images/level_game/people/Tudlo_Park_Friend_Girl_1.svg',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  Positioned(
-                    right: view.width * .03,
-                    bottom: view.height * .08,
-                    width: view.width * .26,
-                    height: view.height * .25,
-                    child: const _LessonPictureAsset(
-                      asset:
-                          'assets/images/level_game/people/Tudlo_Park_Friend_Girl_2.svg',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: view.height * .06,
-                    width: view.width * .30,
-                    height: view.height * .28,
-                    child: const _LessonPictureAsset(
-                      asset:
-                          'assets/images/level_game/people/Tudlo_Park_Friend_Boy.svg',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  Positioned(
-                    top: view.height * .04,
-                    child: TudloMascot(
-                      size: (view.width * .28).clamp(105.0, 150.0),
-                      mood: KokaMood.hi,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: onDone,
-                    child: SizedBox(
-                      width: (view.width * .72).clamp(250.0, 380.0),
-                      height: (view.height * .30).clamp(210.0, 295.0),
-                      child: _LessonPictureAsset(
-                        asset: stickerAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_) =>
-                            const _FamilyReferenceBadge(label: 'PANAMYAW\n1'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const _LessonOneMessageCard(
-              message: 'Kabalo ka na mag-greet sa nagkalain-lain nga tion!',
-              compact: true,
-            ),
-            SizedBox(height: view.height * .018),
-            Row(
-              children: [
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
-                ),
-              ],
-            ),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        stickerAsset: stickerAsset,
+        fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n1'),
+        message: 'Kabalo ka na mag-greet sa nagkalain-lain nga tion!',
+        onDone: onDone,
       ),
     );
   }
@@ -7104,78 +6963,17 @@ class _G2ParkDialogueRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _G2ParkScene(
       progress: progress,
       backgroundAsset: backgroundAsset,
       time: null,
       onExit: onExit,
       onReplay: onReplay,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .055,
-          view.height * .12,
-          view.width * .055,
-          view.height * .035,
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned(
-                    left: view.width * .02,
-                    bottom: view.height * .10,
-                    child: TudloMascot(
-                      size: (view.width * .34).clamp(125.0, 180.0),
-                      mood: KokaMood.hi,
-                    ),
-                  ),
-                  Positioned(
-                    right: view.width * .02,
-                    bottom: view.height * .08,
-                    width: view.width * .36,
-                    height: view.height * .38,
-                    child: _LessonPictureAsset(
-                      asset: anaAsset,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: onDone,
-                    child: SizedBox(
-                      width: (view.width * .74).clamp(260.0, 390.0),
-                      height: (view.height * .30).clamp(210.0, 295.0),
-                      child: _LessonPictureAsset(
-                        asset: stickerAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_) =>
-                            const _FamilyReferenceBadge(label: 'PANAMYAW\n2'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const _LessonOneMessageCard(
-              message: 'Nahimo mo ang bug-os nga greeting exchange!',
-              compact: true,
-            ),
-            SizedBox(height: view.height * .018),
-            Row(
-              children: [
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
-                ),
-              ],
-            ),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        stickerAsset: stickerAsset,
+        fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n2'),
+        message: 'Nahimo mo ang bug-os nga greeting exchange!',
+        onDone: onDone,
       ),
     );
   }
@@ -11429,32 +11227,260 @@ class _LessonOneRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .08,
-          view.height * .16,
-          view.width * .08,
-          view.height * .04,
+      child: _StickerUnlockRewardContent(
+        stickerAsset:
+            'assets/images/level_game/lesson-game-assets/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
+        fallback: const _FamilyReferenceBadge(label: 'LETTER\nFINDER'),
+        message: 'Yehey! Nabalik na ang mga letra!',
+        onDone: onDone,
+      ),
+    );
+  }
+}
+
+class _StickerUnlockRewardContent extends StatelessWidget {
+  final String? stickerAsset;
+  final Widget fallback;
+  final String message;
+  final String buttonLabel;
+  final VoidCallback onDone;
+
+  const _StickerUnlockRewardContent({
+    this.stickerAsset,
+    required this.fallback,
+    required this.message,
+    this.buttonLabel = 'OK',
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final stickerSize = (view.width * .72).clamp(245.0, 390.0);
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ColoredBox(color: Colors.black.withValues(alpha: .56)),
         ),
-        child: Column(
-          children: [
-            SizedBox(height: view.height * .13),
-            _LessonOneSticker(
-              size: (view.width * .88).clamp(300.0, 450.0),
-              onTap: onDone,
+        Positioned(
+          left: view.width * .08,
+          right: view.width * .08,
+          top: view.height * .13,
+          child: SizedBox(
+            height: (view.height * .17).clamp(112.0, 158.0),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/banner.png',
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  errorBuilder: (_, __, ___) => Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFAF13F6),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                Transform.translate(
+                  offset: Offset(0, -view.height * .018),
+                  child: Text(
+                    'UNLOCK',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontSize: (view.width * .15).clamp(50.0, 78.0),
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                      shadows: const [
+                        Shadow(
+                          color: TudloColors.ink,
+                          offset: Offset(0, 4),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const Spacer(),
-            SizedBox(height: view.height * .02),
-            _LessonOneMessageCard(message: 'Yehey! Nabalik na ang mga letra!'),
-            SizedBox(height: view.height * .02),
-            _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
+          ),
+        ),
+        Center(
+          child: SizedBox(
+            width: stickerSize * 1.36,
+            height: stickerSize * 1.36,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                const Positioned.fill(child: _StickerUnlockGlow()),
+                for (final star in const [
+                  (Alignment(-.86, -.42), 38.0),
+                  (Alignment(-.64, .66), 25.0),
+                  (Alignment(.78, -.34), 30.0),
+                  (Alignment(.70, .60), 44.0),
+                  (Alignment(-.28, -.78), 46.0),
+                  (Alignment(.18, .84), 22.0),
+                ])
+                  Align(
+                    alignment: star.$1,
+                    child: Icon(
+                      Icons.star_rounded,
+                      color: const Color(0xFFFFE022),
+                      size: star.$2,
+                      shadows: const [
+                        Shadow(color: Color(0xAA7B4D00), blurRadius: 4),
+                      ],
+                    ),
+                  ),
+                GestureDetector(
+                  onTap: onDone,
+                  child: SizedBox(
+                    width: stickerSize,
+                    height: stickerSize,
+                    child: stickerAsset == null
+                        ? FittedBox(fit: BoxFit.contain, child: fallback)
+                        : _LessonPictureAsset(
+                            asset: stickerAsset!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_) => fallback,
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: view.width * .08,
+          right: view.width * .08,
+          bottom: view.height * .17,
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: Colors.white,
+              fontSize: (view.width * .064).clamp(23.0, 34.0),
+              height: 1.08,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+              shadows: const [
+                Shadow(
+                  color: TudloColors.ink,
+                  offset: Offset(0, 3),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: view.width * .14,
+          right: view.width * .14,
+          bottom: view.height * .055,
+          child: _StickerUnlockOkButton(label: buttonLabel, onTap: onDone),
+        ),
+      ],
+    );
+  }
+}
+
+class _StickerUnlockGlow extends StatelessWidget {
+  const _StickerUnlockGlow();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _StickerUnlockGlowPainter());
+  }
+}
+
+class _StickerUnlockGlowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.shortestSide * .38;
+    final rayPaint = Paint()..style = PaintingStyle.fill;
+    for (var i = 0; i < 20; i++) {
+      rayPaint.color =
+          (i.isEven ? const Color(0xFFFFF06B) : const Color(0xFFFFB42A))
+              .withValues(alpha: .50);
+      final start = -math.pi / 2 + i * math.pi * 2 / 20;
+      final path = Path()
+        ..moveTo(center.dx, center.dy)
+        ..arcTo(
+          Rect.fromCircle(center: center, radius: radius),
+          start,
+          math.pi * 2 / 20,
+          false,
+        )
+        ..close();
+      canvas.drawPath(path, rayPaint);
+    }
+    canvas.drawCircle(
+      center,
+      radius * 1.23,
+      Paint()..color = const Color(0xFFFFE100).withValues(alpha: .22),
+    );
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()..color = const Color(0xFFFFDE35).withValues(alpha: .72),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _StickerUnlockOkButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _StickerUnlockOkButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 68,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFFD431), Color(0xFFFFA300)],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF6E4B00), width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .35),
+              blurRadius: 0,
+              offset: const Offset(0, 5),
+            ),
           ],
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            color: Colors.white,
+            fontSize: 34,
+            height: 1,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+            shadows: const [
+              Shadow(color: TudloColors.ink, offset: Offset(0, 3)),
+            ],
+          ),
         ),
       ),
     );
@@ -12597,91 +12623,23 @@ class _LessonTwoRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _LessonTwoBeachChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      child: Stack(
-        children: [
-          Positioned(
-            top: view.height * .13,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: TudloMascot(
-                size: (view.width * .44).clamp(150.0, 230.0),
-                mood: KokaMood.hi,
-              ),
-            ),
-          ),
-          Positioned(
-            top: view.height * .34,
-            left: view.width * .08,
-            right: view.width * .08,
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              children: [
-                for (final number
-                    in _GradeOneUnitOneLessonTwoNumberFlowState._letters)
-                  _LessonTwoNumberCircle(
-                    number: number,
-                    state: _LessonTwoNumberCircleState.done,
-                    onTap: () {},
-                  ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: view.height * .47,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _LessonTwoDog(
-                size: (view.width * .34).clamp(118.0, 172.0),
-              ),
-            ),
-          ),
-          Positioned(
-            top: view.height * .61,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _LessonTwoWordCard(
-                size: (view.width * .27).clamp(84.0, 116.0),
-              ),
-            ),
-          ),
-          Positioned(
-            left: view.width * .09,
-            right: view.width * .09,
-            bottom: view.height * .16,
-            child: _LessonTwoBadge(),
-          ),
-          Positioned(
-            left: view.width * .06,
-            right: view.width * .06,
-            bottom: view.height * .075,
-            child: _LessonOneMessageCard(
-              message: 'I-D-O... IDO! Nabasa mo ang imo una nga tinaga!',
-              compact: true,
-            ),
-          ),
-          Positioned(
-            left: view.width * .06,
-            right: view.width * .06,
-            bottom: view.height * .022,
-            child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
-          ),
-        ],
+      child: _StickerUnlockRewardContent(
+        fallback: _LessonTwoBadge(),
+        message: 'I-D-O... IDO! Nabasa mo ang imo una nga tinaga!',
+        onDone: onDone,
       ),
     );
   }
 }
 
+// ignore: unused_element
 enum _LessonTwoNumberCircleState { done, current, upcoming, locked, wrong }
 
+// ignore: unused_element
 class _LessonTwoNumberCircle extends StatelessWidget {
   final String number;
   final _LessonTwoNumberCircleState state;
@@ -13665,44 +13623,14 @@ class _LessonFourRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _LessonFourChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .06,
-          view.height * .13,
-          view.width * .06,
-          view.height * .045,
-        ),
-        child: Column(
-          children: [
-            _LessonOneMessageCard(message: 'B, L, S! Madayo gid!'),
-            const Spacer(),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                _LessonFourCompleteHouseSign(),
-                Positioned(
-                  left: 0,
-                  bottom: 0,
-                  child: TudloMascot(
-                    size: (view.width * .34).clamp(120.0, 180.0),
-                    mood: KokaMood.hi,
-                  ),
-                ),
-              ],
-            ),
-            const _ConfettiBurst(),
-            _LessonFourBadge(),
-            SizedBox(height: view.height * .018),
-            _LessonOneMessageCard(message: 'Sunod: E, G, P!', compact: true),
-            SizedBox(height: view.height * .024),
-            _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        fallback: _LessonFourBadge(),
+        message: 'B, L, S! Madayo gid!',
+        onDone: onDone,
       ),
     );
   }
@@ -13988,6 +13916,7 @@ class _LessonFourDraggableLetters extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _LessonFourCompleteHouseSign extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -15599,39 +15528,16 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/house.svg',
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .07,
-          view.height * .14,
-          view.width * .07,
-          view.height * .04,
-        ),
-        child: Column(
-          children: [
-            _FamilyReferencePhotoFrame(
-              members: members,
-              framed: true,
-              portraitAsset: portraitAsset,
-            ),
-            SizedBox(height: view.height * .03),
-            TudloMascot(
-              size: (view.width * .46).clamp(165.0, 245.0),
-              mood: KokaMood.hi,
-            ),
-            const Spacer(),
-            _FamilyReferenceBadge(label: badgeLabel),
-            SizedBox(height: view.height * .02),
-            _LessonOneMessageCard(message: message),
-            SizedBox(height: view.height * .02),
-            _LessonOneBlueButton(label: buttonLabel, onTap: onDone),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        fallback: _FamilyReferenceBadge(label: badgeLabel),
+        message: message,
+        buttonLabel: buttonLabel,
+        onDone: onDone,
       ),
     );
   }
@@ -15639,14 +15545,9 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
 
 class _FamilyReferencePhotoFrame extends StatelessWidget {
   final List<_FamilyWord> members;
-  final bool framed;
   final String? portraitAsset;
 
-  const _FamilyReferencePhotoFrame({
-    required this.members,
-    this.framed = false,
-    this.portraitAsset,
-  });
+  const _FamilyReferencePhotoFrame({required this.members, this.portraitAsset});
 
   @override
   Widget build(BuildContext context) {
@@ -15656,7 +15557,7 @@ class _FamilyReferencePhotoFrame extends StatelessWidget {
       height: height,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E6).withValues(alpha: framed ? .98 : .92),
+        color: const Color(0xFFFFF8E6).withValues(alpha: .92),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFD2B171), width: 5),
         boxShadow: [
@@ -16261,11 +16162,13 @@ class _GradeOneUnitTwoLessonFourPicnicFlow extends StatefulWidget {
   final VoidCallback onExit;
   final void Function(int index, bool correct) onQuizAttempt;
   final ValueChanged<int> onQuizCorrect;
+  final VoidCallback onLessonComplete;
 
   const _GradeOneUnitTwoLessonFourPicnicFlow({
     required this.onExit,
     required this.onQuizAttempt,
     required this.onQuizCorrect,
+    required this.onLessonComplete,
   });
 
   @override
@@ -16427,19 +16330,21 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
       });
       widget.onQuizCorrect(quizIndex);
       await AppAudioService.instance.playCorrect();
-      await _playPicnicVoice([
-        member.hil == 'nanay'
-            ? 5
-            : member.hil == 'tatay'
-            ? 6
-            : member.hil == 'lola'
-            ? 8
-            : 9,
-      ]);
       if (!mounted) return;
       if (selected.length == required.length) {
         await Future<void>.delayed(const Duration(milliseconds: 780));
         if (mounted) _goToStep(_stepIndex + 1);
+      } else {
+        final nextTarget = required.elementAt(selected.length);
+        await _playPicnicVoice([
+          nextTarget == 'tatay'
+              ? 6
+              : nextTarget == 'lola'
+              ? 8
+              : nextTarget == 'lolo'
+              ? 9
+              : 5,
+        ]);
       }
       return;
     }
@@ -16483,6 +16388,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
     for (var index = 0; index < _lessonQuizCount; index++) {
       widget.onQuizCorrect(index);
     }
+    widget.onLessonComplete();
   }
 
   @override
@@ -16508,7 +16414,6 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
           ),
           2 => _PicnicSceneScanStep(
             progress: _progress,
-            members: _members,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onNext: () => _goToStep(3),
@@ -16684,14 +16589,12 @@ class _PicnicMapStep extends StatelessWidget {
 
 class _PicnicSceneScanStep extends StatelessWidget {
   final double progress;
-  final List<_FamilyWord> members;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onNext;
 
   const _PicnicSceneScanStep({
     required this.progress,
-    required this.members,
     required this.onExit,
     required this.onReplay,
     required this.onNext,
@@ -16704,7 +16607,8 @@ class _PicnicSceneScanStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/picnic.svg',
+      backgroundAsset:
+          'assets/images/level_game/backgrounds/lesson4-familypicnic.svg',
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .06,
@@ -16715,29 +16619,6 @@ class _PicnicSceneScanStep extends StatelessWidget {
         child: Column(
           children: [
             const Spacer(),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: view.width * .02,
-              runSpacing: view.height * .012,
-              children: [
-                for (final member in members)
-                  SizedBox(
-                    width: view.width * .17,
-                    height: view.height * .17,
-                    child: _LessonPictureAsset(
-                      asset: member.imageAsset,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_) =>
-                          Icon(member.icon, color: TudloColors.forest),
-                    ),
-                  ),
-              ],
-            ),
-            SizedBox(height: view.height * .03),
-            TudloMascot(
-              size: (view.width * .34).clamp(125.0, 180.0),
-              mood: KokaMood.hi,
-            ),
             const Spacer(),
             _LessonOneMessageCard(message: 'Kilalahon ta sila.'),
             SizedBox(height: view.height * .02),
@@ -17127,42 +17008,18 @@ class _PicnicRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset:
           'assets/images/level_game/backgrounds/lesson4-familypicnic.svg',
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .07,
-          view.height * .14,
-          view.width * .07,
-          view.height * .04,
-        ),
-        child: Column(
-          children: [
-            const Spacer(),
-            TudloMascot(
-              size: (view.width * .56).clamp(190.0, 285.0),
-              mood: KokaMood.hi,
-            ),
-            SizedBox(height: view.height * .025),
-            SizedBox(
-              height: (view.height * .17).clamp(120.0, 180.0),
-              child: const _LessonPictureAsset(
-                asset:
-                    'assets/images/level_game/lesson-game-assets/Tudlo_Park_Family_Picnic_Badge.svg',
-                fit: BoxFit.contain,
-              ),
-            ),
-            SizedBox(height: view.height * .02),
-            _LessonOneMessageCard(message: 'Kompleto na ang pamilya ni Koka!'),
-            SizedBox(height: view.height * .022),
-            _LessonOneBlueButton(label: 'Kolektahon', onTap: onDone),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        stickerAsset:
+            'assets/images/level_game/lesson-game-assets/Tudlo_Park_Family_Picnic_Badge.svg',
+        fallback: const _FamilyReferenceBadge(label: 'PAMILYA'),
+        message: 'Kompleto na ang pamilya ni Koka!',
+        onDone: onDone,
       ),
     );
   }
@@ -17818,42 +17675,16 @@ class _BeachRewardStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
     return _BeachLessonChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .07,
-          view.height * .15,
-          view.width * .07,
-          view.height * .04,
-        ),
-        child: Column(
-          children: [
-            TudloMascot(
-              size: (view.width * .42).clamp(155.0, 230.0),
-              mood: KokaMood.hi,
-            ),
-            const Spacer(),
-            _BeachPathNumbers(
-              completedUpTo: 5,
-              expectedNumber: 0,
-              enabledNumbers: const {},
-              onTapNumber: (_) async {},
-            ),
-            const Spacer(),
-            _NumberExplorerSticker(
-              size: (view.width * .58).clamp(210.0, 320.0),
-              onTap: onDone,
-            ),
-            SizedBox(height: view.height * .018),
-            _LessonOneMessageCard(message: 'Yehey! Nakaabot kita sa payong!'),
-            SizedBox(height: view.height * .018),
-            _LessonOneBlueButton(label: 'Kolektahon', onTap: onDone),
-          ],
-        ),
+      child: _StickerUnlockRewardContent(
+        stickerAsset:
+            'assets/images/level_game/lesson-game-assets/Tudlo_Number_Explorer_Sticker.svg',
+        fallback: const _FamilyReferenceBadge(label: 'NUMBER\nEXPLORER'),
+        message: 'Yehey! Nakaabot kita sa payong!',
+        onDone: onDone,
       ),
     );
   }
