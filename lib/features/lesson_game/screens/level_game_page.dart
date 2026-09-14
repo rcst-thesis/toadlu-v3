@@ -16581,7 +16581,8 @@ class _PicnicIntroStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/lesson4-popup.svg',
+      backgroundAsset:
+          'assets/images/level_game/backgrounds/lesson4-familypicnic.svg',
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .07,
@@ -16591,11 +16592,6 @@ class _PicnicIntroStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            SizedBox(height: view.height * .12),
-            TudloMascot(
-              size: (view.width * .48).clamp(170.0, 255.0),
-              mood: KokaMood.hi,
-            ),
             const Spacer(),
             _LessonOneMessageCard(message: 'Nagtipon ang pamilya sa picnic!'),
             SizedBox(height: view.height * .022),
