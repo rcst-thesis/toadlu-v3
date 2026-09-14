@@ -89,7 +89,8 @@ flutter:
     - assets/images/word-of-the-day/
     - assets/audio/effects/
     - assets/audio/VO/
-    - assets/audio/VO-final/
+    - assets/audio/VO-final/grade1/
+    - assets/audio/VO-final/grade2/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

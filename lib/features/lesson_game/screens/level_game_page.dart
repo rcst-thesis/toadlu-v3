@@ -594,6 +594,11 @@ class _LevelGamePageState extends State<LevelGamePage> {
             _isGradeOneUnitOneReviewContent(levelContent);
         final numberLesson =
             levelContent != null && _isGradeOneNumberContent(levelContent);
+        final unitOneLessonSeven =
+            levelContent != null &&
+            levelContent.gradeLevel == 1 &&
+            levelContent.unitNumber == 1 &&
+            levelContent.lessonNumber == 7;
         final familyLesson =
             levelContent != null && _isGradeOneFamilyContent(levelContent);
         final helperLesson =
@@ -604,11 +609,32 @@ class _LevelGamePageState extends State<LevelGamePage> {
             levelContent != null && _isGradeOnePlaceContent(levelContent);
         final gradeTwoLesson =
             levelContent != null && _isGradeTwoContent(levelContent);
+        final gradeTwoNewFriendLesson =
+            levelContent != null &&
+            levelContent.gradeLevel == 2 &&
+            levelContent.unitNumber == 1 &&
+            levelContent.lessonNumber == 1;
+        final gradeTwoBirthdayLesson =
+            levelContent != null &&
+            levelContent.gradeLevel == 2 &&
+            levelContent.unitNumber == 1 &&
+            levelContent.lessonNumber == 2;
+        final gradeTwoParkGreetingLesson =
+            levelContent != null &&
+            levelContent.gradeLevel == 2 &&
+            levelContent.unitNumber == 2 &&
+            levelContent.lessonNumber == 1;
+        final gradeTwoParkDialogueLesson =
+            levelContent != null &&
+            levelContent.gradeLevel == 2 &&
+            levelContent.unitNumber == 2 &&
+            levelContent.lessonNumber == 2;
         final gradeThreeLesson =
             levelContent != null && _isGradeThreeContent(levelContent);
         final customLessonFlow =
             alphabetLesson ||
             unitOneReviewLesson ||
+            unitOneLessonSeven ||
             numberLesson ||
             familyLesson ||
             helperLesson ||
@@ -726,6 +752,13 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
                                       )
+                                    : unitOneLessonSeven
+                                    ? _GradeOneUnitOneLessonSevenBeachFlow(
+                                        onExit: _showPauseMenu,
+                                        onQuizAttempt: _recordQuestionAttempt,
+                                        onQuizCorrect: (index) =>
+                                            _handleQuestionChecked(index, true),
+                                      )
                                     : numberLesson
                                     ? _GradeOneNumberLesson(
                                         content: levelContent,
@@ -748,6 +781,34 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                     : placeLesson
                                     ? _GradeOnePlaceLesson(
                                         content: levelContent,
+                                        onQuizCorrect: (index) =>
+                                            _handleQuestionChecked(index, true),
+                                      )
+                                    : gradeTwoNewFriendLesson
+                                    ? _GradeTwoUnitOneLessonOneNewFriendFlow(
+                                        onExit: _showPauseMenu,
+                                        onQuizAttempt: _recordQuestionAttempt,
+                                        onQuizCorrect: (index) =>
+                                            _handleQuestionChecked(index, true),
+                                      )
+                                    : gradeTwoBirthdayLesson
+                                    ? _GradeTwoUnitOneLessonTwoBirthdayFlow(
+                                        onExit: _showPauseMenu,
+                                        onQuizAttempt: _recordQuestionAttempt,
+                                        onQuizCorrect: (index) =>
+                                            _handleQuestionChecked(index, true),
+                                      )
+                                    : gradeTwoParkGreetingLesson
+                                    ? _GradeTwoUnitTwoLessonOneParkGreetingFlow(
+                                        onExit: _showPauseMenu,
+                                        onQuizAttempt: _recordQuestionAttempt,
+                                        onQuizCorrect: (index) =>
+                                            _handleQuestionChecked(index, true),
+                                      )
+                                    : gradeTwoParkDialogueLesson
+                                    ? _GradeTwoUnitTwoLessonTwoParkDialogueFlow(
+                                        onExit: _showPauseMenu,
+                                        onQuizAttempt: _recordQuestionAttempt,
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
                                       )
@@ -2184,6 +2245,5111 @@ String _grade3ChoiceLabel(String choice) {
       )
       .replaceAll(RegExp(r'\s+-\s+.*$'), '')
       .trim();
+}
+
+enum _G2NewFriendStep {
+  intro,
+  map,
+  meetAna,
+  hello,
+  askName,
+  anaAnswers,
+  buildResponse,
+  reward,
+}
+
+class _GradeTwoUnitOneLessonOneNewFriendFlow extends StatefulWidget {
+  final VoidCallback onExit;
+  final void Function(int index, bool correct) onQuizAttempt;
+  final ValueChanged<int> onQuizCorrect;
+
+  const _GradeTwoUnitOneLessonOneNewFriendFlow({
+    required this.onExit,
+    required this.onQuizAttempt,
+    required this.onQuizCorrect,
+  });
+
+  @override
+  State<_GradeTwoUnitOneLessonOneNewFriendFlow> createState() =>
+      _GradeTwoUnitOneLessonOneNewFriendFlowState();
+}
+
+class _GradeTwoUnitOneLessonOneNewFriendFlowState
+    extends State<_GradeTwoUnitOneLessonOneNewFriendFlow> {
+  static const _voiceBase = 'audio/VO-final/grade2';
+  static const _anaAsset =
+      'assets/images/level_game/people/Tudlo_Ana_Full_Body_Character.svg';
+  static const _stickerAsset =
+      'assets/images/level_game/lesson-game-assets/Tudlo_Abyan_1_New_Friend_Completion_Sticker.svg';
+  static const _responseOrder = ['my_name_is', 'ana'];
+
+  _G2NewFriendStep _step = _G2NewFriendStep.intro;
+  bool _voicePlaying = false;
+  bool _anaFound = false;
+  bool _helloDone = false;
+  bool _questionDone = false;
+  bool _responseHeard = false;
+  bool _completed = false;
+  String? _selectedChoiceId;
+  String? _wrongChoiceId;
+  String? _wrongTileId;
+  final List<String?> _responseSlots = List<String?>.filled(2, null);
+
+  double get _progress =>
+      (_G2NewFriendStep.values.indexOf(_step) + 1) /
+      _G2NewFriendStep.values.length;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
+  }
+
+  void _goToStep(_G2NewFriendStep step) {
+    if (_step == step) return;
+    unawaited(TudloVoiceButton.stop());
+    setState(() {
+      _step = step;
+      _selectedChoiceId = null;
+      _wrongChoiceId = null;
+      _wrongTileId = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  Future<void> _playVoice(List<int> clips) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clips) '$_voiceBase/Gr_2_Les_1_1_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
+  }
+
+  Future<void> _speakForStep() async {
+    final clips = switch (_step) {
+      _G2NewFriendStep.intro => const [2],
+      _G2NewFriendStep.map => const [3],
+      _G2NewFriendStep.meetAna => const [4],
+      _G2NewFriendStep.hello => const [5, 6, 7],
+      _G2NewFriendStep.askName => const [11, 12],
+      _G2NewFriendStep.anaAnswers => const [14],
+      _G2NewFriendStep.buildResponse => const [16],
+      _G2NewFriendStep.reward => const [20],
+    };
+    setState(() => _voicePlaying = true);
+    try {
+      await _playVoice(clips);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_step) {
+          _G2NewFriendStep.intro => 'May bag-o kita nga abyan.',
+          _G2NewFriendStep.map => 'I-tap ang School.',
+          _G2NewFriendStep.meetAna => 'I-tap si Ana.',
+          _G2NewFriendStep.hello => 'Pilia ang Hello.',
+          _G2NewFriendStep.askName => 'Pilia ang pamangkot sang ngalan.',
+          _G2NewFriendStep.anaAnswers => 'Hello! My name is Ana.',
+          _G2NewFriendStep.buildResponse => 'Ihan-ay ang My name is kag Ana.',
+          _G2NewFriendStep.reward =>
+            'Nakapakilala na kita sang bag-o nga abyan!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+      if (mounted) setState(() => _voicePlaying = false);
+    }
+  }
+
+  Future<void> _tapAna() async {
+    if (_voicePlaying || _anaFound) return;
+    setState(() => _anaFound = true);
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (mounted) _goToStep(_G2NewFriendStep.hello);
+  }
+
+  Future<void> _chooseHello(_G2FriendChoice choice) async {
+    if (_voicePlaying || _helloDone || _selectedChoiceId != null) return;
+    final correct = choice.id == 'hello';
+    widget.onQuizAttempt(0, correct);
+    setState(() {
+      _selectedChoiceId = choice.id;
+      _wrongChoiceId = correct ? null : choice.id;
+    });
+    if (!correct) {
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [10]);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      setState(() {
+        _selectedChoiceId = null;
+        _wrongChoiceId = null;
+      });
+      return;
+    }
+    _helloDone = true;
+    widget.onQuizCorrect(0);
+    await AppAudioService.instance.playCorrect();
+    await _playVoice(const [9, 8]);
+    await Future<void>.delayed(const Duration(milliseconds: 520));
+    if (mounted) _goToStep(_G2NewFriendStep.askName);
+  }
+
+  Future<void> _chooseQuestion(_G2FriendChoice choice) async {
+    if (_voicePlaying || _questionDone || _selectedChoiceId != null) return;
+    final correct = choice.id == 'what_name';
+    widget.onQuizAttempt(1, correct);
+    setState(() {
+      _selectedChoiceId = choice.id;
+      _wrongChoiceId = correct ? null : choice.id;
+    });
+    if (!correct) {
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [15]);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      setState(() {
+        _selectedChoiceId = null;
+        _wrongChoiceId = null;
+      });
+      return;
+    }
+    _questionDone = true;
+    widget.onQuizCorrect(1);
+    await AppAudioService.instance.playCorrect();
+    await _playVoice(const [13]);
+    await Future<void>.delayed(const Duration(milliseconds: 320));
+    if (mounted) _goToStep(_G2NewFriendStep.anaAnswers);
+  }
+
+  Future<void> _continueAfterAna() async {
+    if (_voicePlaying) return;
+    _responseHeard = true;
+    await AppAudioService.instance.playCorrect();
+    if (mounted) _goToStep(_G2NewFriendStep.buildResponse);
+  }
+
+  Future<void> _placeResponseTile(String tileId, int slotIndex) async {
+    if (_voicePlaying || _responseSlots.contains(tileId)) return;
+    setState(() => _responseSlots[slotIndex] = tileId);
+    await AppAudioService.instance.playTap();
+    if (_responseSlots.any((slot) => slot == null)) return;
+    final correct = List.generate(
+      _responseOrder.length,
+      (index) => _responseSlots[index] == _responseOrder[index],
+    ).every((match) => match);
+    widget.onQuizAttempt(2, correct);
+    if (!correct) {
+      final wrongIds = <String>{
+        for (var index = 0; index < _responseOrder.length; index++)
+          if (_responseSlots[index] != _responseOrder[index])
+            _responseSlots[index]!,
+      };
+      setState(() => _wrongTileId = wrongIds.first);
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [19]);
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      if (!mounted) return;
+      setState(() {
+        for (var index = 0; index < _responseSlots.length; index++) {
+          if (_responseSlots[index] != _responseOrder[index]) {
+            _responseSlots[index] = null;
+          }
+        }
+        _wrongTileId = null;
+      });
+      return;
+    }
+    widget.onQuizCorrect(2);
+    await AppAudioService.instance.playCorrect();
+    await _playVoice(const [18, 17]);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (mounted) _goToStep(_G2NewFriendStep.reward);
+  }
+
+  Future<void> _tapTile(String tileId) async {
+    final slotIndex = _responseSlots.indexWhere((slot) => slot == null);
+    if (slotIndex == -1) return;
+    await _placeResponseTile(tileId, slotIndex);
+  }
+
+  void _finish() {
+    if (_completed) return;
+    _completed = true;
+    for (var index = 0; index < _lessonQuizCount; index++) {
+      widget.onQuizCorrect(index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 520),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: KeyedSubtree(
+        key: ValueKey('g2-u1-l1-$_step'),
+        child: switch (_step) {
+          _G2NewFriendStep.intro => _G2NewFriendIntroStep(
+            progress: _progress,
+            anaAsset: _anaAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2NewFriendStep.map),
+          ),
+          _G2NewFriendStep.map => _G2NewFriendMapStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2NewFriendStep.meetAna),
+          ),
+          _G2NewFriendStep.meetAna => _G2MeetAnaStep(
+            progress: _progress,
+            anaAsset: _anaAsset,
+            anaFound: _anaFound,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onTapAna: _tapAna,
+          ),
+          _G2NewFriendStep.hello => _G2FriendChoiceStep(
+            progress: _progress,
+            anaAsset: _anaAsset,
+            prompt: 'Hello!',
+            kokaBubble: 'Hello!',
+            anaBubble: 'Hello!',
+            choices: const [
+              _G2FriendChoice('hello', 'Hello!'),
+              _G2FriendChoice('goodbye', 'Goodbye!'),
+              _G2FriendChoice('how_are_you', 'How are you?'),
+            ],
+            correctId: 'hello',
+            selectedId: _selectedChoiceId,
+            wrongId: _wrongChoiceId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onChoose: _chooseHello,
+          ),
+          _G2NewFriendStep.askName => _G2FriendChoiceStep(
+            progress: _progress,
+            anaAsset: _anaAsset,
+            prompt: 'What is your name?',
+            choices: const [
+              _G2FriendChoice('what_name', 'What is your name?'),
+              _G2FriendChoice('how_old', 'How old are you?'),
+              _G2FriendChoice('goodbye', 'Goodbye!'),
+            ],
+            correctId: 'what_name',
+            selectedId: _selectedChoiceId,
+            wrongId: _wrongChoiceId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onChoose: _chooseQuestion,
+          ),
+          _G2NewFriendStep.anaAnswers => _G2AnaAnswerStep(
+            progress: _progress,
+            anaAsset: _anaAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: _continueAfterAna,
+          ),
+          _G2NewFriendStep.buildResponse => _G2BuildResponseStep(
+            progress: _progress,
+            anaAsset: _anaAsset,
+            slots: _responseSlots,
+            wrongTileId: _wrongTileId,
+            inputReady: !_voicePlaying && _responseHeard,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onPlace: _placeResponseTile,
+            onTapTile: _tapTile,
+          ),
+          _G2NewFriendStep.reward => _G2NewFriendRewardStep(
+            progress: _progress,
+            anaAsset: _anaAsset,
+            stickerAsset: _stickerAsset,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onDone: _finish,
+          ),
+        },
+      ),
+    );
+  }
+}
+
+class _G2FriendChoice {
+  final String id;
+  final String label;
+
+  const _G2FriendChoice(this.id, this.label);
+}
+
+class _G2NewFriendIntroStep extends StatelessWidget {
+  final double progress;
+  final String anaAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2NewFriendIntroStep({
+    required this.progress,
+    required this.anaAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .07,
+          view.height * .15,
+          view.width * .07,
+          view.height * .045,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TudloMascot(
+                  size: (view.width * .38).clamp(145.0, 210.0),
+                  mood: KokaMood.hi,
+                ),
+                SizedBox(width: view.width * .04),
+                SizedBox(
+                  width: view.width * .30,
+                  height: view.height * .29,
+                  child: _LessonPictureAsset(
+                    asset: anaAsset,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_) => Icon(
+                      Icons.face_3_rounded,
+                      color: TudloColors.blue,
+                      size: view.width * .22,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(message: 'May bag-o kita nga abyan.'),
+            SizedBox(height: view.height * .02),
+            _LessonOneBlueButton(
+              label: 'Sige',
+              onTap: inputReady ? onNext : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2NewFriendMapStep extends StatefulWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2NewFriendMapStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  State<_G2NewFriendMapStep> createState() => _G2NewFriendMapStepState();
+}
+
+class _G2NewFriendMapStepState extends State<_G2NewFriendMapStep>
+    with SingleTickerProviderStateMixin {
+  late final TransformationController _controller;
+  late final AnimationController _zoomController;
+  Animation<Matrix4>? _zoomAnimation;
+  Size? _lastView;
+  bool _selected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TransformationController();
+    _zoomController =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 900),
+        )..addListener(() {
+          final animation = _zoomAnimation;
+          if (animation != null) _controller.value = animation.value;
+        });
+  }
+
+  @override
+  void dispose() {
+    _zoomController.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _focusSchool(Size view) {
+    if (_lastView == view) return;
+    _lastView = view;
+    final target = Matrix4.identity()
+      ..setEntry(0, 0, 1.38)
+      ..setEntry(1, 1, 1.38)
+      ..setEntry(0, 3, -view.width * .24)
+      ..setEntry(1, 3, -view.height * .11);
+    _zoomAnimation = Matrix4Tween(begin: Matrix4.identity(), end: target)
+        .animate(
+          CurvedAnimation(parent: _zoomController, curve: Curves.easeOutCubic),
+        );
+    _zoomController.forward(from: 0);
+  }
+
+  Future<void> _tapSchool() async {
+    if (_selected) return;
+    setState(() => _selected = true);
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 360));
+    if (mounted) widget.onNext();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusSchool(view);
+    });
+    final mapSize = Size(view.width * 1.48, view.height * 1.16);
+    return _LessonOneChrome(
+      progress: widget.progress,
+      onExit: widget.onExit,
+      onReplay: widget.onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+      child: Stack(
+        children: [
+          InteractiveViewer(
+            transformationController: _controller,
+            minScale: .95,
+            maxScale: 2.2,
+            boundaryMargin: EdgeInsets.all(view.longestSide),
+            panEnabled: true,
+            scaleEnabled: true,
+            constrained: false,
+            child: SizedBox(
+              width: mapSize.width,
+              height: mapSize.height,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const _LessonBackgroundAsset(
+                    asset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+                  ),
+                  Positioned(
+                    left: mapSize.width * .38,
+                    top: mapSize.height * .30,
+                    width: mapSize.width * .21,
+                    height: mapSize.width * .21,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _tapSchool,
+                      child: const _LessonOneMapDestinationCue(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: view.width * .12,
+            right: view.width * .12,
+            top: MediaQuery.paddingOf(context).top + view.height * .10,
+            child: const _LessonOneMessageCard(
+              message: 'I-tap ang School.',
+              compact: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2MeetAnaStep extends StatelessWidget {
+  final double progress;
+  final String anaAsset;
+  final bool anaFound;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onTapAna;
+
+  const _G2MeetAnaStep({
+    required this.progress,
+    required this.anaAsset,
+    required this.anaFound,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onTapAna,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ColoredBox(
+              color: Colors.black.withValues(alpha: anaFound ? .0 : .25),
+            ),
+          ),
+          Positioned(
+            left: view.width * .12,
+            right: view.width * .12,
+            top: MediaQuery.paddingOf(context).top + view.height * .10,
+            child: const _LessonOneMessageCard(
+              message: 'I-tap si Ana.',
+              compact: true,
+            ),
+          ),
+          Positioned(
+            left: view.width * .10,
+            bottom: view.height * .19,
+            child: TudloMascot(
+              size: (view.width * .32).clamp(118.0, 170.0),
+              mood: KokaMood.hi,
+            ),
+          ),
+          Positioned(
+            right: view.width * .12,
+            bottom: view.height * .17,
+            width: view.width * .42,
+            height: view.height * .48,
+            child: GestureDetector(
+              onTap: inputReady ? onTapAna : null,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  if (!anaFound)
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: TudloColors.gold.withValues(alpha: .65),
+                            blurRadius: 28,
+                            spreadRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                  _LessonPictureAsset(
+                    asset: anaAsset,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_) => Icon(
+                      Icons.face_3_rounded,
+                      color: TudloColors.blue,
+                      size: view.width * .28,
+                    ),
+                  ),
+                  if (!anaFound)
+                    Positioned(
+                      right: -view.width * .03,
+                      bottom: view.height * .06,
+                      child: const _FamilyTapCue(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2FriendChoiceStep extends StatelessWidget {
+  final double progress;
+  final String anaAsset;
+  final String prompt;
+  final String? kokaBubble;
+  final String? anaBubble;
+  final List<_G2FriendChoice> choices;
+  final String correctId;
+  final String? selectedId;
+  final String? wrongId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(_G2FriendChoice choice) onChoose;
+
+  const _G2FriendChoiceStep({
+    required this.progress,
+    required this.anaAsset,
+    required this.prompt,
+    this.kokaBubble,
+    this.anaBubble,
+    required this.choices,
+    required this.correctId,
+    required this.selectedId,
+    required this.wrongId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onChoose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final top = MediaQuery.paddingOf(context).top;
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          top + view.height * .11,
+          view.width * .055,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            _LessonOneMessageCard(message: prompt, compact: true),
+            SizedBox(height: view.height * .015),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    bottom: 0,
+                    child: TudloMascot(
+                      size: (view.width * .39).clamp(135.0, 210.0),
+                      mood: KokaMood.hi,
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    width: view.width * .44,
+                    height: view.height * .42,
+                    child: _LessonPictureAsset(
+                      asset: anaAsset,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_) => Icon(
+                        Icons.face_3_rounded,
+                        color: TudloColors.blue,
+                        size: view.width * .24,
+                      ),
+                    ),
+                  ),
+                  if (kokaBubble != null)
+                    Positioned(
+                      left: view.width * .13,
+                      top: view.height * .02,
+                      child: _G2SmallSpeechBubble(text: kokaBubble!),
+                    ),
+                  if (anaBubble != null)
+                    Positioned(
+                      right: view.width * .06,
+                      top: view.height * .03,
+                      child: _G2SmallSpeechBubble(text: anaBubble!),
+                    ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                for (final choice in choices)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _G2FriendChoiceCard(
+                        choice: choice,
+                        correct:
+                            selectedId == choice.id && choice.id == correctId,
+                        wrong: wrongId == choice.id,
+                        enabled: inputReady && selectedId == null,
+                        onTap: () => onChoose(choice),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2FriendChoiceCard extends StatelessWidget {
+  final _G2FriendChoice choice;
+  final bool correct;
+  final bool wrong;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _G2FriendChoiceCard({
+    required this.choice,
+    required this.correct,
+    required this.wrong,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return _FeedbackMotion(
+      correct: correct,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: (width * .31).clamp(112.0, 150.0),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: correct ? const Color(0xFFE5FFD5) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: correct
+                  ? TudloColors.green
+                  : wrong
+                  ? TudloColors.coral
+                  : const Color(0xFFD8E8F6),
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .12),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    choice.label,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      color: TudloColors.blue,
+                      fontSize: 24,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ),
+              Icon(
+                correct ? Icons.check_circle_rounded : Icons.chat_bubble,
+                color: correct ? TudloColors.green : TudloColors.blue,
+                size: 34,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _G2AnaAnswerStep extends StatelessWidget {
+  final double progress;
+  final String anaAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function() onNext;
+
+  const _G2AnaAnswerStep({
+    required this.progress,
+    required this.anaAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .07,
+          view.height * .14,
+          view.width * .07,
+          view.height * .045,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'Hello! My name is Ana.',
+              compact: true,
+            ),
+            const Spacer(),
+            SizedBox(
+              height: view.height * .52,
+              child: _LessonPictureAsset(
+                asset: anaAsset,
+                fit: BoxFit.contain,
+                errorBuilder: (_) => Icon(
+                  Icons.face_3_rounded,
+                  color: TudloColors.blue,
+                  size: view.width * .30,
+                ),
+              ),
+            ),
+            const Spacer(),
+            _LessonOneBlueButton(
+              label: 'Padayon',
+              onTap: inputReady ? () => unawaited(onNext()) : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2BuildResponseStep extends StatelessWidget {
+  final double progress;
+  final String anaAsset;
+  final List<String?> slots;
+  final String? wrongTileId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(String tileId, int slotIndex) onPlace;
+  final Future<void> Function(String tileId) onTapTile;
+
+  const _G2BuildResponseStep({
+    required this.progress,
+    required this.anaAsset,
+    required this.slots,
+    required this.wrongTileId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onPlace,
+    required this.onTapTile,
+  });
+
+  static const _tiles = [
+    _G2FriendChoice('my_name_is', 'My name is'),
+    _G2FriendChoice('ana', 'Ana'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final top = MediaQuery.paddingOf(context).top;
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          top + view.height * .11,
+          view.width * .055,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'Kumpletuhon ta: My name is Ana.',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .018),
+            SizedBox(
+              height: view.height * .20,
+              child: _LessonPictureAsset(
+                asset: anaAsset,
+                fit: BoxFit.contain,
+                errorBuilder: (_) => Icon(
+                  Icons.face_3_rounded,
+                  color: TudloColors.blue,
+                  size: view.width * .22,
+                ),
+              ),
+            ),
+            _G2ResponseTray(slots: slots, onPlace: onPlace),
+            const Spacer(),
+            Row(
+              children: [
+                for (final tile in _tiles)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: _G2ResponseTile(
+                        tile: tile,
+                        hidden: slots.contains(tile.id),
+                        wrong: wrongTileId == tile.id,
+                        enabled: inputReady,
+                        onTap: () => onTapTile(tile.id),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ResponseTray extends StatelessWidget {
+  final List<String?> slots;
+  final Future<void> Function(String tileId, int slotIndex) onPlace;
+
+  const _G2ResponseTray({required this.slots, required this.onPlace});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .78),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: TudloColors.green, width: 3),
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < slots.length; index++)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: DragTarget<String>(
+                  onWillAcceptWithDetails: (_) => slots[index] == null,
+                  onAcceptWithDetails: (details) {
+                    unawaited(onPlace(details.data, index));
+                  },
+                  builder: (context, _, __) {
+                    final label = _g2ResponseTileLabel(slots[index]);
+                    return Container(
+                      height: 58,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: label == null
+                            ? Colors.white.withValues(alpha: .55)
+                            : const Color(0xFFE5FFD5),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: label == null
+                              ? const Color(0xFFB8B8B8)
+                              : TudloColors.green,
+                          width: 2.5,
+                        ),
+                      ),
+                      child: Text(
+                        label ?? '',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.blue,
+                          fontSize: 18,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2ResponseTile extends StatelessWidget {
+  final _G2FriendChoice tile;
+  final bool hidden;
+  final bool wrong;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _G2ResponseTile({
+    required this.tile,
+    required this.hidden,
+    required this.wrong,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = _FeedbackMotion(
+      correct: false,
+      wrong: wrong,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: hidden ? .24 : 1,
+        child: GestureDetector(
+          onTap: enabled && !hidden ? onTap : null,
+          child: Container(
+            height: 70,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: wrong ? TudloColors.coral : TudloColors.blue,
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: TudloColors.blue.withValues(alpha: .18),
+                  blurRadius: 0,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Text(
+              tile.label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 20,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (hidden || !enabled) return child;
+    return Draggable<String>(
+      data: tile.id,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(width: 150, child: child),
+      ),
+      childWhenDragging: Opacity(opacity: .35, child: child),
+      child: child,
+    );
+  }
+}
+
+class _G2NewFriendRewardStep extends StatelessWidget {
+  final double progress;
+  final String anaAsset;
+  final String stickerAsset;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onDone;
+
+  const _G2NewFriendRewardStep({
+    required this.progress,
+    required this.anaAsset,
+    required this.stickerAsset,
+    required this.onExit,
+    required this.onReplay,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .14,
+          view.width * .06,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TudloMascot(
+                  size: (view.width * .34).clamp(125.0, 175.0),
+                  mood: KokaMood.hi,
+                ),
+                SizedBox(
+                  width: view.width * .28,
+                  height: view.height * .24,
+                  child: _LessonPictureAsset(
+                    asset: anaAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: view.height * .015),
+            GestureDetector(
+              onTap: onDone,
+              child: SizedBox(
+                height: (view.height * .24).clamp(170.0, 250.0),
+                child: _LessonPictureAsset(
+                  asset: stickerAsset,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_) =>
+                      const _FamilyReferenceBadge(label: 'ABYAN\n1'),
+                ),
+              ),
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(
+              message: 'Nakilala mo ang bag-o nga abyan!',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .018),
+            Row(
+              children: [
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2SmallSpeechBubble extends StatelessWidget {
+  final String text;
+
+  const _G2SmallSpeechBubble({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 128),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .12),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.nunito(
+          color: TudloColors.blue,
+          fontSize: 18,
+          height: 1.05,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+String? _g2ResponseTileLabel(String? id) {
+  return switch (id) {
+    'my_name_is' => 'My name is',
+    'ana' => 'Ana',
+    _ => null,
+  };
+}
+
+enum _G2BirthdayStep {
+  invitation,
+  map,
+  balloons,
+  askAge,
+  seven,
+  chooseSeven,
+  buildAnswer,
+  reward,
+}
+
+class _GradeTwoUnitOneLessonTwoBirthdayFlow extends StatefulWidget {
+  final VoidCallback onExit;
+  final void Function(int index, bool correct) onQuizAttempt;
+  final ValueChanged<int> onQuizCorrect;
+
+  const _GradeTwoUnitOneLessonTwoBirthdayFlow({
+    required this.onExit,
+    required this.onQuizAttempt,
+    required this.onQuizCorrect,
+  });
+
+  @override
+  State<_GradeTwoUnitOneLessonTwoBirthdayFlow> createState() =>
+      _GradeTwoUnitOneLessonTwoBirthdayFlowState();
+}
+
+class _GradeTwoUnitOneLessonTwoBirthdayFlowState
+    extends State<_GradeTwoUnitOneLessonTwoBirthdayFlow> {
+  static const _voiceBase = 'audio/VO-final/grade2';
+  static const _anaAsset =
+      'assets/images/level_game/people/Tudlo_Ana_Full_Body_Character.svg';
+  static const _anaCelebrateAsset =
+      'assets/images/level_game/people/Tudlo_Ana_Celebrating_Age_Seven.svg';
+  static const _backgroundAsset =
+      'assets/images/level_game/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
+  static const _stickerAsset =
+      'assets/images/level_game/lesson-game-assets/Tudlo_Abyan_2_Age_Star_Completion_Sticker.svg';
+  static const _answerOrder = ['i_am', 'seven_years_old'];
+
+  _G2BirthdayStep _step = _G2BirthdayStep.invitation;
+  bool _voicePlaying = false;
+  bool _invitationOpened = false;
+  final Set<int> _revealedBalloons = {};
+  String? _selectedAgeId;
+  String? _wrongAgeId;
+  String? _wrongTileId;
+  bool _completed = false;
+  final List<String?> _answerSlots = List<String?>.filled(2, null);
+
+  double get _progress =>
+      (_G2BirthdayStep.values.indexOf(_step) + 1) /
+      _G2BirthdayStep.values.length;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
+  }
+
+  void _goToStep(_G2BirthdayStep step) {
+    if (_step == step) return;
+    unawaited(TudloVoiceButton.stop());
+    setState(() {
+      _step = step;
+      _selectedAgeId = null;
+      _wrongAgeId = null;
+      _wrongTileId = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  Future<void> _playVoice(List<int> clips) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clips) '$_voiceBase/Gr_2_Les_1_2_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
+  }
+
+  Future<void> _speakForStep() async {
+    final clips = switch (_step) {
+      _G2BirthdayStep.invitation => const [2],
+      _G2BirthdayStep.map => const [3],
+      _G2BirthdayStep.balloons => const [4],
+      _G2BirthdayStep.askAge => const [5, 6],
+      _G2BirthdayStep.seven => const [7],
+      _G2BirthdayStep.chooseSeven => const [8, 9],
+      _G2BirthdayStep.buildAnswer => const [12, 13],
+      _G2BirthdayStep.reward => const [16],
+    };
+    setState(() => _voicePlaying = true);
+    try {
+      await _playVoice(clips);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_step) {
+          _G2BirthdayStep.invitation => 'May birthday invitation si Ana!',
+          _G2BirthdayStep.map => 'I-tap ang Balay ni Koka.',
+          _G2BirthdayStep.balloons => 'May mga balloon!',
+          _G2BirthdayStep.askAge => 'How old are you?',
+          _G2BirthdayStep.seven => 'Seven years old si Ana.',
+          _G2BirthdayStep.chooseSeven => 'Pilia ang 7.',
+          _G2BirthdayStep.buildAnswer => 'Ihan-ay: I am seven years old.',
+          _G2BirthdayStep.reward => 'Makasiling ka na sang imo edad!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+      if (mounted) setState(() => _voicePlaying = false);
+    }
+  }
+
+  Future<void> _openInvitation() async {
+    if (_voicePlaying || _invitationOpened) return;
+    setState(() => _invitationOpened = true);
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 480));
+    if (mounted) _goToStep(_G2BirthdayStep.map);
+  }
+
+  Future<void> _revealBalloon(int number) async {
+    if (_voicePlaying || _revealedBalloons.contains(number)) return;
+    setState(() => _revealedBalloons.add(number));
+    await AppAudioService.instance.playTap();
+    if (_revealedBalloons.length >= 4) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (mounted) _goToStep(_G2BirthdayStep.askAge);
+    }
+  }
+
+  Future<void> _hearQuestion() async {
+    if (_voicePlaying) return;
+    await _playVoice(const [6]);
+    if (mounted) _goToStep(_G2BirthdayStep.seven);
+  }
+
+  Future<void> _chooseAge(_G2FriendChoice choice) async {
+    if (_voicePlaying || _selectedAgeId != null) return;
+    final correct = choice.id == 'age_7';
+    widget.onQuizAttempt(0, correct);
+    setState(() {
+      _selectedAgeId = choice.id;
+      _wrongAgeId = correct ? null : choice.id;
+    });
+    if (!correct) {
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [11]);
+      await Future<void>.delayed(const Duration(milliseconds: 430));
+      if (!mounted) return;
+      setState(() {
+        _selectedAgeId = null;
+        _wrongAgeId = null;
+      });
+      return;
+    }
+    widget.onQuizCorrect(0);
+    await AppAudioService.instance.playCorrect();
+    await _playVoice(const [10]);
+    await Future<void>.delayed(const Duration(milliseconds: 520));
+    if (mounted) _goToStep(_G2BirthdayStep.buildAnswer);
+  }
+
+  Future<void> _placeAnswerTile(String tileId, int slotIndex) async {
+    if (_voicePlaying || _answerSlots.contains(tileId)) return;
+    setState(() => _answerSlots[slotIndex] = tileId);
+    await AppAudioService.instance.playTap();
+    if (_answerSlots.any((slot) => slot == null)) return;
+    final correct = List.generate(
+      _answerOrder.length,
+      (index) => _answerSlots[index] == _answerOrder[index],
+    ).every((match) => match);
+    widget.onQuizAttempt(1, correct);
+    if (!correct) {
+      final wrongIds = <String>{
+        for (var index = 0; index < _answerOrder.length; index++)
+          if (_answerSlots[index] != _answerOrder[index]) _answerSlots[index]!,
+      };
+      setState(() => _wrongTileId = wrongIds.first);
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [19]);
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      if (!mounted) return;
+      setState(() {
+        for (var index = 0; index < _answerSlots.length; index++) {
+          if (_answerSlots[index] != _answerOrder[index]) {
+            _answerSlots[index] = null;
+          }
+        }
+        _wrongTileId = null;
+      });
+      return;
+    }
+    widget.onQuizCorrect(1);
+    await AppAudioService.instance.playCorrect();
+    await _playVoice(const [15, 17]);
+    await Future<void>.delayed(const Duration(milliseconds: 520));
+    if (mounted) _goToStep(_G2BirthdayStep.reward);
+  }
+
+  Future<void> _tapAnswerTile(String tileId) async {
+    final slotIndex = _answerSlots.indexWhere((slot) => slot == null);
+    if (slotIndex == -1) return;
+    await _placeAnswerTile(tileId, slotIndex);
+  }
+
+  void _finish() {
+    if (_completed) return;
+    _completed = true;
+    for (var index = 0; index < _lessonQuizCount; index++) {
+      widget.onQuizCorrect(index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 520),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: KeyedSubtree(
+        key: ValueKey('g2-u1-l2-$_step'),
+        child: switch (_step) {
+          _G2BirthdayStep.invitation => _G2BirthdayInvitationStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onOpen: _openInvitation,
+          ),
+          _G2BirthdayStep.map => _G2BirthdayMapStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2BirthdayStep.balloons),
+          ),
+          _G2BirthdayStep.balloons => _G2BirthdayBalloonsStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            revealed: _revealedBalloons,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onReveal: _revealBalloon,
+          ),
+          _G2BirthdayStep.askAge => _G2BirthdayAskAgeStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onQuestion: _hearQuestion,
+          ),
+          _G2BirthdayStep.seven => _G2BirthdaySevenStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaCelebrateAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2BirthdayStep.chooseSeven),
+          ),
+          _G2BirthdayStep.chooseSeven => _G2BirthdayChooseSevenStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            selectedId: _selectedAgeId,
+            wrongId: _wrongAgeId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onChoose: _chooseAge,
+          ),
+          _G2BirthdayStep.buildAnswer => _G2BirthdayBuildAnswerStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaCelebrateAsset,
+            slots: _answerSlots,
+            wrongTileId: _wrongTileId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onPlace: _placeAnswerTile,
+            onTapTile: _tapAnswerTile,
+          ),
+          _G2BirthdayStep.reward => _G2BirthdayRewardStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaCelebrateAsset,
+            stickerAsset: _stickerAsset,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onDone: _finish,
+          ),
+        },
+      ),
+    );
+  }
+}
+
+class _G2BirthdayInvitationStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function() onOpen;
+
+  const _G2BirthdayInvitationStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .07,
+          view.height * .15,
+          view.width * .07,
+          view.height * .045,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            TudloMascot(
+              size: (view.width * .48).clamp(170.0, 250.0),
+              mood: KokaMood.hi,
+            ),
+            SizedBox(height: view.height * .02),
+            GestureDetector(
+              onTap: inputReady ? () => unawaited(onOpen()) : null,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: view.width * .58,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3B8),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: TudloColors.gold, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: TudloColors.gold.withValues(alpha: .35),
+                          blurRadius: 22,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'Happy Birthday\nAna!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: TudloColors.blue,
+                        fontSize: (view.width * .075).clamp(26.0, 38.0),
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                  if (inputReady)
+                    Positioned(
+                      right: -view.width * .08,
+                      bottom: -view.height * .025,
+                      child: const _FamilyTapCue(),
+                    ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(
+              message: 'May birthday invitation si Ana!',
+            ),
+            SizedBox(height: view.height * .02),
+            _LessonOneBlueButton(
+              label: 'Sige',
+              onTap: inputReady ? () => unawaited(onOpen()) : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2BirthdayMapStep extends StatefulWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2BirthdayMapStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  State<_G2BirthdayMapStep> createState() => _G2BirthdayMapStepState();
+}
+
+class _G2BirthdayMapStepState extends State<_G2BirthdayMapStep>
+    with SingleTickerProviderStateMixin {
+  late final TransformationController _controller;
+  late final AnimationController _zoomController;
+  Animation<Matrix4>? _zoomAnimation;
+  Size? _lastView;
+  bool _selected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TransformationController();
+    _zoomController =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 900),
+        )..addListener(() {
+          final animation = _zoomAnimation;
+          if (animation != null) _controller.value = animation.value;
+        });
+  }
+
+  @override
+  void dispose() {
+    _zoomController.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _focusHouse(Size view) {
+    if (_lastView == view) return;
+    _lastView = view;
+    final target = Matrix4.identity()
+      ..setEntry(0, 0, 1.28)
+      ..setEntry(1, 1, 1.28)
+      ..setEntry(0, 3, -view.width * .16)
+      ..setEntry(1, 3, -view.height * .08);
+    _zoomAnimation = Matrix4Tween(begin: Matrix4.identity(), end: target)
+        .animate(
+          CurvedAnimation(parent: _zoomController, curve: Curves.easeOutCubic),
+        );
+    _zoomController.forward(from: 0);
+  }
+
+  Future<void> _tapHouse() async {
+    if (_selected) return;
+    setState(() => _selected = true);
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 360));
+    if (mounted) widget.onNext();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusHouse(view);
+    });
+    final mapSize = Size(view.width * 1.48, view.height * 1.16);
+    return _LessonOneChrome(
+      progress: widget.progress,
+      onExit: widget.onExit,
+      onReplay: widget.onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+      child: Stack(
+        children: [
+          InteractiveViewer(
+            transformationController: _controller,
+            minScale: .95,
+            maxScale: 2.2,
+            boundaryMargin: EdgeInsets.all(view.longestSide),
+            panEnabled: true,
+            scaleEnabled: true,
+            constrained: false,
+            child: SizedBox(
+              width: mapSize.width,
+              height: mapSize.height,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const _LessonBackgroundAsset(
+                    asset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+                  ),
+                  Positioned(
+                    left: mapSize.width * .53,
+                    top: mapSize.height * .31,
+                    width: mapSize.width * .22,
+                    height: mapSize.width * .22,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _tapHouse,
+                      child: const _LessonOneMapDestinationCue(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: view.width * .10,
+            right: view.width * .10,
+            bottom: view.height * .08,
+            child: const _LessonOneMessageCard(
+              message: 'I-tap ang Balay ni Koka.',
+              compact: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2BirthdayBalloonsStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final Set<int> revealed;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(int number) onReveal;
+
+  const _G2BirthdayBalloonsStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.revealed,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onReveal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final balloons = [5, 6, 7, 8];
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .14,
+          view.width * .06,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'May mga balloon!',
+              compact: true,
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TudloMascot(
+                  size: (view.width * .34).clamp(125.0, 180.0),
+                  mood: KokaMood.hi,
+                ),
+                Expanded(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: view.width * .025,
+                    runSpacing: view.height * .012,
+                    children: [
+                      for (final number in balloons)
+                        _BirthdayBalloonCard(
+                          number: number,
+                          revealed: revealed.contains(number),
+                          enabled: inputReady,
+                          onTap: () => onReveal(number),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BirthdayBalloonCard extends StatelessWidget {
+  final int number;
+  final bool revealed;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _BirthdayBalloonCard({
+    required this.number,
+    required this.revealed,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return GestureDetector(
+      onTap: enabled && !revealed ? onTap : null,
+      child: SizedBox(
+        width: view.width * .18,
+        height: view.height * .19,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            _LessonPictureAsset(
+              asset:
+                  'assets/images/level_game/lesson-game-assets/Tudlo_Birthday_Balloon_$number.svg',
+              fit: BoxFit.contain,
+              errorBuilder: (_) => Icon(
+                Icons.circle_rounded,
+                color: TudloColors.coral,
+                size: view.width * .16,
+              ),
+            ),
+            Container(
+              width: view.width * .085,
+              height: view.width * .085,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: revealed ? .94 : .78),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                revealed ? '$number' : '?',
+                style: GoogleFonts.nunito(
+                  color: TudloColors.blue,
+                  fontSize: (view.width * .07).clamp(22.0, 34.0),
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2BirthdayAskAgeStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function() onQuestion;
+
+  const _G2BirthdayAskAgeStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onQuestion,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .14,
+          view.width * .06,
+          view.height * .05,
+        ),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: inputReady ? () => unawaited(onQuestion()) : null,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  const _LessonOneMessageCard(
+                    message: 'How old are you?',
+                    compact: true,
+                  ),
+                  if (inputReady)
+                    Positioned(
+                      right: -view.width * .10,
+                      bottom: -view.height * .02,
+                      child: const _FamilyTapCue(),
+                    ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TudloMascot(
+                  size: (view.width * .42).clamp(150.0, 220.0),
+                  mood: KokaMood.hi,
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: view.width * .36,
+                  height: view.height * .44,
+                  child: _LessonPictureAsset(
+                    asset: anaAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(
+              message: 'I-tap ang question bubble kag pamatii.',
+              compact: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2BirthdaySevenStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2BirthdaySevenStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .07,
+          view.height * .14,
+          view.width * .07,
+          view.height * .045,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: view.height * .28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .92),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: TudloColors.gold, width: 4),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '7',
+                          style: GoogleFonts.nunito(
+                            color: TudloColors.coral,
+                            fontSize: (view.width * .22).clamp(82.0, 130.0),
+                            height: .85,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        Text(
+                          'seven',
+                          style: GoogleFonts.nunito(
+                            color: TudloColors.blue,
+                            fontSize: 28,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(width: view.width * .04),
+                SizedBox(
+                  width: view.width * .32,
+                  height: view.height * .38,
+                  child: _LessonPictureAsset(
+                    asset: anaAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(message: 'Seven years old si Ana.'),
+            SizedBox(height: view.height * .018),
+            _LessonOneBlueButton(
+              label: 'Padayon',
+              onTap: inputReady ? onNext : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2BirthdayChooseSevenStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String? selectedId;
+  final String? wrongId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(_G2FriendChoice choice) onChoose;
+
+  const _G2BirthdayChooseSevenStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.selectedId,
+    required this.wrongId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onChoose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final choices = const [
+      _G2FriendChoice('age_5', '5'),
+      _G2FriendChoice('age_6', '6'),
+      _G2FriendChoice('age_7', '7'),
+      _G2FriendChoice('age_8', '8'),
+    ];
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .14,
+          view.width * .06,
+          view.height * .05,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(message: 'Pilia ang 7.', compact: true),
+            const Spacer(),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: view.width * .025,
+              runSpacing: view.height * .015,
+              children: [
+                for (final choice in choices)
+                  _BirthdayAgeChoiceBalloon(
+                    choice: choice,
+                    selected: selectedId == choice.id,
+                    wrong: wrongId == choice.id,
+                    enabled: inputReady && selectedId == null,
+                    onTap: () => onChoose(choice),
+                  ),
+              ],
+            ),
+            const Spacer(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BirthdayAgeChoiceBalloon extends StatelessWidget {
+  final _G2FriendChoice choice;
+  final bool selected;
+  final bool wrong;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _BirthdayAgeChoiceBalloon({
+    required this.choice,
+    required this.selected,
+    required this.wrong,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final number = choice.label;
+    final view = MediaQuery.sizeOf(context);
+    return _FeedbackMotion(
+      correct: selected && choice.id == 'age_7',
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: SizedBox(
+          width: view.width * .20,
+          height: view.height * .23,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              _LessonPictureAsset(
+                asset:
+                    'assets/images/level_game/lesson-game-assets/Tudlo_Birthday_Balloon_$number.svg',
+                fit: BoxFit.contain,
+              ),
+              Container(
+                width: view.width * .09,
+                height: view.width * .09,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? const Color(0xFFE5FFD5)
+                      : Colors.white.withValues(alpha: .92),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected
+                        ? TudloColors.green
+                        : wrong
+                        ? TudloColors.coral
+                        : Colors.transparent,
+                    width: 3,
+                  ),
+                ),
+                child: Text(
+                  number,
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.blue,
+                    fontSize: (view.width * .08).clamp(26.0, 38.0),
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _G2BirthdayBuildAnswerStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final List<String?> slots;
+  final String? wrongTileId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(String tileId, int slotIndex) onPlace;
+  final Future<void> Function(String tileId) onTapTile;
+
+  const _G2BirthdayBuildAnswerStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.slots,
+    required this.wrongTileId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onPlace,
+    required this.onTapTile,
+  });
+
+  static const _tiles = [
+    _G2FriendChoice('seven_years_old', 'seven years old.'),
+    _G2FriendChoice('i_am', 'I am'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .13,
+          view.width * .055,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'I am seven years old.',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .015),
+            SizedBox(
+              height: view.height * .24,
+              child: _LessonPictureAsset(asset: anaAsset, fit: BoxFit.contain),
+            ),
+            _G2AgeAnswerTray(slots: slots, onPlace: onPlace),
+            const Spacer(),
+            Row(
+              children: [
+                for (final tile in _tiles)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: _G2AgeResponseTile(
+                        tile: tile,
+                        hidden: slots.contains(tile.id),
+                        wrong: wrongTileId == tile.id,
+                        enabled: inputReady,
+                        onTap: () => onTapTile(tile.id),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2AgeAnswerTray extends StatelessWidget {
+  final List<String?> slots;
+  final Future<void> Function(String tileId, int slotIndex) onPlace;
+
+  const _G2AgeAnswerTray({required this.slots, required this.onPlace});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .84),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: TudloColors.green, width: 3),
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < slots.length; index++)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: DragTarget<String>(
+                  onWillAcceptWithDetails: (_) => slots[index] == null,
+                  onAcceptWithDetails: (details) {
+                    unawaited(onPlace(details.data, index));
+                  },
+                  builder: (context, _, __) {
+                    final label = _g2AgeAnswerTileLabel(slots[index]);
+                    return Container(
+                      height: 58,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: label == null
+                            ? Colors.white.withValues(alpha: .55)
+                            : const Color(0xFFE5FFD5),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: label == null
+                              ? const Color(0xFFB8B8B8)
+                              : TudloColors.green,
+                          width: 2.5,
+                        ),
+                      ),
+                      child: Text(
+                        label ?? '',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.blue,
+                          fontSize: 17,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2AgeResponseTile extends StatelessWidget {
+  final _G2FriendChoice tile;
+  final bool hidden;
+  final bool wrong;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _G2AgeResponseTile({
+    required this.tile,
+    required this.hidden,
+    required this.wrong,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = _FeedbackMotion(
+      correct: false,
+      wrong: wrong,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: hidden ? .24 : 1,
+        child: GestureDetector(
+          onTap: enabled && !hidden ? onTap : null,
+          child: Container(
+            height: 70,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: wrong ? TudloColors.coral : TudloColors.blue,
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: TudloColors.blue.withValues(alpha: .18),
+                  blurRadius: 0,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Text(
+              tile.label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 20,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (hidden || !enabled) return child;
+    return Draggable<String>(
+      data: tile.id,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(width: 170, child: child),
+      ),
+      childWhenDragging: Opacity(opacity: .35, child: child),
+      child: child,
+    );
+  }
+}
+
+class _G2BirthdayRewardStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final String stickerAsset;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onDone;
+
+  const _G2BirthdayRewardStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.stickerAsset,
+    required this.onExit,
+    required this.onReplay,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .14,
+          view.width * .06,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TudloMascot(
+                  size: (view.width * .34).clamp(125.0, 175.0),
+                  mood: KokaMood.hi,
+                ),
+                SizedBox(
+                  width: view.width * .28,
+                  height: view.height * .26,
+                  child: _LessonPictureAsset(
+                    asset: anaAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: view.height * .01),
+            GestureDetector(
+              onTap: onDone,
+              child: SizedBox(
+                height: (view.height * .24).clamp(170.0, 250.0),
+                child: _LessonPictureAsset(
+                  asset: stickerAsset,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_) =>
+                      const _FamilyReferenceBadge(label: 'ABYAN\n2'),
+                ),
+              ),
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(
+              message: 'Makasiling ka na sang imo edad!',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .018),
+            Row(
+              children: [
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String? _g2AgeAnswerTileLabel(String? id) {
+  return switch (id) {
+    'i_am' => 'I am',
+    'seven_years_old' => 'seven years old.',
+    _ => null,
+  };
+}
+
+enum _G2ParkGreetingStep {
+  intro,
+  map,
+  morningTeach,
+  morningPractice,
+  afternoonTeach,
+  afternoonPractice,
+  eveningTeach,
+  eveningPractice,
+  review,
+  match,
+  reward,
+}
+
+class _GradeTwoUnitTwoLessonOneParkGreetingFlow extends StatefulWidget {
+  final VoidCallback onExit;
+  final void Function(int index, bool correct) onQuizAttempt;
+  final ValueChanged<int> onQuizCorrect;
+
+  const _GradeTwoUnitTwoLessonOneParkGreetingFlow({
+    required this.onExit,
+    required this.onQuizAttempt,
+    required this.onQuizCorrect,
+  });
+
+  @override
+  State<_GradeTwoUnitTwoLessonOneParkGreetingFlow> createState() =>
+      _GradeTwoUnitTwoLessonOneParkGreetingFlowState();
+}
+
+class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
+    extends State<_GradeTwoUnitTwoLessonOneParkGreetingFlow> {
+  static const _voiceBase = 'audio/VO-final/grade2';
+  static const _backgroundAsset =
+      'assets/images/level_game/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+  static const _stickerAsset =
+      'assets/images/level_game/lesson-game-assets/Tudlo_Panamyaw_1_Greeting_Star_Completion_Sticker.svg';
+  static const _friendGirlOne =
+      'assets/images/level_game/people/Tudlo_Park_Friend_Girl_1.svg';
+  static const _friendBoy =
+      'assets/images/level_game/people/Tudlo_Park_Friend_Boy.svg';
+  static const _friendGirlTwo =
+      'assets/images/level_game/people/Tudlo_Park_Friend_Girl_2.svg';
+  static const _answerByTime = {
+    'morning': 'good_morning',
+    'afternoon': 'good_afternoon',
+    'evening': 'good_evening',
+  };
+
+  _G2ParkGreetingStep _step = _G2ParkGreetingStep.intro;
+  bool _voicePlaying = false;
+  bool _parkSelected = false;
+  bool _characterTapped = false;
+  String? _selectedGreetingId;
+  String? _wrongGreetingId;
+  String? _activeMatchTimeId;
+  String? _wrongMatchGreetingId;
+  bool _completed = false;
+  final Set<String> _completedTimes = {};
+  final Set<String> _reviewedTimes = {};
+  final Map<String, String> _matchedGreetings = {};
+
+  double get _progress =>
+      (_G2ParkGreetingStep.values.indexOf(_step) + 1) /
+      _G2ParkGreetingStep.values.length;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
+  }
+
+  void _goToStep(_G2ParkGreetingStep step) {
+    if (_step == step) return;
+    unawaited(TudloVoiceButton.stop());
+    setState(() {
+      _step = step;
+      _characterTapped = false;
+      _selectedGreetingId = null;
+      _wrongGreetingId = null;
+      _wrongMatchGreetingId = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  Future<void> _playVoice(List<int> clips) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clips) '$_voiceBase/Gr_2_Les_2_1_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
+  }
+
+  Future<void> _speakForStep() async {
+    final clips = switch (_step) {
+      _G2ParkGreetingStep.intro => const [2, 3],
+      _G2ParkGreetingStep.map => const [4, 5],
+      _G2ParkGreetingStep.morningTeach => const [6],
+      _G2ParkGreetingStep.morningPractice => const [7],
+      _G2ParkGreetingStep.afternoonTeach => const [8],
+      _G2ParkGreetingStep.afternoonPractice => const [9],
+      _G2ParkGreetingStep.eveningTeach => const [10],
+      _G2ParkGreetingStep.eveningPractice => const [11],
+      _G2ParkGreetingStep.review => const [12, 13],
+      _G2ParkGreetingStep.match => const [14, 15],
+      _G2ParkGreetingStep.reward => const [20],
+    };
+    setState(() => _voicePlaying = true);
+    try {
+      await _playVoice(clips);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_step) {
+          _G2ParkGreetingStep.intro =>
+            'Maglibot kita sa Park halin aga tubtob gab-i!',
+          _G2ParkGreetingStep.map => 'I-tap ang Park sa mapa.',
+          _G2ParkGreetingStep.morningTeach => 'Good morning sa aga.',
+          _G2ParkGreetingStep.morningPractice => 'Pilia ang Good morning.',
+          _G2ParkGreetingStep.afternoonTeach => 'Good afternoon sa hapon.',
+          _G2ParkGreetingStep.afternoonPractice => 'Pilia ang Good afternoon.',
+          _G2ParkGreetingStep.eveningTeach => 'Good evening sa gab-i.',
+          _G2ParkGreetingStep.eveningPractice => 'Pilia ang Good evening.',
+          _G2ParkGreetingStep.review =>
+            'Pamatian liwat ang aga, hapon, kag gab-i.',
+          _G2ParkGreetingStep.match =>
+            'Ipares ang greeting sa aga, hapon, kag gab-i.',
+          _G2ParkGreetingStep.reward =>
+            'Kabalo ka na mag-greet sa nagkalain-lain nga tion!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+      if (mounted) setState(() => _voicePlaying = false);
+    }
+  }
+
+  Future<void> _tapPark() async {
+    if (_voicePlaying || _parkSelected) return;
+    setState(() => _parkSelected = true);
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 420));
+    if (mounted) _goToStep(_G2ParkGreetingStep.morningTeach);
+  }
+
+  void _tapCharacter() {
+    if (_voicePlaying || _characterTapped) return;
+    unawaited(AppAudioService.instance.playTap());
+    setState(() => _characterTapped = true);
+  }
+
+  Future<void> _chooseGreeting(String timeId, _G2FriendChoice choice) async {
+    if (_voicePlaying || !_characterTapped || _selectedGreetingId != null) {
+      return;
+    }
+    final quizIndex = switch (timeId) {
+      'morning' => 0,
+      'afternoon' => 1,
+      _ => 2,
+    };
+    final correct = _answerByTime[timeId] == choice.id;
+    widget.onQuizAttempt(quizIndex, correct);
+    setState(() {
+      _selectedGreetingId = choice.id;
+      _wrongGreetingId = correct ? null : choice.id;
+    });
+    if (!correct) {
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [16]);
+      await Future<void>.delayed(const Duration(milliseconds: 460));
+      if (!mounted) return;
+      setState(() {
+        _selectedGreetingId = null;
+        _wrongGreetingId = null;
+      });
+      return;
+    }
+    widget.onQuizCorrect(quizIndex);
+    setState(() => _completedTimes.add(timeId));
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 520));
+    if (!mounted) return;
+    _goToStep(switch (timeId) {
+      'morning' => _G2ParkGreetingStep.afternoonTeach,
+      'afternoon' => _G2ParkGreetingStep.eveningTeach,
+      _ => _G2ParkGreetingStep.review,
+    });
+  }
+
+  Future<void> _reviewTime(String timeId) async {
+    if (_voicePlaying) return;
+    setState(() => _reviewedTimes.add(timeId));
+    await _playVoice(switch (timeId) {
+      'morning' => const [6],
+      'afternoon' => const [8],
+      _ => const [10],
+    });
+  }
+
+  Future<void> _matchGreeting(String greetingId, String timeId) async {
+    if (_voicePlaying || _matchedGreetings.containsKey(timeId)) return;
+    final correct = _answerByTime[timeId] == greetingId;
+    widget.onQuizAttempt(3, correct);
+    if (!correct) {
+      setState(() => _wrongMatchGreetingId = greetingId);
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [16]);
+      await Future<void>.delayed(const Duration(milliseconds: 430));
+      if (mounted) setState(() => _wrongMatchGreetingId = null);
+      return;
+    }
+    setState(() {
+      _matchedGreetings[timeId] = greetingId;
+      _activeMatchTimeId = null;
+    });
+    await AppAudioService.instance.playCorrect();
+    if (_matchedGreetings.length == 3) {
+      widget.onQuizCorrect(3);
+      await Future<void>.delayed(const Duration(milliseconds: 620));
+      if (mounted) _goToStep(_G2ParkGreetingStep.reward);
+    }
+  }
+
+  Future<void> _tapGreetingForMatch(String greetingId) async {
+    final timeId = _activeMatchTimeId;
+    if (timeId == null) return;
+    await _matchGreeting(greetingId, timeId);
+  }
+
+  void _finish() {
+    if (_completed) return;
+    _completed = true;
+    for (var index = 0; index < _lessonQuizCount; index++) {
+      widget.onQuizCorrect(index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 520),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: KeyedSubtree(
+        key: ValueKey('g2-u2-l1-$_step'),
+        child: switch (_step) {
+          _G2ParkGreetingStep.intro => _G2ParkGreetingIntroStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2ParkGreetingStep.map),
+          ),
+          _G2ParkGreetingStep.map => _G2ParkGreetingMapStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: _tapPark,
+          ),
+          _G2ParkGreetingStep.morningTeach => _G2ParkGreetingTeachStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            time: _parkGreetingTimes[0],
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2ParkGreetingStep.morningPractice),
+          ),
+          _G2ParkGreetingStep.morningPractice => _G2ParkGreetingPracticeStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            time: _parkGreetingTimes[0],
+            characterAsset: _friendGirlOne,
+            characterTapped: _characterTapped,
+            selectedId: _selectedGreetingId,
+            wrongId: _wrongGreetingId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onTapCharacter: _tapCharacter,
+            onChoose: (choice) => _chooseGreeting('morning', choice),
+          ),
+          _G2ParkGreetingStep.afternoonTeach => _G2ParkGreetingTeachStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            time: _parkGreetingTimes[1],
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2ParkGreetingStep.afternoonPractice),
+          ),
+          _G2ParkGreetingStep.afternoonPractice => _G2ParkGreetingPracticeStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            time: _parkGreetingTimes[1],
+            characterAsset: _friendBoy,
+            characterTapped: _characterTapped,
+            selectedId: _selectedGreetingId,
+            wrongId: _wrongGreetingId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onTapCharacter: _tapCharacter,
+            onChoose: (choice) => _chooseGreeting('afternoon', choice),
+          ),
+          _G2ParkGreetingStep.eveningTeach => _G2ParkGreetingTeachStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            time: _parkGreetingTimes[2],
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2ParkGreetingStep.eveningPractice),
+          ),
+          _G2ParkGreetingStep.eveningPractice => _G2ParkGreetingPracticeStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            time: _parkGreetingTimes[2],
+            characterAsset: _friendGirlTwo,
+            characterTapped: _characterTapped,
+            selectedId: _selectedGreetingId,
+            wrongId: _wrongGreetingId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onTapCharacter: _tapCharacter,
+            onChoose: (choice) => _chooseGreeting('evening', choice),
+          ),
+          _G2ParkGreetingStep.review => _G2ParkGreetingReviewStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            reviewedTimes: _reviewedTimes,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onReviewTime: _reviewTime,
+            onNext: () => _goToStep(_G2ParkGreetingStep.match),
+          ),
+          _G2ParkGreetingStep.match => _G2ParkGreetingMatchStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            activeTimeId: _activeMatchTimeId,
+            matchedGreetings: _matchedGreetings,
+            wrongGreetingId: _wrongMatchGreetingId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onSelectTime: (timeId) =>
+                setState(() => _activeMatchTimeId = timeId),
+            onMatch: _matchGreeting,
+            onTapGreeting: _tapGreetingForMatch,
+          ),
+          _G2ParkGreetingStep.reward => _G2ParkGreetingRewardStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            stickerAsset: _stickerAsset,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onDone: _finish,
+          ),
+        },
+      ),
+    );
+  }
+}
+
+class _ParkGreetingTime {
+  final String id;
+  final String timeLabel;
+  final String localLabel;
+  final String greeting;
+  final IconData icon;
+  final Color color;
+  final Color tint;
+
+  const _ParkGreetingTime({
+    required this.id,
+    required this.timeLabel,
+    required this.localLabel,
+    required this.greeting,
+    required this.icon,
+    required this.color,
+    required this.tint,
+  });
+}
+
+const _parkGreetingTimes = [
+  _ParkGreetingTime(
+    id: 'morning',
+    timeLabel: 'Morning',
+    localLabel: 'aga',
+    greeting: 'Good morning',
+    icon: Icons.wb_sunny_rounded,
+    color: Color(0xFFFFC928),
+    tint: Color(0x22FFD35C),
+  ),
+  _ParkGreetingTime(
+    id: 'afternoon',
+    timeLabel: 'Afternoon',
+    localLabel: 'hapon',
+    greeting: 'Good afternoon',
+    icon: Icons.light_mode_rounded,
+    color: Color(0xFFFF8A28),
+    tint: Color(0x33FF9F43),
+  ),
+  _ParkGreetingTime(
+    id: 'evening',
+    timeLabel: 'Evening',
+    localLabel: 'gab-i',
+    greeting: 'Good evening',
+    icon: Icons.dark_mode_rounded,
+    color: Color(0xFF536DFE),
+    tint: Color(0x44304B9B),
+  ),
+];
+
+const _parkGreetingChoices = [
+  _G2FriendChoice('good_morning', 'Good morning'),
+  _G2FriendChoice('good_afternoon', 'Good afternoon'),
+  _G2FriendChoice('good_evening', 'Good evening'),
+];
+
+String _parkGreetingLabel(String id) {
+  return _parkGreetingChoices.firstWhere((choice) => choice.id == id).label;
+}
+
+class _G2ParkScene extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final _ParkGreetingTime? time;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Widget child;
+
+  const _G2ParkScene({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.time,
+    required this.onExit,
+    required this.onReplay,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: backgroundAsset,
+      child: Stack(
+        children: [
+          if (time != null)
+            Positioned.fill(child: ColoredBox(color: time!.tint)),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _G2ParkGreetingIntroStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2ParkGreetingIntroStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .15,
+          view.width * .06,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                for (final time in _parkGreetingTimes)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _ParkTimeCard(time: time, selected: false),
+                    ),
+                  ),
+              ],
+            ),
+            const Spacer(),
+            TudloMascot(
+              size: (view.width * .43).clamp(150.0, 230.0),
+              mood: KokaMood.hi,
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(
+              message: 'Maglibot kita sa Park halin aga tubtob gab-i!',
+            ),
+            SizedBox(height: view.height * .018),
+            _LessonOneBlueButton(
+              label: 'Libot ta',
+              onTap: inputReady ? onNext : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkGreetingMapStep extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2ParkGreetingMapStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final mapSize = Size(view.width * 1.34, view.height * 1.06);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+      child: Stack(
+        children: [
+          SizedBox(
+            width: mapSize.width,
+            height: mapSize.height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const _LessonBackgroundAsset(
+                  asset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+                ),
+                Positioned(
+                  left: mapSize.width * .40,
+                  top: mapSize.height * .42,
+                  width: mapSize.width * .22,
+                  height: mapSize.width * .22,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onNext,
+                    child: const _LessonOneMapDestinationCue(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: view.width * .12,
+            right: view.width * .12,
+            bottom: view.height * .06,
+            child: const _LessonOneMessageCard(
+              message: 'I-tap ang Park.',
+              compact: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2ParkGreetingTeachStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final _ParkGreetingTime time;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2ParkGreetingTeachStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.time,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: time,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .15,
+          view.width * .06,
+          view.height * .045,
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: _ParkTimeCard(time: time, selected: true)),
+                SizedBox(width: view.width * .035),
+                Expanded(
+                  child: _ParkGreetingCard(
+                    label: time.greeting,
+                    correct: true,
+                    wrong: false,
+                    enabled: false,
+                    onTap: () {},
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Icon(
+              time.icon,
+              color: time.color,
+              size: (view.width * .30).clamp(112.0, 170.0),
+              shadows: [
+                Shadow(
+                  color: Colors.white.withValues(alpha: .85),
+                  blurRadius: 18,
+                ),
+              ],
+            ),
+            const Spacer(),
+            _LessonOneMessageCard(
+              message: '${time.greeting} sa ${time.localLabel}.',
+            ),
+            SizedBox(height: view.height * .018),
+            _LessonOneBlueButton(
+              label: 'Padayon',
+              onTap: inputReady ? onNext : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkGreetingPracticeStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final _ParkGreetingTime time;
+  final String characterAsset;
+  final bool characterTapped;
+  final String? selectedId;
+  final String? wrongId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onTapCharacter;
+  final Future<void> Function(_G2FriendChoice choice) onChoose;
+
+  const _G2ParkGreetingPracticeStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.time,
+    required this.characterAsset,
+    required this.characterTapped,
+    required this.selectedId,
+    required this.wrongId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onTapCharacter,
+    required this.onChoose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final correctId =
+        _GradeTwoUnitTwoLessonOneParkGreetingFlowState._answerByTime[time.id]!;
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: time,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .13,
+          view.width * .055,
+          view.height * .035,
+        ),
+        child: Column(
+          children: [
+            _LessonOneMessageCard(
+              message: characterTapped
+                  ? 'Pilia ang ${time.greeting}.'
+                  : 'I-tap ang karakter.',
+              compact: true,
+            ),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: view.width * .03,
+                    bottom: view.height * .04,
+                    child: TudloMascot(
+                      size: (view.width * .34).clamp(120.0, 175.0),
+                      mood: characterTapped ? KokaMood.hi : KokaMood.curious,
+                    ),
+                  ),
+                  Positioned(
+                    right: view.width * .10,
+                    bottom: view.height * .02,
+                    width: view.width * .42,
+                    height: view.height * .42,
+                    child: GestureDetector(
+                      onTap: inputReady ? onTapCharacter : null,
+                      child: _FeedbackMotion(
+                        correct: characterTapped,
+                        wrong: false,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            if (!characterTapped)
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: time.color.withValues(alpha: .50),
+                                      blurRadius: 26,
+                                      spreadRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            _LessonPictureAsset(
+                              asset: characterAsset,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_) => Icon(
+                                Icons.person_rounded,
+                                color: TudloColors.blue,
+                                size: view.width * .28,
+                              ),
+                            ),
+                            if (!characterTapped)
+                              Positioned(
+                                right: -view.width * .02,
+                                bottom: view.height * .05,
+                                child: const _FamilyTapCue(),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                for (final choice in _parkGreetingChoices)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _ParkGreetingCard(
+                        label: choice.label,
+                        correct:
+                            selectedId == choice.id && choice.id == correctId,
+                        wrong: wrongId == choice.id,
+                        enabled:
+                            inputReady && characterTapped && selectedId == null,
+                        onTap: () => onChoose(choice),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkGreetingReviewStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final Set<String> reviewedTimes;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(String timeId) onReviewTime;
+  final VoidCallback onNext;
+
+  const _G2ParkGreetingReviewStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.reviewedTimes,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onReviewTime,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final canContinue = reviewedTimes.length == 3;
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .15,
+          view.width * .06,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'Pamatian liwat ang mga greeting.',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .035),
+            for (final time in _parkGreetingTimes) ...[
+              GestureDetector(
+                onTap: inputReady ? () => onReviewTime(time.id) : null,
+                child: _ParkTimeGreetingRow(
+                  time: time,
+                  reviewed: reviewedTimes.contains(time.id),
+                ),
+              ),
+              SizedBox(height: view.height * .02),
+            ],
+            const Spacer(),
+            _LessonOneBlueButton(
+              label: 'Padayon',
+              onTap: inputReady && canContinue ? onNext : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkGreetingMatchStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String? activeTimeId;
+  final Map<String, String> matchedGreetings;
+  final String? wrongGreetingId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final ValueChanged<String> onSelectTime;
+  final Future<void> Function(String greetingId, String timeId) onMatch;
+  final Future<void> Function(String greetingId) onTapGreeting;
+
+  const _G2ParkGreetingMatchStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.activeTimeId,
+    required this.matchedGreetings,
+    required this.wrongGreetingId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onSelectTime,
+    required this.onMatch,
+    required this.onTapGreeting,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final usedGreetingIds = matchedGreetings.values.toSet();
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .045,
+          view.height * .13,
+          view.width * .045,
+          view.height * .035,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'Ipares ang greeting sa aga, hapon, kag gab-i.',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .018),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (final time in _parkGreetingTimes) ...[
+                          _ParkTimeDropTarget(
+                            time: time,
+                            active: activeTimeId == time.id,
+                            greetingId: matchedGreetings[time.id],
+                            inputReady: inputReady,
+                            onSelect: () => onSelectTime(time.id),
+                            onAccept: (greetingId) =>
+                                onMatch(greetingId, time.id),
+                          ),
+                          SizedBox(height: view.height * .018),
+                        ],
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: view.width * .035),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (final choice in _parkGreetingChoices) ...[
+                          _DraggableGreetingCard(
+                            choice: choice,
+                            hidden: usedGreetingIds.contains(choice.id),
+                            wrong: wrongGreetingId == choice.id,
+                            enabled: inputReady,
+                            onTap: () => onTapGreeting(choice.id),
+                          ),
+                          SizedBox(height: view.height * .018),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkGreetingRewardStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String stickerAsset;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onDone;
+
+  const _G2ParkGreetingRewardStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.stickerAsset,
+    required this.onExit,
+    required this.onReplay,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .12,
+          view.width * .055,
+          view.height * .035,
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    left: view.width * .02,
+                    bottom: view.height * .08,
+                    width: view.width * .26,
+                    height: view.height * .25,
+                    child: const _LessonPictureAsset(
+                      asset:
+                          'assets/images/level_game/people/Tudlo_Park_Friend_Girl_1.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    right: view.width * .03,
+                    bottom: view.height * .08,
+                    width: view.width * .26,
+                    height: view.height * .25,
+                    child: const _LessonPictureAsset(
+                      asset:
+                          'assets/images/level_game/people/Tudlo_Park_Friend_Girl_2.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: view.height * .06,
+                    width: view.width * .30,
+                    height: view.height * .28,
+                    child: const _LessonPictureAsset(
+                      asset:
+                          'assets/images/level_game/people/Tudlo_Park_Friend_Boy.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    top: view.height * .04,
+                    child: TudloMascot(
+                      size: (view.width * .28).clamp(105.0, 150.0),
+                      mood: KokaMood.hi,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onDone,
+                    child: SizedBox(
+                      width: (view.width * .72).clamp(250.0, 380.0),
+                      height: (view.height * .30).clamp(210.0, 295.0),
+                      child: _LessonPictureAsset(
+                        asset: stickerAsset,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_) =>
+                            const _FamilyReferenceBadge(label: 'PANAMYAW\n1'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const _LessonOneMessageCard(
+              message: 'Kabalo ka na mag-greet sa nagkalain-lain nga tion!',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .018),
+            Row(
+              children: [
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ParkTimeCard extends StatelessWidget {
+  final _ParkGreetingTime time;
+  final bool selected;
+
+  const _ParkTimeCard({required this.time, required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFFE8FFD8) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selected ? TudloColors.green : const Color(0xFFD8E8F6),
+          width: 3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .13),
+            blurRadius: 9,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(time.icon, color: time.color, size: 34),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              time.localLabel,
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParkGreetingCard extends StatelessWidget {
+  final String label;
+  final bool correct;
+  final bool wrong;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _ParkGreetingCard({
+    required this.label,
+    required this.correct,
+    required this.wrong,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      correct: correct,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 82,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: correct ? const Color(0xFFE8FFD8) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: correct
+                  ? TudloColors.green
+                  : wrong
+                  ? TudloColors.coral
+                  : TudloColors.blue,
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .14),
+                blurRadius: 8,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 20,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ParkTimeGreetingRow extends StatelessWidget {
+  final _ParkGreetingTime time;
+  final bool reviewed;
+
+  const _ParkTimeGreetingRow({required this.time, required this.reviewed});
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      correct: reviewed,
+      wrong: false,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .94),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: reviewed ? TudloColors.green : const Color(0xFFD8E8F6),
+            width: 3,
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 96,
+              child: _ParkTimeCard(time: time, selected: reviewed),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                time.greeting,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.blue,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+            Icon(
+              reviewed ? Icons.check_circle_rounded : Icons.volume_up_rounded,
+              color: reviewed ? TudloColors.green : TudloColors.blue,
+              size: 34,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ParkTimeDropTarget extends StatelessWidget {
+  final _ParkGreetingTime time;
+  final bool active;
+  final String? greetingId;
+  final bool inputReady;
+  final VoidCallback onSelect;
+  final Future<void> Function(String greetingId) onAccept;
+
+  const _ParkTimeDropTarget({
+    required this.time,
+    required this.active,
+    required this.greetingId,
+    required this.inputReady,
+    required this.onSelect,
+    required this.onAccept,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final locked = greetingId != null;
+    return DragTarget<String>(
+      onWillAcceptWithDetails: (_) => inputReady && !locked,
+      onAcceptWithDetails: (details) {
+        unawaited(onAccept(details.data));
+      },
+      builder: (context, _, __) {
+        return GestureDetector(
+          onTap: inputReady && !locked ? onSelect : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            constraints: const BoxConstraints(minHeight: 98),
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: locked
+                  ? const Color(0xFFE8FFD8)
+                  : active
+                  ? const Color(0xFFFFF5C4)
+                  : Colors.white.withValues(alpha: .92),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: locked
+                    ? TudloColors.green
+                    : active
+                    ? TudloColors.gold
+                    : const Color(0xFFD8E8F6),
+                width: 3,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(time.icon, color: time.color, size: 30),
+                Text(
+                  time.localLabel,
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.blue,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  greetingId == null ? '...' : _parkGreetingLabel(greetingId!),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: locked ? TudloColors.green : TudloColors.blue,
+                    fontSize: 16,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DraggableGreetingCard extends StatelessWidget {
+  final _G2FriendChoice choice;
+  final bool hidden;
+  final bool wrong;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _DraggableGreetingCard({
+    required this.choice,
+    required this.hidden,
+    required this.wrong,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = AnimatedOpacity(
+      duration: const Duration(milliseconds: 160),
+      opacity: hidden ? .22 : 1,
+      child: _ParkGreetingCard(
+        label: choice.label,
+        correct: hidden,
+        wrong: wrong,
+        enabled: enabled && !hidden,
+        onTap: onTap,
+      ),
+    );
+    if (hidden || !enabled) return child;
+    return Draggable<String>(
+      data: choice.id,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(width: 165, child: child),
+      ),
+      childWhenDragging: Opacity(opacity: .35, child: child),
+      child: child,
+    );
+  }
+}
+
+enum _G2ParkDialogueStep {
+  intro,
+  map,
+  findBench,
+  question,
+  chooseAnswer,
+  model,
+  arrange,
+  reward,
+}
+
+class _GradeTwoUnitTwoLessonTwoParkDialogueFlow extends StatefulWidget {
+  final VoidCallback onExit;
+  final void Function(int index, bool correct) onQuizAttempt;
+  final ValueChanged<int> onQuizCorrect;
+
+  const _GradeTwoUnitTwoLessonTwoParkDialogueFlow({
+    required this.onExit,
+    required this.onQuizAttempt,
+    required this.onQuizCorrect,
+  });
+
+  @override
+  State<_GradeTwoUnitTwoLessonTwoParkDialogueFlow> createState() =>
+      _GradeTwoUnitTwoLessonTwoParkDialogueFlowState();
+}
+
+class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
+    extends State<_GradeTwoUnitTwoLessonTwoParkDialogueFlow> {
+  static const _voiceBase = 'audio/VO-final/grade2';
+  static const _backgroundAsset =
+      'assets/images/level_game/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+  static const _anaAsset =
+      'assets/images/level_game/people/Tudlo_Ana_Full_Body_Character_1.svg';
+  static const _anaSmileAsset =
+      'assets/images/level_game/people/Tudlo_Ana_Correct_Response_Smiling.svg';
+  static const _benchAsset =
+      'assets/images/level_game/lesson-game-assets/Tudlo_Park_Wooden_Bench_Exact.svg';
+  static const _stickerAsset =
+      'assets/images/level_game/lesson-game-assets/Tudlo_Panamyaw_2_Dialogue_Star_Completion_Sticker.svg';
+  static const _dialogueOrder = ['how_are_you', 'fine_thank_you'];
+
+  _G2ParkDialogueStep _step = _G2ParkDialogueStep.intro;
+  bool _voicePlaying = false;
+  bool _benchFound = false;
+  bool _questionHeard = false;
+  String? _selectedAnswerId;
+  String? _wrongAnswerId;
+  String? _wrongTileId;
+  bool _completed = false;
+  final List<String?> _dialogueSlots = List<String?>.filled(2, null);
+
+  double get _progress =>
+      (_G2ParkDialogueStep.values.indexOf(_step) + 1) /
+      _G2ParkDialogueStep.values.length;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
+  }
+
+  void _goToStep(_G2ParkDialogueStep step) {
+    if (_step == step) return;
+    unawaited(TudloVoiceButton.stop());
+    setState(() {
+      _step = step;
+      _selectedAnswerId = null;
+      _wrongAnswerId = null;
+      _wrongTileId = null;
+      if (step == _G2ParkDialogueStep.question) _questionHeard = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  Future<void> _playVoice(List<int> clips) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clips) '$_voiceBase/Gr_2_Les_2_2_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
+  }
+
+  Future<void> _speakForStep() async {
+    final clips = switch (_step) {
+      _G2ParkDialogueStep.intro => const [2, 3],
+      _G2ParkDialogueStep.map => const [4, 5],
+      _G2ParkDialogueStep.findBench => const [4],
+      _G2ParkDialogueStep.question => const [6, 7],
+      _G2ParkDialogueStep.chooseAnswer => const [8, 9],
+      _G2ParkDialogueStep.model => const [10],
+      _G2ParkDialogueStep.arrange => const [11, 12],
+      _G2ParkDialogueStep.reward => const [20],
+    };
+    setState(() => _voicePlaying = true);
+    try {
+      await _playVoice(clips);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_step) {
+          _G2ParkDialogueStep.intro =>
+            'Nakita ko si Ana sa Park. Kumustahon ta siya.',
+          _G2ParkDialogueStep.map => 'I-tap ang Park.',
+          _G2ParkDialogueStep.findBench => 'Pangitaa si Ana sa bangko.',
+          _G2ParkDialogueStep.question => 'How are you?',
+          _G2ParkDialogueStep.chooseAnswer =>
+            'Pilia ang husto nga sabat ni Ana.',
+          _G2ParkDialogueStep.model => 'How are you? I am fine, thank you.',
+          _G2ParkDialogueStep.arrange => 'Ihan-ay ang pamangkot kag sabat.',
+          _G2ParkDialogueStep.reward =>
+            'Nahimo mo ang bug-os nga greeting exchange!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+      if (mounted) setState(() => _voicePlaying = false);
+    }
+  }
+
+  Future<void> _tapPark() async {
+    if (_voicePlaying) return;
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 420));
+    if (mounted) _goToStep(_G2ParkDialogueStep.findBench);
+  }
+
+  Future<void> _findBench() async {
+    if (_voicePlaying || _benchFound) return;
+    setState(() => _benchFound = true);
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (mounted) _goToStep(_G2ParkDialogueStep.question);
+  }
+
+  Future<void> _hearQuestion() async {
+    if (_voicePlaying) return;
+    setState(() => _questionHeard = true);
+    await _playVoice(const [6]);
+    if (mounted) _goToStep(_G2ParkDialogueStep.chooseAnswer);
+  }
+
+  Future<void> _chooseAnswer(_G2FriendChoice choice) async {
+    if (_voicePlaying || _selectedAnswerId != null) return;
+    final correct = choice.id == 'fine_thank_you';
+    widget.onQuizAttempt(0, correct);
+    setState(() {
+      _selectedAnswerId = choice.id;
+      _wrongAnswerId = correct ? null : choice.id;
+    });
+    if (!correct) {
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [16]);
+      await Future<void>.delayed(const Duration(milliseconds: 460));
+      if (!mounted) return;
+      setState(() {
+        _selectedAnswerId = null;
+        _wrongAnswerId = null;
+      });
+      return;
+    }
+    widget.onQuizCorrect(0);
+    await AppAudioService.instance.playCorrect();
+    await _playVoice(const [13]);
+    await Future<void>.delayed(const Duration(milliseconds: 520));
+    if (mounted) _goToStep(_G2ParkDialogueStep.model);
+  }
+
+  Future<void> _placeDialogueTile(String tileId, int slotIndex) async {
+    if (_voicePlaying || _dialogueSlots.contains(tileId)) return;
+    setState(() => _dialogueSlots[slotIndex] = tileId);
+    await AppAudioService.instance.playTap();
+    if (_dialogueSlots.any((slot) => slot == null)) return;
+    final correct = List.generate(
+      _dialogueOrder.length,
+      (index) => _dialogueSlots[index] == _dialogueOrder[index],
+    ).every((match) => match);
+    widget.onQuizAttempt(1, correct);
+    if (!correct) {
+      final wrongIds = <String>{
+        for (var index = 0; index < _dialogueOrder.length; index++)
+          if (_dialogueSlots[index] != _dialogueOrder[index])
+            _dialogueSlots[index]!,
+      };
+      setState(() => _wrongTileId = wrongIds.first);
+      await AppAudioService.instance.playWrong();
+      await _playVoice(const [16]);
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      if (!mounted) return;
+      setState(() {
+        for (var index = 0; index < _dialogueSlots.length; index++) {
+          if (_dialogueSlots[index] != _dialogueOrder[index]) {
+            _dialogueSlots[index] = null;
+          }
+        }
+        _wrongTileId = null;
+      });
+      return;
+    }
+    widget.onQuizCorrect(1);
+    await AppAudioService.instance.playCorrect();
+    await _playVoice(const [14, 18]);
+    await Future<void>.delayed(const Duration(milliseconds: 520));
+    if (mounted) _goToStep(_G2ParkDialogueStep.reward);
+  }
+
+  Future<void> _tapDialogueTile(String tileId) async {
+    final slotIndex = _dialogueSlots.indexWhere((slot) => slot == null);
+    if (slotIndex == -1) return;
+    await _placeDialogueTile(tileId, slotIndex);
+  }
+
+  void _finish() {
+    if (_completed) return;
+    _completed = true;
+    for (var index = 0; index < _lessonQuizCount; index++) {
+      widget.onQuizCorrect(index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 520),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: KeyedSubtree(
+        key: ValueKey('g2-u2-l2-$_step'),
+        child: switch (_step) {
+          _G2ParkDialogueStep.intro => _G2ParkDialogueIntroStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2ParkDialogueStep.map),
+          ),
+          _G2ParkDialogueStep.map => _G2ParkDialogueMapStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: _tapPark,
+          ),
+          _G2ParkDialogueStep.findBench => _G2ParkFindAnaStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            benchAsset: _benchAsset,
+            anaAsset: _anaAsset,
+            benchFound: _benchFound,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onFind: _findBench,
+          ),
+          _G2ParkDialogueStep.question => _G2ParkQuestionStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaAsset,
+            questionHeard: _questionHeard,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onQuestion: _hearQuestion,
+          ),
+          _G2ParkDialogueStep.chooseAnswer => _G2ParkAnswerChoiceStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaAsset,
+            selectedId: _selectedAnswerId,
+            wrongId: _wrongAnswerId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onChoose: _chooseAnswer,
+          ),
+          _G2ParkDialogueStep.model => _G2ParkDialogueModelStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaSmileAsset,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(_G2ParkDialogueStep.arrange),
+          ),
+          _G2ParkDialogueStep.arrange => _G2ParkDialogueArrangeStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            slots: _dialogueSlots,
+            wrongTileId: _wrongTileId,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onPlace: _placeDialogueTile,
+            onTapTile: _tapDialogueTile,
+          ),
+          _G2ParkDialogueStep.reward => _G2ParkDialogueRewardStep(
+            progress: _progress,
+            backgroundAsset: _backgroundAsset,
+            anaAsset: _anaSmileAsset,
+            stickerAsset: _stickerAsset,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onDone: _finish,
+          ),
+        },
+      ),
+    );
+  }
+}
+
+class _G2ParkDialogueIntroStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2ParkDialogueIntroStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .15,
+          view.width * .06,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            TudloMascot(
+              size: (view.width * .46).clamp(165.0, 240.0),
+              mood: KokaMood.hi,
+            ),
+            const Spacer(),
+            const _LessonOneMessageCard(
+              message: 'Nakita ko si Ana sa Park. Kumustahon ta siya.',
+            ),
+            SizedBox(height: view.height * .018),
+            _LessonOneBlueButton(
+              label: 'Sige',
+              onTap: inputReady ? onNext : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkDialogueMapStep extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2ParkDialogueMapStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .36,
+            top: view.height * .36,
+            width: view.width * .34,
+            height: view.width * .34,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onNext,
+              child: const _LessonOneMapDestinationCue(),
+            ),
+          ),
+          Positioned(
+            left: view.width * .12,
+            right: view.width * .12,
+            top: view.height * .13,
+            child: const _LessonOneMessageCard(
+              message: 'I-tap ang Park.',
+              compact: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2ParkFindAnaStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String benchAsset;
+  final String anaAsset;
+  final bool benchFound;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onFind;
+
+  const _G2ParkFindAnaStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.benchAsset,
+    required this.anaAsset,
+    required this.benchFound,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onFind,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .08,
+            right: view.width * .08,
+            top: view.height * .14,
+            child: const _LessonOneMessageCard(
+              message: 'Pangitaa si Ana sa bangko.',
+              compact: true,
+            ),
+          ),
+          Positioned(
+            left: view.width * .12,
+            right: view.width * .12,
+            bottom: view.height * .23,
+            height: view.height * .22,
+            child: GestureDetector(
+              onTap: inputReady ? onFind : null,
+              child: _FeedbackMotion(
+                correct: benchFound,
+                wrong: false,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (!benchFound)
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          boxShadow: [
+                            BoxShadow(
+                              color: TudloColors.gold.withValues(alpha: .65),
+                              blurRadius: 28,
+                              spreadRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                    _LessonPictureAsset(asset: benchAsset, fit: BoxFit.contain),
+                    if (benchFound)
+                      Positioned(
+                        right: view.width * .04,
+                        bottom: view.height * .08,
+                        width: view.width * .34,
+                        height: view.height * .34,
+                        child: _LessonPictureAsset(
+                          asset: anaAsset,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    if (!benchFound)
+                      Positioned(
+                        left: view.width * .08,
+                        bottom: view.height * .05,
+                        child: const _FamilyTapCue(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G2ParkQuestionStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final bool questionHeard;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onQuestion;
+
+  const _G2ParkQuestionStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.questionHeard,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onQuestion,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .13,
+          view.width * .055,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: inputReady ? onQuestion : null,
+              child: _FeedbackMotion(
+                correct: questionHeard,
+                wrong: false,
+                child: const _LessonOneMessageCard(
+                  message: 'How are you?',
+                  compact: true,
+                ),
+              ),
+            ),
+            const Spacer(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TudloMascot(
+                  size: (view.width * .36).clamp(130.0, 190.0),
+                  mood: KokaMood.hi,
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: view.width * .38,
+                  height: view.height * .42,
+                  child: _LessonPictureAsset(
+                    asset: anaAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkAnswerChoiceStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final String? selectedId;
+  final String? wrongId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(_G2FriendChoice choice) onChoose;
+
+  const _G2ParkAnswerChoiceStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.selectedId,
+    required this.wrongId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onChoose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    const choices = [
+      _G2FriendChoice('fine_thank_you', "I'm fine, thank you."),
+      _G2FriendChoice('my_name_is_ana', 'My name is Ana.'),
+      _G2FriendChoice('good_evening', 'Good evening.'),
+    ];
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .12,
+          view.width * .055,
+          view.height * .035,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'Ano ang husto nga sabat?',
+              compact: true,
+            ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  TudloMascot(
+                    size: (view.width * .34).clamp(120.0, 175.0),
+                    mood: KokaMood.hi,
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: view.width * .44,
+                    height: view.height * .42,
+                    child: _LessonPictureAsset(
+                      asset: anaAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final choice in choices) ...[
+              _ParkGreetingCard(
+                label: choice.label,
+                correct:
+                    selectedId == choice.id && choice.id == 'fine_thank_you',
+                wrong: wrongId == choice.id,
+                enabled: inputReady && selectedId == null,
+                onTap: () => onChoose(choice),
+              ),
+              SizedBox(height: view.height * .012),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkDialogueModelStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _G2ParkDialogueModelStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .13,
+          view.width * .055,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(message: 'How are you?', compact: true),
+            SizedBox(height: view.height * .02),
+            const _LessonOneMessageCard(
+              message: "I'm fine, thank you.",
+              compact: true,
+            ),
+            const Spacer(),
+            SizedBox(
+              width: view.width * .48,
+              height: view.height * .42,
+              child: _LessonPictureAsset(asset: anaAsset, fit: BoxFit.contain),
+            ),
+            const Spacer(),
+            _LessonOneBlueButton(
+              label: 'Ihan-ay',
+              onTap: inputReady ? onNext : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkDialogueArrangeStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final List<String?> slots;
+  final String? wrongTileId;
+  final bool inputReady;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(String tileId, int slotIndex) onPlace;
+  final Future<void> Function(String tileId) onTapTile;
+
+  const _G2ParkDialogueArrangeStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.slots,
+    required this.wrongTileId,
+    required this.inputReady,
+    required this.onExit,
+    required this.onReplay,
+    required this.onPlace,
+    required this.onTapTile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .12,
+          view.width * .055,
+          view.height * .035,
+        ),
+        child: Column(
+          children: [
+            const _LessonOneMessageCard(
+              message: 'Ihan-ay ang pamangkot kag sabat.',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .03),
+            _G2ParkDialogueTray(slots: slots, onPlace: onPlace),
+            const Spacer(),
+            Row(
+              children: [
+                for (final tile in const [
+                  _G2FriendChoice('fine_thank_you', "I'm fine, thank you."),
+                  _G2FriendChoice('how_are_you', 'How are you?'),
+                ])
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: _G2ParkDialogueTile(
+                        tile: tile,
+                        hidden: slots.contains(tile.id),
+                        wrong: wrongTileId == tile.id,
+                        enabled: inputReady,
+                        onTap: () => onTapTile(tile.id),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkDialogueRewardStep extends StatelessWidget {
+  final double progress;
+  final String backgroundAsset;
+  final String anaAsset;
+  final String stickerAsset;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onDone;
+
+  const _G2ParkDialogueRewardStep({
+    required this.progress,
+    required this.backgroundAsset,
+    required this.anaAsset,
+    required this.stickerAsset,
+    required this.onExit,
+    required this.onReplay,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G2ParkScene(
+      progress: progress,
+      backgroundAsset: backgroundAsset,
+      time: null,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .055,
+          view.height * .12,
+          view.width * .055,
+          view.height * .035,
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    left: view.width * .02,
+                    bottom: view.height * .10,
+                    child: TudloMascot(
+                      size: (view.width * .34).clamp(125.0, 180.0),
+                      mood: KokaMood.hi,
+                    ),
+                  ),
+                  Positioned(
+                    right: view.width * .02,
+                    bottom: view.height * .08,
+                    width: view.width * .36,
+                    height: view.height * .38,
+                    child: _LessonPictureAsset(
+                      asset: anaAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onDone,
+                    child: SizedBox(
+                      width: (view.width * .74).clamp(260.0, 390.0),
+                      height: (view.height * .30).clamp(210.0, 295.0),
+                      child: _LessonPictureAsset(
+                        asset: stickerAsset,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_) =>
+                            const _FamilyReferenceBadge(label: 'PANAMYAW\n2'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const _LessonOneMessageCard(
+              message: 'Nahimo mo ang bug-os nga greeting exchange!',
+              compact: true,
+            ),
+            SizedBox(height: view.height * .018),
+            Row(
+              children: [
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Balika', onTap: onReplay),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G2ParkDialogueTray extends StatelessWidget {
+  final List<String?> slots;
+  final Future<void> Function(String tileId, int slotIndex) onPlace;
+
+  const _G2ParkDialogueTray({required this.slots, required this.onPlace});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .82),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: TudloColors.green, width: 3),
+      ),
+      child: Column(
+        children: [
+          for (var index = 0; index < slots.length; index++) ...[
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: TudloColors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontSize: 24,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: DragTarget<String>(
+                    onWillAcceptWithDetails: (_) => slots[index] == null,
+                    onAcceptWithDetails: (details) {
+                      unawaited(onPlace(details.data, index));
+                    },
+                    builder: (context, _, __) {
+                      final label = _g2ParkDialogueTileLabel(slots[index]);
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        height: (width * .16).clamp(58.0, 74.0),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: label == null
+                              ? Colors.white.withValues(alpha: .60)
+                              : const Color(0xFFE5FFD5),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: label == null
+                                ? const Color(0xFFB8B8B8)
+                                : TudloColors.green,
+                            width: 2.5,
+                          ),
+                        ),
+                        child: Text(
+                          label ?? '',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.nunito(
+                            color: TudloColors.blue,
+                            fontSize: 19,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (index != slots.length - 1) const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _G2ParkDialogueTile extends StatelessWidget {
+  final _G2FriendChoice tile;
+  final bool hidden;
+  final bool wrong;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _G2ParkDialogueTile({
+    required this.tile,
+    required this.hidden,
+    required this.wrong,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = _FeedbackMotion(
+      correct: false,
+      wrong: wrong,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: hidden ? .24 : 1,
+        child: GestureDetector(
+          onTap: enabled && !hidden ? onTap : null,
+          child: Container(
+            height: 76,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: wrong ? TudloColors.coral : TudloColors.blue,
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: TudloColors.blue.withValues(alpha: .18),
+                  blurRadius: 0,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Text(
+              tile.label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 18,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (hidden || !enabled) return child;
+    return Draggable<String>(
+      data: tile.id,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(width: 170, child: child),
+      ),
+      childWhenDragging: Opacity(opacity: .35, child: child),
+      child: child,
+    );
+  }
+}
+
+String? _g2ParkDialogueTileLabel(String? id) {
+  return switch (id) {
+    'how_are_you' => 'How are you?',
+    'fine_thank_you' => "I'm fine, thank you.",
+    _ => null,
+  };
 }
 
 class _GradeTwoTalkBuildSolveLesson extends StatefulWidget {
@@ -5238,7 +10404,7 @@ class _GradeOneUnitOneLessonOneFlow extends StatefulWidget {
 
 class _GradeOneUnitOneLessonOneFlowState
     extends State<_GradeOneUnitOneLessonOneFlow> {
-  static const _voiceBase = 'audio/VO-final';
+  static const _voiceBase = 'audio/VO-final/grade1';
   static const _letters = ['A', 'N', 'T'];
   static const _choiceQuestions = [
     _LessonOneChoiceQuestion(
@@ -6278,12 +11444,12 @@ class _LessonOneRewardStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _LessonOneBlackboardLetters(),
-            const Spacer(),
+            SizedBox(height: view.height * .13),
             _LessonOneSticker(
-              size: (view.width * .66).clamp(230.0, 340.0),
+              size: (view.width * .88).clamp(300.0, 450.0),
               onTap: onDone,
             ),
+            const Spacer(),
             SizedBox(height: view.height * .02),
             _LessonOneMessageCard(message: 'Yehey! Nabalik na ang mga letra!'),
             SizedBox(height: view.height * .02),
@@ -6763,33 +11929,6 @@ class _LessonOneDraggableLetter extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           child: _IntroLetterArt(letter: letter, size: size),
         ),
-      ),
-    );
-  }
-}
-
-class _LessonOneBlackboardLetters extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E7A65).withValues(alpha: .90),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFB8793A), width: 5),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          for (final letter in const ['A', 'N', 'T']) ...[
-            _ClassroomLetterTraySlot(
-              letter: letter,
-              size: (width * .16).clamp(58.0, 84.0),
-            ),
-            if (letter != 'T') const SizedBox(width: 12),
-          ],
-        ],
       ),
     );
   }
@@ -9016,6 +14155,7 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlow extends StatefulWidget {
 
 class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
     extends State<_GradeOneUnitTwoLessonOneFamilyReferenceFlow> {
+  static const _voiceBase = 'audio/VO-final/grade1';
   static const _members = [
     _FamilyWord(
       hil: 'nanay',
@@ -9041,9 +14181,11 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
   final Set<String> _learned = {};
   String? _activeChoice;
   String? _wrongChoice;
+  final Map<String, String> _labelMatches = {};
+  String? _wrongLabel;
   bool _completed = false;
 
-  double get _progress => (_stepIndex + 1) / 6;
+  double get _progress => (_stepIndex + 1) / 8;
 
   @override
   void initState() {
@@ -9060,50 +14202,87 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
   }
 
   void _goToStep(int index) {
-    final next = index.clamp(0, 5);
+    final next = index.clamp(0, 7);
     if (next == _stepIndex) return;
     unawaited(TudloVoiceButton.stop());
     setState(() {
       _stepIndex = next;
       _activeChoice = null;
       _wrongChoice = null;
+      _wrongLabel = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _speakForStep();
     });
   }
 
+  Future<void> _playFamilyVoice(List<int> clips) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clips) '$_voiceBase/Gr_1_Les_2_1_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
+  }
+
   Future<void> _speakForStep() async {
-    await TudloVoiceButton.speak(
-      context,
-      switch (_stepIndex) {
-        0 => 'May bag-o ako nga litrato!',
-        1 => 'I-tap ang balay sa mapa. Didto ta magkilala sang pamilya.',
-        2 => 'Kilalahon ta ang pamilya.',
-        3 => 'Pangitaa si nanay.',
-        4 => 'Sino ang bata?',
-        _ => 'Yehey! Kompleto na ang litrato!',
-      },
-      hiligaynon: true,
-      waitForCompletion: true,
-    );
+    final clips = switch (_stepIndex) {
+      0 => const [2],
+      1 => const [3],
+      2 => const [3],
+      3 => const [4, 5, 6, 7],
+      4 => const [8],
+      5 => const [12, 13],
+      6 => const [15],
+      _ => const [17],
+    };
+    try {
+      await _playFamilyVoice(clips);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_stepIndex) {
+          0 => 'May bag-o ako nga litrato!',
+          1 => 'I-tap ang litrato agod magsugod.',
+          2 => 'Tap ang Balay ni Koka.',
+          3 => 'Kilalahon ta ang pamilya.',
+          4 => 'Pangitaa si nanay.',
+          5 => 'Sino ang bata?',
+          6 => 'Ipares ang mga ngalan.',
+          _ => 'Yehey! Kompleto na ang litrato!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+    }
+  }
+
+  int _memberVoiceClip(_FamilyWord member) {
+    return switch (member.hil) {
+      'nanay' => 4,
+      'tatay' => 5,
+      'bata' => 6,
+      _ => 7,
+    };
   }
 
   Future<void> _learnMember(_FamilyWord member) async {
-    if (_learned.contains(member.hil)) return;
+    if (_learned.contains(member.hil)) {
+      await _playFamilyVoice([_memberVoiceClip(member)]);
+      return;
+    }
     await AppAudioService.instance.playCorrect();
     if (!mounted) return;
     setState(() => _learned.add(member.hil));
-    await TudloVoiceButton.speak(
-      context,
-      '${member.hil}. ${member.eng}.',
-      hiligaynon: true,
-      waitForCompletion: true,
-    );
+    await _playFamilyVoice([_memberVoiceClip(member)]);
     if (!mounted) return;
     if (_learned.length == _members.length) {
+      await _playFamilyVoice(const [7]);
       await Future<void>.delayed(const Duration(milliseconds: 650));
-      if (mounted) _goToStep(3);
+      if (mounted) _goToStep(4);
     }
   }
 
@@ -9126,17 +14305,53 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
     if (!mounted) return;
     if (correct) {
       widget.onQuizCorrect(quizIndex);
+      await _playFamilyVoice([answer == 'bata' ? 14 : 9]);
       await Future<void>.delayed(const Duration(milliseconds: 760));
       if (mounted) _goToStep(nextStep);
       return;
     }
-    await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
+    await _playFamilyVoice(answer == 'nanay' ? const [10, 11] : const [10]);
     await Future<void>.delayed(const Duration(milliseconds: 520));
     if (!mounted) return;
     setState(() {
       _activeChoice = null;
       _wrongChoice = null;
     });
+  }
+
+  Future<void> _placeLabel(String slotHil, String labelHil) async {
+    if (_labelMatches.containsKey(slotHil) ||
+        _labelMatches.containsValue(labelHil) ||
+        _wrongLabel != null) {
+      return;
+    }
+    final correct = slotHil == labelHil;
+    widget.onQuizAttempt(2, correct);
+    if (!correct) {
+      setState(() => _wrongLabel = labelHil);
+      await AppAudioService.instance.playWrong();
+      await _playFamilyVoice(const [16]);
+      await Future<void>.delayed(const Duration(milliseconds: 520));
+      if (mounted) setState(() => _wrongLabel = null);
+      return;
+    }
+
+    setState(() => _labelMatches[slotHil] = labelHil);
+    await AppAudioService.instance.playCorrect();
+    await _playFamilyVoice([_memberVoiceClip(_memberForHil(labelHil))]);
+    if (!mounted) return;
+    if (_members.every((member) => _labelMatches[member.hil] == member.hil)) {
+      widget.onQuizCorrect(2);
+      await Future<void>.delayed(const Duration(milliseconds: 720));
+      if (mounted) _goToStep(7);
+    }
+  }
+
+  _FamilyWord _memberForHil(String hil) {
+    return _members.firstWhere(
+      (member) => member.hil == hil,
+      orElse: () => _members.first,
+    );
   }
 
   void _finishLesson() {
@@ -9158,17 +14373,24 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
         child: switch (_stepIndex) {
           0 => _FamilyReferenceIntroStep(
             progress: _progress,
+            showCoveredPhoto: true,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onNext: () => _goToStep(1),
           ),
-          1 => _FamilyReferenceMapStep(
+          1 => _FamilyPhotoRevealStep(
             progress: _progress,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onNext: () => _goToStep(2),
           ),
-          2 => _FamilyReferenceLearnStep(
+          2 => _FamilyReferenceMapStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(3),
+          ),
+          3 => _FamilyReferenceLearnStep(
             progress: _progress,
             learned: _learned,
             members: _members,
@@ -9178,7 +14400,7 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
             onReplay: _speakForStep,
             onTap: _learnMember,
           ),
-          3 => _FamilyReferenceFindStep(
+          4 => _FamilyReferenceFindStep(
             progress: _progress,
             members: _members,
             prompt: 'Pangitaa si nanay.',
@@ -9191,10 +14413,10 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
               member: member,
               answer: 'nanay',
               quizIndex: 0,
-              nextStep: 4,
+              nextStep: 5,
             ),
           ),
-          4 => _FamilyReferenceFindStep(
+          5 => _FamilyReferenceFindStep(
             progress: _progress,
             members: _members,
             prompt: 'Sino ang bata?',
@@ -9207,8 +14429,19 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
               member: member,
               answer: 'bata',
               quizIndex: 1,
-              nextStep: 5,
+              nextStep: 6,
             ),
+          ),
+          6 => _FamilyLabelMatchingStep(
+            progress: _progress,
+            members: _members,
+            matches: _labelMatches,
+            wrongLabel: _wrongLabel,
+            portraitAsset:
+                'assets/images/level_game/people/family-portrait.svg',
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onPlace: _placeLabel,
           ),
           _ => _FamilyReferenceRewardStep(
             progress: _progress,
@@ -9218,6 +14451,7 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finishLesson,
+            buttonLabel: 'Kolektahon',
           ),
         },
       ),
@@ -9662,6 +14896,7 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
   final double progress;
   final String message;
   final String backgroundAsset;
+  final bool showCoveredPhoto;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onNext;
@@ -9671,6 +14906,7 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
     this.message = 'May bag-o ako nga litrato!',
     this.backgroundAsset =
         'assets/images/level_game/backgrounds/lesson2-popup.svg',
+    this.showCoveredPhoto = false,
     required this.onExit,
     required this.onReplay,
     required this.onNext,
@@ -9687,14 +14923,25 @@ class _FamilyReferenceIntroStep extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            left: view.width * .22,
-            right: view.width * .22,
-            top: view.height * .18,
-            child: TudloMascot(
-              size: (view.width * .42).clamp(150.0, 215.0),
-              mood: KokaMood.hi,
-            ),
+            left: showCoveredPhoto ? view.width * .08 : view.width * .22,
+            right: showCoveredPhoto ? view.width * .08 : view.width * .22,
+            top: showCoveredPhoto ? view.height * .16 : view.height * .18,
+            child: showCoveredPhoto
+                ? const _CoveredFamilyPhoto(revealed: false)
+                : TudloMascot(
+                    size: (view.width * .42).clamp(150.0, 215.0),
+                    mood: KokaMood.hi,
+                  ),
           ),
+          if (showCoveredPhoto)
+            Positioned(
+              left: view.width * .07,
+              bottom: view.height * .30,
+              child: TudloMascot(
+                size: (view.width * .36).clamp(130.0, 190.0),
+                mood: KokaMood.hi,
+              ),
+            ),
           Positioned(
             left: view.width * .07,
             right: view.width * .07,
@@ -9731,6 +14978,255 @@ class _FamilyReferencePortraitImage extends StatelessWidget {
         Icons.family_restroom_rounded,
         color: TudloColors.forest,
         size: height * .42,
+      ),
+    );
+  }
+}
+
+class _FamilyPhotoRevealStep extends StatefulWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _FamilyPhotoRevealStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  State<_FamilyPhotoRevealStep> createState() => _FamilyPhotoRevealStepState();
+}
+
+class _FamilyPhotoRevealStepState extends State<_FamilyPhotoRevealStep>
+    with SingleTickerProviderStateMixin {
+  bool _revealed = false;
+
+  Future<void> _reveal() async {
+    if (_revealed) return;
+    setState(() => _revealed = true);
+    await AppAudioService.instance.playCorrect();
+    await Future<void>.delayed(const Duration(milliseconds: 850));
+    if (mounted) widget.onNext();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final top = MediaQuery.paddingOf(context).top;
+    return _LessonOneChrome(
+      progress: widget.progress,
+      onExit: widget.onExit,
+      onReplay: widget.onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/house.svg',
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .08,
+            right: view.width * .08,
+            top: top + view.height * .12,
+            child: _LessonOneMessageCard(message: 'I-tap ang litrato.'),
+          ),
+          Positioned(
+            left: view.width * .10,
+            right: view.width * .10,
+            top: view.height * .24,
+            child: GestureDetector(
+              onTap: _reveal,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  _CoveredFamilyPhoto(revealed: _revealed),
+                  if (!_revealed)
+                    Positioned(
+                      right: view.width * .08,
+                      bottom: view.height * .02,
+                      child: const _FamilyTapCue(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: view.width * .06,
+            bottom: view.height * .18,
+            child: TudloMascot(
+              size: (view.width * .34).clamp(125.0, 180.0),
+              mood: KokaMood.hi,
+            ),
+          ),
+          Positioned(
+            left: view.width * .08,
+            right: view.width * .08,
+            bottom: view.height * .06,
+            child: _LessonOneMessageCard(
+              message: _revealed
+                  ? 'Ari na ang litrato!'
+                  : 'I-tap ang litrato agod magsugod.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoveredFamilyPhoto extends StatelessWidget {
+  final bool revealed;
+
+  const _CoveredFamilyPhoto({required this.revealed});
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final height = (view.height * .26).clamp(170.0, 250.0);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 360),
+      height: height,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E6).withValues(alpha: .96),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFB47A38), width: 5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedOpacity(
+            opacity: revealed ? 1 : .0,
+            duration: const Duration(milliseconds: 320),
+            child: const _LessonPictureAsset(
+              asset: 'assets/images/level_game/people/family-portrait.svg',
+              fit: BoxFit.contain,
+            ),
+          ),
+          AnimatedOpacity(
+            opacity: revealed ? 0 : 1,
+            duration: const Duration(milliseconds: 320),
+            child: CustomPaint(painter: _CoveredPhotoPainter()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoveredPhotoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cloth = Paint()..color = const Color(0xFFF6EAD4);
+    final shadow = Paint()..color = const Color(0xFFD7C8AE);
+    final silhouette = Paint()
+      ..color = const Color(0xFFBEB39E).withValues(alpha: .55);
+    final path = Path()
+      ..moveTo(size.width * .06, size.height * .12)
+      ..quadraticBezierTo(
+        size.width * .50,
+        0,
+        size.width * .94,
+        size.height * .12,
+      )
+      ..lineTo(size.width * .90, size.height * .86)
+      ..quadraticBezierTo(
+        size.width * .50,
+        size.height,
+        size.width * .10,
+        size.height * .86,
+      )
+      ..close();
+    canvas.drawPath(path, cloth);
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * .14, size.height * .18)
+        ..quadraticBezierTo(
+          size.width * .50,
+          size.height * .07,
+          size.width * .86,
+          size.height * .18,
+        )
+        ..lineTo(size.width * .84, size.height * .25)
+        ..quadraticBezierTo(
+          size.width * .50,
+          size.height * .14,
+          size.width * .16,
+          size.height * .25,
+        )
+        ..close(),
+      shadow,
+    );
+    for (final center in [
+      Offset(size.width * .34, size.height * .52),
+      Offset(size.width * .50, size.height * .47),
+      Offset(size.width * .66, size.height * .52),
+    ]) {
+      canvas.drawCircle(center, size.width * .055, silhouette);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: center.translate(0, size.height * .13),
+            width: size.width * .16,
+            height: size.height * .19,
+          ),
+          const Radius.circular(24),
+        ),
+        silhouette,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _FamilyTapCue extends StatefulWidget {
+  const _FamilyTapCue();
+
+  @override
+  State<_FamilyTapCue> createState() => _FamilyTapCueState();
+}
+
+class _FamilyTapCueState extends State<_FamilyTapCue>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(
+        begin: .92,
+        end: 1.08,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
+      child: Icon(
+        Icons.touch_app_rounded,
+        color: const Color(0xFFFFB323),
+        size: MediaQuery.sizeOf(context).width * .17,
+        shadows: [
+          Shadow(color: Colors.white.withValues(alpha: .9), blurRadius: 8),
+        ],
       ),
     );
   }
@@ -10041,6 +15537,7 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
   final String? portraitAsset;
   final String message;
   final String badgeLabel;
+  final String buttonLabel;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onDone;
@@ -10051,6 +15548,7 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
     this.portraitAsset,
     this.message = 'Yehey! Kompleto na ang litrato!',
     this.badgeLabel = 'Family\nFriend',
+    this.buttonLabel = 'Padayon',
     required this.onExit,
     required this.onReplay,
     required this.onDone,
@@ -10088,7 +15586,7 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
             SizedBox(height: view.height * .02),
             _LessonOneMessageCard(message: message),
             SizedBox(height: view.height * .02),
-            _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
+            _LessonOneBlueButton(label: buttonLabel, onTap: onDone),
           ],
         ),
       ),
@@ -10355,6 +15853,285 @@ class _FamilyReferenceMatchingStep extends StatelessWidget {
   }
 }
 
+class _FamilyLabelMatchingStep extends StatelessWidget {
+  final double progress;
+  final List<_FamilyWord> members;
+  final Map<String, String> matches;
+  final String? wrongLabel;
+  final String portraitAsset;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(String slotHil, String labelHil) onPlace;
+
+  const _FamilyLabelMatchingStep({
+    required this.progress,
+    required this.members,
+    required this.matches,
+    required this.wrongLabel,
+    required this.portraitAsset,
+    required this.onExit,
+    required this.onReplay,
+    required this.onPlace,
+  });
+
+  List<_FamilyWord> get _slotMembers {
+    final byName = {for (final member in members) member.hil: member};
+    return [
+      if (byName['nanay'] != null) byName['nanay']!,
+      if (byName['bata'] != null) byName['bata']!,
+      if (byName['tatay'] != null) byName['tatay']!,
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final top = MediaQuery.paddingOf(context).top;
+    final slots = _slotMembers;
+    final available = members
+        .where((member) => !matches.containsValue(member.hil))
+        .toList(growable: false);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/house.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .045,
+          top + view.height * .12,
+          view.width * .045,
+          view.height * .035,
+        ),
+        child: Column(
+          children: [
+            _LessonOneMessageCard(message: 'Ipares ang mga ngalan.'),
+            SizedBox(height: view.height * .018),
+            Expanded(
+              child: _FamilyLabelPhotoBoard(
+                members: slots,
+                matches: matches,
+                portraitAsset: portraitAsset,
+                onPlace: onPlace,
+              ),
+            ),
+            SizedBox(height: view.height * .018),
+            Row(
+              children: [
+                for (final member in members)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: _FamilyLabelTile(
+                        member: member,
+                        hidden: !available.contains(member),
+                        wrong: wrongLabel == member.hil,
+                        onTap: () {
+                          final target = slots.firstWhere(
+                            (slot) => !matches.containsKey(slot.hil),
+                            orElse: () => member,
+                          );
+                          onPlace(target.hil, member.hil);
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FamilyLabelPhotoBoard extends StatelessWidget {
+  final List<_FamilyWord> members;
+  final Map<String, String> matches;
+  final String portraitAsset;
+  final Future<void> Function(String slotHil, String labelHil) onPlace;
+
+  const _FamilyLabelPhotoBoard({
+    required this.members,
+    required this.matches,
+    required this.portraitAsset,
+    required this.onPlace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E6).withValues(alpha: .95),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFD2B171), width: 5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .16),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: _LessonPictureAsset(
+              asset: portraitAsset,
+              fit: BoxFit.contain,
+              errorBuilder: (_) => Icon(
+                Icons.family_restroom_rounded,
+                color: TudloColors.forest,
+                size: view.width * .24,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (final member in members)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _FamilyLabelSlot(
+                      member: member,
+                      label: matches[member.hil],
+                      onAccept: (labelHil) => onPlace(member.hil, labelHil),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FamilyLabelSlot extends StatelessWidget {
+  final _FamilyWord member;
+  final String? label;
+  final Future<void> Function(String labelHil) onAccept;
+
+  const _FamilyLabelSlot({
+    required this.member,
+    required this.label,
+    required this.onAccept,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = label != null;
+    return DragTarget<String>(
+      onWillAcceptWithDetails: (_) => !filled,
+      onAcceptWithDetails: (details) => onAccept(details.data),
+      builder: (context, _, __) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: filled
+                ? const Color(0xFFE5FFD5)
+                : Colors.white.withValues(alpha: .72),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(
+              color: filled ? TudloColors.green : const Color(0xFFB8B8B8),
+              width: 3,
+              strokeAlign: BorderSide.strokeAlignInside,
+            ),
+          ),
+          child: Text(
+            filled ? label! : '',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.nunito(
+              color: TudloColors.blue,
+              fontSize: 18,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FamilyLabelTile extends StatelessWidget {
+  final _FamilyWord member;
+  final bool hidden;
+  final bool wrong;
+  final VoidCallback onTap;
+
+  const _FamilyLabelTile({
+    required this.member,
+    required this.hidden,
+    required this.wrong,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = _FeedbackMotion(
+      correct: hidden,
+      wrong: wrong,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: hidden ? 0 : 1,
+        child: GestureDetector(
+          onTap: hidden ? null : onTap,
+          child: Container(
+            height: 64,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: wrong ? TudloColors.coral : TudloColors.blue,
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: TudloColors.blue.withValues(alpha: .18),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Text(
+              member.hil,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 23,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (hidden) return IgnorePointer(child: tile);
+    return Draggable<String>(
+      data: member.hil,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(width: 110, child: tile),
+      ),
+      childWhenDragging: Opacity(opacity: .35, child: tile),
+      child: tile,
+    );
+  }
+}
+
 class _FamilyReferencePhotoActivityStep extends StatelessWidget {
   final double progress;
   final List<_FamilyWord> members;
@@ -10455,6 +16232,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlow extends StatefulWidget {
 
 class _GradeOneUnitTwoLessonFourPicnicFlowState
     extends State<_GradeOneUnitTwoLessonFourPicnicFlow> {
+  static const _voiceBase = 'audio/VO-final/grade1';
   static const _members = [
     _FamilyWord(
       hil: 'nanay',
@@ -10493,9 +16271,10 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
   final Set<String> _pickedGrandparents = {};
   final Map<String, String> _picnicSlots = {};
   String? _wrongChoice;
+  String? _wrongSeat;
   bool _completed = false;
 
-  double get _progress => (_stepIndex + 1) / 6;
+  double get _progress => (_stepIndex + 1) / 8;
 
   @override
   void initState() {
@@ -10512,12 +16291,13 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
   }
 
   void _goToStep(int index) {
-    final next = index.clamp(0, 5);
+    final next = index.clamp(0, 7);
     if (next == _stepIndex) return;
     unawaited(TudloVoiceButton.stop());
     setState(() {
       _stepIndex = next;
       _wrongChoice = null;
+      _wrongSeat = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _speakForStep();
@@ -10525,32 +16305,69 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
   }
 
   Future<void> _speakForStep() async {
-    await TudloVoiceButton.speak(
-      context,
-      switch (_stepIndex) {
-        0 => 'Nagtipon ang pamilya sa picnic!',
-        1 => 'I-tap ang picnic sa mapa.',
-        2 => 'Sin-o ang mother kag father?',
-        3 => 'Pangitaa si lola kag si lolo.',
-        4 => 'Ibutang sila sa ilanga lugar.',
-        _ => 'Kompleto na ang pamilya ni Koka!',
-      },
-      hiligaynon: true,
-      waitForCompletion: true,
-    );
+    final clips = switch (_stepIndex) {
+      0 => const [2],
+      1 => const [3],
+      2 => const [4],
+      3 => const [5],
+      4 => const [8],
+      5 => const [9],
+      6 => const [12, 13],
+      _ => const [15],
+    };
+    try {
+      await _playPicnicVoice(clips);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_stepIndex) {
+          0 => 'Nagtipon ang pamilya sa picnic!',
+          1 => 'I-tap ang Park sa mapa.',
+          2 => 'Kilalahon ta sila.',
+          3 => 'Sin-o ang mother kag father?',
+          4 => 'Husto! Nanay kag tatay.',
+          5 => 'Pangitaa si lola kag si lolo.',
+          6 => 'Ibutang sila sa husto nga pulungkuan.',
+          _ => 'Kompleto na ang pamilya ni Koka!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+    }
+  }
+
+  Future<void> _playPicnicVoice(List<int> clips) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clips) '$_voiceBase/Gr_1_Les_2_4_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
   }
 
   _FamilyWord _member(String hil) =>
       _members.firstWhere((member) => member.hil == hil);
 
   Future<void> _chooseFamilyMember(_FamilyWord member) async {
-    final required = _stepIndex == 2
-        ? const {'nanay', 'tatay'}
-        : const {'lola', 'lolo'};
-    final selected = _stepIndex == 2 ? _pickedFamily : _pickedGrandparents;
+    final required = _stepIndex == 3
+        ? const ['nanay', 'tatay']
+        : const ['lola', 'lolo'];
+    final selected = _stepIndex == 3 ? _pickedFamily : _pickedGrandparents;
     if (selected.contains(member.hil)) return;
 
     final correct = required.contains(member.hil);
+    final expected = required.elementAt(selected.length);
+    if (correct && member.hil != expected) {
+      setState(() => _wrongChoice = member.hil);
+      await AppAudioService.instance.playWrong();
+      await _playPicnicVoice(const [16]);
+      await Future<void>.delayed(const Duration(milliseconds: 520));
+      if (mounted) setState(() => _wrongChoice = null);
+      return;
+    }
     final quizIndex = switch (member.hil) {
       'nanay' => 0,
       'tatay' => 1,
@@ -10567,6 +16384,15 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
       });
       widget.onQuizCorrect(quizIndex);
       await AppAudioService.instance.playCorrect();
+      await _playPicnicVoice([
+        member.hil == 'nanay'
+            ? 5
+            : member.hil == 'tatay'
+            ? 6
+            : member.hil == 'lola'
+            ? 8
+            : 9,
+      ]);
       if (!mounted) return;
       if (selected.length == required.length) {
         await Future<void>.delayed(const Duration(milliseconds: 780));
@@ -10577,19 +16403,24 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
 
     setState(() => _wrongChoice = member.hil);
     await AppAudioService.instance.playWrong();
-    if (!mounted) return;
-    await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
+    await _playPicnicVoice(const [16]);
     await Future<void>.delayed(const Duration(milliseconds: 520));
     if (mounted) setState(() => _wrongChoice = null);
   }
 
   Future<void> _placePicnicMember(String slot, String value) async {
+    if (_picnicSlots.containsKey(slot) ||
+        _picnicSlots.containsValue(value) ||
+        _wrongSeat != null) {
+      return;
+    }
     final correct = slot == value;
     widget.onQuizAttempt(4, correct);
     if (!correct) {
+      setState(() => _wrongSeat = value);
       await AppAudioService.instance.playWrong();
-      if (!mounted) return;
-      await TudloVoiceButton.speak(context, 'Suliton liwat.', hiligaynon: true);
+      await _playPicnicVoice(const [16]);
+      if (mounted) setState(() => _wrongSeat = null);
       return;
     }
 
@@ -10599,7 +16430,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
     if (_picnicSlots.length == 3) {
       widget.onQuizCorrect(4);
       await Future<void>.delayed(const Duration(milliseconds: 700));
-      if (mounted) _goToStep(5);
+      if (mounted) _goToStep(7);
     }
   }
 
@@ -10632,30 +16463,45 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
             onReplay: _speakForStep,
             onNext: () => _goToStep(2),
           ),
-          2 => _PicnicMemberGridStep(
+          2 => _PicnicSceneScanStep(
             progress: _progress,
             members: _members,
-            prompt: 'Sin-o ang mother kag father?',
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(3),
+          ),
+          3 => _PicnicMemberGridStep(
+            progress: _progress,
+            members: _members,
+            prompt: 'I-tap si nanay, dayon si tatay.',
             selected: _pickedFamily,
             wrongChoice: _wrongChoice,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onChoose: _chooseFamilyMember,
           ),
-          3 => _PicnicMemberGridStep(
+          4 => _PicnicParentsJoinStep(
+            progress: _progress,
+            members: [_member('nanay'), _member('tatay'), _member('bata')],
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(5),
+          ),
+          5 => _PicnicMemberGridStep(
             progress: _progress,
             members: _members,
-            prompt: 'Pangitaa si lola kag si lolo.',
+            prompt: 'I-tap si lola, dayon si lolo.',
             selected: _pickedGrandparents,
             wrongChoice: _wrongChoice,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onChoose: _chooseFamilyMember,
           ),
-          4 => _PicnicArrangeStep(
+          6 => _PicnicArrangeStep(
             progress: _progress,
             members: [_member('nanay'), _member('tatay'), _member('bata')],
             placements: _picnicSlots,
+            wrongSeat: _wrongSeat,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onPlace: _placePicnicMember,
@@ -10797,6 +16643,73 @@ class _PicnicMapStep extends StatelessWidget {
   }
 }
 
+class _PicnicSceneScanStep extends StatelessWidget {
+  final double progress;
+  final List<_FamilyWord> members;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _PicnicSceneScanStep({
+    required this.progress,
+    required this.members,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/picnic.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .14,
+          view.width * .06,
+          view.height * .05,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: view.width * .02,
+              runSpacing: view.height * .012,
+              children: [
+                for (final member in members)
+                  SizedBox(
+                    width: view.width * .17,
+                    height: view.height * .17,
+                    child: _LessonPictureAsset(
+                      asset: member.imageAsset,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_) =>
+                          Icon(member.icon, color: TudloColors.forest),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: view.height * .03),
+            TudloMascot(
+              size: (view.width * .34).clamp(125.0, 180.0),
+              mood: KokaMood.hi,
+            ),
+            const Spacer(),
+            _LessonOneMessageCard(message: 'Kilalahon ta sila.'),
+            SizedBox(height: view.height * .02),
+            _LessonOneBlueButton(label: 'Sige', onTap: onNext),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PicnicMemberGridStep extends StatelessWidget {
   final double progress;
   final List<_FamilyWord> members;
@@ -10843,12 +16756,12 @@ class _PicnicMemberGridStep extends StatelessWidget {
                 child: Wrap(
                   alignment: WrapAlignment.center,
                   runAlignment: WrapAlignment.center,
-                  spacing: view.width * .035,
+                  spacing: view.width * .022,
                   runSpacing: view.height * .018,
                   children: [
                     for (final member in members)
                       SizedBox(
-                        width: view.width * .28,
+                        width: view.width * .265,
                         child: _FamilyReferenceChoiceCard(
                           member: member,
                           selected: selected.contains(member.hil),
@@ -10867,10 +16780,88 @@ class _PicnicMemberGridStep extends StatelessWidget {
   }
 }
 
+class _PicnicParentsJoinStep extends StatelessWidget {
+  final double progress;
+  final List<_FamilyWord> members;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _PicnicParentsJoinStep({
+    required this.progress,
+    required this.members,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/picnic.svg',
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .14,
+          view.width * .06,
+          view.height * .05,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .74),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: .10),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final member in members)
+                    Expanded(
+                      child: SizedBox(
+                        height: (view.height * .21).clamp(140.0, 210.0),
+                        child: _LessonPictureAsset(
+                          asset: member.imageAsset,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_) =>
+                              Icon(member.icon, color: TudloColors.forest),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            _LessonOneMessageCard(message: 'Husto! Nanay kag tatay.'),
+            SizedBox(height: view.height * .02),
+            _LessonOneBlueButton(label: 'Sige', onTap: onNext),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PicnicArrangeStep extends StatelessWidget {
   final double progress;
   final List<_FamilyWord> members;
   final Map<String, String> placements;
+  final String? wrongSeat;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final Future<void> Function(String slot, String value) onPlace;
@@ -10879,6 +16870,7 @@ class _PicnicArrangeStep extends StatelessWidget {
     required this.progress,
     required this.members,
     required this.placements,
+    required this.wrongSeat,
     required this.onExit,
     required this.onReplay,
     required this.onPlace,
@@ -10944,6 +16936,15 @@ class _PicnicArrangeStep extends StatelessWidget {
                       child: _PicnicDraggableCard(
                         member: member,
                         enabled: placements[member.hil] != member.hil,
+                        wrong: wrongSeat == member.hil,
+                        onTap: () {
+                          final slot = members.firstWhere(
+                            (candidate) =>
+                                !placements.containsKey(candidate.hil),
+                            orElse: () => member,
+                          );
+                          onPlace(slot.hil, member.hil);
+                        },
                       ),
                     ),
                   ),
@@ -11025,19 +17026,30 @@ class _PicnicDropSlot extends StatelessWidget {
 class _PicnicDraggableCard extends StatelessWidget {
   final _FamilyWord member;
   final bool enabled;
+  final bool wrong;
+  final VoidCallback onTap;
 
-  const _PicnicDraggableCard({required this.member, required this.enabled});
+  const _PicnicDraggableCard({
+    required this.member,
+    required this.enabled,
+    required this.wrong,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
-    final card = AnimatedOpacity(
-      duration: const Duration(milliseconds: 180),
-      opacity: enabled ? 1 : .24,
-      child: _FamilyReferenceMemberCard(
-        member: member,
-        selected: false,
-        onTap: () {},
+    final card = _FeedbackMotion(
+      correct: false,
+      wrong: wrong,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: enabled ? 1 : .24,
+        child: _FamilyReferenceMemberCard(
+          member: member,
+          selected: false,
+          onTap: onTap,
+        ),
       ),
     );
     if (!enabled) return card;
@@ -11098,11 +17110,18 @@ class _PicnicRewardStep extends StatelessWidget {
               mood: KokaMood.hi,
             ),
             SizedBox(height: view.height * .025),
-            _FamilyReferenceBadge(),
+            SizedBox(
+              height: (view.height * .17).clamp(120.0, 180.0),
+              child: const _LessonPictureAsset(
+                asset:
+                    'assets/images/level_game/lesson-game-assets/Tudlo_Park_Family_Picnic_Badge.svg',
+                fit: BoxFit.contain,
+              ),
+            ),
             SizedBox(height: view.height * .02),
             _LessonOneMessageCard(message: 'Kompleto na ang pamilya ni Koka!'),
             SizedBox(height: view.height * .022),
-            _LessonOneBlueButton(label: 'Padayon', onTap: onDone),
+            _LessonOneBlueButton(label: 'Kolektahon', onTap: onDone),
           ],
         ),
       ),
@@ -11114,6 +17133,1144 @@ class _AlphabetFadeStep {
   final Widget child;
 
   const _AlphabetFadeStep({required this.child});
+}
+
+class _GradeOneUnitOneLessonSevenBeachFlow extends StatefulWidget {
+  final VoidCallback onExit;
+  final void Function(int index, bool correct) onQuizAttempt;
+  final ValueChanged<int> onQuizCorrect;
+
+  const _GradeOneUnitOneLessonSevenBeachFlow({
+    required this.onExit,
+    required this.onQuizAttempt,
+    required this.onQuizCorrect,
+  });
+
+  @override
+  State<_GradeOneUnitOneLessonSevenBeachFlow> createState() =>
+      _GradeOneUnitOneLessonSevenBeachFlowState();
+}
+
+class _GradeOneUnitOneLessonSevenBeachFlowState
+    extends State<_GradeOneUnitOneLessonSevenBeachFlow> {
+  static const _voiceBase = 'audio/VO-final/grade1';
+  static const _numbers = [1, 2, 3, 4, 5];
+  int _stepIndex = 0;
+  int _expectedStep = 1;
+  int _kokaPosition = 0;
+  bool _wrongTap = false;
+  bool _replayDone = false;
+  bool _completed = false;
+  late final List<int> _tiles = _shuffledChoices(_numbers);
+  final List<int?> _slots = List<int?>.filled(5, null);
+  int? _wrongTile;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_tiles.indexed.every((entry) => entry.$2 == _numbers[entry.$1])) {
+      final first = _tiles.removeAt(0);
+      _tiles.add(first);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(TudloVoiceButton.stop());
+    super.dispose();
+  }
+
+  double get _progress => (_stepIndex + 1) / 7;
+
+  void _goToStep(int index) {
+    final next = index.clamp(0, 6);
+    if (next == _stepIndex) return;
+    unawaited(TudloVoiceButton.stop());
+    setState(() {
+      _stepIndex = next;
+      _wrongTap = false;
+      _wrongTile = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakForStep();
+    });
+  }
+
+  Future<void> _playVoice(List<int> clips) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    await AppAudioService.instance.playVoiceAssets([
+      for (final clip in clips) '$_voiceBase/Gr_1_Les_1_7_$clip.wav',
+    ]);
+    await AppAudioService.instance.restoreBackgroundVolume();
+  }
+
+  Future<void> _speakForStep() async {
+    final clips = switch (_stepIndex) {
+      0 => const [2],
+      1 => const [3],
+      2 => const [4, 5],
+      3 => const [8],
+      4 => const [9],
+      5 => const [11],
+      _ => const [12],
+    };
+    try {
+      await _playVoice(clips);
+    } catch (_) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        switch (_stepIndex) {
+          0 => 'Init gid ang balas! Buligi ako makalab-ot sa payong.',
+          1 => 'I-tap ang Beach sa mapa.',
+          2 => 'I-tap ang 1, dayon ang 2.',
+          3 => 'Sunod, i-tap ang 3, 4, kag 5.',
+          4 => 'Isa, duha, tatlo, apat, lima!',
+          5 => 'Ihan-ay ang 1, 2, 3, 4, kag 5.',
+          _ => 'Yehey! Nakaabot kita sa payong!',
+        },
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+    }
+  }
+
+  Future<void> _tapPathNumber(int number) async {
+    if (number != _expectedStep) {
+      setState(() => _wrongTap = true);
+      await AppAudioService.instance.playWrong();
+      try {
+        await _playVoice([7]);
+      } catch (_) {
+        if (mounted) {
+          await TudloVoiceButton.speak(
+            context,
+            'Hmmm, hindi amo na.',
+            hiligaynon: true,
+          );
+        }
+      }
+      if (!mounted) return;
+      setState(() => _wrongTap = false);
+      return;
+    }
+    widget.onQuizAttempt((number - 1).clamp(0, 4), true);
+    await AppAudioService.instance.playCorrect();
+    if (!mounted) return;
+    setState(() {
+      _kokaPosition = number;
+      _expectedStep = number + 1;
+    });
+    await TudloVoiceButton.speak(
+      context,
+      _hiligaynonNumberWord('$number'),
+      hiligaynon: true,
+    );
+    if (!mounted) return;
+    if (number == 2) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      try {
+        await _playVoice([6]);
+      } catch (_) {}
+      if (mounted) _goToStep(3);
+      return;
+    }
+    if (number == 3) {
+      try {
+        await _playVoice([9]);
+      } catch (_) {}
+    }
+    if (number == 5) {
+      await Future<void>.delayed(const Duration(milliseconds: 550));
+      if (mounted) _goToStep(4);
+    }
+  }
+
+  Future<void> _runReplay() async {
+    setState(() => _replayDone = true);
+    for (final number in _numbers) {
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        _hiligaynonNumberWord('$number'),
+        hiligaynon: true,
+        waitForCompletion: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+  }
+
+  Future<void> _placeTile(int number) async {
+    final slotIndex = _slots.indexWhere((value) => value == null);
+    if (slotIndex == -1) return;
+    final correct = number == slotIndex + 1;
+    widget.onQuizAttempt(4, correct);
+    if (!correct) {
+      setState(() => _wrongTile = number);
+      await AppAudioService.instance.playWrong();
+      try {
+        await _playVoice([10]);
+      } catch (_) {
+        if (mounted) {
+          await TudloVoiceButton.speak(
+            context,
+            'Hmmm, hindi amo na.',
+            hiligaynon: true,
+          );
+        }
+      }
+      if (mounted) setState(() => _wrongTile = null);
+      return;
+    }
+    await AppAudioService.instance.playCorrect();
+    if (!mounted) return;
+    setState(() {
+      _slots[slotIndex] = number;
+    });
+    if (_slots.indexed.every((entry) => entry.$2 == entry.$1 + 1)) {
+      widget.onQuizCorrect(4);
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      try {
+        await _playVoice([12]);
+      } catch (_) {}
+      if (mounted) _goToStep(6);
+    }
+  }
+
+  void _finish() {
+    if (_completed) return;
+    _completed = true;
+    for (var index = 0; index < _lessonQuizCount; index++) {
+      widget.onQuizCorrect(index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 520),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: KeyedSubtree(
+        key: ValueKey('g1-u1-l7-$_stepIndex'),
+        child: switch (_stepIndex) {
+          0 => _BeachIntroStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(1),
+          ),
+          1 => _BeachMapStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onNext: () => _goToStep(2),
+          ),
+          2 => _BeachPathStep(
+            progress: _progress,
+            message: 'I-tap ang 1, dayon ang 2.',
+            enabledNumbers: const {1, 2},
+            completedUpTo: _kokaPosition,
+            expectedNumber: _expectedStep,
+            wrong: _wrongTap,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onTapNumber: _tapPathNumber,
+          ),
+          3 => _BeachPathStep(
+            progress: _progress,
+            message: 'Sunod ang 3, 4, kag 5.',
+            enabledNumbers: const {3, 4, 5},
+            completedUpTo: _kokaPosition,
+            expectedNumber: _expectedStep,
+            wrong: _wrongTap,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onTapNumber: _tapPathNumber,
+          ),
+          4 => _BeachReplayStep(
+            progress: _progress,
+            replayDone: _replayDone,
+            onExit: widget.onExit,
+            onReplay: _runReplay,
+            onFullReplay: _runReplay,
+            onNext: _replayDone ? () => _goToStep(5) : null,
+          ),
+          5 => _BeachArrangeStep(
+            progress: _progress,
+            tiles: _tiles,
+            slots: _slots,
+            wrongTile: _wrongTile,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onPlaceTile: _placeTile,
+          ),
+          _ => _BeachRewardStep(
+            progress: _progress,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onDone: _finish,
+          ),
+        },
+      ),
+    );
+  }
+}
+
+class _BeachLessonChrome extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Widget child;
+
+  const _BeachLessonChrome({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/beach.svg',
+      child: child,
+    );
+  }
+}
+
+class _BeachIntroStep extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _BeachIntroStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _BeachLessonChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .07,
+          view.height * .16,
+          view.width * .07,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            const Spacer(),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TudloMascot(
+                size: (view.width * .40).clamp(150.0, 225.0),
+                mood: KokaMood.curious,
+              ),
+            ),
+            const Spacer(),
+            _BeachPathNumbers(
+              completedUpTo: 0,
+              expectedNumber: 0,
+              enabledNumbers: const {},
+              onTapNumber: (_) async {},
+            ),
+            const Spacer(),
+            _LessonOneMessageCard(message: 'Init gid ang balas!'),
+            SizedBox(height: view.height * .02),
+            _LessonOneBlueButton(label: 'Sige', onTap: onNext),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BeachMapStep extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onNext;
+
+  const _BeachMapStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: _LessonBackgroundAsset(
+              asset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+            ),
+          ),
+          Positioned(
+            right: view.width * .10,
+            bottom: view.height * .18,
+            width: view.width * .30,
+            height: view.width * .30,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () async {
+                await AppAudioService.instance.playCorrect();
+                onNext();
+              },
+              child: const _LessonOneMapDestinationCue(),
+            ),
+          ),
+          Positioned(
+            left: view.width * .10,
+            right: view.width * .10,
+            bottom: view.height * .08,
+            child: const _LessonOneMessageCard(message: 'Tap ang Beach.'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BeachPathStep extends StatelessWidget {
+  final double progress;
+  final String message;
+  final Set<int> enabledNumbers;
+  final int completedUpTo;
+  final int expectedNumber;
+  final bool wrong;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(int number) onTapNumber;
+
+  const _BeachPathStep({
+    required this.progress,
+    required this.message,
+    required this.enabledNumbers,
+    required this.completedUpTo,
+    required this.expectedNumber,
+    required this.wrong,
+    required this.onExit,
+    required this.onReplay,
+    required this.onTapNumber,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _BeachLessonChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .17,
+          view.width * .06,
+          view.height * .05,
+        ),
+        child: Column(
+          children: [
+            SizedBox(
+              height: view.height * .33,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: view.width * (.06 + completedUpTo * .12),
+                    top: view.height * .03,
+                    child: TudloMascot(
+                      size: (view.width * .30).clamp(116.0, 165.0),
+                      mood: KokaMood.hi,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _BeachPathNumbers(
+              completedUpTo: completedUpTo,
+              expectedNumber: expectedNumber,
+              enabledNumbers: enabledNumbers,
+              wrong: wrong,
+              stairPath: true,
+              onTapNumber: onTapNumber,
+            ),
+            const Spacer(),
+            _LessonOneMessageCard(message: message),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BeachReplayStep extends StatelessWidget {
+  final double progress;
+  final bool replayDone;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function() onFullReplay;
+  final VoidCallback? onNext;
+
+  const _BeachReplayStep({
+    required this.progress,
+    required this.replayDone,
+    required this.onExit,
+    required this.onReplay,
+    required this.onFullReplay,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _BeachLessonChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .06,
+          view.height * .16,
+          view.width * .06,
+          view.height * .045,
+        ),
+        child: Column(
+          children: [
+            TudloMascot(
+              size: (view.width * .42).clamp(150.0, 225.0),
+              mood: KokaMood.hi,
+            ),
+            const Spacer(),
+            _BeachPathNumbers(
+              completedUpTo: 5,
+              expectedNumber: 0,
+              enabledNumbers: const {1, 2, 3, 4, 5},
+              onTapNumber: (number) async {
+                await TudloVoiceButton.speak(
+                  context,
+                  _hiligaynonNumberWord('$number'),
+                  hiligaynon: true,
+                );
+              },
+            ),
+            const Spacer(),
+            _LessonOneMessageCard(message: '1, 2, 3, 4, 5!'),
+            SizedBox(height: view.height * .018),
+            _LessonOneBlueButton(
+              label: replayDone ? 'Padayon' : 'Pamatian liwat',
+              onTap: replayDone ? onNext : () => unawaited(onFullReplay()),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BeachArrangeStep extends StatelessWidget {
+  final double progress;
+  final List<int> tiles;
+  final List<int?> slots;
+  final int? wrongTile;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Future<void> Function(int number) onPlaceTile;
+
+  const _BeachArrangeStep({
+    required this.progress,
+    required this.tiles,
+    required this.slots,
+    required this.wrongTile,
+    required this.onExit,
+    required this.onReplay,
+    required this.onPlaceTile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final availableTiles = tiles
+        .where((tile) => !slots.contains(tile))
+        .toList(growable: false);
+    return _BeachLessonChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .34,
+            right: view.width * .34,
+            top: view.height * .20,
+            child: TudloMascot(
+              size: (view.width * .26).clamp(104.0, 145.0),
+              mood: KokaMood.idle,
+            ),
+          ),
+          Positioned(
+            left: view.width * .07,
+            right: view.width * .07,
+            top: view.height * .35,
+            child: const _LessonOneMessageCard(
+              message: 'Ihan-ay ang 1 pakadto 5.',
+            ),
+          ),
+          Positioned(
+            left: view.width * .06,
+            right: view.width * .06,
+            top: view.height * .45,
+            child: _BeachArrangeSlots(slots: slots, onPlaceTile: onPlaceTile),
+          ),
+          Positioned(
+            left: view.width * .08,
+            right: view.width * .08,
+            bottom: view.height * .045,
+            child: _BeachNumberChoiceGrid(
+              tiles: availableTiles,
+              wrongTile: wrongTile,
+              onPlaceTile: onPlaceTile,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BeachRewardStep extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final VoidCallback onDone;
+
+  const _BeachRewardStep({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _BeachLessonChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          view.width * .07,
+          view.height * .15,
+          view.width * .07,
+          view.height * .04,
+        ),
+        child: Column(
+          children: [
+            TudloMascot(
+              size: (view.width * .42).clamp(155.0, 230.0),
+              mood: KokaMood.hi,
+            ),
+            const Spacer(),
+            _BeachPathNumbers(
+              completedUpTo: 5,
+              expectedNumber: 0,
+              enabledNumbers: const {},
+              onTapNumber: (_) async {},
+            ),
+            const Spacer(),
+            _NumberExplorerSticker(
+              size: (view.width * .58).clamp(210.0, 320.0),
+              onTap: onDone,
+            ),
+            SizedBox(height: view.height * .018),
+            _LessonOneMessageCard(message: 'Yehey! Nakaabot kita sa payong!'),
+            SizedBox(height: view.height * .018),
+            _LessonOneBlueButton(label: 'Kolektahon', onTap: onDone),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BeachPathNumbers extends StatelessWidget {
+  final int completedUpTo;
+  final int expectedNumber;
+  final Set<int> enabledNumbers;
+  final bool wrong;
+  final bool stairPath;
+  final Future<void> Function(int number) onTapNumber;
+
+  const _BeachPathNumbers({
+    required this.completedUpTo,
+    required this.expectedNumber,
+    required this.enabledNumbers,
+    required this.onTapNumber,
+    this.wrong = false,
+    this.stairPath = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final size = (width * .18).clamp(66.0, 92.0);
+    if (!stairPath) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          for (final number
+              in _GradeOneUnitOneLessonSevenBeachFlowState._numbers)
+            _BeachStepCircle(
+              number: number,
+              completed: number <= completedUpTo,
+              active:
+                  enabledNumbers.contains(number) && number == expectedNumber,
+              enabled: enabledNumbers.contains(number),
+              wrong: wrong && enabledNumbers.contains(number),
+              size: size,
+              onTap: () => onTapNumber(number),
+            ),
+        ],
+      );
+    }
+
+    final height = size * 2.05;
+    return SizedBox(
+      height: height,
+      child: Stack(
+        children: [
+          for (
+            var index = 0;
+            index < _GradeOneUnitOneLessonSevenBeachFlowState._numbers.length;
+            index++
+          )
+            Positioned(
+              left: (width - (size * 1.12)) * (index / 4),
+              top: height - size - (index * size * .22),
+              child: _BeachStepCircle(
+                number:
+                    _GradeOneUnitOneLessonSevenBeachFlowState._numbers[index],
+                completed:
+                    _GradeOneUnitOneLessonSevenBeachFlowState._numbers[index] <=
+                    completedUpTo,
+                active:
+                    enabledNumbers.contains(
+                      _GradeOneUnitOneLessonSevenBeachFlowState._numbers[index],
+                    ) &&
+                    _GradeOneUnitOneLessonSevenBeachFlowState._numbers[index] ==
+                        expectedNumber,
+                enabled: enabledNumbers.contains(
+                  _GradeOneUnitOneLessonSevenBeachFlowState._numbers[index],
+                ),
+                wrong:
+                    wrong &&
+                    enabledNumbers.contains(
+                      _GradeOneUnitOneLessonSevenBeachFlowState._numbers[index],
+                    ),
+                size: size,
+                onTap: () => onTapNumber(
+                  _GradeOneUnitOneLessonSevenBeachFlowState._numbers[index],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BeachStepCircle extends StatelessWidget {
+  final int number;
+  final bool completed;
+  final bool active;
+  final bool enabled;
+  final bool wrong;
+  final double size;
+  final VoidCallback onTap;
+
+  const _BeachStepCircle({
+    required this.number,
+    required this.completed,
+    required this.active,
+    required this.enabled,
+    required this.wrong,
+    required this.size,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      correct: completed,
+      wrong: wrong && active,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: completed
+                ? TudloColors.green
+                : active
+                ? const Color(0xFFFFD33D)
+                : Colors.grey.shade300,
+            border: Border.all(color: Colors.white, width: 4),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFFFD33D).withValues(alpha: .55),
+                      blurRadius: 22,
+                      spreadRadius: 5,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            '$number',
+            style: GoogleFonts.nunito(
+              color: completed ? Colors.white : TudloColors.ink,
+              fontSize: size * .42,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BeachArrangeSlots extends StatelessWidget {
+  final List<int?> slots;
+  final Future<void> Function(int number) onPlaceTile;
+
+  const _BeachArrangeSlots({required this.slots, required this.onPlaceTile});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const padding = 12.0;
+        const gap = 6.0;
+        final maxSlotSize =
+            (constraints.maxWidth - (padding * 2) - (gap * 4)) / 5;
+        final slotSize = maxSlotSize.clamp(56.0, 86.0);
+        return Container(
+          padding: const EdgeInsets.all(padding),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8E6).withValues(alpha: .90),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFD7A65F), width: 3),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var index = 0; index < slots.length; index++) ...[
+                DragTarget<int>(
+                  onWillAcceptWithDetails: (_) => slots[index] == null,
+                  onAcceptWithDetails: (details) {
+                    unawaited(onPlaceTile(details.data));
+                  },
+                  builder: (context, candidateData, rejectedData) {
+                    final number = slots[index];
+                    return Container(
+                      width: slotSize,
+                      height: slotSize,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: number == null
+                            ? Colors.white.withValues(alpha: .66)
+                            : TudloColors.softGreen,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: number == null
+                              ? Colors.grey.withValues(alpha: .62)
+                              : TudloColors.green,
+                          width: 3,
+                        ),
+                      ),
+                      child: number == null
+                          ? const SizedBox.shrink()
+                          : Text(
+                              '$number',
+                              style: GoogleFonts.nunito(
+                                color: TudloColors.green,
+                                fontSize: slotSize * .46,
+                                height: 1,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                    );
+                  },
+                ),
+                if (index != slots.length - 1) const SizedBox(width: gap),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BeachNumberChoiceGrid extends StatelessWidget {
+  final List<int> tiles;
+  final int? wrongTile;
+  final Future<void> Function(int number) onPlaceTile;
+
+  const _BeachNumberChoiceGrid({
+    required this.tiles,
+    required this.wrongTile,
+    required this.onPlaceTile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final tileSize = (width * .19).clamp(72.0, 96.0);
+    final firstRow = tiles.take(3).toList(growable: false);
+    final secondRow = tiles.skip(3).take(2).toList(growable: false);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (final tile in firstRow) ...[
+              _BeachNumberTile(
+                number: tile,
+                wrong: wrongTile == tile,
+                size: tileSize,
+                onTap: () => onPlaceTile(tile),
+              ),
+              if (tile != firstRow.last) SizedBox(width: width * .035),
+            ],
+          ],
+        ),
+        SizedBox(height: width * .035),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (final tile in secondRow) ...[
+              _BeachNumberTile(
+                number: tile,
+                wrong: wrongTile == tile,
+                size: tileSize,
+                onTap: () => onPlaceTile(tile),
+              ),
+              if (tile != secondRow.last) SizedBox(width: width * .035),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _BeachNumberTile extends StatelessWidget {
+  final int number;
+  final bool wrong;
+  final double? size;
+  final VoidCallback onTap;
+
+  const _BeachNumberTile({
+    required this.number,
+    required this.wrong,
+    this.size,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tileSize =
+        size ?? (MediaQuery.sizeOf(context).width * .16).clamp(56.0, 76.0);
+    final tile = _FeedbackMotion(
+      correct: false,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: tileSize,
+          height: tileSize,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: TudloColors.blue, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: TudloColors.blue.withValues(alpha: .18),
+                blurRadius: 0,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Text(
+            '$number',
+            style: GoogleFonts.nunito(
+              color: _numberTileColor(number),
+              fontSize: tileSize * .48,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+    return Draggable<int>(
+      data: number,
+      feedback: Material(color: Colors.transparent, child: tile),
+      childWhenDragging: Opacity(opacity: .28, child: tile),
+      child: tile,
+    );
+  }
+}
+
+Color _numberTileColor(int number) {
+  return switch (number) {
+    1 => const Color(0xFFE93545),
+    2 => TudloColors.green,
+    3 => const Color(0xFFF47E20),
+    4 => TudloColors.blue,
+    5 => const Color(0xFF7D36D6),
+    _ => TudloColors.ink,
+  };
+}
+
+class _NumberExplorerSticker extends StatefulWidget {
+  final double size;
+  final VoidCallback onTap;
+
+  const _NumberExplorerSticker({required this.size, required this.onTap});
+
+  @override
+  State<_NumberExplorerSticker> createState() => _NumberExplorerStickerState();
+}
+
+class _NumberExplorerStickerState extends State<_NumberExplorerSticker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    )..forward();
+    _scale = Tween<double>(
+      begin: .22,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: GestureDetector(
+        onTap: () async {
+          await AppAudioService.instance.playTap();
+          widget.onTap();
+        },
+        child: SizedBox(
+          width: widget.size,
+          height: widget.size * .74,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: Icon(
+                  Icons.star_rounded,
+                  color: const Color(0xFFFFD33D),
+                  shadows: [
+                    Shadow(
+                      color: Colors.white.withValues(alpha: .90),
+                      blurRadius: 14,
+                    ),
+                    Shadow(
+                      color: const Color(0xFFFF9C00).withValues(alpha: .45),
+                      blurRadius: 14,
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: widget.size * .10,
+                right: widget.size * .10,
+                bottom: widget.size * .06,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD92B3A),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFFFFF1A3),
+                      width: 3,
+                    ),
+                  ),
+                  child: Text(
+                    'Number\nExplorer',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontSize: (widget.size * .105).clamp(22.0, 34.0),
+                      height: .9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _GradeOneNumberLesson extends StatefulWidget {
@@ -24081,11 +31238,18 @@ class _LessonResultPage extends StatelessWidget {
                   'Natapos mo na ang Leksyon!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
-                    color: TudloColors.forest,
+                    color: Colors.white,
                     fontSize: (size.width * .083).clamp(32.0, 50.0),
                     height: 1.05,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
+                    shadows: [
+                      Shadow(
+                        color: TudloColors.forest.withValues(alpha: .55),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -24093,14 +31257,21 @@ class _LessonResultPage extends StatelessWidget {
                   'Maayo gid!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
-                    color: TudloColors.forest,
+                    color: Colors.white,
                     fontSize: (size.width * .055).clamp(24.0, 36.0),
                     height: 1.1,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
+                    shadows: [
+                      Shadow(
+                        color: TudloColors.forest.withValues(alpha: .55),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
+                SizedBox(height: size.height * .055),
                 Stack(
                   alignment: Alignment.center,
                   clipBehavior: Clip.none,
@@ -24278,7 +31449,7 @@ class _ResultGoldStar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final size = (width * .25).clamp(92.0, 140.0);
+    final size = (width * .34).clamp(128.0, 190.0);
     return Stack(
       alignment: Alignment.center,
       children: [

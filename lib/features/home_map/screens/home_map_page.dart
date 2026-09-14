@@ -291,7 +291,14 @@ class _HomeMapPageState extends State<HomeMapPage> {
     final unit = AppData.unitForLevel(level);
     final lesson = AppData.lessonNumberForLevel(level);
     return switch ((AppData.selectedGradeLevel, unit.number, lesson)) {
-      (GradeLevel.grade1, 1, 1) => 'audio/VO-final/Gr_1_Les_1_1_1.wav',
+      (GradeLevel.grade1, 1, 1) => 'audio/VO-final/grade1/Gr_1_Les_1_1_1.wav',
+      (GradeLevel.grade1, 1, 7) => 'audio/VO-final/grade1/Gr_1_Les_1_7_1.wav',
+      (GradeLevel.grade1, 2, 1) => 'audio/VO-final/grade1/Gr_1_Les_2_1_1.wav',
+      (GradeLevel.grade1, 2, 4) => 'audio/VO-final/grade1/Gr_1_Les_2_4_1.wav',
+      (GradeLevel.grade2, 1, 1) => 'audio/VO-final/grade2/Gr_2_Les_1_1_1.wav',
+      (GradeLevel.grade2, 1, 2) => 'audio/VO-final/grade2/Gr_2_Les_1_2_1.wav',
+      (GradeLevel.grade2, 2, 1) => 'audio/VO-final/grade2/Gr_2_Les_2_1_1.wav',
+      (GradeLevel.grade2, 2, 2) => 'audio/VO-final/grade2/Gr_2_Les_2_2_1.wav',
       _ => null,
     };
   }
