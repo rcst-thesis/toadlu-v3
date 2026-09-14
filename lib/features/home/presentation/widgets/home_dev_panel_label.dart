@@ -4,40 +4,44 @@ import 'package:flutter/material.dart';
 class HomeDevPanelLabel extends StatelessWidget {
   const HomeDevPanelLabel({super.key});
 
-  static const double designWidth = 90;
+  // Wide enough for the icon + "the dev" at its reference font size; measured
+  // content is ~119 logical pixels, so this leaves a small margin.
+  static const double designWidth = 122;
   static const double designHeight = 22;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scale = constraints.maxWidth / designWidth;
-        return Row(
+    return FittedBox(
+      fit: BoxFit.contain,
+      child: SizedBox(
+        width: designWidth,
+        height: designHeight,
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 20 * scale,
-              height: 20 * scale,
+              width: 20,
+              height: 20,
               child: Image.asset(
                 'assets/images/home_dev_panel_label_icon.png',
                 fit: BoxFit.contain,
                 excludeFromSemantics: true,
               ),
             ),
-            SizedBox(width: 6 * scale),
-            Text(
+            const SizedBox(width: 6),
+            const Text(
               'the dev',
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: 'ComicRelief',
-                fontSize: 13 * scale,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 height: 1,
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 }

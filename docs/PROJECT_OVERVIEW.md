@@ -22,13 +22,19 @@ Direct dependencies in `pubspec.yaml`:
 - `flutter_svg` — SVG rendering.
 - `vector_graphics` — raster rendering strategy for complex SVG scenes.
 - `sensors_plus` — optional accelerometer input in `FarmDepthBackground`.
+- `shared_preferences` — on-device storage for the learner save system
+  (`lib/features/learner/`, `docs/LEARNER_GUIDE.md`). The only storage
+  dependency; nothing else in the app should read/write it directly.
 
 The project also uses `rive` for its approved button and mascot components; its
 documented runtime contracts are in `docs/RIVE_INTEGRATION.md`.
 
 Development dependencies are `flutter_test` and `flutter_lints`. Dart is
 constrained to `>=3.3.0 <4.0.0`. The app uses Material 3 and bundled Comic Relief.
-There is no storage, networking, audio, state-management, or router package.
+There is no networking, audio, or router package. State management stays
+local/`ChangeNotifier`-based (no Provider/Riverpod/BLoC) -- see
+`docs/ARCHITECTURE.md`'s Composition Root for the app-wide
+Controller+Scope pattern this project uses instead.
 
 ## Main User Flows
 
@@ -118,9 +124,12 @@ Room contents and lesson features remain unfinished.
 | `lib/features/startup/` | Splash sequence/initial preload |
 | `lib/features/main_menu/` | Main menu and entry routes |
 | `lib/features/onboarding/` | Learner creation flow |
-| `lib/features/load/` | Save previews/dialogs |
+| `lib/features/learner/` | Learner save system (profile persistence) -- `docs/LEARNER_GUIDE.md` |
+| `lib/features/load/` | Save previews/dialogs (still demo data, unconnected to `learner/`) |
 | `lib/features/welcome/` | Welcome scene and motion |
 | `lib/features/home/` | Loading 3/4 and Home |
+| `lib/features/map/` | Interactive barangay map -- `docs/MAP_GUIDE.md` |
+| `lib/features/me/` | Learner profile screen |
 | `lib/features/placeholder/` | Explicit unfinished destinations |
 | `lib/shared/` | Reused controls/placeholders |
 | `assets/images/` | PNG/SVG art and versioned variants |
@@ -134,11 +143,17 @@ Implemented in code with widget-test coverage: timed startup, menu hit targets,
 new-learner UI flow, energy bounds, Loading 2/3/4 transitions, learner-card
 interactions, save grid and dialogs, Welcome motion, reusable Rive controls,
 Home Koka interaction, and the incremental Home room/lesson-preview UI.
+Implemented without dedicated tests yet (ad hoc verification only): the
+interactive barangay map (`docs/MAP_GUIDE.md`) and the learner save system
+(`docs/LEARNER_GUIDE.md`) -- the current learner now genuinely persists
+on-device across restarts, name through progression data.
 
 Partial or placeholder: Settings beyond its animation switch, tutorial,
-Translate/Dictionary/Me content (bottom-navigation routing to all six tabs is
-complete), voice-over playback, persistence/save restoration, and production
-lesson content/progression.
+Translate/Dictionary/Lessons content (bottom-navigation routing to all six
+tabs is complete; Me shows real learner data but its badge collection UI and
+profile editing remain shells), voice-over playback, multi-learner
+switching, the Load screen's save browser (still demo data, unconnected to
+the real save system), and production lesson content/progression.
 
 See `docs/CURRENT_STATUS.md` for a detailed inventory.
 

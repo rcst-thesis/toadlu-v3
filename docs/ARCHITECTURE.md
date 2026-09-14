@@ -6,8 +6,12 @@ Tudlo uses a small feature-oriented Flutter architecture. Features own their
 presentation widgets/private helpers. Load also has a minimal domain model.
 Shared controls and infrastructure live in `shared/` and `core/`.
 
-There is no formal clean-architecture stack, DI container, Provider/BLoC/
-Riverpod, router, repository, or backend layer. Do not describe these as present.
+There is no DI container, Provider/BLoC/Riverpod, or router. There is now
+exactly one repository -- `LearnerRepository`
+(`lib/features/learner/domain/learner_repository.dart`), a thin
+`shared_preferences` wrapper for the learner save system (see
+`docs/LEARNER_GUIDE.md`). Don't describe a broader repository/backend layer
+as present; this is the one, narrow exception.
 
 ## Composition Root
 
@@ -15,9 +19,20 @@ Riverpod, router, repository, or backend layer. Do not describe these as present
 main()
 └── Flutter initialization + portrait orientation
 └── TudloApp
-    └── MaterialApp (Material 3, ComicRelief, green/mint theme)
-        └── StartupFlow
+    └── AppAnimationScope (app-wide motion on/off)
+        └── LearnerScope (current learner profile -- see LEARNER_GUIDE.md)
+            └── MapProgressScope (map event overrides + unlocked locations)
+                └── MaterialApp (Material 3, ComicRelief, green/mint theme)
+                    └── StartupFlow
 ```
+
+App-wide state that needs to be reachable from anywhere without
+prop-drilling follows one consistent pattern -- a `ChangeNotifier` (or
+`InheritedNotifier`-compatible controller) plus an `InheritedWidget`/
+`InheritedNotifier` "Scope" with a static `.of(context)`. All three current
+examples (`AppAnimationScope`, `LearnerScope`, `MapProgressScope`) are
+wired once in `TudloApp` and follow this exact shape; add a new one the
+same way rather than introducing a different state-management approach.
 
 ## State and Feature Communication
 
@@ -26,9 +41,15 @@ main()
 - `GradeSelectionScreen`: carousel selection/order and voice-over state.
 - `EnergySetterScreen`: energy value and voice-over state.
 - Loading screens: one-shot async preparation state.
-- `LearnerCardScreen`: immutable learner inputs; nested animation/tilt state.
-- `LoadScreen`: constant demo saves and local current page.
+- `LearnerCardScreen`: immutable learner inputs; nested animation/tilt state;
+  `_finish()` is also where a `LearnerProfile` gets created and saved (see
+  `docs/LEARNER_GUIDE.md`).
+- `LoadScreen`: constant demo saves and local current page (this is the
+  save *browser* UI shell -- unrelated to the real learner save system;
+  its saves are still just demo data, see `docs/CURRENT_STATUS.md`).
 - Welcome/Home widgets: local interaction and animation controllers.
+- `HomeScreen`/`MeScreen`: explicit constructor overrides (mainly for
+  tests), falling back to the current learner via `LearnerScope` otherwise.
 
 Onboarding data is passed through constructors:
 
@@ -38,7 +59,11 @@ grade: int (1, 2, or 3)
 energy: int (10–100 in 10-point increments)
 ```
 
-No learner/session state persists after termination.
+It now also reaches `LearnerScope`/`LearnerRepository` at the end of
+onboarding (`LearnerCardScreen._finish()`), so the current learner (name,
+grade, energy, and progression data added since) persists across app
+restarts -- see `docs/LEARNER_GUIDE.md` for the full system. The Load
+screen's own save list is unrelated and still just demo data.
 
 ## Home Structure
 
@@ -63,11 +88,13 @@ screen supplies its own darker tone). `AppBottomTabNavigation`
 (`lib/core/navigation/`) is the single source of truth for all six tabs: it
 owns the push-away-from-Home / replace-between-siblings / pop-to-Home
 decision and each tab's destination widget, so every screen that shows the
-bar (`HomeScreen`, the Lessons/Map/Translate/Dictionary shells, `MeScreen`)
-supplies only its own `currentIndex` instead of re-deriving routing. Lessons,
-Map, Translate, and Dictionary are `PlaceholderScreen` shells pending real
-content; Me is a real (incomplete) screen. Sibling tabs replace each other to
-avoid stacking routes; any tab's Home action pops to the root Home route.
+bar (`HomeScreen`, `MapScreen`, the Lessons/Translate/Dictionary shells,
+`MeScreen`) supplies only its own `currentIndex` instead of re-deriving
+routing. Lessons, Translate, and Dictionary are `PlaceholderScreen` shells
+pending real content; Map is a real interactive screen (`docs/MAP_GUIDE.md`);
+Me is a real (incomplete) screen showing real learner data where loaded.
+Sibling tabs replace each other to avoid stacking routes; any tab's Home
+action pops to the root Home route.
 
 ## Loading Boundaries
 
@@ -98,9 +125,14 @@ StartupFlow
 
 Home
 ├── Settings → Settings screen (animation preference)
-├── Lessons/Map tabs and matching room objects → temporary shells
+├── Map tab and door → MapScreen (real interactive Rive barangay map --
+│   see docs/MAP_GUIDE.md; tap-gated by availability, event overrides
+│   can redirect a location's destination and permanently unlock it)
+├── Lessons tab and bookshelf → temporary shell
 ├── Translate/Dictionary tabs → temporary shells
-└── Me tab → Me screen (Settings/Edit buttons only; rest incomplete)
+└── Me tab → Me screen (Settings/Edit buttons; shows the real current
+    learner via LearnerScope where loaded, see docs/LEARNER_GUIDE.md --
+    badge collection UI itself is still a shell)
 ```
 
 Page navigation uses `FadePageRoute`; dialogs and Startup switching use their
@@ -164,11 +196,19 @@ and reduced motion.
 - Keep route ownership in Flutter even when Rive supplies visuals.
 - Preserve or replace callback test seams with equally testable abstractions.
 - Export new public test-facing types from `lib/tudlo.dart` when appropriate.
+- New app-wide state follows the `Controller` + `Scope` pattern (see
+  Composition Root above) -- don't introduce Provider/Riverpod/BLoC to solve
+  a problem this pattern already covers.
+- New persisted learner data extends `LearnerController`
+  (`docs/LEARNER_GUIDE.md`) rather than adding a second storage mechanism.
 
 ## NEEDS PROJECT CONTEXT
 
-- Persistence/repository choice and save schema.
 - Backend/NMT interface and error/offline policy.
-- Application-wide learner/session state owner.
 - Final route/deep-link/back-stack requirements.
-- Whether state management should remain local or adopt a chosen solution.
+- Multi-learner-profile switching UI (storage already supports multiple
+  profiles by id; there's no screen for creating/switching between them).
+- Load screen's save browser reconciling with the real learner save system
+  (it's still independent demo data -- see `docs/LEARNER_GUIDE.md`).
+- Whether/when cloud sync is wanted (current persistence is local-only,
+  on-device, single learner at a time).

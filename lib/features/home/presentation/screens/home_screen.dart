@@ -24,14 +24,19 @@ import 'package:tudlo/features/home/presentation/widgets/home_sticker_container.
 import 'package:tudlo/features/home/presentation/widgets/home_standing_lamp.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_word_of_the_day.dart';
 import 'package:tudlo/features/home/presentation/widgets/interactive_home_lamp.dart';
+import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({this.learnerName = '', this.energy = 60, super.key});
+  const HomeScreen({this.learnerName, this.energy, super.key});
 
-  final String learnerName;
-  final int energy;
+  /// Explicit overrides -- mainly for tests. Real app code shouldn't need
+  /// these: when omitted, they fall back to the current learner from
+  /// [LearnerScope], then to the original hardcoded defaults ('' / 60) if
+  /// no learner is loaded either.
+  final String? learnerName;
+  final int? energy;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -43,6 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final _scrollController = ScrollController();
   bool _lessonsCollapsed = false;
+
+  String get _learnerName =>
+      widget.learnerName ?? LearnerScope.of(context).profile?.name ?? '';
+  int get _energy =>
+      widget.energy ?? LearnerScope.of(context).profile?.energy ?? 60;
 
   @override
   void dispose() {
@@ -126,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
           final sceneScale = canvasWidth / _HomeSceneLayout.designWidth;
           final lessonPanelHeight = HomeLessonPanel.designHeightForEnergy(
-            widget.energy,
+            _energy,
             isCollapsed: _lessonsCollapsed,
           );
           final stickerContainerTop =
@@ -268,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       sceneScale,
                                   child: HomeKokaMascot(
                                     key: const Key('home-koka-mascot'),
-                                    learnerName: widget.learnerName,
+                                    learnerName: _learnerName,
                                   ),
                                 ),
                                 Positioned(
@@ -304,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   height: lessonPanelHeight * sceneScale,
                                   child: HomeLessonPanel(
                                     key: const Key('home-lesson-panel'),
-                                    energy: widget.energy,
+                                    energy: _energy,
                                     onLessonTap: _showLessonPreview,
                                     onCollapsedChanged: (isCollapsed) {
                                       setState(() {

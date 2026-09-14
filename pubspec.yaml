@@ -12,6 +12,7 @@ dependencies:
   flutter_svg: ^2.3.0
   rive: ^0.14.10
   sensors_plus: ^7.1.0
+  shared_preferences: ^2.5.5
   vector_graphics: ^1.2.3
 
 dev_dependencies:

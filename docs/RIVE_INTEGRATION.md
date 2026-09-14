@@ -19,6 +19,7 @@ The current runtime-contract inventory is:
 | `assets/images/settings_button_me.riv` | `SettingsButton` | `SettingsButtonStateMachine` | View Model `SettingsButtonVM` (`activated` trigger); legacy `isPressed` boolean drives press and gear rotation | `MeSettingsButton` |
 | `assets/images/green_back_button.riv` | `Artboard` (93 × 44) | `State Machine 1` | View Model `Button` (`pressed` boolean only; no trigger) drives press motion | `RiveBackButton` |
 | `assets/images/edit_button_me.riv` | `Artboard` (190 × 198) | `State Machine 1` | View Model `Button` (`down` boolean only; no trigger) drives press motion | `RiveEditButton` (via `MeEditButton`) |
+| `assets/images/mapvtwo.riv` | `Brgy. Koka` (2400 × 1400) | `MapAvailabilityStateMachine` | View Model `MapLocationStates`: per-location (`house`, `school`, `plaza`, `market`, `farm`, `beach`, `church`, `hospital`) `isAvailable` boolean and `eventTriggered` trigger (200ms squash). No click listeners in the asset. | `RiveMapScene` (via `MapScreen`) |
 
 ### Long button contract
 
@@ -78,6 +79,76 @@ owns invoking `onPressed`. The native artboard is 190 × 198 (~0.96 aspect,
 matching the 47 × 49 display slot closely), rendered with `Fit.contain` at
 47 × 49 logical pixels to align with `RiveSettingsButton`'s scale, per the
 existing "same scale as Settings" requirement for Me's top buttons.
+
+### Barangay map contract
+
+`RiveMapScene` in `lib/features/map/presentation/widgets/rive_map_scene.dart`
+loads `mapvtwo.riv`'s `Brgy. Koka` artboard and `MapAvailabilityStateMachine`,
+rendered with `Fit.contain` at its native 2400 × 1400 aspect ratio so it's
+never stretched or cropped. The asset has no click listeners, so Flutter lays
+one transparent `GestureDetector` tap zone per `MapLocation` over the scene,
+positioned in the artboard's own 2400 × 1400 coordinate space (calibrated
+against the exported art) rather than fixed phone pixels, so the zones
+scale/pan together with `MapScreen`'s `InteractiveViewer` transform.
+
+Do not modify `MapLocationStates` or the existing availability/activation
+state machine layers from Flutter; Rive owns the *visuals* entirely, but
+Flutter is the source of truth for two of the booleans that drive them:
+
+- `<location>/isAvailable` -- **normally Rive-owned, Flutter reads it** to
+  gate taps: `RiveMapScene`'s tap zone for a location only calls
+  `onLocationTapped` (and only then does `MapScreen` fire the squash
+  trigger, wait, and navigate) while it's `true`. A location missing the
+  property entirely fails closed (not tappable). The one exception: the
+  moment an active lesson/event sets an override for a location, Flutter
+  *writes* this to `true` too, so the event's stop is reachable even if that
+  location isn't normally unlocked yet -- and leaves it `true` afterwards.
+  An event permanently unlocks a location it touches; it never re-locks one.
+  This is session-only (see the persistence note below).
+- `<location>/isActive` -- **Flutter-owned, Rive reads it.** Drives that
+  location's golden/bouncy "active event" visual, `true` exactly while that
+  location currently has an override, `false` once it's cleared (unlike
+  `isAvailable`, this one *does* revert -- the golden hint is about the
+  event being active right now, not about permanent access).
+
+Both are kept in sync with `MapEventOverrides` and `MapProgressController`
+(`lib/features/map/domain/map_progress.dart`) by
+`MapScreen._syncEventVisuals`, called on every `MapEventOverrides` change and
+once more when the Rive scene finishes loading (to pick up overrides/unlocks
+that already existed before this particular `MapScreen`/Rive scene instance
+existed -- which happens on every tab switch, since `MapScreen` is rebuilt
+fresh each time).
+
+**Persistence:** `MapProgressController.unlockedLocations` is what makes a
+location's unlock survive leaving and returning to the Map tab within a
+session -- it's an app-wide instance (`MapProgressScope`, wired once in
+`tudlo_app.dart`), not tied to any one `MapScreen`/Rive scene instance. It's
+still just an in-memory `Set` driving the visuals, but it's backed by real,
+per-learner persistence now: `MapScreen` syncs it with the current learner's
+`LearnerProfile.unlockedMapLocations` via `LearnerScope`, so it also
+survives an app restart, correctly scoped to whichever learner is signed in.
+See [`LEARNER_GUIDE.md`](LEARNER_GUIDE.md) for how that system works and how
+to extend it.
+
+On a tap that passes the `isAvailable` check, `MapScreen`:
+
+1. Ignores the tap if a previous one is still being handled
+   (`_isHandlingTap`), preventing double taps.
+2. Fires that location's `<location>/eventTriggered` trigger via
+   `RiveMapSceneController.fireTrigger` to play its existing 200ms squash
+   press animation. Rive owns only that visual; Flutter decides what happens
+   next.
+3. Waits ~120ms, then resolves the destination through
+   `MapEventOverrides.resolve` (`lib/features/map/domain/map_route_resolver.dart`):
+   an active lesson/event's override for that location if one is set,
+   otherwise its entry in `MapDefaultRoutes`. House's default is "go home"
+   (`GoHomeRouteAction`, same as the Home tab); every other location's
+   default currently opens a temporary `PlaceholderScreen` shell, matching
+   the other not-yet-built bottom-tab destinations, until those screens
+   exist. `MapEventOverrides` starts empty (no active event) and is cleared
+   by whatever owns a lesson/event's lifecycle when it ends, restoring every
+   location to its default.
+4. Navigates via `Navigator.push`/`popUntil`.
 
 ## What Is Not Rive
 

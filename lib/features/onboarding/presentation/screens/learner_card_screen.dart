@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/home/presentation/screens/home_loading_screen.dart';
+import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
 
@@ -43,6 +45,17 @@ class LearnerCardScreen extends StatelessWidget {
       callback();
       return;
     }
+    // Fire-and-forget: LearnerController updates its in-memory profile
+    // synchronously before its own (best-effort) disk write, so screens
+    // reading LearnerScope after this navigation already see it -- no need
+    // to block leaving this screen on the save completing.
+    unawaited(
+      LearnerScope.of(context).createAndSave(
+        name: learnerName,
+        grade: grade,
+        energy: energy,
+      ),
+    );
     Navigator.of(context).pushAndRemoveUntil(
       FadePageRoute<void>(
         page: HomeLoadingScreen(

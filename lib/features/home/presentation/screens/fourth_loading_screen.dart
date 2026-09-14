@@ -48,7 +48,8 @@ class FourthLoadingScreen extends StatelessWidget {
     await Future.wait<void>([
       for (final asset in _homeVectorAssets)
         SvgAssetLoader(asset).loadBytes(context).then<void>((_) {}),
-      for (final asset in _homeRasterAssets) precacheImage(AssetImage(asset), context),
+      for (final asset in _homeRasterAssets)
+        precacheImage(AssetImage(asset), context),
     ]);
     await WidgetsBinding.instance.endOfFrame;
   }
@@ -58,7 +59,10 @@ class FourthLoadingScreen extends StatelessWidget {
     return KeyedSubtree(
       key: const Key('fourth-loading-screen'),
       child: HomeLoadingScreen(
-        // The Continue shortcut does not restore a learner save yet.
+        // Inert placeholders: this screen routes straight to `HomeScreen()`
+        // below (bypassing HomeLoadingScreen's default WelcomeAboardScreen
+        // path, the only place that would use these), and HomeScreen falls
+        // back to the saved learner from LearnerScope on its own.
         learnerName: '',
         grade: 1,
         energy: 60,

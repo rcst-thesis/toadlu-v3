@@ -9,7 +9,7 @@ class MapExpandButton extends StatelessWidget {
 
   final VoidCallback onPressed;
 
-  static const size = 52.0;
+  static const size = 41.0;
 
   @override
   Widget build(BuildContext context) {

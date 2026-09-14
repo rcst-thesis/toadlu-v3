@@ -50,6 +50,34 @@ This status is based only on current code and tests.
 - Seven demo saves, four per page, two-column cards, pagination.
 - Load/delete confirmation dialogs and SnackBar feedback.
 
+### Barangay Map
+
+- Real interactive Rive map (`mapvtwo.riv`), pan/zoom framed on Koka's
+  house by default, fullscreen landscape toggle.
+- Flutter-side tap detection (the asset has no click listeners), gated by
+  each location's Rive-owned `isAvailable`; fires squash press feedback,
+  debounces double taps, resolves destination, navigates.
+- Active-event system: an event can temporarily override a location's
+  destination (`MapEventOverrides`) and marks it `isActive` (golden/bouncy
+  visual) for the override's duration; the first time an event touches a
+  location it also permanently force-unlocks it (`isAvailable`), which does
+  not revert when the override clears.
+- Full details, including how to trigger an event and add a real screen for
+  a location: `docs/MAP_GUIDE.md`. Rive asset contract: `docs/RIVE_INTEGRATION.md`.
+
+### Learner Save System
+
+- `LearnerProfile`/`LearnerController`/`LearnerScope`
+  (`lib/features/learner/`) persist the current learner (name, grade,
+  energy, lessons/stickers/badges/streak counts, unlocked map locations) to
+  on-device storage (`shared_preferences`), keyed by a generated learner id.
+- Created at the real end of onboarding (`LearnerCardScreen._finish()`);
+  restored on app startup (`TudloApp`); `HomeScreen`/`MeScreen` read from it
+  automatically when no explicit override is supplied.
+- Local-only, single active learner at a time; no cloud sync, no
+  profile-switcher UI yet (storage already supports multiple profiles by
+  id). Full details: `docs/LEARNER_GUIDE.md`.
+
 ### Home Increment
 
 - Scrollable centered scene, max width 720.
@@ -69,15 +97,19 @@ This status is based only on current code and tests.
 ## Partial
 
 - Home scene height/content is temporary verification structure.
-- Home energy defaults to 60 and is constructor-carried; it is not connected to
-  durable learner state.
+- Home energy defaults to 60 when no learner is loaded (`LearnerScope`),
+  same as before this constructor-carried default existed -- see Learner
+  Save System above.
 - All six bottom-navigation tabs now reach a destination via the centralized
-  `AppBottomTabNavigation` router. Lessons, Map, Translate, and Dictionary are
-  `PlaceholderScreen` shells pending real content; Me is a real screen shell
-  (Settings/Edit buttons only).
+  `AppBottomTabNavigation` router. Map is a real screen (see above); Lessons,
+  Translate, and Dictionary are still `PlaceholderScreen` shells pending real
+  content; Me is a real screen shell showing real learner data where
+  loaded (Settings/Edit buttons functional; badge collection UI, edit flow
+  still incomplete).
 - Voice-over callback UI exists without audio implementation.
 - Hardware sensor support exists but Welcome disables it in favor of touch.
-- Onboarding data is constructor-carried and not persisted.
+- Onboarding data now persists via the Learner Save System (above), but
+  only the current learner -- no profile switching, no cloud sync.
 
 ## Placeholder-Only
 
@@ -86,13 +118,19 @@ This status is based only on current code and tests.
 
 ## Not Implemented
 
-- Persistent saves, actual load/delete mutation, Continue restoration.
-- Durable session/application state.
-- Backend, NMT, APIs, auth, synchronization, or offline storage.
-- Lesson models/repository/content/progression/completion.
-- Real Translate, Dictionary, and Me content (all currently shells).
-- Dynamic Home energy/session state, production lesson model/content,
-  speaker/favorite behavior, and final ambient polish.
+- The Load screen's save browser is still demo data, unconnected to the
+  real Learner Save System (above) -- no actual load/delete mutation there.
+- Multi-learner profile switching UI (storage supports multiple profiles
+  by id; there's no screen to create/switch between them).
+- Backend, NMT, APIs, auth, synchronization, or offline/cloud storage --
+  the Learner Save System is local-only, on-device.
+- Lesson models/repository/content/progression/completion (lesson
+  completion incrementing a learner's `lessonsFinished`, specifically, is
+  not wired -- the save system supports it, nothing calls it yet).
+- Real Translate, Dictionary, and Lessons content (still shells); Me's
+  badge collection UI and profile editing.
+- Production lesson model/content, speaker/favorite behavior, and final
+  ambient polish.
 - Audio assets/service.
 - Release identity/signing: Android is `com.maralmt.tudlo_prototype` and release
   currently uses debug signing.
@@ -109,6 +147,12 @@ This status is based only on current code and tests.
   action reachability.
 - `test/koka_mascot_contract_test.dart`: Koka State Machine contract and
   escalating interaction behavior.
+- `test/me_screen_test.dart`: Me screen's tabs, progress counts, and daily
+  streak card.
+
+There is no dedicated map or learner-save test file yet -- coverage for
+both exists only as ad hoc verification during development (see
+`docs/MAP_GUIDE.md`/`docs/LEARNER_GUIDE.md`), not as committed tests.
 
 Standard checks are `flutter analyze` and `flutter test`. This documentation
 task changes no Dart behavior; release work should still run the full suite.
@@ -124,9 +168,14 @@ task changes no Dart behavior; release work should still run the full suite.
 
 ## NEEDS PROJECT CONTEXT
 
-1. Final Settings, tutorial, Translate, Lessons, Map, Dictionary, and Me routes.
-2. Persistent learner/save schema and Continue selection behavior.
-3. Lesson/curriculum/progression/energy rules.
+1. Final Settings, tutorial, Translate, Lessons, and Dictionary routes; the
+   real screens each Map location should open (currently `PlaceholderScreen`
+   shells via `MapDefaultRoutes` -- see `docs/MAP_GUIDE.md`).
+2. Multi-learner profile switching / Load screen reconciling with the real
+   Learner Save System (schema and single-learner persistence already exist
+   -- see `docs/LEARNER_GUIDE.md`); Continue selection among saves.
+3. Lesson/curriculum/progression/energy rules, and wiring lesson completion
+   to `LearnerController` (supported, nothing calls it yet).
 4. Backend/NMT/API/auth/offline contracts.
 5. Production `.riv` files and exact runtime contracts.
 6. Audio files/scripts/service and accessibility behavior.

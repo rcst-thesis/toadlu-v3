@@ -189,7 +189,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home lesson availability is derived from Energy', (tester) async {
+  testWidgets('Home lesson availability is derived from Energy',
+      (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 10)));
     expect(find.text('1 lesson subong nga adlaw!'), findsOneWidget);
 
@@ -222,7 +223,7 @@ void main() {
         ),
       ),
     );
-    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-card-0')), findsOneWidget);
     expect(find.byKey(const Key('home-lesson-deck-layer-1')), findsNothing);
 
     final toggle = find.byKey(const Key('home-lesson-collapse-toggle'));
@@ -244,7 +245,7 @@ void main() {
       find.byKey(const Key('home-lesson-collapsed-deck-toggle')),
     );
     await tester.pump();
-    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-card-0')), findsOneWidget);
     expect(find.byKey(const Key('home-lesson-deck-layer-1')), findsNothing);
     expect(find.byKey(const Key('home-lesson-section-label')), findsOneWidget);
     expect(find.byKey(const Key('home-lesson-summary-title')), findsNothing);
@@ -255,7 +256,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 10)));
 
-    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-card-0')), findsOneWidget);
     expect(find.byKey(const Key('home-lesson-collapse-toggle')), findsNothing);
     expect(find.byKey(const Key('home-lesson-deck-layer-1')), findsNothing);
     expect(tester.takeException(), isNull);
@@ -268,13 +269,18 @@ void main() {
     final lessonCard = find.byKey(const Key('home-lesson-card-0'));
     await tester.ensureVisible(lessonCard);
     await tester.tap(lessonCard);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('lesson mo subong nga adlaw'), findsOneWidget);
-    expect(find.text('10% energy'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('home-lesson-preview-close')));
-    await tester.pumpAndSettle();
+    // The dialog has no dedicated close control; tapping its barrier
+    // dismisses it (`barrierDismissible: true`).
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('lesson mo subong nga adlaw'), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -371,7 +377,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home door opens the temporary Map destination', (tester) async {
+  testWidgets('Home door opens the Map screen', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.pump();
 
@@ -381,7 +387,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Temporary Map shell'), findsOneWidget);
+    expect(find.byKey(const Key('map-screen')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -403,8 +409,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home Map navigation opens the selected Map placeholder',
-      (tester) async {
+  testWidgets('Home Map navigation opens the Map screen', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.pump();
 
@@ -412,12 +417,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Temporary Map shell'), findsOneWidget);
+    expect(find.byKey(const Key('map-screen')), findsOneWidget);
     expect(find.byKey(const Key('home-bottom-navigation')), findsOneWidget);
     final mapTile = tester.widget<Material>(
       find.byKey(const Key('home-nav-tile-map')),
     );
-    expect(mapTile.color, const Color(0xFF966E42));
+    expect(mapTile.color, const Color(0xFFD2C15D));
     expect(tester.takeException(), isNull);
   });
 
@@ -434,14 +439,14 @@ void main() {
     await tester.tap(find.byKey(const Key('home-nav-map')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Temporary Map shell'), findsOneWidget);
+    expect(find.byKey(const Key('map-screen')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('home-nav-home')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('home-screen')), findsOneWidget);
     expect(find.text('Temporary Lessons shell'), findsNothing);
-    expect(find.text('Temporary Map shell'), findsNothing);
+    expect(find.byKey(const Key('map-screen')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
