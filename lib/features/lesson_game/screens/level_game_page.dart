@@ -11315,52 +11315,8 @@ class _StickerUnlockRewardContent extends StatelessWidget {
         Positioned.fill(
           child: ColoredBox(color: Colors.black.withValues(alpha: .56)),
         ),
-        Positioned(
-          left: view.width * .08,
-          right: view.width * .08,
-          top: view.height * .13,
-          child: SizedBox(
-            height: (view.height * .17).clamp(112.0, 158.0),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/banner.png',
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                  errorBuilder: (_, __, ___) => Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFAF13F6),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-                Transform.translate(
-                  offset: Offset(0, -view.height * .018),
-                  child: Text(
-                    'UNLOCK',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.nunito(
-                      color: Colors.white,
-                      fontSize: (view.width * .15).clamp(50.0, 78.0),
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                      shadows: const [
-                        Shadow(
-                          color: TudloColors.ink,
-                          offset: Offset(0, 4),
-                          blurRadius: 0,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Center(
+        Align(
+          alignment: const Alignment(0, -.12),
           child: SizedBox(
             width: stickerSize * 1.36,
             height: stickerSize * 1.36,
@@ -11369,25 +11325,6 @@ class _StickerUnlockRewardContent extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 const Positioned.fill(child: _StickerUnlockGlow()),
-                for (final star in const [
-                  (Alignment(-.86, -.42), 38.0),
-                  (Alignment(-.64, .66), 25.0),
-                  (Alignment(.78, -.34), 30.0),
-                  (Alignment(.70, .60), 44.0),
-                  (Alignment(-.28, -.78), 46.0),
-                  (Alignment(.18, .84), 22.0),
-                ])
-                  Align(
-                    alignment: star.$1,
-                    child: Icon(
-                      Icons.star_rounded,
-                      color: const Color(0xFFFFE022),
-                      size: star.$2,
-                      shadows: const [
-                        Shadow(color: Color(0xAA7B4D00), blurRadius: 4),
-                      ],
-                    ),
-                  ),
                 GestureDetector(
                   onTap: onDone,
                   child: SizedBox(
