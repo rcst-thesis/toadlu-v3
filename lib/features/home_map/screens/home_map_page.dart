@@ -469,7 +469,12 @@ class _HomeMapPageState extends State<HomeMapPage> {
   }
 
   Widget _buildGradeOneDashboardOld(BuildContext context) {
-    final unit = AppData.unitForNumber(_selectedUnitNumber);
+    final unit = AppData.units.any((unit) => unit.number == _selectedUnitNumber)
+        ? AppData.unitForNumber(_selectedUnitNumber)
+        : AppData.unitForLevel(AppData.firstUnlockedIncompleteLevel);
+    final selectedLessonIndex = _selectedLessonIndex
+        .clamp(0, math.max(0, unit.lessonCount - 1))
+        .toInt();
     final completedInUnit = [
       for (var level = unit.startLevel; level <= unit.endLevel; level++)
         if (AppData.completedLevels.contains(level)) level,
@@ -518,7 +523,10 @@ class _HomeMapPageState extends State<HomeMapPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _GradeOneHeader(gradeLabel: 'Grade 1', compact: compact),
+                      _GradeOneHeader(
+                        gradeLabel: AppData.selectedGradeLevel.label,
+                        compact: compact,
+                      ),
                       SizedBox(height: gap),
                       _GradeOneUnitSelector(
                         unit: unit,
@@ -564,7 +572,7 @@ class _HomeMapPageState extends State<HomeMapPage> {
                           height: carouselHeight,
                           controller: _lessonCarouselController,
                           unit: unit,
-                          selectedIndex: _selectedLessonIndex,
+                          selectedIndex: selectedLessonIndex,
                           launching: _launchingLevel,
                           onPageChanged: (index) {
                             setState(() => _selectedLessonIndex = index);
@@ -594,7 +602,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (AppData.selectedGradeLevel == GradeLevel.grade1) {
+    if (AppData.selectedGradeLevel == GradeLevel.grade1 ||
+        AppData.selectedGradeLevel == GradeLevel.grade2) {
       return _buildGradeOneDashboard(context);
     }
 
@@ -2119,22 +2128,33 @@ class _GradeOneUnitSheetTile extends StatelessWidget {
 String _lessonTitleForDashboard(int level) {
   final unit = AppData.unitForLevel(level);
   final lesson = AppData.lessonNumberForLevel(level);
-  return switch ((unit.number, lesson)) {
-    (1, 1) => 'Ang Nadula nga mga Letra ni Koka',
-    (1, 7) => 'Isa tubtob Lima',
-    (2, 1) => 'Kilalahon ta ang Pamilya',
-    (2, 4) => 'Nagtipon ang Pamilya sa Picnic',
+  return switch ((AppData.selectedGradeLevel, unit.number, lesson)) {
+    (GradeLevel.grade1, 1, 1) => 'Ang Nadula nga mga Letra ni Koka',
+    (GradeLevel.grade1, 1, 7) => 'Isa tubtob Lima',
+    (GradeLevel.grade1, 2, 1) => 'Kilalahon ta ang Pamilya',
+    (GradeLevel.grade1, 2, 4) => 'Nagtipon ang Pamilya sa Picnic',
     _ => LessonBank.lessonTitleForLevel(level),
   };
 }
 
 String _lessonThumbnailForDashboard(int unitNumber, int lessonNumber) {
-  return switch ((unitNumber, lessonNumber)) {
-    (1, 1) => 'assets/images/level_game/backgrounds/classroom.svg',
-    (1, 7) => 'assets/images/level_game/backgrounds/beach.svg',
-    (2, _) => 'assets/images/level_game/backgrounds/house.svg',
-    (3, _) => 'assets/images/level_game/backgrounds/lesson3-popup.svg',
-    (4, _) => 'assets/images/level_game/backgrounds/lesson4-popup.svg',
+  return switch ((AppData.selectedGradeLevel, unitNumber, lessonNumber)) {
+    (GradeLevel.grade1, 1, 1) =>
+      'assets/images/level_game/backgrounds/classroom.svg',
+    (GradeLevel.grade1, 1, 7) =>
+      'assets/images/level_game/backgrounds/beach.svg',
+    (GradeLevel.grade1, 2, _) =>
+      'assets/images/level_game/backgrounds/house.svg',
+    (GradeLevel.grade1, 3, _) =>
+      'assets/images/level_game/backgrounds/lesson3-popup.svg',
+    (GradeLevel.grade1, 4, _) =>
+      'assets/images/level_game/backgrounds/lesson4-popup.svg',
+    (GradeLevel.grade2, 1, 1) =>
+      'assets/images/level_game/grade2/backgrounds/Tudlo_Classroom_Background_With_Ana.svg',
+    (GradeLevel.grade2, 1, 2) =>
+      'assets/images/level_game/grade2/backgrounds/Tudlo_Birthday_Background_Ana_Holding_Cake.svg',
+    (GradeLevel.grade2, 2, _) =>
+      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg',
     _ => 'assets/images/level_game/backgrounds/classroom.svg',
   };
 }

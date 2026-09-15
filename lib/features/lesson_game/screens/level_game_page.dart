@@ -21,8 +21,22 @@ import 'package:tudloapp/features/navigation/app_shell.dart';
 
 const int _lessonQuizCount = 5;
 const String _lessonStickerAssetRoot = 'assets/images/lesson-sticker';
-const String _familyPictureStickerAsset =
-    '$_lessonStickerAssetRoot/Tudlo_Complete_Family_Picture.svg';
+const List<String> _lessonHomeStickerAssets = [
+  '$_lessonStickerAssetRoot/farm-home-sticker.svg',
+  '$_lessonStickerAssetRoot/park-home-sticker.svg',
+  '$_lessonStickerAssetRoot/market-home-sticker.svg',
+  '$_lessonStickerAssetRoot/church-home-sticker.svg',
+  '$_lessonStickerAssetRoot/school-home-sticker.svg',
+  '$_lessonStickerAssetRoot/cat-home-sticker.svg',
+  '$_lessonStickerAssetRoot/mother-home-sticker.svg',
+  '$_lessonStickerAssetRoot/house-home-sticker.svg',
+  '$_lessonStickerAssetRoot/dog-home-sticker.svg',
+];
+
+String _randomLessonStickerAsset() =>
+    _lessonHomeStickerAssets[math.Random().nextInt(
+      _lessonHomeStickerAssets.length,
+    )];
 
 Map<String, String> _matchingPairsFromItemOrder(QuizItem item) {
   if (item.leftItems.length != item.rightItems.length) return const {};
@@ -53,11 +67,18 @@ Future<bool> _showLessonExitConfirmation(BuildContext context) async {
     barrierColor: TudloColors.ink.withValues(alpha: .62),
     builder: (dialogContext) {
       final view = MediaQuery.sizeOf(dialogContext);
-      final width = math.min(view.width * .96, 560.0);
-      final height = width * 1.12;
+      const popupAspect = 1217 / 920;
+      final width = math
+          .min(
+            view.width * .88,
+            math.min(500.0, view.height * .62 * popupAspect),
+          )
+          .toDouble();
+      final height = width / popupAspect;
+      const assetBase = 'assets/images/level_game/lesson-game-assets';
       return Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 8),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: SizedBox(
           width: width,
           height: height,
@@ -65,74 +86,48 @@ Future<bool> _showLessonExitConfirmation(BuildContext context) async {
             clipBehavior: Clip.none,
             children: [
               Positioned.fill(
-                child: Image.asset(
-                  'assets/images/level_game/lesson-game-assets/pop-up-exit.png',
+                child: SvgPicture.asset(
+                  '$assetBase/Tudlo_Exit_Popup_Original_Exact.svg',
                   fit: BoxFit.fill,
-                  errorBuilder: (_, __, ___) => DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: TudloColors.paper,
-                      borderRadius: BorderRadius.circular(34),
-                      border: Border.all(color: TudloColors.green, width: 8),
-                    ),
-                  ),
                 ),
               ),
               Positioned(
-                right: width * .02,
-                top: height * .18,
+                right: -width * .015,
+                top: height * .31,
                 child: Semantics(
                   button: true,
                   label: 'Magpabilin',
                   child: GestureDetector(
                     onTap: () => Navigator.pop(dialogContext, false),
-                    child: Container(
-                      width: (width * .13).clamp(54.0, 76.0),
-                      height: (width * .13).clamp(54.0, 76.0),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFE56642),
-                        border: Border.all(
-                          color: const Color(0xFF7A3E29),
-                          width: 5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: .24),
-                            blurRadius: 0,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 42,
+                    child: SizedBox(
+                      width: (width * .095).clamp(38.0, 56.0),
+                      height: (width * .095).clamp(38.0, 56.0),
+                      child: SvgPicture.asset(
+                        '$assetBase/Tudlo_Exit_X_Button.svg',
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
                 ),
               ),
               Positioned(
-                left: width * .15,
-                right: width * .15,
-                bottom: height * .14,
+                left: width * .18,
+                right: width * .18,
+                bottom: height * .07,
                 child: Row(
                   children: [
                     Expanded(
-                      child: _LessonExitPopupButton(
+                      child: _LessonExitPopupButton.asset(
                         label: 'Halin',
-                        backgroundColor: const Color(0xFFFFBA33),
-                        foregroundColor: TudloColors.ink,
+                        asset: '$assetBase/Tudlo_Halin_Button.svg',
                         onTap: () => Navigator.pop(dialogContext, true),
                       ),
                     ),
                     SizedBox(width: width * .04),
                     Expanded(
-                      child: _LessonExitPopupButton(
+                      child: _LessonExitPopupButton.asset(
                         label: 'Magpabilin',
-                        backgroundColor: const Color(0xFF58B33F),
-                        foregroundColor: Colors.white,
+                        asset: '$assetBase/Tudlo_Magpabilin_Button.svg',
                         onTap: () => Navigator.pop(dialogContext, false),
                       ),
                     ),
@@ -151,14 +146,12 @@ Future<bool> _showLessonExitConfirmation(BuildContext context) async {
 
 class _LessonExitPopupButton extends StatelessWidget {
   final String label;
-  final Color backgroundColor;
-  final Color foregroundColor;
+  final String asset;
   final VoidCallback onTap;
 
-  const _LessonExitPopupButton({
+  const _LessonExitPopupButton.asset({
     required this.label,
-    required this.backgroundColor,
-    required this.foregroundColor,
+    required this.asset,
     required this.onTap,
   });
 
@@ -170,38 +163,9 @@ class _LessonExitPopupButton extends StatelessWidget {
       label: label,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: SizedBox(
           height: (width * .13).clamp(54.0, 72.0),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF6E3F25), width: 5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: .24),
-                blurRadius: 0,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                color: foregroundColor,
-                fontSize: 31,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
-                shadows: const [
-                  Shadow(color: Colors.white54, offset: Offset(0, 1)),
-                ],
-              ),
-            ),
-          ),
+          child: SvgPicture.asset(asset, fit: BoxFit.contain),
         ),
       ),
     );
@@ -410,15 +374,10 @@ class _LevelGamePageState extends State<LevelGamePage> {
     }
   }
 
-  void _completeCustomLesson() {
+  void _showCustomLessonCompleteDialog() {
     if (_completeDialogShown) return;
     _completeDialogShown = true;
-    _claimRewardsOnce();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 2)),
-      (route) => false,
-    );
+    _showCompleteDialog();
   }
 
   void _handleGradeThreeQuestionCompleted(
@@ -490,6 +449,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
       barrierColor: TudloColors.ink.withValues(alpha: .62),
       builder: (_) => _LessonCompleteDialog(
         level: widget.level,
+        backgroundAsset: _lessonCompleteBackgroundAsset(widget.level),
         accuracy: accuracy,
         mistakes: scoreStats.mistakes,
         durationLabel: durationLabel,
@@ -911,6 +871,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                     : gradeTwoLesson
                                     ? _GradeTwoTalkBuildSolveLesson(
                                         content: levelContent,
+                                        onExit: _showPauseMenu,
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
                                       )
@@ -934,7 +895,8 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                               true,
                                               autoComplete: false,
                                             ),
-                                        onLessonComplete: _completeCustomLesson,
+                                        onLessonComplete:
+                                            _showCustomLessonCompleteDialog,
                                       )
                                     : familyLesson &&
                                           levelContent.lessonNumber == 3
@@ -2379,9 +2341,11 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
     extends State<_GradeTwoUnitOneLessonOneNewFriendFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _anaAsset =
-      'assets/images/level_game/people/Tudlo_Ana_Full_Body_Character.svg';
-  static const _stickerAsset =
-      '$_lessonStickerAssetRoot/Tudlo_Abyan_1_New_Friend_Completion_Sticker.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Full_Body_Character_Facing_Left.svg';
+  static const _anaSmilingAsset =
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Correct_Response_Smiling_Facing_Left.svg';
+  static const _anaAnswerAsset =
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Half_Body_Eyes_Closed_Smiling.svg';
   static const _responseOrder = ['my_name_is', 'ana'];
 
   _G2NewFriendStep _step = _G2NewFriendStep.intro;
@@ -2630,10 +2594,13 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
           ),
           _G2NewFriendStep.hello => _G2FriendChoiceStep(
             progress: _progress,
-            anaAsset: _anaAsset,
+            anaAsset: _selectedChoiceId == 'hello'
+                ? _anaSmilingAsset
+                : _anaAsset,
             prompt: 'Hello!',
-            kokaBubble: 'Hello!',
-            anaBubble: 'Hello!',
+            showPrompt: _selectedChoiceId == 'hello',
+            kokaBubble: _selectedChoiceId == 'hello' ? 'Hello!' : null,
+            anaBubble: _selectedChoiceId == 'hello' ? 'Hello!' : null,
             choices: const [
               _G2FriendChoice('hello', 'Hello!'),
               _G2FriendChoice('goodbye', 'Goodbye!'),
@@ -2651,6 +2618,10 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
             progress: _progress,
             anaAsset: _anaAsset,
             prompt: 'What is your name?',
+            showPrompt: _selectedChoiceId == 'what_name',
+            kokaBubble: _selectedChoiceId == 'what_name'
+                ? 'What is your name?'
+                : null,
             choices: const [
               _G2FriendChoice('what_name', 'What is your name?'),
               _G2FriendChoice('how_old', 'How old are you?'),
@@ -2666,7 +2637,7 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
           ),
           _G2NewFriendStep.anaAnswers => _G2AnaAnswerStep(
             progress: _progress,
-            anaAsset: _anaAsset,
+            anaAsset: _anaAnswerAsset,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
@@ -2674,7 +2645,7 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
           ),
           _G2NewFriendStep.buildResponse => _G2BuildResponseStep(
             progress: _progress,
-            anaAsset: _anaAsset,
+            anaAsset: _anaAnswerAsset,
             slots: _responseSlots,
             wrongTileId: _wrongTileId,
             inputReady: !_voicePlaying && _responseHeard,
@@ -2686,7 +2657,6 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
           _G2NewFriendStep.reward => _G2NewFriendRewardStep(
             progress: _progress,
             anaAsset: _anaAsset,
-            stickerAsset: _stickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finish,
@@ -2739,29 +2709,18 @@ class _G2NewFriendIntroStep extends StatelessWidget {
         child: Column(
           children: [
             const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _LessonKokaMascot(
-                  size: (view.width * .38).clamp(145.0, 210.0),
-                  mood: KokaMood.idle,
+            SizedBox(
+              width: view.width * .68,
+              height: view.height * .42,
+              child: _LessonPictureAsset(
+                asset: anaAsset,
+                fit: BoxFit.contain,
+                errorBuilder: (_) => Icon(
+                  Icons.face_3_rounded,
+                  color: TudloColors.blue,
+                  size: view.width * .28,
                 ),
-                SizedBox(width: view.width * .04),
-                SizedBox(
-                  width: view.width * .30,
-                  height: view.height * .29,
-                  child: _LessonPictureAsset(
-                    asset: anaAsset,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_) => Icon(
-                      Icons.face_3_rounded,
-                      color: TudloColors.blue,
-                      size: view.width * .22,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
             const Spacer(),
             const _LessonOneMessageCard(message: 'May bag-o kita nga abyan.'),
@@ -2951,18 +2910,10 @@ class _G2MeetAnaStep extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: view.width * .10,
-            bottom: view.height * .19,
-            child: _LessonKokaMascot(
-              size: (view.width * .32).clamp(118.0, 170.0),
-              mood: KokaMood.idle,
-            ),
-          ),
-          Positioned(
+            left: view.width * .12,
             right: view.width * .12,
-            bottom: view.height * .17,
-            width: view.width * .42,
-            height: view.height * .48,
+            bottom: view.height * .12,
+            height: view.height * .62,
             child: GestureDetector(
               onTap: inputReady ? onTapAna : null,
               child: Stack(
@@ -2970,16 +2921,20 @@ class _G2MeetAnaStep extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   if (!anaFound)
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        boxShadow: [
-                          BoxShadow(
-                            color: TudloColors.gold.withValues(alpha: .65),
-                            blurRadius: 28,
-                            spreadRadius: 8,
-                          ),
-                        ],
+                    SizedBox(
+                      width: view.width * .42,
+                      height: view.height * .28,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: [
+                            BoxShadow(
+                              color: TudloColors.gold.withValues(alpha: .46),
+                              blurRadius: 24,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   _LessonPictureAsset(
@@ -2993,8 +2948,8 @@ class _G2MeetAnaStep extends StatelessWidget {
                   ),
                   if (!anaFound)
                     Positioned(
-                      right: -view.width * .03,
-                      bottom: view.height * .06,
+                      right: view.width * .03,
+                      bottom: view.height * .09,
                       child: const _FamilyTapCue(),
                     ),
                 ],
@@ -3011,6 +2966,7 @@ class _G2FriendChoiceStep extends StatelessWidget {
   final double progress;
   final String anaAsset;
   final String prompt;
+  final bool showPrompt;
   final String? kokaBubble;
   final String? anaBubble;
   final List<_G2FriendChoice> choices;
@@ -3026,6 +2982,7 @@ class _G2FriendChoiceStep extends StatelessWidget {
     required this.progress,
     required this.anaAsset,
     required this.prompt,
+    this.showPrompt = true,
     this.kokaBubble,
     this.anaBubble,
     required this.choices,
@@ -3042,6 +2999,7 @@ class _G2FriendChoiceStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final top = MediaQuery.paddingOf(context).top;
+    final correctSelected = selectedId == correctId;
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -3056,24 +3014,33 @@ class _G2FriendChoiceStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _LessonOneMessageCard(message: prompt, compact: true),
-            SizedBox(height: view.height * .015),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: showPrompt
+                  ? _LessonOneMessageCard(message: prompt, compact: true)
+                  : SizedBox(
+                      key: const ValueKey('g2-choice-prompt-hidden'),
+                      height: (view.width * .16).clamp(56.0, 74.0),
+                    ),
+            ),
+            SizedBox(height: view.height * .012),
             Expanded(
               child: Stack(
+                alignment: Alignment.center,
                 children: [
                   Positioned(
-                    left: 0,
-                    bottom: 0,
+                    left: -view.width * .18,
+                    bottom: -view.height * .03,
                     child: _LessonKokaMascot(
-                      size: (view.width * .39).clamp(135.0, 210.0),
+                      size: (view.width * .82).clamp(320.0, 470.0),
                       mood: KokaMood.idle,
                     ),
                   ),
                   Positioned(
-                    right: 0,
-                    bottom: 0,
-                    width: view.width * .44,
-                    height: view.height * .42,
+                    right: -view.width * .10,
+                    bottom: -view.height * .02,
+                    width: view.width * .70,
+                    height: view.height * .60,
                     child: _LessonPictureAsset(
                       asset: anaAsset,
                       fit: BoxFit.contain,
@@ -3084,17 +3051,23 @@ class _G2FriendChoiceStep extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (kokaBubble != null)
+                  if (correctSelected && kokaBubble != null)
                     Positioned(
-                      left: view.width * .13,
-                      top: view.height * .02,
-                      child: _G2SmallSpeechBubble(text: kokaBubble!),
+                      left: view.width * .04,
+                      top: view.height * .015,
+                      child: _G2SmallSpeechBubble(
+                        text: kokaBubble!,
+                        large: true,
+                      ),
                     ),
-                  if (anaBubble != null)
+                  if (correctSelected && anaBubble != null)
                     Positioned(
-                      right: view.width * .06,
-                      top: view.height * .03,
-                      child: _G2SmallSpeechBubble(text: anaBubble!),
+                      right: view.width * .08,
+                      top: view.height * .035,
+                      child: _G2SmallSpeechBubble(
+                        text: anaBubble!,
+                        large: true,
+                      ),
                     ),
                 ],
               ),
@@ -3149,8 +3122,8 @@ class _G2FriendChoiceCard extends StatelessWidget {
         onTap: enabled ? onTap : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          height: (width * .31).clamp(112.0, 150.0),
-          padding: const EdgeInsets.all(8),
+          height: (width * .34).clamp(124.0, 168.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           decoration: BoxDecoration(
             color: correct ? const Color(0xFFE5FFD5) : Colors.white,
             borderRadius: BorderRadius.circular(18),
@@ -3173,26 +3146,19 @@ class _G2FriendChoiceCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    choice.label,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.nunito(
-                      color: TudloColors.blue,
-                      fontSize: 24,
-                      height: 1.05,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  choice.label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.blue,
+                    fontSize: 28,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
                   ),
                 ),
-              ),
-              Icon(
-                correct ? Icons.check_circle_rounded : Icons.chat_bubble,
-                color: correct ? TudloColors.green : TudloColors.blue,
-                size: 34,
               ),
             ],
           ),
@@ -3297,6 +3263,10 @@ class _G2BuildResponseStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final top = MediaQuery.paddingOf(context).top;
+    final sentenceCorrect =
+        slots.length == _tiles.length &&
+        slots[0] == _tiles[0].id &&
+        slots[1] == _tiles[1].id;
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -3312,23 +3282,31 @@ class _G2BuildResponseStep extends StatelessWidget {
         child: Column(
           children: [
             const _LessonOneMessageCard(
-              message: 'Kumpletuhon ta: My name is Ana.',
+              message: 'Kompletuhon ta!',
               compact: true,
             ),
-            SizedBox(height: view.height * .018),
+            const Spacer(),
             SizedBox(
-              height: view.height * .20,
+              height: view.height * .30,
               child: _LessonPictureAsset(
                 asset: anaAsset,
                 fit: BoxFit.contain,
                 errorBuilder: (_) => Icon(
                   Icons.face_3_rounded,
                   color: TudloColors.blue,
-                  size: view.width * .22,
+                  size: view.width * .30,
                 ),
               ),
             ),
-            _G2ResponseTray(slots: slots, onPlace: onPlace),
+            SizedBox(height: view.height * .02),
+            Align(
+              alignment: Alignment.center,
+              child: _G2ResponseTray(
+                slots: slots,
+                complete: sentenceCorrect,
+                onPlace: onPlace,
+              ),
+            ),
             const Spacer(),
             Row(
               children: [
@@ -3356,64 +3334,76 @@ class _G2BuildResponseStep extends StatelessWidget {
 
 class _G2ResponseTray extends StatelessWidget {
   final List<String?> slots;
+  final bool complete;
   final Future<void> Function(String tileId, int slotIndex) onPlace;
 
-  const _G2ResponseTray({required this.slots, required this.onPlace});
+  const _G2ResponseTray({
+    required this.slots,
+    required this.complete,
+    required this.onPlace,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .78),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: TudloColors.green, width: 3),
-      ),
-      child: Row(
-        children: [
-          for (var index = 0; index < slots.length; index++)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: DragTarget<String>(
-                  onWillAcceptWithDetails: (_) => slots[index] == null,
-                  onAcceptWithDetails: (details) {
-                    unawaited(onPlace(details.data, index));
-                  },
-                  builder: (context, _, __) {
-                    final label = _g2ResponseTileLabel(slots[index]);
-                    return Container(
-                      height: 58,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: label == null
-                            ? Colors.white.withValues(alpha: .55)
-                            : const Color(0xFFE5FFD5),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: label == null
-                              ? const Color(0xFFB8B8B8)
-                              : TudloColors.green,
-                          width: 2.5,
+    final width = MediaQuery.sizeOf(context).width;
+    return SizedBox(
+      width: math.min(width * .86, 410.0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .78),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: complete ? TudloColors.green : const Color(0xFFC9D2D7),
+            width: 3,
+          ),
+        ),
+        child: Row(
+          children: [
+            for (var index = 0; index < slots.length; index++)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: DragTarget<String>(
+                    onWillAcceptWithDetails: (_) => slots[index] == null,
+                    onAcceptWithDetails: (details) {
+                      unawaited(onPlace(details.data, index));
+                    },
+                    builder: (context, _, __) {
+                      final label = _g2ResponseTileLabel(slots[index]);
+                      return Container(
+                        height: 62,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: complete
+                              ? const Color(0xFFE5FFD5)
+                              : Colors.white.withValues(alpha: .64),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: complete
+                                ? TudloColors.green
+                                : const Color(0xFFB8B8B8),
+                            width: 2.5,
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        label ?? '',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.nunito(
-                          color: TudloColors.blue,
-                          fontSize: 18,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
+                        child: Text(
+                          label ?? '',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.nunito(
+                            color: TudloColors.blue,
+                            fontSize: 19,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -3493,7 +3483,6 @@ class _G2ResponseTile extends StatelessWidget {
 class _G2NewFriendRewardStep extends StatelessWidget {
   final double progress;
   final String anaAsset;
-  final String stickerAsset;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onDone;
@@ -3501,7 +3490,6 @@ class _G2NewFriendRewardStep extends StatelessWidget {
   const _G2NewFriendRewardStep({
     required this.progress,
     required this.anaAsset,
-    required this.stickerAsset,
     required this.onExit,
     required this.onReplay,
     required this.onDone,
@@ -3515,7 +3503,6 @@ class _G2NewFriendRewardStep extends StatelessWidget {
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
       child: _StickerUnlockRewardContent(
-        stickerAsset: stickerAsset,
         fallback: const _FamilyReferenceBadge(label: 'ABYAN\n1'),
         message: 'Nakilala mo ang bag-o nga abyan!',
         onDone: onDone,
@@ -3526,14 +3513,18 @@ class _G2NewFriendRewardStep extends StatelessWidget {
 
 class _G2SmallSpeechBubble extends StatelessWidget {
   final String text;
+  final bool large;
 
-  const _G2SmallSpeechBubble({required this.text});
+  const _G2SmallSpeechBubble({required this.text, this.large = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 128),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      constraints: BoxConstraints(maxWidth: large ? 168 : 128),
+      padding: EdgeInsets.symmetric(
+        horizontal: large ? 18 : 14,
+        vertical: large ? 13 : 10,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -3550,7 +3541,7 @@ class _G2SmallSpeechBubble extends StatelessWidget {
         textAlign: TextAlign.center,
         style: GoogleFonts.nunito(
           color: TudloColors.blue,
-          fontSize: 18,
+          fontSize: large ? 23 : 18,
           height: 1.05,
           fontWeight: FontWeight.w900,
           letterSpacing: 0,
@@ -3599,13 +3590,11 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
     extends State<_GradeTwoUnitOneLessonTwoBirthdayFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _anaAsset =
-      'assets/images/level_game/people/Tudlo_Ana_Full_Body_Character.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Full_Body_Character.svg';
   static const _anaCelebrateAsset =
-      'assets/images/level_game/people/Tudlo_Ana_Celebrating_Age_Seven.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Celebrating_Age_Seven.svg';
   static const _backgroundAsset =
-      'assets/images/level_game/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
-  static const _stickerAsset =
-      '$_lessonStickerAssetRoot/Tudlo_Abyan_2_Age_Star_Completion_Sticker.svg';
+      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
   static const _answerOrder = ['i_am', 'seven_years_old'];
 
   _G2BirthdayStep _step = _G2BirthdayStep.invitation;
@@ -3873,7 +3862,6 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
             progress: _progress,
             backgroundAsset: _backgroundAsset,
             anaAsset: _anaCelebrateAsset,
-            stickerAsset: _stickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finish,
@@ -4801,7 +4789,6 @@ class _G2BirthdayRewardStep extends StatelessWidget {
   final double progress;
   final String backgroundAsset;
   final String anaAsset;
-  final String stickerAsset;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onDone;
@@ -4810,7 +4797,6 @@ class _G2BirthdayRewardStep extends StatelessWidget {
     required this.progress,
     required this.backgroundAsset,
     required this.anaAsset,
-    required this.stickerAsset,
     required this.onExit,
     required this.onReplay,
     required this.onDone,
@@ -4824,7 +4810,6 @@ class _G2BirthdayRewardStep extends StatelessWidget {
       onReplay: onReplay,
       backgroundAsset: backgroundAsset,
       child: _StickerUnlockRewardContent(
-        stickerAsset: stickerAsset,
         fallback: const _FamilyReferenceBadge(label: 'ABYAN\n2'),
         message: 'Makasiling ka na sang imo edad!',
         onDone: onDone,
@@ -4875,15 +4860,13 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     extends State<_GradeTwoUnitTwoLessonOneParkGreetingFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _backgroundAsset =
-      'assets/images/level_game/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
-  static const _stickerAsset =
-      '$_lessonStickerAssetRoot/Tudlo_Panamyaw_1_Greeting_Star_Completion_Sticker.svg';
+      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
   static const _friendGirlOne =
-      'assets/images/level_game/people/Tudlo_Park_Friend_Girl_1.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Park_Friend_Girl_1.svg';
   static const _friendBoy =
-      'assets/images/level_game/people/Tudlo_Park_Friend_Boy.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Park_Friend_Boy.svg';
   static const _friendGirlTwo =
-      'assets/images/level_game/people/Tudlo_Park_Friend_Girl_2.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Park_Friend_Girl_2.svg';
   static const _answerByTime = {
     'morning': 'good_morning',
     'afternoon': 'good_afternoon',
@@ -5211,7 +5194,6 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           _G2ParkGreetingStep.reward => _G2ParkGreetingRewardStep(
             progress: _progress,
             backgroundAsset: _backgroundAsset,
-            stickerAsset: _stickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finish,
@@ -5839,7 +5821,6 @@ class _G2ParkGreetingMatchStep extends StatelessWidget {
 class _G2ParkGreetingRewardStep extends StatelessWidget {
   final double progress;
   final String backgroundAsset;
-  final String stickerAsset;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onDone;
@@ -5847,7 +5828,6 @@ class _G2ParkGreetingRewardStep extends StatelessWidget {
   const _G2ParkGreetingRewardStep({
     required this.progress,
     required this.backgroundAsset,
-    required this.stickerAsset,
     required this.onExit,
     required this.onReplay,
     required this.onDone,
@@ -5862,7 +5842,6 @@ class _G2ParkGreetingRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
-        stickerAsset: stickerAsset,
         fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n1'),
         message: 'Kabalo ka na mag-greet sa nagkalain-lain nga tion!',
         onDone: onDone,
@@ -6193,15 +6172,13 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
     extends State<_GradeTwoUnitTwoLessonTwoParkDialogueFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _backgroundAsset =
-      'assets/images/level_game/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
   static const _anaAsset =
-      'assets/images/level_game/people/Tudlo_Ana_Full_Body_Character_1.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Full_Body_Character_1.svg';
   static const _anaSmileAsset =
-      'assets/images/level_game/people/Tudlo_Ana_Correct_Response_Smiling.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Correct_Response_Smiling.svg';
   static const _benchAsset =
-      'assets/images/level_game/lesson-game-assets/Tudlo_Park_Wooden_Bench_Exact.svg';
-  static const _stickerAsset =
-      '$_lessonStickerAssetRoot/Tudlo_Panamyaw_2_Dialogue_Star_Completion_Sticker.svg';
+      'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Park_Wooden_Bench_Exact.svg';
   static const _dialogueOrder = ['how_are_you', 'fine_thank_you'];
 
   _G2ParkDialogueStep _step = _G2ParkDialogueStep.intro;
@@ -6475,7 +6452,6 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
             progress: _progress,
             backgroundAsset: _backgroundAsset,
             anaAsset: _anaSmileAsset,
-            stickerAsset: _stickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finish,
@@ -6994,7 +6970,6 @@ class _G2ParkDialogueRewardStep extends StatelessWidget {
   final double progress;
   final String backgroundAsset;
   final String anaAsset;
-  final String stickerAsset;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onDone;
@@ -7003,7 +6978,6 @@ class _G2ParkDialogueRewardStep extends StatelessWidget {
     required this.progress,
     required this.backgroundAsset,
     required this.anaAsset,
-    required this.stickerAsset,
     required this.onExit,
     required this.onReplay,
     required this.onDone,
@@ -7018,7 +6992,6 @@ class _G2ParkDialogueRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
-        stickerAsset: stickerAsset,
         fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n2'),
         message: 'Nahimo mo ang bug-os nga greeting exchange!',
         onDone: onDone,
@@ -7200,10 +7173,12 @@ String? _g2ParkDialogueTileLabel(String? id) {
 
 class _GradeTwoTalkBuildSolveLesson extends StatefulWidget {
   final LevelContent content;
+  final VoidCallback onExit;
   final ValueChanged<int> onQuizCorrect;
 
   const _GradeTwoTalkBuildSolveLesson({
     required this.content,
+    required this.onExit,
     required this.onQuizCorrect,
   });
 
@@ -7218,6 +7193,8 @@ class _GradeTwoTalkBuildSolveLessonState
   int _step = 0;
   int _reported = 0;
   bool _finished = false;
+
+  double get _progress => (_step + 1) / 3;
 
   void _advance() {
     _reportOne();
@@ -7244,6 +7221,25 @@ class _GradeTwoTalkBuildSolveLessonState
     }
   }
 
+  void _replayCurrentStep() {
+    final message = switch (_step) {
+      0 => _plan.tapInstruction,
+      1 => _plan.buildPrompt,
+      _ => _plan.choicePrompt,
+    };
+    unawaited(TudloVoiceButton.speak(context, message, hiligaynon: true));
+  }
+
+  String get _backgroundAsset {
+    if (widget.content.unitNumber == 1 && widget.content.lessonNumber == 2) {
+      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
+    }
+    if (widget.content.unitNumber == 2) {
+      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+    }
+    return 'assets/images/level_game/backgrounds/classroom.svg';
+  }
+
   @override
   Widget build(BuildContext context) {
     final cards = [
@@ -7254,23 +7250,29 @@ class _GradeTwoTalkBuildSolveLessonState
       _GradeTwoDialogueChoiceCard(plan: _plan, onDone: _advance),
     ];
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 520),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(.04, 0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: KeyedSubtree(key: ValueKey(_step), child: cards[_step]),
+    return _LessonOneChrome(
+      progress: _progress,
+      onExit: widget.onExit,
+      onReplay: _replayCurrentStep,
+      backgroundAsset: _backgroundAsset,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 520),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(.04, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(key: ValueKey(_step), child: cards[_step]),
+      ),
     );
   }
 }
@@ -10257,7 +10259,8 @@ class _GradeOneUnitOneLessonOneFlowState
       word: 'NANAY',
       answer: 'N',
       prompt: 'Ano ang una nga letra sang nanay?',
-      imageAsset: 'assets/images/level_game/people/nanay.svg',
+      imageAsset:
+          'assets/images/level_game/grade1/people/Tudlo_Nanay_Half_Body_Exact.svg',
       highlightIndex: 0,
     ),
   ];
@@ -10428,8 +10431,9 @@ class _GradeOneUnitOneLessonOneFlowState
     if (_arrangedLetters.length >= question.missingLetters.length) {
       return;
     }
-    final expected = question.missingLetters[_arrangedLetters.length];
-    final correct = letter == expected;
+    final correct =
+        question.missingLetters.contains(letter) &&
+        !_arrangedLetters.contains(letter);
     widget.onQuizAttempt(_lessonQuizCount - 1, correct);
     if (!correct) {
       setState(() => _wrongLetter = letter);
@@ -10774,34 +10778,42 @@ class _LessonOneIntroStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            const Spacer(),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _LessonKokaMascot(
-                    size: (view.width * .47).clamp(160.0, 240.0),
-                    mood: KokaMood.idle,
+            SizedBox(height: view.height * .02),
+            SizedBox(
+              height: view.height * .45,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: -view.width * .08,
+                    bottom: 0,
+                    child: _LessonKokaMascot(
+                      size: (view.width * .72).clamp(275.0, 380.0),
+                      mood: KokaMood.idle,
+                    ),
                   ),
-                ),
-                Positioned(
-                  right: view.width * .34,
-                  top: view.height * .035,
-                  child: _LessonOneQuestionMarks(size: view.width * .17),
-                ),
-              ],
-            ),
-            SizedBox(height: view.height * .035),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              children: const [
-                _LessonOneMysteryCard(),
-                _LessonOneMysteryCard(),
-                _LessonOneMysteryCard(),
-              ],
+                  Positioned(
+                    left: view.width * .40,
+                    top: view.height * .02,
+                    child: _LessonOneQuestionMarks(size: view.width * .18),
+                  ),
+                  Positioned(
+                    right: view.width * .03,
+                    bottom: view.height * .02,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        _LessonOneMysteryCard(compact: true),
+                        SizedBox(width: 9),
+                        _LessonOneMysteryCard(compact: true),
+                        SizedBox(width: 9),
+                        _LessonOneMysteryCard(compact: true),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const Spacer(),
             _LessonOneMessageCard(message: 'Ay! Nadula ang A, N, kag T.'),
@@ -11028,19 +11040,12 @@ class _LessonOneSearchStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final top = MediaQuery.paddingOf(context).top;
-    final letterSize = (view.width * .19).clamp(64.0, 104.0).toDouble();
+    final letterSize = (view.width * .25).clamp(92.0, 138.0).toDouble();
     final positions = {
-      'A': Rect.fromLTWH(view.width * .16, view.height * .61, 1, 1),
-      'N': Rect.fromLTWH(view.width * .70, top + view.height * .38, 1, 1),
-      'T': Rect.fromLTWH(view.width * .50, view.height * .70, 1, 1),
+      'A': Rect.fromLTWH(view.width * .13, view.height * .58, 1, 1),
+      'N': Rect.fromLTWH(view.width * .68, top + view.height * .34, 1, 1),
+      'T': Rect.fromLTWH(view.width * .47, view.height * .68, 1, 1),
     };
-    String? activeLetter;
-    for (final letter in letters) {
-      if (!foundLetters.contains(letter)) {
-        activeLetter = letter;
-        break;
-      }
-    }
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -11057,22 +11062,21 @@ class _LessonOneSearchStep extends StatelessWidget {
             ),
           ),
           for (final letter in letters)
-            if (activeLetter == letter)
-              Positioned(
-                left: positions[letter]!.left,
-                top: positions[letter]!.top,
-                child: _LessonOneHotspotLetter(
-                  letter: letter,
-                  size: letterSize,
-                  found: foundLetters.contains(letter),
-                  onTap: () => onLetterTap(letter),
-                ),
+            Positioned(
+              left: positions[letter]!.left,
+              top: positions[letter]!.top,
+              child: _LessonOneHotspotLetter(
+                letter: letter,
+                size: letterSize,
+                found: foundLetters.contains(letter),
+                onTap: () => onLetterTap(letter),
               ),
+            ),
           Positioned(
-            left: view.width * .045,
-            top: top + view.height * .285,
+            left: -view.width * .08,
+            top: top + view.height * .20,
             child: _LessonKokaMascot(
-              size: (view.width * .28).clamp(104.0, 145.0),
+              size: (view.width * .66).clamp(260.0, 360.0),
               mood: KokaMood.idle,
             ),
           ),
@@ -11124,10 +11128,10 @@ class _LessonOneChoiceStep extends StatelessWidget {
       backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
       child: Center(
         child: Container(
-          width: view.width * .84,
+          width: view.width * .86,
           padding: EdgeInsets.symmetric(
             horizontal: view.width * .05,
-            vertical: view.height * .035,
+            vertical: view.height * .032,
           ),
           decoration: BoxDecoration(
             color: const Color(0xFFFFF8E6).withValues(alpha: .96),
@@ -11144,7 +11148,7 @@ class _LessonOneChoiceStep extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                height: (view.height * .19).clamp(130.0, 210.0),
+                height: (view.height * .25).clamp(180.0, 275.0),
                 child: _LessonPictureAsset(
                   asset: question.imageAsset,
                   fit: BoxFit.contain,
@@ -11168,7 +11172,7 @@ class _LessonOneChoiceStep extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   color: TudloColors.forest,
-                  fontSize: (view.width * .055).clamp(20.0, 28.0),
+                  fontSize: (view.width * .06).clamp(22.0, 30.0),
                   height: 1.1,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0,
@@ -11226,33 +11230,34 @@ class _LessonOneArrangeStep extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .07,
-          view.height * .15,
+          view.height * .14,
           view.width * .07,
           view.height * .04,
         ),
         child: Column(
           children: [
             _LessonOneMessageCard(message: question.prompt),
-            SizedBox(height: view.height * .07),
+            SizedBox(height: view.height * .08),
             _LessonOneArrangeSlots(
               question: question,
               letters: arrangedLetters,
             ),
-            SizedBox(height: view.height * .06),
+            const Spacer(),
             Wrap(
               alignment: WrapAlignment.center,
-              spacing: view.width * .09,
+              spacing: view.width * .075,
               runSpacing: 16,
               children: [
                 for (final letter in const ['T', 'A', 'N'])
                   _LessonOneDraggableLetter(
                     letter: letter,
-                    used: false,
+                    used: arrangedLetters.contains(letter),
                     wrong: wrongLetter == letter,
                     onTap: () => onLetterTap(letter),
                   ),
               ],
             ),
+            SizedBox(height: view.height * .08),
           ],
         ),
       ),
@@ -11281,8 +11286,6 @@ class _LessonOneRewardStep extends StatelessWidget {
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
       child: _StickerUnlockRewardContent(
-        stickerAsset:
-            '$_lessonStickerAssetRoot/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'LETTER\nFINDER'),
         message: 'Yehey! Nabalik na ang mga letra!',
         onDone: onDone,
@@ -11291,20 +11294,27 @@ class _LessonOneRewardStep extends StatelessWidget {
   }
 }
 
-class _StickerUnlockRewardContent extends StatelessWidget {
-  final String? stickerAsset;
+class _StickerUnlockRewardContent extends StatefulWidget {
   final Widget fallback;
   final String message;
   final String buttonLabel;
   final VoidCallback onDone;
 
   const _StickerUnlockRewardContent({
-    this.stickerAsset,
     required this.fallback,
     required this.message,
     this.buttonLabel = 'OK',
     required this.onDone,
   });
+
+  @override
+  State<_StickerUnlockRewardContent> createState() =>
+      _StickerUnlockRewardContentState();
+}
+
+class _StickerUnlockRewardContentState
+    extends State<_StickerUnlockRewardContent> {
+  late final String _selectedStickerAsset = _randomLessonStickerAsset();
 
   @override
   Widget build(BuildContext context) {
@@ -11326,17 +11336,15 @@ class _StickerUnlockRewardContent extends StatelessWidget {
               children: [
                 const Positioned.fill(child: _StickerUnlockGlow()),
                 GestureDetector(
-                  onTap: onDone,
+                  onTap: widget.onDone,
                   child: SizedBox(
                     width: stickerSize,
                     height: stickerSize,
-                    child: stickerAsset == null
-                        ? FittedBox(fit: BoxFit.contain, child: fallback)
-                        : _LessonPictureAsset(
-                            asset: stickerAsset!,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_) => fallback,
-                          ),
+                    child: _LessonPictureAsset(
+                      asset: _selectedStickerAsset,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_) => widget.fallback,
+                    ),
                   ),
                 ),
               ],
@@ -11346,9 +11354,9 @@ class _StickerUnlockRewardContent extends StatelessWidget {
         Positioned(
           left: view.width * .08,
           right: view.width * .08,
-          bottom: view.height * .17,
+          top: view.height * .13,
           child: Text(
-            message,
+            widget.message,
             textAlign: TextAlign.center,
             style: GoogleFonts.nunito(
               color: Colors.white,
@@ -11370,7 +11378,10 @@ class _StickerUnlockRewardContent extends StatelessWidget {
           left: view.width * .14,
           right: view.width * .14,
           bottom: view.height * .055,
-          child: _StickerUnlockOkButton(label: buttonLabel, onTap: onDone),
+          child: _StickerUnlockOkButton(
+            label: widget.buttonLabel,
+            onTap: widget.onDone,
+          ),
         ),
       ],
     );
@@ -11513,11 +11524,17 @@ class _LessonOneMessageCard extends StatelessWidget {
 }
 
 class _LessonOneMysteryCard extends StatelessWidget {
-  const _LessonOneMysteryCard();
+  final bool compact;
+
+  const _LessonOneMysteryCard({this.compact = false});
 
   @override
   Widget build(BuildContext context) {
-    final size = (MediaQuery.sizeOf(context).width * .20).clamp(66.0, 90.0);
+    final width = MediaQuery.sizeOf(context).width;
+    final size = (width * (compact ? .155 : .20)).clamp(
+      compact ? 50.0 : 66.0,
+      compact ? 68.0 : 90.0,
+    );
     return Container(
       width: size,
       height: size * 1.22,
@@ -11662,7 +11679,7 @@ class _LessonOneHighlightedWord extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final fontSize = (width * .09).clamp(34.0, 52.0);
+    final fontSize = (width * .115).clamp(42.0, 64.0);
     return RichText(
       text: TextSpan(
         style: GoogleFonts.nunito(
@@ -11826,12 +11843,12 @@ class _LessonOneArrangeSlots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = (MediaQuery.sizeOf(context).width * .155).clamp(50.0, 74.0);
+    final size = (MediaQuery.sizeOf(context).width * .23).clamp(82.0, 114.0);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E6).withValues(alpha: .92),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -11845,7 +11862,7 @@ class _LessonOneArrangeSlots extends StatelessWidget {
                   question.fixedLetters.containsKey(i) ||
                   _placedLetterForSlot(i).isNotEmpty,
             ),
-            if (i != question.word.length - 1) const SizedBox(width: 8),
+            if (i != question.word.length - 1) const SizedBox(width: 12),
           ],
         ],
       ),
@@ -11929,7 +11946,7 @@ class _LessonOneDraggableLetter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = (MediaQuery.sizeOf(context).width * .20).clamp(74.0, 104.0);
+    final size = (MediaQuery.sizeOf(context).width * .28).clamp(108.0, 148.0);
     return _FeedbackMotion(
       correct: used,
       wrong: wrong,
@@ -11959,6 +11976,7 @@ class _LessonOneStickerState extends State<_LessonOneSticker>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
+  late final String _stickerAsset = _randomLessonStickerAsset();
 
   @override
   void initState() {
@@ -11992,7 +12010,7 @@ class _LessonOneStickerState extends State<_LessonOneSticker>
           width: widget.size,
           height: widget.size * .82,
           child: SvgPicture.asset(
-            '$_lessonStickerAssetRoot/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
+            _stickerAsset,
             fit: BoxFit.contain,
             alignment: Alignment.center,
           ),
@@ -14362,7 +14380,6 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
             members: _members,
             portraitAsset:
                 'assets/images/level_game/people/family-portrait.svg',
-            stickerAsset: _familyPictureStickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finishLesson,
@@ -14577,7 +14594,6 @@ class _GradeOneUnitTwoLessonTwoVisitorFlowState
             members: _learnMembers,
             message: 'Yehey! Kilala ko si lola kag lolo!',
             badgeLabel: 'Pamilya\n2',
-            stickerAsset: _familyPictureStickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finishLesson,
@@ -14798,7 +14814,6 @@ class _GradeOneUnitTwoLessonThreePortraitFlowState
             members: _photoMembers,
             message: 'Yehey! Kompleto ang litrato!',
             badgeLabel: 'Pamilya\n3',
-            stickerAsset: _familyPictureStickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finishLesson,
@@ -15475,7 +15490,6 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
   final double progress;
   final List<_FamilyWord> members;
   final String? portraitAsset;
-  final String? stickerAsset;
   final String message;
   final String badgeLabel;
   final String buttonLabel;
@@ -15487,7 +15501,6 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
     required this.progress,
     required this.members,
     this.portraitAsset,
-    this.stickerAsset,
     this.message = 'Yehey! Kompleto na ang litrato!',
     this.badgeLabel = 'Family\nFriend',
     this.buttonLabel = 'Padayon',
@@ -15504,7 +15517,6 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/house.svg',
       child: _StickerUnlockRewardContent(
-        stickerAsset: stickerAsset,
         fallback: _FamilyReferenceBadge(label: badgeLabel),
         message: message,
         buttonLabel: buttonLabel,
@@ -15641,84 +15653,6 @@ class _FamilyReferenceMemberCard extends StatelessWidget {
               size: 32,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FamilyReferenceChoiceCard extends StatelessWidget {
-  final _FamilyWord member;
-  final bool selected;
-  final bool wrong;
-  final VoidCallback onTap;
-
-  const _FamilyReferenceChoiceCard({
-    required this.member,
-    required this.selected,
-    required this.wrong,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final view = MediaQuery.sizeOf(context);
-    return _FeedbackMotion(
-      correct: selected && !wrong,
-      wrong: wrong,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          height: (view.height * .22).clamp(145.0, 215.0),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: selected && !wrong
-                ? const Color(0xFFE5FFD5)
-                : wrong
-                ? const Color(0xFFFFF1D8)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected && !wrong
-                  ? TudloColors.green
-                  : wrong
-                  ? TudloColors.coral
-                  : const Color(0xFFD8E8F6),
-              width: 3,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: .12),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Expanded(
-                child: _LessonPictureAsset(
-                  asset: member.imageAsset,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_) =>
-                      Icon(member.icon, color: TudloColors.forest),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                member.hil,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.nunito(
-                  color: TudloColors.blue,
-                  fontSize: (view.width * .046).clamp(17.0, 23.0),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -16144,6 +16078,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlow extends StatefulWidget {
 class _GradeOneUnitTwoLessonFourPicnicFlowState
     extends State<_GradeOneUnitTwoLessonFourPicnicFlow> {
   static const _voiceBase = 'audio/VO-final/grade1';
+  static final Map<String, String> _savedPicnicSlots = {};
   static const _members = [
     _FamilyWord(
       hil: 'nanay',
@@ -16180,9 +16115,18 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
   int _stepIndex = 0;
   final Set<String> _pickedFamily = {};
   final Set<String> _pickedGrandparents = {};
-  final Map<String, String> _picnicSlots = {};
+  late final Map<String, String> _picnicSlots = Map.of(_savedPicnicSlots);
+  String? _selectedPicnicCard;
+  late final List<_FamilyWord> _picnicOptionMembers = _shuffledChoices(
+    _members
+        .where(
+          (member) => const {'nanay', 'tatay', 'bata'}.contains(member.hil),
+        )
+        .toList(),
+  );
   String? _wrongChoice;
   String? _wrongSeat;
+  bool _picnicFeedbackActive = false;
   bool _completed = false;
 
   double get _progress => (_stepIndex + 1) / 8;
@@ -16220,11 +16164,11 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
       0 => const [2],
       1 => const [3],
       2 => const [4],
-      3 => const [5],
-      4 => const [8],
-      5 => const [9],
-      6 => const [12, 13],
-      _ => const [15],
+      3 => const [4, 5],
+      4 => const [9, 11],
+      5 => const [12, 13],
+      6 => const [18],
+      _ => const [21],
     };
     try {
       await _playPicnicVoice(clips);
@@ -16274,7 +16218,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
     if (correct && member.hil != expected) {
       setState(() => _wrongChoice = member.hil);
       await AppAudioService.instance.playWrong();
-      await _playPicnicVoice(const [16]);
+      await _playPicnicVoice(_stepIndex == 3 ? const [10] : const [17]);
       await Future<void>.delayed(const Duration(milliseconds: 520));
       if (mounted) setState(() => _wrongChoice = null);
       return;
@@ -16297,7 +16241,13 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
       await AppAudioService.instance.playCorrect();
       if (!mounted) return;
       if (selected.length == required.length) {
-        await Future<void>.delayed(const Duration(milliseconds: 780));
+        if (_stepIndex == 5) {
+          await _playPicnicVoice(const [16]);
+        }
+        final delay = _stepIndex == 3
+            ? const Duration(milliseconds: 260)
+            : const Duration(milliseconds: 780);
+        await Future<void>.delayed(delay);
         if (mounted) _goToStep(_stepIndex + 1);
       } else {
         final nextTarget = required.elementAt(selected.length);
@@ -16307,8 +16257,9 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
               : nextTarget == 'lola'
               ? 8
               : nextTarget == 'lolo'
-              ? 9
+              ? 15
               : 5,
+          if (nextTarget == 'tatay') 8,
         ]);
       }
       return;
@@ -16316,7 +16267,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
 
     setState(() => _wrongChoice = member.hil);
     await AppAudioService.instance.playWrong();
-    await _playPicnicVoice(const [16]);
+    await _playPicnicVoice(_stepIndex == 3 ? const [10] : const [17]);
     await Future<void>.delayed(const Duration(milliseconds: 520));
     if (mounted) setState(() => _wrongChoice = null);
   }
@@ -16324,27 +16275,62 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
   Future<void> _placePicnicMember(String slot, String value) async {
     if (_picnicSlots.containsKey(slot) ||
         _picnicSlots.containsValue(value) ||
-        _wrongSeat != null) {
+        _wrongSeat != null ||
+        _picnicFeedbackActive) {
       return;
     }
     final correct = slot == value;
     widget.onQuizAttempt(4, correct);
     if (!correct) {
-      setState(() => _wrongSeat = value);
+      setState(() {
+        _wrongSeat = value;
+        _picnicFeedbackActive = true;
+      });
       await AppAudioService.instance.playWrong();
-      await _playPicnicVoice(const [16]);
-      if (mounted) setState(() => _wrongSeat = null);
+      await _playPicnicVoice(const [20]);
+      if (mounted) {
+        setState(() {
+          _wrongSeat = null;
+          _selectedPicnicCard = null;
+          _picnicFeedbackActive = false;
+        });
+      }
       return;
     }
 
-    setState(() => _picnicSlots[slot] = value);
+    setState(() {
+      _picnicSlots[slot] = value;
+      _savedPicnicSlots[slot] = value;
+      _selectedPicnicCard = null;
+      _picnicFeedbackActive = true;
+    });
     await AppAudioService.instance.playCorrect();
     if (!mounted) return;
     if (_picnicSlots.length == 3) {
       widget.onQuizCorrect(4);
-      await Future<void>.delayed(const Duration(milliseconds: 700));
-      if (mounted) _goToStep(7);
+      await _playPicnicVoice(const [19]);
     }
+    await Future<void>.delayed(const Duration(milliseconds: 360));
+    if (mounted) setState(() => _picnicFeedbackActive = false);
+  }
+
+  void _selectPicnicCard(_FamilyWord member) {
+    if (_picnicFeedbackActive ||
+        _picnicSlots.containsValue(member.hil) ||
+        _wrongSeat != null) {
+      return;
+    }
+    setState(() {
+      _selectedPicnicCard = _selectedPicnicCard == member.hil
+          ? null
+          : member.hil;
+    });
+  }
+
+  void _placeSelectedPicnicCard(String slot) {
+    final selected = _selectedPicnicCard;
+    if (selected == null) return;
+    unawaited(_placePicnicMember(slot, selected));
   }
 
   void _finishLesson() {
@@ -16375,7 +16361,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
             progress: _progress,
             onExit: widget.onExit,
             onReplay: _speakForStep,
-            onNext: () => _goToStep(2),
+            onNext: () => _goToStep(3),
           ),
           2 => _PicnicSceneScanStep(
             progress: _progress,
@@ -16386,7 +16372,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
           3 => _PicnicMemberGridStep(
             progress: _progress,
             members: _members,
-            prompt: 'I-tap si nanay, dayon si tatay.',
+            targetOrder: const ['nanay', 'tatay'],
             selected: _pickedFamily,
             wrongChoice: _wrongChoice,
             onExit: widget.onExit,
@@ -16395,7 +16381,6 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
           ),
           4 => _PicnicParentsJoinStep(
             progress: _progress,
-            members: [_member('nanay'), _member('tatay'), _member('bata')],
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onNext: () => _goToStep(5),
@@ -16403,7 +16388,7 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
           5 => _PicnicMemberGridStep(
             progress: _progress,
             members: _members,
-            prompt: 'I-tap si lola, dayon si lolo.',
+            targetOrder: const ['lola', 'lolo'],
             selected: _pickedGrandparents,
             wrongChoice: _wrongChoice,
             onExit: widget.onExit,
@@ -16412,12 +16397,18 @@ class _GradeOneUnitTwoLessonFourPicnicFlowState
           ),
           6 => _PicnicArrangeStep(
             progress: _progress,
-            members: [_member('nanay'), _member('tatay'), _member('bata')],
+            members: [_member('nanay'), _member('bata'), _member('tatay')],
+            optionMembers: _picnicOptionMembers,
             placements: _picnicSlots,
+            selectedCard: _selectedPicnicCard,
             wrongSeat: _wrongSeat,
+            inputLocked: _picnicFeedbackActive,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onPlace: _placePicnicMember,
+            onSelectCard: _selectPicnicCard,
+            onPlaceSelected: _placeSelectedPicnicCard,
+            onContinue: () => _goToStep(7),
           ),
           _ => _PicnicRewardStep(
             progress: _progress,
@@ -16452,7 +16443,7 @@ class _PicnicIntroStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset:
-          'assets/images/level_game/backgrounds/lesson4-familypicnic.svg',
+          'assets/images/level_game/grade1/backgrounds/lesson4-familypicnic.svg',
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .07,
@@ -16573,7 +16564,7 @@ class _PicnicSceneScanStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset:
-          'assets/images/level_game/backgrounds/lesson4-familypicnic.svg',
+          'assets/images/level_game/grade1/backgrounds/lesson4-familypicnic.svg',
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .06,
@@ -16598,7 +16589,7 @@ class _PicnicSceneScanStep extends StatelessWidget {
 class _PicnicMemberGridStep extends StatelessWidget {
   final double progress;
   final List<_FamilyWord> members;
-  final String prompt;
+  final List<String> targetOrder;
   final Set<String> selected;
   final String? wrongChoice;
   final VoidCallback onExit;
@@ -16608,7 +16599,7 @@ class _PicnicMemberGridStep extends StatelessWidget {
   const _PicnicMemberGridStep({
     required this.progress,
     required this.members,
-    required this.prompt,
+    required this.targetOrder,
     required this.selected,
     required this.wrongChoice,
     required this.onExit,
@@ -16620,6 +16611,11 @@ class _PicnicMemberGridStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final top = MediaQuery.paddingOf(context).top;
+    final orderedMembers = [
+      for (final name in const ['lolo', 'lola', 'bata', 'nanay', 'tatay'])
+        members.firstWhere((member) => member.hil == name),
+    ];
+    final prompt = 'I-tap si ${_currentTargetLabel()}.';
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -16638,23 +16634,28 @@ class _PicnicMemberGridStep extends StatelessWidget {
             SizedBox(height: view.height * .025),
             Expanded(
               child: Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  runAlignment: WrapAlignment.center,
-                  spacing: view.width * .022,
-                  runSpacing: view.height * .018,
-                  children: [
-                    for (final member in members)
-                      SizedBox(
-                        width: view.width * .265,
-                        child: _FamilyReferenceChoiceCard(
-                          member: member,
-                          selected: selected.contains(member.hil),
-                          wrong: wrongChoice == member.hil,
-                          onTap: () => onChoose(member),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: (view.height * .53).clamp(335.0, 490.0),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      for (
+                        var index = 0;
+                        index < orderedMembers.length;
+                        index++
+                      )
+                        _PicnicStandingMemberButton(
+                          member: orderedMembers[index],
+                          index: index,
+                          selected: selected.contains(
+                            orderedMembers[index].hil,
+                          ),
+                          wrong: wrongChoice == orderedMembers[index].hil,
+                          onTap: () => onChoose(orderedMembers[index]),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -16663,18 +16664,126 @@ class _PicnicMemberGridStep extends StatelessWidget {
       ),
     );
   }
+
+  String _currentTargetLabel() {
+    final target = targetOrder.firstWhere(
+      (name) => !selected.contains(name),
+      orElse: () => targetOrder.last,
+    );
+    return '${target[0].toUpperCase()}${target.substring(1)}';
+  }
+}
+
+class _PicnicStandingMemberButton extends StatelessWidget {
+  final _FamilyWord member;
+  final int index;
+  final bool selected;
+  final bool wrong;
+  final VoidCallback onTap;
+
+  const _PicnicStandingMemberButton({
+    required this.member,
+    required this.index,
+    required this.selected,
+    required this.wrong,
+    required this.onTap,
+  });
+
+  static const _alignments = [
+    Alignment(-1.08, .12),
+    Alignment(-.55, -.06),
+    Alignment(0, .16),
+    Alignment(.55, -.08),
+    Alignment(1.08, -.02),
+  ];
+
+  static const _sizeFactors = [.36, .36, .33, .37, .37];
+
+  static String _assetFor(String hil) {
+    return switch (hil) {
+      'lolo' =>
+        'assets/images/level_game/grade1/people/Tudlo_Lolo_Full_Body_Exact.svg',
+      'lola' =>
+        'assets/images/level_game/grade1/people/Tudlo_Lola_Full_Body_Exact.svg',
+      'bata' =>
+        'assets/images/level_game/grade1/people/Tudlo_Bata_Full_Body_Exact.svg',
+      'nanay' =>
+        'assets/images/level_game/grade1/people/Tudlo_Nanay_Full_Body_Exact.svg',
+      'tatay' =>
+        'assets/images/level_game/grade1/people/Tudlo_Tatay_Full_Body_Exact.svg',
+      _ => memberFallbackAsset,
+    };
+  }
+
+  static String get memberFallbackAsset =>
+      'assets/images/level_game/people/bata.svg';
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final width = view.width * _sizeFactors[index];
+    final height = (view.height * .49).clamp(315.0, 450.0);
+    return Align(
+      alignment: _alignments[index],
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: _FeedbackMotion(
+          correct: selected && !wrong,
+          wrong: wrong,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: onTap,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                if (selected && !wrong)
+                  Positioned(
+                    bottom: height * .11,
+                    child: Container(
+                      width: width * .62,
+                      height: height * .36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: TudloColors.green.withValues(alpha: .38),
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Padding(
+                  padding: EdgeInsets.only(top: selected ? 0 : height * .025),
+                  child: _LessonPictureAsset(
+                    asset: _assetFor(member.hil),
+                    fit: BoxFit.contain,
+                    errorBuilder: (_) => Icon(
+                      member.icon,
+                      color: TudloColors.forest,
+                      size: width * .75,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PicnicParentsJoinStep extends StatelessWidget {
   final double progress;
-  final List<_FamilyWord> members;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final VoidCallback onNext;
 
   const _PicnicParentsJoinStep({
     required this.progress,
-    required this.members,
     required this.onExit,
     required this.onReplay,
     required this.onNext,
@@ -16688,55 +16797,37 @@ class _PicnicParentsJoinStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/picnic.svg',
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .06,
-          view.height * .14,
-          view.width * .06,
-          view.height * .05,
-        ),
-        child: Column(
-          children: [
-            const Spacer(),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .74),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: .10),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  for (final member in members)
-                    Expanded(
-                      child: SizedBox(
-                        height: (view.height * .21).clamp(140.0, 210.0),
-                        child: _LessonPictureAsset(
-                          asset: member.imageAsset,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_) =>
-                              Icon(member.icon, color: TudloColors.forest),
-                        ),
-                      ),
-                    ),
-                ],
+      child: Stack(
+        children: [
+          Positioned(
+            left: -view.width * .05,
+            right: -view.width * .05,
+            top: view.height * .275,
+            height: (view.height * .44).clamp(330.0, 440.0),
+            child: _LessonPictureAsset(
+              asset:
+                  'assets/images/level_game/grade1/people/Tudlo_Nanay_Tatay_Holding_Hands_Picnic.png',
+              fit: BoxFit.contain,
+              errorBuilder: (_) => Icon(
+                Icons.family_restroom_rounded,
+                color: TudloColors.forest,
+                size: view.width * .32,
               ),
             ),
-            const Spacer(),
-            _LessonOneMessageCard(message: 'Husto! Nanay kag tatay.'),
-            SizedBox(height: view.height * .02),
-            _LessonOneBlueButton(label: 'Sige', onTap: onNext),
-          ],
-        ),
+          ),
+          Positioned(
+            left: view.width * .06,
+            right: view.width * .06,
+            bottom: view.height * .14,
+            child: _LessonOneMessageCard(message: 'Husto! Nanay kag tatay.'),
+          ),
+          Positioned(
+            left: view.width * .06,
+            right: view.width * .06,
+            bottom: view.height * .045,
+            child: _LessonOneBlueButton(label: 'Sige', onTap: onNext),
+          ),
+        ],
       ),
     );
   }
@@ -16745,26 +16836,41 @@ class _PicnicParentsJoinStep extends StatelessWidget {
 class _PicnicArrangeStep extends StatelessWidget {
   final double progress;
   final List<_FamilyWord> members;
+  final List<_FamilyWord> optionMembers;
   final Map<String, String> placements;
+  final String? selectedCard;
   final String? wrongSeat;
+  final bool inputLocked;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final Future<void> Function(String slot, String value) onPlace;
+  final ValueChanged<_FamilyWord> onSelectCard;
+  final ValueChanged<String> onPlaceSelected;
+  final VoidCallback onContinue;
 
   const _PicnicArrangeStep({
     required this.progress,
     required this.members,
+    required this.optionMembers,
     required this.placements,
+    required this.selectedCard,
     required this.wrongSeat,
+    required this.inputLocked,
     required this.onExit,
     required this.onReplay,
     required this.onPlace,
+    required this.onSelectCard,
+    required this.onPlaceSelected,
+    required this.onContinue,
   });
 
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final top = MediaQuery.paddingOf(context).top;
+    final complete = members.every(
+      (member) => placements[member.hil] == member.hil,
+    );
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -16779,33 +16885,30 @@ class _PicnicArrangeStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _LessonOneMessageCard(message: 'Ibutang sila sa ilanga lugar.'),
-            SizedBox(height: view.height * .03),
-            Container(
+            _LessonOneMessageCard(message: 'Ibutang sila sa ila nga lugar.'),
+            SizedBox(height: view.height * .012),
+            SizedBox(
               width: double.infinity,
-              padding: EdgeInsets.all(view.width * .035),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .76),
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: .10),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
+              height: (view.height * .34).clamp(240.0, 340.0),
+              child: Stack(
+                alignment: Alignment.bottomCenter,
                 children: [
-                  for (final member in members)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _PicnicDropSlot(
-                          member: member,
-                          placed: placements[member.hil] == member.hil,
-                          onPlace: onPlace,
-                        ),
+                  for (var index = 0; index < members.length; index++)
+                    Align(
+                      alignment: [
+                        const Alignment(-.82, .72),
+                        const Alignment(0, .78),
+                        const Alignment(.82, .72),
+                      ][index],
+                      child: _PicnicDropSlot(
+                        member: members[index],
+                        placed:
+                            placements[members[index].hil] ==
+                            members[index].hil,
+                        selected: selectedCard != null,
+                        inputLocked: inputLocked,
+                        onPlace: onPlace,
+                        onTap: () => onPlaceSelected(members[index].hil),
                       ),
                     ),
                 ],
@@ -16814,26 +16917,29 @@ class _PicnicArrangeStep extends StatelessWidget {
             const Spacer(),
             Row(
               children: [
-                for (final member in members)
+                for (final member in optionMembers)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: _PicnicDraggableCard(
                         member: member,
-                        enabled: placements[member.hil] != member.hil,
+                        enabled:
+                            !inputLocked &&
+                            placements[member.hil] != member.hil,
+                        selected: selectedCard == member.hil,
                         wrong: wrongSeat == member.hil,
-                        onTap: () {
-                          final slot = members.firstWhere(
-                            (candidate) =>
-                                !placements.containsKey(candidate.hil),
-                            orElse: () => member,
-                          );
-                          onPlace(slot.hil, member.hil);
-                        },
+                        onTap: () => onSelectCard(member),
                       ),
                     ),
                   ),
               ],
+            ),
+            SizedBox(height: view.height * .014),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: complete
+                  ? _LessonOneBlueButton(label: 'Sige', onTap: onContinue)
+                  : SizedBox(height: (view.height * .075).clamp(58.0, 72.0)),
             ),
           ],
         ),
@@ -16845,62 +16951,86 @@ class _PicnicArrangeStep extends StatelessWidget {
 class _PicnicDropSlot extends StatelessWidget {
   final _FamilyWord member;
   final bool placed;
+  final bool selected;
+  final bool inputLocked;
   final Future<void> Function(String slot, String value) onPlace;
+  final VoidCallback onTap;
 
   const _PicnicDropSlot({
     required this.member,
     required this.placed,
+    required this.selected,
+    required this.inputLocked,
     required this.onPlace,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     return DragTarget<String>(
-      onAcceptWithDetails: (details) => onPlace(member.hil, details.data),
+      onAcceptWithDetails: (details) {
+        if (!inputLocked) onPlace(member.hil, details.data);
+      },
       builder: (context, candidates, rejected) {
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: (view.height * .18).clamp(128.0, 190.0),
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: placed
-                ? const Color(0xFFE5FFD5)
-                : Colors.white.withValues(alpha: .82),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: placed ? TudloColors.green : const Color(0xFFB8C3CC),
-              width: 3,
-              strokeAlign: BorderSide.strokeAlignInside,
-            ),
-          ),
-          child: Column(
-            children: [
-              Expanded(
-                child: placed
-                    ? _LessonPictureAsset(
-                        asset: member.imageAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_) =>
-                            Icon(member.icon, color: TudloColors.forest),
-                      )
-                    : Icon(
-                        Icons.person_rounded,
-                        size: view.width * .14,
-                        color: const Color(0xFF9EA8B0),
-                      ),
-              ),
-              Text(
-                member.hil,
-                maxLines: 1,
-                style: GoogleFonts.nunito(
-                  color: TudloColors.blue,
-                  fontSize: (view.width * .04).clamp(14.0, 19.0),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
+        final active = selected && !placed && !inputLocked;
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: inputLocked ? null : onTap,
+          child: SizedBox(
+            width: (view.width * .35).clamp(118.0, 158.0),
+            height: (view.height * .26).clamp(188.0, 252.0),
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              clipBehavior: Clip.none,
+              children: [
+                if (active)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: TudloColors.blue.withValues(alpha: .35),
+                          blurRadius: 22,
+                          spreadRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: const SizedBox(width: 62, height: 62),
+                  ),
+                _PicnicSeatedCharacter(
+                  member: member,
+                  mode: placed
+                      ? _PicnicSeatedCharacterMode.fullColor
+                      : _PicnicSeatedCharacterMode.silhouette,
                 ),
-              ),
-            ],
+                if (placed) const Positioned.fill(child: _PicnicSlotSparkle()),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Text(
+                    member.hil,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontSize: (view.width * .043).clamp(16.0, 21.0),
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                      shadows: const [
+                        Shadow(
+                          color: TudloColors.ink,
+                          offset: Offset(0, 2),
+                          blurRadius: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -16911,12 +17041,14 @@ class _PicnicDropSlot extends StatelessWidget {
 class _PicnicDraggableCard extends StatelessWidget {
   final _FamilyWord member;
   final bool enabled;
+  final bool selected;
   final bool wrong;
   final VoidCallback onTap;
 
   const _PicnicDraggableCard({
     required this.member,
     required this.enabled,
+    required this.selected,
     required this.wrong,
     required this.onTap,
   });
@@ -16930,9 +17062,9 @@ class _PicnicDraggableCard extends StatelessWidget {
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 180),
         opacity: enabled ? 1 : .24,
-        child: _FamilyReferenceMemberCard(
+        child: _PicnicOptionCard(
           member: member,
-          selected: false,
+          selected: selected,
           onTap: onTap,
         ),
       ),
@@ -16945,7 +17077,7 @@ class _PicnicDraggableCard extends StatelessWidget {
         color: Colors.transparent,
         child: SizedBox(
           width: view.width * .26,
-          child: _FamilyReferenceMemberCard(
+          child: _PicnicOptionCard(
             member: member,
             selected: true,
             onTap: () {},
@@ -16954,6 +17086,186 @@ class _PicnicDraggableCard extends StatelessWidget {
       ),
       childWhenDragging: Opacity(opacity: .35, child: card),
       child: card,
+    );
+  }
+}
+
+class _PicnicOptionCard extends StatelessWidget {
+  final _FamilyWord member;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PicnicOptionCard({
+    required this.member,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        height: (view.height * .15).clamp(116.0, 164.0),
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            if (selected)
+              Positioned(
+                bottom: 8,
+                child: Container(
+                  width: view.width * .17,
+                  height: view.width * .17,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: TudloColors.blue.withValues(alpha: .34),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Transform.scale(
+                scale: _picnicSeatedScaleFor(member.hil),
+                alignment: Alignment.bottomCenter,
+                child: _LessonPictureAsset(
+                  asset: _picnicSeatedAssetFor(member.hil),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_) =>
+                      Icon(member.icon, color: TudloColors.forest),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _PicnicSeatedCharacterMode { silhouette, fullColor }
+
+String _picnicSeatedAssetFor(String hil) {
+  return switch (hil) {
+    'nanay' =>
+      'assets/images/level_game/grade1/people/Tudlo_Nanay_Sitting_Picnic_Exact.svg',
+    'bata' =>
+      'assets/images/level_game/grade1/people/Tudlo_Bata_Sitting_Picnic_Exact.svg',
+    'tatay' =>
+      'assets/images/level_game/grade1/people/Tudlo_Tatay_Sitting_Picnic_Exact.svg',
+    _ =>
+      'assets/images/level_game/grade1/people/Tudlo_Bata_Sitting_Picnic_Exact.svg',
+  };
+}
+
+double _picnicSeatedScaleFor(String hil) {
+  return switch (hil) {
+    'nanay' || 'tatay' => 1.12,
+    _ => 1,
+  };
+}
+
+class _PicnicSeatedCharacter extends StatelessWidget {
+  final _FamilyWord member;
+  final _PicnicSeatedCharacterMode mode;
+
+  const _PicnicSeatedCharacter({required this.member, required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = _picnicSeatedAssetFor(member.hil);
+    final childScale = _picnicSeatedScaleFor(member.hil);
+    if (mode == _PicnicSeatedCharacterMode.fullColor) {
+      return Transform.scale(
+        scale: childScale,
+        alignment: Alignment.bottomCenter,
+        child: SvgPicture.asset(
+          asset,
+          fit: BoxFit.contain,
+          alignment: Alignment.bottomCenter,
+        ),
+      );
+    }
+
+    return Transform.scale(
+      scale: childScale,
+      alignment: Alignment.bottomCenter,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Transform.scale(
+            scale: 1.045,
+            child: SvgPicture.asset(
+              asset,
+              fit: BoxFit.contain,
+              alignment: Alignment.bottomCenter,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+          SvgPicture.asset(
+            asset,
+            fit: BoxFit.contain,
+            alignment: Alignment.bottomCenter,
+            colorFilter: const ColorFilter.mode(
+              Color(0xFF8F969B),
+              BlendMode.srcIn,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PicnicSlotSparkle extends StatelessWidget {
+  const _PicnicSlotSparkle();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, _) {
+          final opacity = (1 - value).clamp(0.0, 1.0);
+          return Opacity(
+            opacity: opacity,
+            child: Stack(
+              children: [
+                for (final sparkle in const [
+                  (Alignment(-.52, -.42), 16.0),
+                  (Alignment(.48, -.24), 13.0),
+                  (Alignment(-.12, -.70), 11.0),
+                ])
+                  Align(
+                    alignment: sparkle.$1,
+                    child: Transform.scale(
+                      scale: .65 + value * .7,
+                      child: Icon(
+                        Icons.star_rounded,
+                        color: const Color(0xFFFFE45C),
+                        size: sparkle.$2,
+                        shadows: const [
+                          Shadow(color: Color(0xAA8A5A00), blurRadius: 3),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -16978,10 +17290,8 @@ class _PicnicRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset:
-          'assets/images/level_game/backgrounds/lesson4-familypicnic.svg',
+          'assets/images/level_game/grade1/backgrounds/lesson4-familypicnic.svg',
       child: _StickerUnlockRewardContent(
-        stickerAsset:
-            '$_lessonStickerAssetRoot/Tudlo_Park_Family_Picnic_Badge.svg',
         fallback: const _FamilyReferenceBadge(label: 'PAMILYA'),
         message: 'Kompleto na ang pamilya ni Koka!',
         onDone: onDone,
@@ -17645,8 +17955,6 @@ class _BeachRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
-        stickerAsset:
-            '$_lessonStickerAssetRoot/Tudlo_Beach_Number_Explorer_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'NUMBER\nEXPLORER'),
         message: 'Yehey! Nakaabot kita sa payong!',
         onDone: onDone,
@@ -30727,6 +31035,41 @@ class _StoryImageFallback extends StatelessWidget {
   }
 }
 
+String _lessonCompleteBackgroundAsset(int level) {
+  final grade = AppData.selectedGradeLevel;
+  final unit = AppData.unitForLevel(level).number;
+  final lesson = AppData.lessonNumberForLevel(level);
+
+  if (grade == GradeLevel.grade1) {
+    if (unit == 1 && lesson == 7) {
+      return 'assets/images/level_game/backgrounds/beach.svg';
+    }
+    if (unit == 2) {
+      return switch (lesson) {
+        4 =>
+          'assets/images/level_game/grade1/backgrounds/lesson4-familypicnic.svg',
+        _ => 'assets/images/level_game/backgrounds/house.svg',
+      };
+    }
+    if (unit == 4 || unit == 5) {
+      return 'assets/images/level_game/backgrounds/garden.svg';
+    }
+    return 'assets/images/level_game/backgrounds/classroom.svg';
+  }
+
+  if (grade == GradeLevel.grade2) {
+    if (unit == 1 && lesson == 2) {
+      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
+    }
+    if (unit == 2) {
+      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+    }
+    return 'assets/images/level_game/backgrounds/classroom.svg';
+  }
+
+  return 'assets/images/level_game/backgrounds/garden.svg';
+}
+
 class _SpeechBubble extends StatelessWidget {
   final String text;
 
@@ -30938,6 +31281,7 @@ class _QuestionNumberBadge extends StatelessWidget {
 //scoreboard pop-up
 class _LessonCompleteDialog extends StatefulWidget {
   final int level;
+  final String backgroundAsset;
   final int accuracy;
   final int mistakes;
   final String durationLabel;
@@ -30947,6 +31291,7 @@ class _LessonCompleteDialog extends StatefulWidget {
 
   const _LessonCompleteDialog({
     required this.level,
+    required this.backgroundAsset,
     required this.accuracy,
     required this.mistakes,
     required this.durationLabel,
@@ -31001,6 +31346,7 @@ class _LessonCompleteDialogState extends State<_LessonCompleteDialog> {
               )
             : _LessonResultPage(
                 key: const ValueKey('result'),
+                backgroundAsset: widget.backgroundAsset,
                 accuracy: widget.accuracy,
                 mistakes: widget.mistakes,
                 durationLabel: widget.durationLabel,
@@ -31013,6 +31359,7 @@ class _LessonCompleteDialogState extends State<_LessonCompleteDialog> {
 }
 
 class _LessonResultPage extends StatelessWidget {
+  final String backgroundAsset;
   final int accuracy;
   final int mistakes;
   final String durationLabel;
@@ -31021,6 +31368,7 @@ class _LessonResultPage extends StatelessWidget {
 
   const _LessonResultPage({
     super.key,
+    required this.backgroundAsset,
     required this.accuracy,
     required this.mistakes,
     required this.durationLabel,
@@ -31039,22 +31387,8 @@ class _LessonResultPage extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const _LessonBackgroundAsset(
-            asset: 'assets/images/level_game/backgrounds/garden.svg',
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withValues(alpha: .10),
-                  Colors.white.withValues(alpha: .02),
-                  TudloColors.softGreen.withValues(alpha: .12),
-                ],
-              ),
-            ),
-          ),
+          _LessonBackgroundAsset(asset: backgroundAsset),
+          ColoredBox(color: TudloColors.ink.withValues(alpha: .48)),
           Positioned(
             left: 24,
             top: top + 18,
@@ -31067,75 +31401,60 @@ class _LessonResultPage extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(24, top + 92, 24, 24 + bottom),
+            padding: EdgeInsets.fromLTRB(24, top + 86, 24, 24 + bottom),
             child: Column(
               children: [
-                const _ResultGoldStar(),
-                SizedBox(height: size.height * .025),
-                Text(
-                  'Natapos mo na ang Leksyon!',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: Colors.white,
-                    fontSize: (size.width * .083).clamp(32.0, 50.0),
-                    height: 1.05,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                    shadows: [
-                      Shadow(
-                        color: TudloColors.forest.withValues(alpha: .55),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+                Expanded(
+                  child: Center(
+                    child: Transform.translate(
+                      offset: Offset(0, -size.height * .035),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const _ResultGoldStar(),
+                          SizedBox(height: size.height * .035),
+                          Text(
+                            'Natapos mo na ang Leksyon!',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.nunito(
+                              color: Colors.white,
+                              fontSize: (size.width * .083).clamp(32.0, 50.0),
+                              height: 1.05,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                              shadows: [
+                                Shadow(
+                                  color: TudloColors.ink.withValues(alpha: .70),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Maayo gid!',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.nunito(
+                              color: Colors.white,
+                              fontSize: (size.width * .055).clamp(24.0, 36.0),
+                              height: 1.1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                              shadows: [
+                                Shadow(
+                                  color: TudloColors.ink.withValues(alpha: .70),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Maayo gid!',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: Colors.white,
-                    fontSize: (size.width * .055).clamp(24.0, 36.0),
-                    height: 1.1,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                    shadows: [
-                      Shadow(
-                        color: TudloColors.forest.withValues(alpha: .55),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: size.height * .055),
-                Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Positioned(
-                      left: 24,
-                      top: 34,
-                      child: _ResultSparkle(),
-                    ),
-                    const Positioned(
-                      right: 34,
-                      top: 4,
-                      child: _ResultSparkle(),
-                    ),
-                    const Positioned(
-                      right: 22,
-                      bottom: 22,
-                      child: _ResultSparkle(),
-                    ),
-                    _LessonKokaMascot(
-                      size: (size.width * .50).clamp(185.0, 300.0),
-                      mood: KokaMood.idle,
-                    ),
-                  ],
-                ),
-                const Spacer(),
                 Row(
                   children: [
                     Expanded(
@@ -31287,7 +31606,8 @@ class _ResultGoldStar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final size = (width * .34).clamp(128.0, 190.0);
+    final height = MediaQuery.sizeOf(context).height;
+    final size = math.min(width * .84, height * .34).clamp(260.0, 430.0);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -31309,19 +31629,6 @@ class _ResultGoldStar extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _ResultSparkle extends StatelessWidget {
-  const _ResultSparkle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Icon(
-      Icons.auto_awesome_rounded,
-      color: TudloColors.meadow.withValues(alpha: .78),
-      size: 36,
     );
   }
 }
