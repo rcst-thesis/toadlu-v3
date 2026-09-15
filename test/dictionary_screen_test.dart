@@ -7,6 +7,7 @@ import 'package:tudlo/features/dictionary/domain/dictionary_entry.dart';
 import 'package:tudlo/features/dictionary/presentation/screens/dictionary_browse_screen.dart';
 import 'package:tudlo/features/dictionary/presentation/screens/dictionary_screen.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_bento_grid.dart';
+import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_header.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_heart_icon.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_lookup_page.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
@@ -417,5 +418,21 @@ void main() {
     expect(find.byType(DictionaryBrowseScreen), findsOneWidget);
     expect(find.byType(DictionaryLookupPage), findsOneWidget);
     expect(find.byKey(const Key('dictionary-browse-list')), findsNothing);
+    // Definition view shows only the back pill -- no header/search bar.
+    expect(
+      find.descendant(
+        of: find.byType(DictionaryBrowseScreen),
+        matching: find.byType(DictionaryHeader),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('dictionary-browse-back-pill')),
+      findsOneWidget,
+    );
   });
 }

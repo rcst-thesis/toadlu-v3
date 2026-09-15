@@ -143,32 +143,45 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Center(
-                              child: DictionaryHeader(width: 220 * scale),
-                            ),
-                            SizedBox(height: 20 * scale),
-                            IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _BackPill(
-                                    key: const Key(
-                                      'dictionary-browse-back-pill',
-                                    ),
-                                    onTap: _handleBack,
+                            if (selected != null)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: _BackPill(
+                                  key: const Key(
+                                    'dictionary-browse-back-pill',
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: DictionarySearchBar(
-                                      controller: _searchController,
-                                      fieldKey: const Key(
-                                        'dictionary-browse-search-field',
+                                  onTap: _handleBack,
+                                ),
+                              )
+                            else ...[
+                              Center(
+                                child: DictionaryHeader(width: 220 * scale),
+                              ),
+                              SizedBox(height: 20 * scale),
+                              IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _BackPill(
+                                      key: const Key(
+                                        'dictionary-browse-back-pill',
+                                      ),
+                                      onTap: _handleBack,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: DictionarySearchBar(
+                                        controller: _searchController,
+                                        fieldKey: const Key(
+                                          'dictionary-browse-search-field',
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
+                            ],
                             SizedBox(height: 20 * scale),
                             selected != null
                                 ? _SelectedWordView(entry: selected)
