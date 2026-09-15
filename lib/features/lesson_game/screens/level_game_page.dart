@@ -20,6 +20,9 @@ import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
 
 const int _lessonQuizCount = 5;
+const String _lessonStickerAssetRoot = 'assets/images/lesson-sticker';
+const String _familyPictureStickerAsset =
+    '$_lessonStickerAssetRoot/Tudlo_Complete_Family_Picture.svg';
 
 Map<String, String> _matchingPairsFromItemOrder(QuizItem item) {
   if (item.leftItems.length != item.rightItems.length) return const {};
@@ -2378,7 +2381,7 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
   static const _anaAsset =
       'assets/images/level_game/people/Tudlo_Ana_Full_Body_Character.svg';
   static const _stickerAsset =
-      'assets/images/level_game/lesson-game-assets/Tudlo_Abyan_1_New_Friend_Completion_Sticker.svg';
+      '$_lessonStickerAssetRoot/Tudlo_Abyan_1_New_Friend_Completion_Sticker.svg';
   static const _responseOrder = ['my_name_is', 'ana'];
 
   _G2NewFriendStep _step = _G2NewFriendStep.intro;
@@ -3602,7 +3605,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
   static const _backgroundAsset =
       'assets/images/level_game/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
   static const _stickerAsset =
-      'assets/images/level_game/lesson-game-assets/Tudlo_Abyan_2_Age_Star_Completion_Sticker.svg';
+      '$_lessonStickerAssetRoot/Tudlo_Abyan_2_Age_Star_Completion_Sticker.svg';
   static const _answerOrder = ['i_am', 'seven_years_old'];
 
   _G2BirthdayStep _step = _G2BirthdayStep.invitation;
@@ -4874,7 +4877,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
   static const _backgroundAsset =
       'assets/images/level_game/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
   static const _stickerAsset =
-      'assets/images/level_game/lesson-game-assets/Tudlo_Panamyaw_1_Greeting_Star_Completion_Sticker.svg';
+      '$_lessonStickerAssetRoot/Tudlo_Panamyaw_1_Greeting_Star_Completion_Sticker.svg';
   static const _friendGirlOne =
       'assets/images/level_game/people/Tudlo_Park_Friend_Girl_1.svg';
   static const _friendBoy =
@@ -6198,7 +6201,7 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
   static const _benchAsset =
       'assets/images/level_game/lesson-game-assets/Tudlo_Park_Wooden_Bench_Exact.svg';
   static const _stickerAsset =
-      'assets/images/level_game/lesson-game-assets/Tudlo_Panamyaw_2_Dialogue_Star_Completion_Sticker.svg';
+      '$_lessonStickerAssetRoot/Tudlo_Panamyaw_2_Dialogue_Star_Completion_Sticker.svg';
   static const _dialogueOrder = ['how_are_you', 'fine_thank_you'];
 
   _G2ParkDialogueStep _step = _G2ParkDialogueStep.intro;
@@ -11279,7 +11282,7 @@ class _LessonOneRewardStep extends StatelessWidget {
       backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
       child: _StickerUnlockRewardContent(
         stickerAsset:
-            'assets/images/level_game/lesson-game-assets/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
+            '$_lessonStickerAssetRoot/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'LETTER\nFINDER'),
         message: 'Yehey! Nabalik na ang mga letra!',
         onDone: onDone,
@@ -12052,7 +12055,7 @@ class _LessonOneStickerState extends State<_LessonOneSticker>
           width: widget.size,
           height: widget.size * .82,
           child: SvgPicture.asset(
-            'assets/images/level_game/lesson-game-assets/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
+            '$_lessonStickerAssetRoot/Tudlo_G1_U1_L1_Letter_Finder_Sticker.svg',
             fit: BoxFit.contain,
             alignment: Alignment.center,
           ),
@@ -14422,6 +14425,7 @@ class _GradeOneUnitTwoLessonOneFamilyReferenceFlowState
             members: _members,
             portraitAsset:
                 'assets/images/level_game/people/family-portrait.svg',
+            stickerAsset: _familyPictureStickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finishLesson,
@@ -14636,6 +14640,7 @@ class _GradeOneUnitTwoLessonTwoVisitorFlowState
             members: _learnMembers,
             message: 'Yehey! Kilala ko si lola kag lolo!',
             badgeLabel: 'Pamilya\n2',
+            stickerAsset: _familyPictureStickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finishLesson,
@@ -14856,6 +14861,7 @@ class _GradeOneUnitTwoLessonThreePortraitFlowState
             members: _photoMembers,
             message: 'Yehey! Kompleto ang litrato!',
             badgeLabel: 'Pamilya\n3',
+            stickerAsset: _familyPictureStickerAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onDone: _finishLesson,
@@ -15532,6 +15538,7 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
   final double progress;
   final List<_FamilyWord> members;
   final String? portraitAsset;
+  final String? stickerAsset;
   final String message;
   final String badgeLabel;
   final String buttonLabel;
@@ -15543,6 +15550,7 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
     required this.progress,
     required this.members,
     this.portraitAsset,
+    this.stickerAsset,
     this.message = 'Yehey! Kompleto na ang litrato!',
     this.badgeLabel = 'Family\nFriend',
     this.buttonLabel = 'Padayon',
@@ -15559,6 +15567,7 @@ class _FamilyReferenceRewardStep extends StatelessWidget {
       onReplay: onReplay,
       backgroundAsset: 'assets/images/level_game/backgrounds/house.svg',
       child: _StickerUnlockRewardContent(
+        stickerAsset: stickerAsset,
         fallback: _FamilyReferenceBadge(label: badgeLabel),
         message: message,
         buttonLabel: buttonLabel,
@@ -17035,7 +17044,7 @@ class _PicnicRewardStep extends StatelessWidget {
           'assets/images/level_game/backgrounds/lesson4-familypicnic.svg',
       child: _StickerUnlockRewardContent(
         stickerAsset:
-            'assets/images/level_game/lesson-game-assets/Tudlo_Park_Family_Picnic_Badge.svg',
+            '$_lessonStickerAssetRoot/Tudlo_Park_Family_Picnic_Badge.svg',
         fallback: const _FamilyReferenceBadge(label: 'PAMILYA'),
         message: 'Kompleto na ang pamilya ni Koka!',
         onDone: onDone,
@@ -17700,7 +17709,7 @@ class _BeachRewardStep extends StatelessWidget {
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
         stickerAsset:
-            'assets/images/level_game/lesson-game-assets/Tudlo_Number_Explorer_Sticker.svg',
+            '$_lessonStickerAssetRoot/Tudlo_Beach_Number_Explorer_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'NUMBER\nEXPLORER'),
         message: 'Yehey! Nakaabot kita sa payong!',
         onDone: onDone,
