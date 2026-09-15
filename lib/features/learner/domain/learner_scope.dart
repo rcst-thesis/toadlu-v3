@@ -77,6 +77,27 @@ class LearnerController extends ChangeNotifier {
       // Best-effort, same as createAndSave.
     }
   }
+
+  /// Toggles [wordId] (a `DictionaryEntry.id`) in the current learner's
+  /// favorited words and best-effort persists it. A no-op if there's no
+  /// current learner yet.
+  Future<void> toggleFavoriteWord(String wordId) async {
+    final current = _profile;
+    if (current == null) return;
+    final isFavorited = current.favoritedWords.contains(wordId);
+    final updated = current.copyWith(
+      favoritedWords: isFavorited
+          ? ({...current.favoritedWords}..remove(wordId))
+          : {...current.favoritedWords, wordId},
+    );
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
 }
 
 /// Makes the app's one [LearnerController] available to every screen,

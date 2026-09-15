@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
+import 'package:tudlo/features/dictionary/presentation/screens/dictionary_screen.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bottom_navigation.dart';
 import 'package:tudlo/features/map/presentation/screens/map_screen.dart';
 import 'package:tudlo/features/me/presentation/screens/me_screen.dart';
@@ -26,8 +27,12 @@ class AppBottomTabNavigation extends StatelessWidget {
   static const _mapNavigationColor = Color(0xFFD4CA8B);
   static const _mapSelectedTileColor = Color(0xFFD2C15D);
   static const _defaultSelectedTileColor = Color(0xFF966E42);
+  static const _dictionaryNavigationColor = Color(0xFFFFB3BA);
+  static const _dictionarySelectedTileColor = Color(0xFFED5F74);
+  static const _dictionaryLabelColor = Color(0xFF392F5A);
 
   static const _mapTabIndex = 3;
+  static const _dictionaryTabIndex = 4;
   static const _meTabIndex = 5;
 
   @override
@@ -37,16 +42,19 @@ class AppBottomTabNavigation extends StatelessWidget {
       backgroundColor: switch (currentIndex) {
         _meTabIndex => _meNavigationColor,
         _mapTabIndex => _mapNavigationColor,
+        _dictionaryTabIndex => _dictionaryNavigationColor,
         _ => _defaultNavigationColor,
       },
       selectedTileColor: switch (currentIndex) {
         _meTabIndex => _meSelectedTileColor,
         _mapTabIndex => _mapSelectedTileColor,
+        _dictionaryTabIndex => _dictionarySelectedTileColor,
         _ => _defaultSelectedTileColor,
       },
       labelColor: switch (currentIndex) {
         _meTabIndex => _meLabelColor,
         _mapTabIndex => _mapLabelColor,
+        _dictionaryTabIndex => _dictionaryLabelColor,
         _ => Colors.white,
       },
       onItemTapped: (index) => _navigate(context, index),
@@ -88,12 +96,7 @@ class AppBottomTabNavigation extends StatelessWidget {
       case 3:
         return const MapScreen();
       case 4:
-        return const PlaceholderScreen(
-          title: 'Dictionary',
-          description: 'Temporary Dictionary shell',
-          icon: Icons.menu_book_outlined,
-          bottomNavigationBar: AppBottomTabNavigation(currentIndex: 4),
-        );
+        return const DictionaryScreen();
       case 5:
         return MeScreen();
       default:

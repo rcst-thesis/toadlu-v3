@@ -19,6 +19,7 @@ class LearnerProfile {
     this.badgesEarned = 0,
     this.currentStreak = 1,
     this.unlockedMapLocations = const {},
+    this.favoritedWords = const {},
   });
 
   final String id;
@@ -31,6 +32,7 @@ class LearnerProfile {
   final int badgesEarned;
   final int currentStreak;
   final Set<String> unlockedMapLocations;
+  final Set<String> favoritedWords;
 
   LearnerProfile copyWith({
     int? lessonsFinished,
@@ -38,6 +40,7 @@ class LearnerProfile {
     int? badgesEarned,
     int? currentStreak,
     Set<String>? unlockedMapLocations,
+    Set<String>? favoritedWords,
   }) {
     return LearnerProfile(
       id: id,
@@ -50,6 +53,7 @@ class LearnerProfile {
       badgesEarned: badgesEarned ?? this.badgesEarned,
       currentStreak: currentStreak ?? this.currentStreak,
       unlockedMapLocations: unlockedMapLocations ?? this.unlockedMapLocations,
+      favoritedWords: favoritedWords ?? this.favoritedWords,
     );
   }
 
@@ -64,6 +68,7 @@ class LearnerProfile {
         'badgesEarned': badgesEarned,
         'currentStreak': currentStreak,
         'unlockedMapLocations': unlockedMapLocations.toList(),
+        'favoritedWords': favoritedWords.toList(),
       };
 
   factory LearnerProfile.fromJson(Map<String, Object?> json) {
@@ -81,6 +86,9 @@ class LearnerProfile {
           (json['unlockedMapLocations'] as List<Object?>? ?? const [])
               .cast<String>()
               .toSet(),
+      favoritedWords: (json['favoritedWords'] as List<Object?>? ?? const [])
+          .cast<String>()
+          .toSet(),
     );
   }
 }
