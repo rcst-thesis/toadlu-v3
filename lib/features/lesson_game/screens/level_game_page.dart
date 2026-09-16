@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tudloapp/core/data/app_data.dart';
@@ -20,6 +21,7 @@ import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
 
 import 'grade_three_bantay_flow.dart';
+import 'grade_three_market_numbers_flow.dart';
 
 const int _lessonQuizCount = 5;
 const String _lessonStickerAssetRoot = 'assets/images/lesson-sticker';
@@ -244,8 +246,64 @@ class LevelGamePage extends StatefulWidget {
   State<LevelGamePage> createState() => _LevelGamePageState();
 }
 
+class _LessonOrientationCoordinator {
+  static int _gradeThreeShellCount = 0;
+  static bool _landscapeLocked = false;
+
+  static Future<void> enterGradeThreeLesson() async {
+    _gradeThreeShellCount++;
+    if (_landscapeLocked) return;
+    _landscapeLocked = true;
+    await SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  static Future<void> exitGradeThreeLesson() async {
+    if (_gradeThreeShellCount > 0) {
+      _gradeThreeShellCount--;
+    }
+    if (_gradeThreeShellCount == 0) {
+      await restorePortrait();
+    }
+  }
+
+  static Future<void> restorePortrait() async {
+    _landscapeLocked = false;
+    await SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+    ]);
+  }
+}
+
+class _GradeThreeLandscapeCanvas extends StatelessWidget {
+  final Widget child;
+
+  const _GradeThreeLandscapeCanvas({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black,
+      child: SafeArea(
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(width: 960, height: 540, child: child),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LevelGamePageState extends State<LevelGamePage> {
   late final Future<LevelContent> _contentFuture;
+  late final bool _gradeThreeOrientationShell;
   List<LessonQuestion> questions = const [];
   final Map<int, String> selectedAnswers = {};
   final Map<int, bool> checkedAnswers = {};
@@ -268,6 +326,13 @@ class _LevelGamePageState extends State<LevelGamePage> {
   @override
   void initState() {
     super.initState();
+    _gradeThreeOrientationShell =
+        AppData.selectedGradeLevel == GradeLevel.grade3;
+    if (_gradeThreeOrientationShell) {
+      unawaited(_LessonOrientationCoordinator.enterGradeThreeLesson());
+    } else {
+      unawaited(_LessonOrientationCoordinator.restorePortrait());
+    }
     _contentFuture = () async {
       final contentFuture = LessonBank.loadLevelContentForLevel(widget.level);
       await DictionaryData.initialize();
@@ -283,6 +348,9 @@ class _LevelGamePageState extends State<LevelGamePage> {
   @override
   void dispose() {
     unawaited(TudloVoiceButton.stop());
+    if (_gradeThreeOrientationShell) {
+      unawaited(_LessonOrientationCoordinator.exitGradeThreeLesson());
+    }
     super.dispose();
   }
 
@@ -463,16 +531,14 @@ class _LevelGamePageState extends State<LevelGamePage> {
         onBackToMap: () {
           _claimRewardsOnce();
           Navigator.pop(context);
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 2)),
-            (route) => false,
-          );
+          unawaited(_returnToMapAfterPortraitRestore());
         },
         onContinue: () async {
           _claimRewardsOnce();
           Navigator.pop(context);
           if (widget.level >= AppData.maxLevel) {
+            await _restorePortraitBeforePortraitRoute();
+            if (!mounted || !context.mounted) return;
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
@@ -480,6 +546,11 @@ class _LevelGamePageState extends State<LevelGamePage> {
               ),
               (route) => false,
             );
+            return;
+          }
+          final nextLevel = _nextAvailableLevel();
+          if (nextLevel == null) {
+            await _returnToMapAfterPortraitRestore();
             return;
           }
           final spent = await AppData.spendLessonEnergy();
@@ -492,9 +563,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => LevelGamePage(level: widget.level + 1),
-            ),
+            MaterialPageRoute(builder: (_) => LevelGamePage(level: nextLevel)),
           );
         },
       ),
@@ -513,7 +582,35 @@ class _LevelGamePageState extends State<LevelGamePage> {
     // Exiting from this menu does not save level progress.
     final shouldExit = await _showLessonExitConfirmation(context);
     if (!mounted || !shouldExit) return;
+    await _restorePortraitBeforePortraitRoute();
+    if (!mounted) return;
     Navigator.pop(context);
+  }
+
+  Future<void> _restorePortraitBeforePortraitRoute() async {
+    if (_gradeThreeOrientationShell) {
+      await _LessonOrientationCoordinator.restorePortrait();
+    }
+  }
+
+  Future<void> _returnToMapAfterPortraitRestore() async {
+    await _restorePortraitBeforePortraitRoute();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const AppShell(initialIndex: 2)),
+      (route) => false,
+    );
+  }
+
+  int? _nextAvailableLevel() {
+    for (var level = widget.level + 1; level <= AppData.maxLevel; level++) {
+      if (AppData.isProductionLessonAvailable(level) &&
+          AppData.isLevelUnlocked(level)) {
+        return level;
+      }
+    }
+    return null;
   }
 
   LessonQuestion _questionFromQuizItem(QuizItem item) {
@@ -797,209 +894,262 @@ class _LevelGamePageState extends State<LevelGamePage> {
                     child: loading || levelContent == null
                         ? const _LessonLoadingCard()
                         : customLessonFlow
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: alphabetLesson
-                                    ? _GradeOneAlphabetLesson(
-                                        content: levelContent,
-                                        onExit: _showPauseMenu,
-                                        onPresentationChromeChanged:
-                                            _setAlphabetPresentationChrome,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : unitOneReviewLesson
-                                    ? _GradeOneUnitOneReviewLesson(
-                                        content: levelContent,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : unitOneLessonSeven
-                                    ? _GradeOneUnitOneLessonSevenBeachFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : numberLesson
-                                    ? _GradeOneNumberLesson(
-                                        content: levelContent,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : helperLesson
-                                    ? _GradeOneHelperLesson(
-                                        content: levelContent,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : animalLesson
-                                    ? _GradeOneAnimalLesson(
-                                        content: levelContent,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : placeLesson
-                                    ? _GradeOnePlaceLesson(
-                                        content: levelContent,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : gradeTwoNewFriendLesson
-                                    ? _GradeTwoUnitOneLessonOneNewFriendFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : gradeTwoBirthdayLesson
-                                    ? _GradeTwoUnitOneLessonTwoBirthdayFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : gradeTwoParkGreetingLesson
-                                    ? _GradeTwoUnitTwoLessonOneParkGreetingFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : gradeTwoParkDialogueLesson
-                                    ? _GradeTwoUnitTwoLessonTwoParkDialogueFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : gradeTwoLesson
-                                    ? _GradeTwoTalkBuildSolveLesson(
-                                        content: levelContent,
-                                        onExit: _showPauseMenu,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : gradeThreeMarketNumbersLesson
-                                    ? _GradeThreeMarketNumbersFlow(
-                                        onExit: _showPauseMenu,
-                                        onLessonComplete:
-                                            _completeGradeThreeLesson,
-                                      )
-                                    : gradeThreeShoppingLesson
-                                    ? _GradeThreeShoppingFlow(
-                                        onExit: _showPauseMenu,
-                                        onLessonComplete:
-                                            _completeGradeThreeLesson,
-                                      )
-                                    : gradeThreeLesson &&
-                                          levelContent.unitNumber == 2 &&
-                                          levelContent.lessonNumber == 1
-                                    ? GradeThreeBantayFlow(
-                                        onExit: _showPauseMenu,
-                                        onLessonComplete: () {
-                                          _claimRewardsOnce();
-                                        },
-                                        onBackToMap: () =>
-                                            Navigator.pushAndRemoveUntil(
+                        ? _wrapGradeThreeCanvas(
+                            gradeThreeLesson,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: alphabetLesson
+                                      ? _GradeOneAlphabetLesson(
+                                          content: levelContent,
+                                          onExit: _showPauseMenu,
+                                          onPresentationChromeChanged:
+                                              _setAlphabetPresentationChrome,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : unitOneReviewLesson
+                                      ? _GradeOneUnitOneReviewLesson(
+                                          content: levelContent,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : unitOneLessonSeven
+                                      ? _GradeOneUnitOneLessonSevenBeachFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : numberLesson
+                                      ? _GradeOneNumberLesson(
+                                          content: levelContent,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : helperLesson
+                                      ? _GradeOneHelperLesson(
+                                          content: levelContent,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : animalLesson
+                                      ? _GradeOneAnimalLesson(
+                                          content: levelContent,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : placeLesson
+                                      ? _GradeOnePlaceLesson(
+                                          content: levelContent,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : gradeTwoNewFriendLesson
+                                      ? _GradeTwoUnitOneLessonOneNewFriendFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : gradeTwoBirthdayLesson
+                                      ? _GradeTwoUnitOneLessonTwoBirthdayFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : gradeTwoParkGreetingLesson
+                                      ? _GradeTwoUnitTwoLessonOneParkGreetingFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : gradeTwoParkDialogueLesson
+                                      ? _GradeTwoUnitTwoLessonTwoParkDialogueFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : gradeTwoLesson
+                                      ? _GradeTwoTalkBuildSolveLesson(
+                                          content: levelContent,
+                                          onExit: _showPauseMenu,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : gradeThreeMarketNumbersLesson
+                                      ? GradeThreeMarketNumbersFlow(
+                                          onExit: _showPauseMenu,
+                                          onLessonComplete:
+                                              _showCustomLessonCompleteDialog,
+                                        )
+                                      : gradeThreeShoppingLesson
+                                      ? _GradeThreeShoppingFlow(
+                                          onExit: _showPauseMenu,
+                                          onLessonComplete:
+                                              _completeGradeThreeLesson,
+                                        )
+                                      : gradeThreeLesson &&
+                                            levelContent.unitNumber == 2 &&
+                                            levelContent.lessonNumber == 1
+                                      ? GradeThreeBantayFlow(
+                                          onExit: _showPauseMenu,
+                                          onLessonComplete: () {
+                                            _claimRewardsOnce();
+                                          },
+                                          onBackToMap: () async {
+                                            await _returnToMapAfterPortraitRestore();
+                                          },
+                                          onContinue: () async {
+                                            if (widget.level >=
+                                                AppData.maxLevel) {
+                                              await _returnToMapAfterPortraitRestore();
+                                              return;
+                                            }
+                                            final nextLevel =
+                                                _nextAvailableLevel();
+                                            if (nextLevel == null) {
+                                              await _returnToMapAfterPortraitRestore();
+                                              return;
+                                            }
+                                            final spent =
+                                                await AppData.spendLessonEnergy();
+                                            if (!mounted || !context.mounted) {
+                                              return;
+                                            }
+                                            if (!spent) {
+                                              await showLowEnergyDialog(
+                                                context,
+                                              );
+                                              return;
+                                            }
+                                            await AppStateScope.of(
+                                              context,
+                                            ).saveActiveProfileProgress();
+                                            if (!mounted || !context.mounted) {
+                                              return;
+                                            }
+                                            Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
-                                                builder: (_) => const AppShell(
-                                                  initialIndex: 2,
+                                                builder: (_) => LevelGamePage(
+                                                  level: nextLevel,
                                                 ),
                                               ),
-                                              (route) => false,
-                                            ),
-                                        onContinue: () async {
-                                          if (widget.level >=
-                                              AppData.maxLevel) {
-                                            return;
-                                          }
-                                          final spent =
-                                              await AppData.spendLessonEnergy();
-                                          if (!mounted || !context.mounted) {
-                                            return;
-                                          }
-                                          if (!spent) {
-                                            await showLowEnergyDialog(context);
-                                            return;
-                                          }
-                                          await AppStateScope.of(
-                                            context,
-                                          ).saveActiveProfileProgress();
-                                          if (!mounted || !context.mounted) {
-                                            return;
-                                          }
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => LevelGamePage(
-                                                level: widget.level + 1,
+                                            );
+                                          },
+                                        )
+                                      : gradeThreeLesson
+                                      ? _GradeThreeLessonFlow(
+                                          content: levelContent,
+                                          questions: questions,
+                                          onQuestionCompleted:
+                                              _handleGradeThreeQuestionCompleted,
+                                          onLessonComplete:
+                                              _completeGradeThreeLesson,
+                                        )
+                                      : familyLesson &&
+                                            levelContent.lessonNumber == 4
+                                      ? _GradeOneUnitTwoLessonFourPicnicFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                                autoComplete: false,
                                               ),
-                                            ),
-                                          );
-                                        },
-                                      )
-                                    : gradeThreeLesson
-                                    ? _GradeThreeLessonFlow(
-                                        content: levelContent,
-                                        questions: questions,
-                                        onQuestionCompleted:
-                                            _handleGradeThreeQuestionCompleted,
-                                        onLessonComplete:
-                                            _completeGradeThreeLesson,
-                                      )
-                                    : familyLesson &&
-                                          levelContent.lessonNumber == 4
-                                    ? _GradeOneUnitTwoLessonFourPicnicFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(
-                                              index,
-                                              true,
-                                              autoComplete: false,
-                                            ),
-                                        onLessonComplete:
-                                            _showCustomLessonCompleteDialog,
-                                      )
-                                    : familyLesson &&
-                                          levelContent.lessonNumber == 3
-                                    ? _GradeOneUnitTwoLessonThreePortraitFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : familyLesson &&
-                                          levelContent.lessonNumber == 2
-                                    ? _GradeOneUnitTwoLessonTwoVisitorFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : familyLesson &&
-                                          levelContent.lessonNumber == 1
-                                    ? _GradeOneUnitTwoLessonOneFamilyReferenceFlow(
-                                        onExit: _showPauseMenu,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      )
-                                    : _GradeOneFamilyLesson(
-                                        content: levelContent,
-                                        onQuizAttempt: _recordQuestionAttempt,
-                                        onQuizCorrect: (index) =>
-                                            _handleQuestionChecked(index, true),
-                                      ),
-                              ),
-                            ],
+                                          onLessonComplete:
+                                              _showCustomLessonCompleteDialog,
+                                        )
+                                      : familyLesson &&
+                                            levelContent.lessonNumber == 3
+                                      ? _GradeOneUnitTwoLessonThreePortraitFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : familyLesson &&
+                                            levelContent.lessonNumber == 2
+                                      ? _GradeOneUnitTwoLessonTwoVisitorFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : familyLesson &&
+                                            levelContent.lessonNumber == 1
+                                      ? _GradeOneUnitTwoLessonOneFamilyReferenceFlow(
+                                          onExit: _showPauseMenu,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        )
+                                      : _GradeOneFamilyLesson(
+                                          content: levelContent,
+                                          onQuizAttempt: _recordQuestionAttempt,
+                                          onQuizCorrect: (index) =>
+                                              _handleQuestionChecked(
+                                                index,
+                                                true,
+                                              ),
+                                        ),
+                                ),
+                              ],
+                            ),
                           )
                         : SingleChildScrollView(
                             padding: const EdgeInsets.only(bottom: 24),
@@ -1058,6 +1208,10 @@ class _LevelGamePageState extends State<LevelGamePage> {
         );
       },
     );
+  }
+
+  Widget _wrapGradeThreeCanvas(bool enabled, Widget child) {
+    return enabled ? _GradeThreeLandscapeCanvas(child: child) : child;
   }
 
   bool _isGradeOneAlphabetContent(LevelContent content) {
@@ -6667,7 +6821,7 @@ class _G2FriendChoiceStep extends StatelessWidget {
                   ? _LessonOneMessageCard(message: prompt, compact: true)
                   : SizedBox(
                       key: const ValueKey('g2-choice-prompt-hidden'),
-                      height: (view.width * .16).clamp(56.0, 74.0),
+                      height: (view.width * .05).clamp(12.0, 24.0),
                     ),
             ),
             SizedBox(height: view.height * .012),
@@ -6769,8 +6923,8 @@ class _G2FriendChoiceCard extends StatelessWidget {
         onTap: enabled ? onTap : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          height: (width * .34).clamp(124.0, 168.0),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          height: (width * .39).clamp(142.0, 188.0),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           decoration: BoxDecoration(
             color: correct ? const Color(0xFFE5FFD5) : Colors.white,
             borderRadius: BorderRadius.circular(18),
@@ -6793,18 +6947,17 @@ class _G2FriendChoiceCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  choice.label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: TudloColors.blue,
-                    fontSize: 28,
-                    height: 1.05,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
+              Text(
+                choice.label,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                softWrap: true,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.blue,
+                  fontSize: 24,
+                  height: 1.02,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
                 ),
               ),
             ],
@@ -14993,7 +15146,7 @@ class _LessonOneArrangeStep extends StatelessWidget {
               spacing: view.width * .075,
               runSpacing: 16,
               children: [
-                for (final letter in const ['T', 'A', 'N'])
+                for (final letter in const ['N', 'A', 'T'])
                   _LessonOneDraggableLetter(
                     letter: letter,
                     used: arrangedLetters.contains(letter),
@@ -15372,8 +15525,17 @@ class _LessonOneSearchTraySlot extends StatelessWidget {
         ),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 220),
-          opacity: found ? 1 : .25,
-          child: _IntroLetterArt(letter: letter, size: size * .56),
+          opacity: found ? 1 : 0,
+          child: Text(
+            letter,
+            style: GoogleFonts.nunito(
+              color: TudloColors.blue,
+              fontSize: size * .58,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
         ),
       ),
     );
@@ -15400,19 +15562,7 @@ class _LessonOneHotspotLetter extends StatelessWidget {
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 180),
         opacity: found ? .18 : 1,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFE55A).withValues(alpha: .72),
-                blurRadius: 20,
-                spreadRadius: 7,
-              ),
-            ],
-          ),
-          child: _IntroLetterArt(letter: letter, size: size),
-        ),
+        child: _IntroLetterArt(letter: letter, size: size),
       ),
     );
   }
@@ -15470,7 +15620,7 @@ class _LessonOneSearchTray extends StatelessWidget {
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final trayHeight = (view.height * .125).clamp(94.0, 128.0).toDouble();
-    final slotSize = (view.width * .145).clamp(48.0, 66.0).toDouble();
+    final slotSize = (view.width * .17).clamp(58.0, 78.0).toDouble();
     final arrowSize = (view.width * .18).clamp(64.0, 88.0).toDouble();
 
     return Container(
@@ -15696,7 +15846,7 @@ class _LessonOneDraggableLetter extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = (MediaQuery.sizeOf(context).width * .28).clamp(108.0, 148.0);
     return _FeedbackMotion(
-      correct: used,
+      correct: false,
       wrong: wrong,
       child: GestureDetector(
         onTap: used ? null : () => unawaited(onTap()),
@@ -19148,25 +19298,21 @@ class _FamilyReferenceChoiceFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
-    final height = (view.height * .24).clamp(160.0, 235.0);
-    return Container(
+    final height = (view.height * .42).clamp(280.0, 430.0);
+    final byName = {for (final member in members) member.hil: member};
+    final ordered = [
+      if (byName['nanay'] != null) byName['nanay']!,
+      if (byName['bata'] != null) byName['bata']!,
+      if (byName['tatay'] != null) byName['tatay']!,
+      for (final member in members)
+        if (!{'nanay', 'bata', 'tatay'}.contains(member.hil)) member,
+    ];
+    return SizedBox(
       height: height,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E6).withValues(alpha: .92),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFD2B171), width: 5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .16),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          for (final member in members)
+          for (final member in ordered)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -19206,13 +19352,8 @@ class _FamilyReferenceInlineChoiceCard extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: correct
-                ? const Color(0xFFE5FFD5)
-                : wrong
-                ? const Color(0xFFFFF1D8)
-                : Colors.white.withValues(alpha: .70),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: correct
@@ -19523,7 +19664,7 @@ class _FamilyLabelMatchingStep extends StatelessWidget {
                         member: member,
                         hidden: !available.contains(member),
                         wrong: wrongLabel == member.hil,
-                        onTap: () => onPlace(member.hil, member.hil),
+                        onTap: () {},
                       ),
                     ),
                   ),
@@ -21635,24 +21776,13 @@ class _BeachArrangeStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
-    final availableTiles = tiles
-        .where((tile) => !slots.contains(tile))
-        .toList(growable: false);
+    final placed = slots.whereType<int>().toSet();
     return _BeachLessonChrome(
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
       child: Stack(
         children: [
-          Positioned(
-            left: view.width * .34,
-            right: view.width * .34,
-            top: view.height * .20,
-            child: _LessonKokaMascot(
-              size: (view.width * .26).clamp(104.0, 145.0),
-              mood: KokaMood.idle,
-            ),
-          ),
           Positioned(
             left: view.width * .07,
             right: view.width * .07,
@@ -21672,7 +21802,8 @@ class _BeachArrangeStep extends StatelessWidget {
             right: view.width * .08,
             bottom: view.height * .045,
             child: _BeachNumberChoiceGrid(
-              tiles: availableTiles,
+              tiles: tiles,
+              placed: placed,
               wrongTile: wrongTile,
               onPlaceTile: onPlaceTile,
             ),
@@ -21938,11 +22069,13 @@ class _BeachArrangeSlots extends StatelessWidget {
 
 class _BeachNumberChoiceGrid extends StatelessWidget {
   final List<int> tiles;
+  final Set<int> placed;
   final int? wrongTile;
   final Future<void> Function(int number) onPlaceTile;
 
   const _BeachNumberChoiceGrid({
     required this.tiles,
+    required this.placed,
     required this.wrongTile,
     required this.onPlaceTile,
   });
@@ -21960,11 +22093,17 @@ class _BeachNumberChoiceGrid extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             for (final tile in firstRow) ...[
-              _BeachNumberTile(
-                number: tile,
-                wrong: wrongTile == tile,
-                size: tileSize,
-                onTap: () => onPlaceTile(tile),
+              Visibility(
+                visible: !placed.contains(tile),
+                maintainAnimation: true,
+                maintainSize: true,
+                maintainState: true,
+                child: _BeachNumberTile(
+                  number: tile,
+                  wrong: wrongTile == tile,
+                  size: tileSize,
+                  onTap: () => onPlaceTile(tile),
+                ),
               ),
               if (tile != firstRow.last) SizedBox(width: width * .035),
             ],
@@ -21975,11 +22114,17 @@ class _BeachNumberChoiceGrid extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             for (final tile in secondRow) ...[
-              _BeachNumberTile(
-                number: tile,
-                wrong: wrongTile == tile,
-                size: tileSize,
-                onTap: () => onPlaceTile(tile),
+              Visibility(
+                visible: !placed.contains(tile),
+                maintainAnimation: true,
+                maintainSize: true,
+                maintainState: true,
+                child: _BeachNumberTile(
+                  number: tile,
+                  wrong: wrongTile == tile,
+                  size: tileSize,
+                  onTap: () => onPlaceTile(tile),
+                ),
               ),
               if (tile != secondRow.last) SizedBox(width: width * .035),
             ],
