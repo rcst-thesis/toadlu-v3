@@ -17,6 +17,18 @@ const _bantayRoot =
 const _bantayBackgroundRoot =
     'assets/images/level_game/backgrounds/grade3_landscape';
 const _bantayEvents = ['missing', 'clue', 'found'];
+const _bantayStickerRoot = 'assets/images/lesson-sticker';
+const List<String> _bantayRewardStickerAssets = [
+  '$_bantayStickerRoot/farm-home-sticker.svg',
+  '$_bantayStickerRoot/park-home-sticker.svg',
+  '$_bantayStickerRoot/market-home-sticker.svg',
+  '$_bantayStickerRoot/church-home-sticker.svg',
+  '$_bantayStickerRoot/school-home-sticker.svg',
+  '$_bantayStickerRoot/cat-home-sticker.svg',
+  '$_bantayStickerRoot/mother-home-sticker.svg',
+  '$_bantayStickerRoot/house-home-sticker.svg',
+  '$_bantayStickerRoot/dog-home-sticker.svg',
+];
 
 enum _BantayStage {
   house,
@@ -67,6 +79,10 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
   Set<String> _nudging = {};
   int _voiceGeneration = 0;
   Set<String> _voiceAssets = {};
+  late final String _rewardStickerAsset =
+      _bantayRewardStickerAssets[math.Random().nextInt(
+        _bantayRewardStickerAssets.length,
+      )];
   bool get _sequenceCorrect =>
       _slots.indexed.every((e) => e.$2 == _bantayEvents[e.$1]);
   String get _location => switch (_stage) {
@@ -443,7 +459,7 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
     final inventoryKey = 'lesson.reward.inventory.$profileId';
     final inventory =
         _storage!.getStringList(inventoryKey)?.toSet() ?? <String>{};
-    inventory.add('$_bantayRoot/reward/Story_Detective_Sticker.svg');
+    inventory.add(_rewardStickerAsset);
     await _storage!.setStringList(inventoryKey, inventory.toList());
     if (!mounted) return;
     widget.onLessonComplete();
@@ -916,7 +932,25 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
             onTap: () => unawaited(_collect()),
             child: _BantayPulse(
               active: !_collected,
-              child: _asset('reward/Story_Detective_Sticker.svg'),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD941).withValues(alpha: .24),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: SvgPicture.asset(
+                    _rewardStickerAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
             ),
           ),
         ),

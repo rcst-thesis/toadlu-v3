@@ -9690,8 +9690,6 @@ class _G2ParkGreetingRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
-        stickerAsset:
-            'assets/images/lesson-sticker/Tudlo_Panamyaw_1_Greeting_Star_Completion_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n1'),
         message: 'Kabalo ka na mag-greet sa nagkalain-lain nga tion!',
         onDone: onDone,
@@ -10888,8 +10886,6 @@ class _G2ParkDialogueRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
-        stickerAsset:
-            'assets/images/lesson-sticker/Tudlo_Panamyaw_2_Dialogue_Star_Completion_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n2'),
         message: 'Nahimo mo ang bug-os nga greeting exchange!',
         onDone: onDone,
@@ -15193,14 +15189,12 @@ class _LessonOneRewardStep extends StatelessWidget {
 }
 
 class _StickerUnlockRewardContent extends StatefulWidget {
-  final String? stickerAsset;
   final Widget fallback;
   final String message;
   final String buttonLabel;
   final VoidCallback onDone;
 
   const _StickerUnlockRewardContent({
-    this.stickerAsset,
     required this.fallback,
     required this.message,
     this.buttonLabel = 'OK',
@@ -15214,8 +15208,7 @@ class _StickerUnlockRewardContent extends StatefulWidget {
 
 class _StickerUnlockRewardContentState
     extends State<_StickerUnlockRewardContent> {
-  late final String _selectedStickerAsset =
-      widget.stickerAsset ?? _randomLessonStickerAsset();
+  late final String _selectedStickerAsset = _randomLessonStickerAsset();
 
   @override
   Widget build(BuildContext context) {
@@ -15304,17 +15297,17 @@ class _StickerUnlockGlowPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.shortestSide * .38;
     final rayPaint = Paint()..style = PaintingStyle.fill;
-    for (var i = 0; i < 20; i++) {
+    for (var i = 0; i < 16; i++) {
       rayPaint.color =
           (i.isEven ? const Color(0xFFFFF06B) : const Color(0xFFFFB42A))
-              .withValues(alpha: .50);
-      final start = -math.pi / 2 + i * math.pi * 2 / 20;
+              .withValues(alpha: .18);
+      final start = -math.pi / 2 + i * math.pi * 2 / 16;
       final path = Path()
         ..moveTo(center.dx, center.dy)
         ..arcTo(
           Rect.fromCircle(center: center, radius: radius),
           start,
-          math.pi * 2 / 20,
+          math.pi * 2 / 16,
           false,
         )
         ..close();
@@ -15323,12 +15316,12 @@ class _StickerUnlockGlowPainter extends CustomPainter {
     canvas.drawCircle(
       center,
       radius * 1.23,
-      Paint()..color = const Color(0xFFFFE100).withValues(alpha: .22),
+      Paint()..color = const Color(0xFFFFE100).withValues(alpha: .12),
     );
     canvas.drawCircle(
       center,
       radius,
-      Paint()..color = const Color(0xFFFFDE35).withValues(alpha: .72),
+      Paint()..color = const Color(0xFFFFDE35).withValues(alpha: .22),
     );
   }
 

@@ -18,6 +18,18 @@ const String _fruitStall = '$_marketRoot/stalls/Stall_Fruit_Empty.svg';
 const String _vendor = '$_marketRoot/people/Vendor_Female.svg';
 const String _apple = 'assets/images/level_game/apple.png';
 const String _crate = '$_marketRoot/inventory/Produce_Crate_Empty.svg';
+const String _marketStickerRoot = 'assets/images/lesson-sticker';
+const List<String> _marketRewardStickerAssets = [
+  '$_marketStickerRoot/farm-home-sticker.svg',
+  '$_marketStickerRoot/park-home-sticker.svg',
+  '$_marketStickerRoot/market-home-sticker.svg',
+  '$_marketStickerRoot/church-home-sticker.svg',
+  '$_marketStickerRoot/school-home-sticker.svg',
+  '$_marketStickerRoot/cat-home-sticker.svg',
+  '$_marketStickerRoot/mother-home-sticker.svg',
+  '$_marketStickerRoot/house-home-sticker.svg',
+  '$_marketStickerRoot/dog-home-sticker.svg',
+];
 
 enum _MarketState {
   intro,
@@ -75,6 +87,10 @@ class _GradeThreeMarketNumbersFlowState
   bool _stallOpened = false;
   bool _rewardCollected = false;
   bool _completedCallbackSent = false;
+  late final String _rewardStickerAsset =
+      _marketRewardStickerAssets[math.Random().nextInt(
+        _marketRewardStickerAssets.length,
+      )];
 
   double get _progress =>
       (_MarketState.values.indexOf(_state) + 1) / _MarketState.values.length;
@@ -1058,20 +1074,18 @@ class _GradeThreeMarketNumbersFlowState
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFFFFD941),
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFFF9F1C), width: 8),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.yellow.withValues(alpha: .65),
-            blurRadius: 30,
-            spreadRadius: 5,
+            color: const Color(0xFFFFD941).withValues(alpha: .24),
+            blurRadius: 16,
+            spreadRadius: 2,
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [_bigLabel('NUMERO', size: 34), _bigLabel('1', size: 84)],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SvgPicture.asset(_rewardStickerAsset, fit: BoxFit.contain),
       ),
     );
   }
