@@ -19,6 +19,8 @@ import 'package:tudloapp/core/widgets/word_tooltip.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
 import 'package:tudloapp/features/navigation/app_shell.dart';
 
+import 'grade_three_bantay_flow.dart';
+
 const int _lessonQuizCount = 5;
 const String _lessonStickerAssetRoot = 'assets/images/lesson-sticker';
 const String _g2ClassroomWithoutAnaBackground =
@@ -691,6 +693,10 @@ class _LevelGamePageState extends State<LevelGamePage> {
             levelContent.lessonNumber == 2;
         final gradeThreeLesson =
             levelContent != null && _isGradeThreeContent(levelContent);
+        final gradeThreeMarketNumbersLesson =
+            levelContent != null && _isGrade3MarketNumbersLesson(levelContent);
+        final gradeThreeShoppingLesson =
+            levelContent != null && _isGrade3ShoppingLesson(levelContent);
         final customLessonFlow =
             alphabetLesson ||
             unitOneReviewLesson ||
@@ -878,6 +884,66 @@ class _LevelGamePageState extends State<LevelGamePage> {
                                         onExit: _showPauseMenu,
                                         onQuizCorrect: (index) =>
                                             _handleQuestionChecked(index, true),
+                                      )
+                                    : gradeThreeMarketNumbersLesson
+                                    ? _GradeThreeMarketNumbersFlow(
+                                        onExit: _showPauseMenu,
+                                        onLessonComplete:
+                                            _completeGradeThreeLesson,
+                                      )
+                                    : gradeThreeShoppingLesson
+                                    ? _GradeThreeShoppingFlow(
+                                        onExit: _showPauseMenu,
+                                        onLessonComplete:
+                                            _completeGradeThreeLesson,
+                                      )
+                                    : gradeThreeLesson &&
+                                          levelContent.unitNumber == 2 &&
+                                          levelContent.lessonNumber == 1
+                                    ? GradeThreeBantayFlow(
+                                        onExit: _showPauseMenu,
+                                        onLessonComplete: () {
+                                          _claimRewardsOnce();
+                                        },
+                                        onBackToMap: () =>
+                                            Navigator.pushAndRemoveUntil(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => const AppShell(
+                                                  initialIndex: 2,
+                                                ),
+                                              ),
+                                              (route) => false,
+                                            ),
+                                        onContinue: () async {
+                                          if (widget.level >=
+                                              AppData.maxLevel) {
+                                            return;
+                                          }
+                                          final spent =
+                                              await AppData.spendLessonEnergy();
+                                          if (!mounted || !context.mounted) {
+                                            return;
+                                          }
+                                          if (!spent) {
+                                            await showLowEnergyDialog(context);
+                                            return;
+                                          }
+                                          await AppStateScope.of(
+                                            context,
+                                          ).saveActiveProfileProgress();
+                                          if (!mounted || !context.mounted) {
+                                            return;
+                                          }
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => LevelGamePage(
+                                                level: widget.level + 1,
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       )
                                     : gradeThreeLesson
                                     ? _GradeThreeLessonFlow(
@@ -1241,6 +1307,112 @@ class _Grade3StoryPageData {
   });
 }
 
+const String _grade3MarketAssetRoot =
+    'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets';
+const String _grade3MarketBackgroundAsset =
+    '$_grade3MarketAssetRoot/background/MarketLandscape.svg';
+const String _grade3MarketFruitStallAsset =
+    '$_grade3MarketAssetRoot/stalls/Stall_Fruit_Empty.svg';
+const String _grade3MarketFishStallAsset =
+    '$_grade3MarketAssetRoot/stalls/Stall_Fish_Empty.svg';
+const String _grade3MarketFlowerStallAsset =
+    '$_grade3MarketAssetRoot/stalls/Stall_Flower_Empty.svg';
+const String _grade3MarketShellStallAsset =
+    '$_grade3MarketAssetRoot/stalls/Stall_Shell_Empty.svg';
+const String _grade3MarketInventoryStallAsset =
+    '$_grade3MarketAssetRoot/stalls/Stall_Inventory_Empty.svg';
+const String _grade3MarketCounterAsset =
+    '$_grade3MarketAssetRoot/stalls/Market_Counter.svg';
+const String _grade3MarketVendorAsset =
+    '$_grade3MarketAssetRoot/people/Vendor_Female.svg';
+const String _grade3MarketFishVendorAsset =
+    '$_grade3MarketAssetRoot/people/Vendor_Fish_Male.svg';
+const String _grade3MarketTrayAsset =
+    '$_grade3MarketAssetRoot/inventory/Display_Tray_Empty.svg';
+const String _grade3MarketCrateAsset =
+    '$_grade3MarketAssetRoot/inventory/Produce_Crate_Empty.svg';
+const String _grade3MarketPailEmptyAsset =
+    '$_grade3MarketAssetRoot/inventory/Pail_Empty.svg';
+const String _grade3MarketPailFullAsset =
+    '$_grade3MarketAssetRoot/inventory/Pail_6_Shells.svg';
+const String _grade3MarketMangoAsset =
+    '$_grade3MarketAssetRoot/counting_objects/Mango.svg';
+const String _grade3AppleAsset = 'assets/images/level_game/apple.png';
+const String _grade3MarketFishAsset =
+    '$_grade3MarketAssetRoot/counting_objects/Fish.svg';
+const String _grade3MarketLilyPadAsset =
+    '$_grade3MarketAssetRoot/counting_objects/Lily_Pad.svg';
+const String _grade3MarketBookAsset =
+    '$_grade3MarketAssetRoot/counting_objects/Book_Blue.svg';
+const String _grade3MarketFlowerPinkAsset =
+    '$_grade3MarketAssetRoot/counting_objects/Flower_Pink.svg';
+const String _grade3MarketFlowerSunflowerAsset =
+    '$_grade3MarketAssetRoot/counting_objects/Flower_Sunflower.svg';
+const String _grade3MarketFlowerTulipAsset =
+    '$_grade3MarketAssetRoot/counting_objects/Flower_Red_Tulip.svg';
+const String _grade3MarketBananasAsset =
+    '$_grade3MarketAssetRoot/inventory/Bananas_Bunch.svg';
+const String _grade3MarketEggAsset =
+    '$_grade3MarketAssetRoot/inventory/Egg.svg';
+const String _grade3MarketCupAsset =
+    '$_grade3MarketAssetRoot/inventory/Cup_Blue.svg';
+const String _grade3MarketCandleAsset =
+    '$_grade3MarketAssetRoot/inventory/Birthday_Candle.svg';
+const List<String> _grade3MarketShellAssets = [
+  '$_grade3MarketAssetRoot/shells/Shell_Pink.svg',
+  '$_grade3MarketAssetRoot/shells/Shell_Orange.svg',
+  '$_grade3MarketAssetRoot/shells/Shell_Purple.svg',
+  '$_grade3MarketAssetRoot/shells/Shell_Yellow.svg',
+  '$_grade3MarketAssetRoot/shells/Shell_Green_Spiral.svg',
+  '$_grade3MarketAssetRoot/shells/Shell_Blue_Conch.svg',
+];
+
+bool _isGrade3MarketNumbersLesson(LevelContent content) {
+  return content.gradeLevel == 3 &&
+      content.unitNumber == 1 &&
+      content.lessonNumber == 1;
+}
+
+const String _g3ShopRoot =
+    'assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets';
+const String _g3ShopBg = '$_g3ShopRoot/background/MarketLandscape.svg';
+const String _g3ShopNanayList = '$_g3ShopRoot/people/Nanay_Shopping_List.svg';
+const String _g3ShopNanayBasket =
+    '$_g3ShopRoot/people/Nanay_Shopping_Basket.svg';
+const String _g3ShopBoy = '$_g3ShopRoot/people/Boy_Age_9.svg';
+const String _g3ShopFishVendor = '$_g3ShopRoot/people/Vendor_Fish_Male.svg';
+const String _g3ShopFruitVendor = '$_g3ShopRoot/people/Vendor_Fruit_Female.svg';
+const String _g3ShopVendor = '$_g3ShopRoot/people/Vendor_General_Male.svg';
+const String _g3ShopFruitStall = '$_g3ShopRoot/stalls/Stall_Fruit_Empty.svg';
+const String _g3ShopFishStall = '$_g3ShopRoot/stalls/Stall_Fish_Empty.svg';
+const String _g3ShopFlowerStall = '$_g3ShopRoot/stalls/Stall_Flower_Empty.svg';
+const String _g3ShopInventoryStall =
+    '$_g3ShopRoot/stalls/Stall_Inventory_Empty.svg';
+const String _g3ShopCounter = '$_g3ShopRoot/stalls/Market_Counter.svg';
+const String _g3ShopMango = '$_g3ShopRoot/products/Mango.svg';
+const String _g3ShopFish = '$_g3ShopRoot/products/Fish.svg';
+const String _g3ShopFlower = '$_g3ShopRoot/products/Flower_Pink.svg';
+const String _g3ShopSpoon = '$_g3ShopRoot/products/Spoon.svg';
+const String _g3ShopChair = '$_g3ShopRoot/products/Chair.svg';
+const String _g3ShopCandle = '$_g3ShopRoot/products/Birthday_Candle.svg';
+const String _g3ShopBanana = '$_g3ShopRoot/products/Banana_Single.svg';
+const String _g3ShopEgg = '$_g3ShopRoot/products/Egg.svg';
+const String _g3ShopCup = '$_g3ShopRoot/shopping_props/Cup_Blue.svg';
+const String _g3ShopTray = '$_g3ShopRoot/shopping_props/Display_Tray_Empty.svg';
+const String _g3ShopBasket =
+    '$_g3ShopRoot/shopping_props/Shopping_Basket_Empty.svg';
+const String _g3ShopList =
+    '$_g3ShopRoot/shopping_props/Shopping_List_Blank.svg';
+const String _g3ShopTag = '$_g3ShopRoot/shopping_props/Price_Tag_Blank.svg';
+const String _g3ShopCoin = '$_g3ShopRoot/shopping_props/Peso_Coin.svg';
+const String _g3ShopBill = '$_g3ShopRoot/shopping_props/Play_Money_Bill.svg';
+
+bool _isGrade3ShoppingLesson(LevelContent content) {
+  return content.gradeLevel == 3 &&
+      content.unitNumber == 1 &&
+      content.lessonNumber == 3;
+}
+
 class _GradeThreeLessonFlow extends StatefulWidget {
   final LevelContent content;
   final List<LessonQuestion> questions;
@@ -1408,6 +1580,10 @@ class _Grade3IntroStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_isGrade3MarketNumbersLesson(content)) {
+      return _Grade3MarketIntroStep(onNext: onNext);
+    }
+
     return _Grade3Stage(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1447,6 +1623,3470 @@ class _Grade3IntroStep extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Grade3MarketIntroStep extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _Grade3MarketIntroStep({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final sceneHeight = (view.height * .62).clamp(420.0, 560.0);
+    final kokaSize = (view.width * .34).clamp(132.0, 170.0);
+
+    return _Grade3Stage(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: sceneHeight,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: Stack(
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  Positioned.fill(
+                    child: _LessonPictureAsset(
+                      asset: _grade3MarketBackgroundAsset,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_) => const _Grade3MarketSceneFallback(),
+                    ),
+                  ),
+                  Positioned(
+                    right: -18,
+                    bottom: sceneHeight * .18,
+                    width: view.width.clamp(260.0, 390.0),
+                    height: sceneHeight * .44,
+                    child: const _LessonPictureAsset(
+                      asset: _grade3MarketFruitStallAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    right: 10,
+                    bottom: sceneHeight * .15,
+                    width: (view.width * .26).clamp(96.0, 136.0),
+                    height: sceneHeight * .44,
+                    child: const _LessonPictureAsset(
+                      asset: _grade3MarketVendorAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    left: 16,
+                    bottom: sceneHeight * .05,
+                    child: _LessonKokaMascot(size: kokaSize, mood: KokaMood.hi),
+                  ),
+                  Positioned(
+                    left: 118,
+                    right: 16,
+                    top: sceneHeight * .12,
+                    child: const _Grade3MarketSpeechBubble(
+                      text: 'Mag-ihap kita sa merkado!',
+                    ),
+                  ),
+                  Positioned(
+                    left: 18,
+                    right: 18,
+                    bottom: 14,
+                    child: _Grade3MarketLessonPanel(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _Grade3PrimaryButton(label: 'Sugdi', onTap: onNext),
+        ],
+      ),
+    );
+  }
+}
+
+class _Grade3MarketLessonPanel extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .92),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .14),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'GRADE 3 • UNIT 1 • LESSON 1.1',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: TudloColors.blue,
+              fontSize: 13,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Numero sa Merkado',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: TudloColors.ink,
+              fontSize: 25,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _Grade3MarketLearningChip(label: 'MGA NUMERO 1-10'),
+              _Grade3MarketLearningChip(label: 'PILA?'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Grade3MarketLearningChip extends StatelessWidget {
+  final String label;
+
+  const _Grade3MarketLearningChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4C6),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFFFC93D), width: 2),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.nunito(
+          color: TudloColors.forest,
+          fontSize: 13,
+          height: 1,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _Grade3MarketSpeechBubble extends StatelessWidget {
+  final String text;
+
+  const _Grade3MarketSpeechBubble({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 13, 18, 15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFCCE9FF), width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .14),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.nunito(
+          color: TudloColors.ink,
+          fontSize: 24,
+          height: 1.08,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _Grade3MarketSceneFallback extends StatelessWidget {
+  const _Grade3MarketSceneFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(color: const Color(0xFFCFF4FF));
+  }
+}
+
+enum _G3MarketStep {
+  intro,
+  map,
+  findFruitStall,
+  countingIntro,
+  tapNumbersOneTen,
+  appleBasket,
+  appleQuestion,
+  countOneToFive,
+  chooseFive,
+  sixToTenIntro,
+  tapSixToTen,
+  arrangeIntro,
+  arrangeSixToTen,
+  reward,
+}
+
+class _GradeThreeMarketNumbersFlow extends StatefulWidget {
+  final VoidCallback onExit;
+  final VoidCallback onLessonComplete;
+
+  const _GradeThreeMarketNumbersFlow({
+    required this.onExit,
+    required this.onLessonComplete,
+  });
+
+  @override
+  State<_GradeThreeMarketNumbersFlow> createState() =>
+      _GradeThreeMarketNumbersFlowState();
+}
+
+class _GradeThreeMarketNumbersFlowState
+    extends State<_GradeThreeMarketNumbersFlow> {
+  _G3MarketStep _step = _G3MarketStep.intro;
+  final Set<int> _heardNumbers = {};
+  final Set<int> _tappedSixToTen = {};
+  final List<int?> _arrangedSixToTen = List<int?>.filled(5, null);
+  final List<int> _arrangeChoices = const [8, 6, 10, 7, 9];
+  int? _wrongChoice;
+  int? _correctChoice;
+  int _wrongPulse = 0;
+  bool _inputLocked = false;
+
+  double get _progress =>
+      (_G3MarketStep.values.indexOf(_step) + 1) / _G3MarketStep.values.length;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _playStepVoice();
+    });
+  }
+
+  void _goNext() {
+    final index = _G3MarketStep.values.indexOf(_step);
+    if (index >= _G3MarketStep.values.length - 1) return;
+    setState(() {
+      _step = _G3MarketStep.values[index + 1];
+      _wrongChoice = null;
+      _correctChoice = null;
+      _inputLocked = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _playStepVoice();
+    });
+  }
+
+  Future<void> _replay() async {
+    await _playStepVoice();
+  }
+
+  int _voiceClipForStep() {
+    return switch (_step) {
+      _G3MarketStep.intro => 2,
+      _G3MarketStep.map => 3,
+      _G3MarketStep.findFruitStall => 4,
+      _G3MarketStep.countingIntro => 6,
+      _G3MarketStep.tapNumbersOneTen => 7,
+      _G3MarketStep.appleBasket => 8,
+      _G3MarketStep.appleQuestion => 10,
+      _G3MarketStep.countOneToFive => 13,
+      _G3MarketStep.chooseFive => 14,
+      _G3MarketStep.sixToTenIntro => 16,
+      _G3MarketStep.tapSixToTen => 17,
+      _G3MarketStep.arrangeIntro => 20,
+      _G3MarketStep.arrangeSixToTen => 21,
+      _G3MarketStep.reward => 25,
+    };
+  }
+
+  Future<void> _playClip(int clip) async {
+    await AppAudioService.instance.lowerBackgroundVolume();
+    try {
+      await AppAudioService.instance.playVoiceAssets([
+        'audio/VO-final/grade3/Gr_3_Les_1_1_$clip.wav',
+      ]);
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+    }
+  }
+
+  Future<void> _playStepVoice() => _playClip(_voiceClipForStep());
+
+  Future<void> _choose(int choice, int answer) async {
+    if (_inputLocked || _correctChoice != null) return;
+    if (choice != answer) {
+      setState(() {
+        _wrongChoice = choice;
+        _wrongPulse++;
+      });
+      unawaited(AppAudioService.instance.playWrong());
+      await _playClip(12);
+      if (mounted) setState(() => _wrongChoice = null);
+      return;
+    }
+
+    setState(() {
+      _inputLocked = true;
+      _correctChoice = choice;
+    });
+    await AppAudioService.instance.playCorrect();
+    await _playClip(_step == _G3MarketStep.appleQuestion ? 11 : 15);
+    await Future<void>.delayed(const Duration(milliseconds: 550));
+    if (!mounted) return;
+    setState(() => _inputLocked = false);
+  }
+
+  Future<void> _tapStall() async {
+    if (_inputLocked) return;
+    setState(() => _inputLocked = true);
+    await AppAudioService.instance.playCorrect();
+    await _playClip(5);
+    if (!mounted) return;
+    setState(() => _inputLocked = false);
+    _goNext();
+  }
+
+  Future<void> _tapNumberOneTen(int number) async {
+    setState(() => _heardNumbers.add(number));
+    await _playClip(6);
+  }
+
+  Future<void> _tapSixToTen(int number) async {
+    final expected = 6 + _tappedSixToTen.length;
+    if (number != expected) {
+      setState(() {
+        _wrongChoice = number;
+        _wrongPulse++;
+      });
+      await AppAudioService.instance.playWrong();
+      await _playClip(19);
+      if (mounted) setState(() => _wrongChoice = null);
+      return;
+    }
+    setState(() => _tappedSixToTen.add(number));
+    if (_tappedSixToTen.length == 5) {
+      await AppAudioService.instance.playCorrect();
+      await _playClip(18);
+    }
+  }
+
+  Future<void> _placeArrangeNumber(int number, int slotIndex) async {
+    final expected = 6 + slotIndex;
+    if (number != expected) {
+      setState(() => _wrongPulse++);
+      unawaited(AppAudioService.instance.playWrong());
+      await _playClip(23);
+      await _playClip(24);
+      return;
+    }
+    setState(() {
+      final oldIndex = _arrangedSixToTen.indexOf(number);
+      if (oldIndex != -1) _arrangedSixToTen[oldIndex] = null;
+      _arrangedSixToTen[slotIndex] = number;
+    });
+    if (_arrangedSixToTen.indexed.every((entry) => entry.$2 == 6 + entry.$1)) {
+      await AppAudioService.instance.playCorrect();
+      await _playClip(22);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    assert(_g3MarketLegacyReferenceSink != null);
+    return _G3MarketChrome(
+      progress: _progress,
+      onExit: widget.onExit,
+      onReplay: _replay,
+      child: switch (_step) {
+        _G3MarketStep.intro => _G3MarketIntroPage(onNext: _goNext),
+        _G3MarketStep.map => _G3MarketMapPage(onNext: _goNext),
+        _G3MarketStep.findFruitStall => _G3FindFruitStallPage(
+          onTapStall: _tapStall,
+        ),
+        _G3MarketStep.countingIntro => _G3SimpleMarketPage(
+          prompt: 'Mag-ihap kita halin 1 tubtob 10.',
+          onNext: _goNext,
+          child: const _G3NumberLine(numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+        ),
+        _G3MarketStep.tapNumbersOneTen => _G3NumberReviewPage(
+          heardNumbers: _heardNumbers,
+          numbers: const [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+          onTapNumber: (number) => unawaited(_tapNumberOneTen(number)),
+          onNext: _heardNumbers.length == 10 ? _goNext : null,
+        ),
+        _G3MarketStep.appleBasket => _G3AppleBasketPage(
+          onNext: () async {
+            await _playClip(9);
+            if (mounted) _goNext();
+          },
+        ),
+        _G3MarketStep.appleQuestion => _G3CountingQuestionPage(
+          prompt: 'How many apples are there?',
+          objectAsset: _grade3AppleAsset,
+          objectCount: 5,
+          choices: const [4, 5, 6],
+          answer: 5,
+          baseAsset: _grade3MarketCrateAsset,
+          altObjectAssets: null,
+          stallAsset: null,
+          vendorAsset: null,
+          waterMode: false,
+          wrongChoice: _wrongChoice,
+          correctChoice: _correctChoice,
+          wrongPulse: _wrongPulse,
+          onChoose: _choose,
+          onNext: _goNext,
+        ),
+        _G3MarketStep.countOneToFive => _G3SimpleMarketPage(
+          prompt: '1, 2, 3, 4, 5',
+          onNext: _goNext,
+          child: const _G3NumberLine(numbers: [1, 2, 3, 4, 5]),
+        ),
+        _G3MarketStep.chooseFive => _G3ChooseNumberPage(
+          prompt: 'Choose number 5.',
+          choices: const [3, 5, 6],
+          answer: 5,
+          wrongChoice: _wrongChoice,
+          correctChoice: _correctChoice,
+          wrongPulse: _wrongPulse,
+          onChoose: _choose,
+          onNext: _goNext,
+        ),
+        _G3MarketStep.sixToTenIntro => _G3SimpleMarketPage(
+          prompt: '6, 7, 8, 9, 10',
+          onNext: _goNext,
+          child: const _G3NumberLine(numbers: [6, 7, 8, 9, 10]),
+        ),
+        _G3MarketStep.tapSixToTen => _G3NumberReviewPage(
+          heardNumbers: _tappedSixToTen,
+          numbers: const [6, 7, 8, 9, 10],
+          wrongChoice: _wrongChoice,
+          wrongPulse: _wrongPulse,
+          onTapNumber: (number) => unawaited(_tapSixToTen(number)),
+          onNext: _tappedSixToTen.length == 5 ? _goNext : null,
+        ),
+        _G3MarketStep.arrangeIntro => _G3SimpleMarketPage(
+          prompt: 'Pilia kag ihan-ay ang numero.',
+          onNext: _goNext,
+          child: _G3NumberLine(numbers: _arrangeChoices),
+        ),
+        _G3MarketStep.arrangeSixToTen => _G3ArrangeNumbersPage(
+          slots: _arrangedSixToTen,
+          choices: _arrangeChoices,
+          wrongPulse: _wrongPulse,
+          onPlace: (number, slotIndex) =>
+              unawaited(_placeArrangeNumber(number, slotIndex)),
+          onNext:
+              _arrangedSixToTen.indexed.every(
+                (entry) => entry.$2 == 6 + entry.$1,
+              )
+              ? _goNext
+              : null,
+        ),
+        _G3MarketStep.reward => _G3MarketRewardPage(
+          onComplete: widget.onLessonComplete,
+        ),
+      },
+    );
+  }
+}
+
+Object? get _g3MarketLegacyReferenceSink => (
+  _grade3MarketFishStallAsset,
+  _grade3MarketFlowerStallAsset,
+  _grade3MarketFishVendorAsset,
+  _grade3MarketFishAsset,
+  _grade3MarketLilyPadAsset,
+  _grade3MarketBookAsset,
+  _grade3MarketFlowerPinkAsset,
+  _grade3MarketFlowerSunflowerAsset,
+  _grade3MarketFlowerTulipAsset,
+  _G3ModelCountPage,
+  _G3ListenChoosePage,
+  _G3ShellRoundPage,
+  _G3BuildSayPage,
+  _g3InventoryRounds,
+  _G3InventoryPage,
+);
+
+class _G3MarketMapPage extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _G3MarketMapPage({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Kadtuon ta ang merkado.',
+      footer: _LessonOneBlueButton(label: 'Sige', onTap: onNext),
+      child: SizedBox(
+        height: 360,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            const _LessonPictureAsset(
+              asset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+              fit: BoxFit.cover,
+            ),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: const BoxDecoration(
+                color: TudloColors.coral,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.location_on_rounded,
+                color: Colors.white,
+                size: 48,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G3FindFruitStallPage extends StatelessWidget {
+  final VoidCallback onTapStall;
+
+  const _G3FindFruitStallPage({required this.onTapStall});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'I-tap ang fruit stall.',
+      footer: const SizedBox(height: 64),
+      child: GestureDetector(
+        onTap: onTapStall,
+        child: const Column(
+          children: [
+            _LessonKokaMascot(size: 112, mood: KokaMood.hi),
+            SizedBox(height: 8),
+            SizedBox(
+              height: 230,
+              child: _LessonPictureAsset(
+                asset: _grade3MarketFruitStallAsset,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G3SimpleMarketPage extends StatelessWidget {
+  final String prompt;
+  final Widget child;
+  final VoidCallback onNext;
+
+  const _G3SimpleMarketPage({
+    required this.prompt,
+    required this.child,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: prompt,
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const _LessonKokaMascot(size: 112, mood: KokaMood.hi),
+          const SizedBox(height: 18),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _G3AppleBasketPage extends StatelessWidget {
+  final Future<void> Function() onNext;
+
+  const _G3AppleBasketPage({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Put the apples in the basket. Let us count them.',
+      footer: _LessonOneBlueButton(
+        label: 'Sunod',
+        onTap: () => unawaited(onNext()),
+      ),
+      child: const Column(
+        children: [
+          _G3ObjectTray(
+            baseAsset: _grade3MarketCrateAsset,
+            objectAssets: [
+              _grade3AppleAsset,
+              _grade3AppleAsset,
+              _grade3AppleAsset,
+              _grade3AppleAsset,
+              _grade3AppleAsset,
+            ],
+          ),
+          SizedBox(height: 12),
+          _G3ResultText(text: '5 apples'),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ChooseNumberPage extends StatelessWidget {
+  final String prompt;
+  final List<int> choices;
+  final int answer;
+  final int? wrongChoice;
+  final int? correctChoice;
+  final int wrongPulse;
+  final Future<void> Function(int choice, int answer) onChoose;
+  final VoidCallback onNext;
+
+  const _G3ChooseNumberPage({
+    required this.prompt,
+    required this.choices,
+    required this.answer,
+    required this.wrongChoice,
+    required this.correctChoice,
+    required this.wrongPulse,
+    required this.onChoose,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: prompt,
+      footer: _LessonOneBlueButton(
+        label: 'Sunod',
+        onTap: correctChoice == null ? null : onNext,
+      ),
+      child: _G3AnswerRow(
+        choices: choices,
+        wrongChoice: wrongChoice,
+        correctChoice: correctChoice,
+        wrongPulse: wrongPulse,
+        onChoose: (choice) => unawaited(onChoose(choice, answer)),
+      ),
+    );
+  }
+}
+
+class _G3NumberLine extends StatelessWidget {
+  final List<int> numbers;
+
+  const _G3NumberLine({required this.numbers});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        for (final number in numbers)
+          Container(
+            width: 68,
+            height: 68,
+            alignment: Alignment.center,
+            decoration: _g3SoftPanelDecoration(borderColor: TudloColors.blue),
+            child: Text(
+              '$number',
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 34,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _G3ArrangeNumbersPage extends StatelessWidget {
+  final List<int?> slots;
+  final List<int> choices;
+  final int wrongPulse;
+  final void Function(int number, int slotIndex) onPlace;
+  final VoidCallback? onNext;
+
+  const _G3ArrangeNumbersPage({
+    required this.slots,
+    required this.choices,
+    required this.wrongPulse,
+    required this.onPlace,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final placed = slots.whereType<int>().toSet();
+    return _G3MarketContentFrame(
+      prompt: 'Ihan-ay ang 6, 7, 8, 9, 10.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              for (var index = 0; index < slots.length; index++) ...[
+                Expanded(
+                  child: _G3NumberDropSlot(
+                    value: slots[index],
+                    wrongPulse: wrongPulse,
+                    onAccept: (number) => onPlace(number, index),
+                  ),
+                ),
+                if (index < slots.length - 1) const SizedBox(width: 6),
+              ],
+            ],
+          ),
+          const SizedBox(height: 22),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final number in choices)
+                if (!placed.contains(number))
+                  _G3DraggableNumber(number: number),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3NumberDropSlot extends StatelessWidget {
+  final int? value;
+  final int wrongPulse;
+  final ValueChanged<int> onAccept;
+
+  const _G3NumberDropSlot({
+    required this.value,
+    required this.wrongPulse,
+    required this.onAccept,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (_) => value == null,
+      onAcceptWithDetails: (details) => onAccept(details.data),
+      builder: (context, candidate, rejected) {
+        return _FeedbackMotion(
+          key: ValueKey('slot-$wrongPulse-$value'),
+          correct: value != null,
+          wrong: candidate.isNotEmpty,
+          child: Container(
+            height: 72,
+            alignment: Alignment.center,
+            decoration: _g3SoftPanelDecoration(
+              fill: value == null ? Colors.white : const Color(0xFFE3FFD8),
+              borderColor: value == null ? TudloColors.blue : TudloColors.green,
+            ),
+            child: Text(
+              value == null ? '' : '$value',
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 32,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _G3DraggableNumber extends StatelessWidget {
+  final int number;
+
+  const _G3DraggableNumber({required this.number});
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = Container(
+      width: 72,
+      height: 72,
+      alignment: Alignment.center,
+      decoration: _g3SoftPanelDecoration(borderColor: TudloColors.blue),
+      child: Text(
+        '$number',
+        style: GoogleFonts.nunito(
+          color: TudloColors.blue,
+          fontSize: 34,
+          height: 1,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+    return Draggable<int>(
+      data: number,
+      feedback: Material(color: Colors.transparent, child: tile),
+      childWhenDragging: Opacity(opacity: .35, child: tile),
+      child: tile,
+    );
+  }
+}
+
+class _G3MarketChrome extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Widget child;
+
+  const _G3MarketChrome({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: _grade3MarketBackgroundAsset,
+      child: child,
+    );
+  }
+}
+
+class _G3MarketIntroPage extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _G3MarketIntroPage({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        view.width * .06,
+        view.height * .13,
+        view.width * .06,
+        view.height * .035,
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -view.width * .10,
+                  bottom: view.height * .10,
+                  width: view.width * .78,
+                  height: view.height * .34,
+                  child: const _LessonPictureAsset(
+                    asset: _grade3MarketFruitStallAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                Positioned(
+                  left: -view.width * .06,
+                  bottom: view.height * .02,
+                  child: _LessonKokaMascot(
+                    size: (view.width * .44).clamp(160.0, 230.0),
+                    mood: KokaMood.hi,
+                  ),
+                ),
+                Positioned(
+                  left: view.width * .32,
+                  right: 0,
+                  top: view.height * .06,
+                  child: const _Grade3MarketSpeechBubble(
+                    text: 'Mag-ihap kita sa merkado!',
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: _Grade3MarketLessonPanel(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _LessonOneBlueButton(label: 'Sugdi', onTap: onNext),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3NumberReviewPage extends StatelessWidget {
+  final Set<int> heardNumbers;
+  final List<int> numbers;
+  final int? wrongChoice;
+  final int wrongPulse;
+  final ValueChanged<int> onTapNumber;
+  final VoidCallback? onNext;
+
+  const _G3NumberReviewPage({
+    required this.heardNumbers,
+    required this.numbers,
+    required this.onTapNumber,
+    required this.onNext,
+    this.wrongChoice,
+    this.wrongPulse = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G3MarketContentFrame(
+      prompt: 'Mag-ihap kita halin isa tubtob napulo.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          const _LessonKokaMascot(size: 124, mood: KokaMood.hi),
+          const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final number in numbers)
+                _FeedbackMotion(
+                  key: ValueKey('g3-number-$number-$wrongPulse'),
+                  correct: heardNumbers.contains(number),
+                  wrong: wrongChoice == number,
+                  child: GestureDetector(
+                    onTap: heardNumbers.contains(number)
+                        ? null
+                        : () => onTapNumber(number),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      width: (view.width * .15).clamp(54.0, 70.0),
+                      height: (view.width * .15).clamp(54.0, 70.0),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: heardNumbers.contains(number)
+                            ? TudloColors.green
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: TudloColors.blue, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: .10),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '$number',
+                        style: GoogleFonts.nunito(
+                          color: heardNumbers.contains(number)
+                              ? Colors.white
+                              : TudloColors.blue,
+                          fontSize: 30,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ModelCountPage extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _G3ModelCountPage({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Pila ka mangga?',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: const [
+          _G3MarketSceneLayer(stallAsset: _grade3MarketFruitStallAsset),
+          SizedBox(height: 10),
+          _G3ObjectTray(
+            baseAsset: _grade3MarketTrayAsset,
+            objectAssets: [
+              _grade3MarketMangoAsset,
+              _grade3MarketMangoAsset,
+              _grade3MarketMangoAsset,
+            ],
+          ),
+          SizedBox(height: 8),
+          _G3ResultText(text: 'Three mangoes.'),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3CountingQuestionPage extends StatelessWidget {
+  final String prompt;
+  final String objectAsset;
+  final List<String>? altObjectAssets;
+  final int objectCount;
+  final List<int> choices;
+  final int answer;
+  final String? stallAsset;
+  final String? vendorAsset;
+  final String? baseAsset;
+  final bool waterMode;
+  final int? wrongChoice;
+  final int? correctChoice;
+  final int wrongPulse;
+  final Future<void> Function(int choice, int answer) onChoose;
+  final VoidCallback onNext;
+
+  const _G3CountingQuestionPage({
+    required this.prompt,
+    required this.objectAsset,
+    required this.objectCount,
+    required this.choices,
+    required this.answer,
+    required this.wrongChoice,
+    required this.correctChoice,
+    this.wrongPulse = 0,
+    required this.onChoose,
+    required this.onNext,
+    this.altObjectAssets,
+    this.stallAsset,
+    this.vendorAsset,
+    this.baseAsset,
+    this.waterMode = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final assets = [
+      for (var index = 0; index < objectCount; index++)
+        altObjectAssets == null
+            ? objectAsset
+            : altObjectAssets![index % altObjectAssets!.length],
+    ];
+    return _G3MarketContentFrame(
+      prompt: prompt,
+      footer: _LessonOneBlueButton(
+        label: 'Sunod',
+        onTap: correctChoice == null ? null : onNext,
+      ),
+      child: Column(
+        children: [
+          if (stallAsset != null)
+            _G3MarketSceneLayer(
+              stallAsset: stallAsset!,
+              vendorAsset: vendorAsset,
+            ),
+          const SizedBox(height: 8),
+          _G3ObjectTray(
+            baseAsset: baseAsset,
+            objectAssets: assets,
+            waterMode: waterMode,
+          ),
+          const SizedBox(height: 14),
+          _G3AnswerRow(
+            choices: choices,
+            wrongChoice: wrongChoice,
+            correctChoice: correctChoice,
+            wrongPulse: wrongPulse,
+            onChoose: (choice) => onChoose(choice, answer),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ListenChoosePage extends StatelessWidget {
+  final String prompt;
+  final String spoken;
+  final String objectAsset;
+  final List<int> groupCounts;
+  final int answer;
+  final int? wrongChoice;
+  final int? correctChoice;
+  final Future<void> Function(int choice, int answer) onChoose;
+  final VoidCallback onNext;
+
+  const _G3ListenChoosePage({
+    required this.prompt,
+    required this.spoken,
+    required this.objectAsset,
+    required this.groupCounts,
+    required this.answer,
+    required this.wrongChoice,
+    required this.correctChoice,
+    required this.onChoose,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: prompt,
+      footer: _LessonOneBlueButton(
+        label: 'Sunod',
+        onTap: correctChoice == null ? null : onNext,
+      ),
+      child: Column(
+        children: [
+          _G3ResultText(text: spoken),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              for (final count in groupCounts) ...[
+                Expanded(
+                  child: _G3GroupChoiceCard(
+                    count: count,
+                    objectAsset: objectAsset,
+                    selectedWrong: wrongChoice == count,
+                    selectedCorrect: correctChoice == count,
+                    onTap: () => onChoose(count, answer),
+                  ),
+                ),
+                if (count != groupCounts.last) const SizedBox(width: 8),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShellRoundPage extends StatelessWidget {
+  final String prompt;
+  final Set<int> placedShells;
+  final int? selectedShell;
+  final ValueChanged<int> onSelectShell;
+  final ValueChanged<int> onPlaceShell;
+  final VoidCallback? onNext;
+  final bool reversed;
+
+  const _G3ShellRoundPage({
+    required this.prompt,
+    required this.placedShells,
+    required this.selectedShell,
+    required this.onSelectShell,
+    required this.onPlaceShell,
+    required this.onNext,
+    required this.reversed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final shellOrder = reversed
+        ? List<int>.generate(
+            _grade3MarketShellAssets.length,
+            (index) => index,
+          ).reversed.toList()
+        : List<int>.generate(_grade3MarketShellAssets.length, (index) => index);
+    return _G3MarketContentFrame(
+      prompt: prompt,
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          const _G3MarketSceneLayer(stallAsset: _grade3MarketShellStallAsset),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: _g3SoftPanelDecoration(),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final index in shellOrder)
+                        if (!placedShells.contains(index))
+                          _G3DraggableShell(
+                            index: index,
+                            selected: selectedShell == index,
+                            onTap: () => onSelectShell(index),
+                          ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: GestureDetector(
+                  onTap: selectedShell == null
+                      ? null
+                      : () => onPlaceShell(selectedShell!),
+                  child: DragTarget<int>(
+                    onWillAcceptWithDetails: (_) => true,
+                    onAcceptWithDetails: (details) =>
+                        onPlaceShell(details.data),
+                    builder: (context, candidate, rejected) {
+                      final complete =
+                          placedShells.length ==
+                          _grade3MarketShellAssets.length;
+                      return Container(
+                        height: 168,
+                        padding: const EdgeInsets.all(12),
+                        decoration: _g3SoftPanelDecoration(
+                          borderColor:
+                              candidate.isNotEmpty || selectedShell != null
+                              ? TudloColors.green
+                              : TudloColors.blue,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _LessonPictureAsset(
+                              asset: complete
+                                  ? _grade3MarketPailFullAsset
+                                  : _grade3MarketPailEmptyAsset,
+                              fit: BoxFit.contain,
+                            ),
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: _G3ResultText(
+                                text:
+                                    '${placedShells.length}/${_grade3MarketShellAssets.length}',
+                                compact: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3DraggableShell extends StatelessWidget {
+  final int index;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _G3DraggableShell({
+    required this.index,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final shell = GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 58,
+        height: 58,
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFE7FFD9) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? TudloColors.green : const Color(0xFFBBD9EA),
+            width: 3,
+          ),
+        ),
+        child: _LessonPictureAsset(
+          asset: _grade3MarketShellAssets[index],
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+    return Draggable<int>(
+      data: index,
+      feedback: Material(color: Colors.transparent, child: shell),
+      childWhenDragging: Opacity(opacity: .28, child: shell),
+      child: shell,
+    );
+  }
+}
+
+class _G3BuildSayPage extends StatelessWidget {
+  final List<String?> slots;
+  final void Function(String tile, int slot) onPlaceTile;
+  final VoidCallback? onNext;
+
+  const _G3BuildSayPage({
+    required this.slots,
+    required this.onPlaceTile,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Ihan-ay: Six shells!',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 150,
+                  child: const _LessonPictureAsset(
+                    asset: _grade3MarketPailFullAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        for (var index = 0; index < slots.length; index++) ...[
+                          Expanded(
+                            child: _G3SentenceSlot(
+                              value: slots[index],
+                              onAccept: (tile) => onPlaceTile(tile, index),
+                            ),
+                          ),
+                          if (index == 0) const SizedBox(width: 8),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        for (final tile in const ['Six', 'shells!']) ...[
+                          Expanded(child: _G3SentenceTile(label: tile)),
+                          if (tile == 'Six') const SizedBox(width: 8),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const _G3ResultText(text: 'Hambala: How many? Six!'),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3SentenceSlot extends StatelessWidget {
+  final String? value;
+  final ValueChanged<String> onAccept;
+
+  const _G3SentenceSlot({required this.value, required this.onAccept});
+
+  @override
+  Widget build(BuildContext context) {
+    return DragTarget<String>(
+      onWillAcceptWithDetails: (_) => value == null,
+      onAcceptWithDetails: (details) => onAccept(details.data),
+      builder: (context, candidate, rejected) {
+        return Container(
+          height: 62,
+          alignment: Alignment.center,
+          decoration: _g3SoftPanelDecoration(
+            borderColor: value == null
+                ? const Color(0xFFBBD9EA)
+                : TudloColors.green,
+          ),
+          child: Text(
+            value ?? '',
+            style: GoogleFonts.nunito(
+              color: TudloColors.blue,
+              fontSize: 23,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _G3SentenceTile extends StatelessWidget {
+  final String label;
+
+  const _G3SentenceTile({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = Container(
+      height: 58,
+      alignment: Alignment.center,
+      decoration: _g3SoftPanelDecoration(borderColor: TudloColors.blue),
+      child: Text(
+        label,
+        style: GoogleFonts.nunito(
+          color: TudloColors.blue,
+          fontSize: 21,
+          height: 1,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+    return Draggable<String>(
+      data: label,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(width: 140, child: tile),
+      ),
+      childWhenDragging: Opacity(opacity: .35, child: tile),
+      child: tile,
+    );
+  }
+}
+
+class _G3InventoryRound {
+  final String prompt;
+  final String objectAsset;
+  final int count;
+  final List<int> choices;
+  final int answer;
+
+  const _G3InventoryRound({
+    required this.prompt,
+    required this.objectAsset,
+    required this.count,
+    required this.choices,
+    required this.answer,
+  });
+}
+
+const List<_G3InventoryRound> _g3InventoryRounds = [
+  _G3InventoryRound(
+    prompt: 'Pila ka saging?',
+    objectAsset: _grade3MarketBananasAsset,
+    count: 4,
+    choices: [3, 4, 5],
+    answer: 4,
+  ),
+  _G3InventoryRound(
+    prompt: 'Pila ka itlog?',
+    objectAsset: _grade3MarketEggAsset,
+    count: 6,
+    choices: [5, 6, 7],
+    answer: 6,
+  ),
+  _G3InventoryRound(
+    prompt: 'Pila ka tasa?',
+    objectAsset: _grade3MarketCupAsset,
+    count: 3,
+    choices: [2, 3, 4],
+    answer: 3,
+  ),
+  _G3InventoryRound(
+    prompt: 'Pila ka kandila?',
+    objectAsset: _grade3MarketCandleAsset,
+    count: 5,
+    choices: [4, 5, 6],
+    answer: 5,
+  ),
+];
+
+class _G3InventoryPage extends StatelessWidget {
+  final _G3InventoryRound round;
+  final String progressText;
+  final int? wrongChoice;
+  final int? correctChoice;
+  final ValueChanged<int> onChoose;
+  final VoidCallback? onNext;
+
+  const _G3InventoryPage({
+    required this.round,
+    required this.progressText,
+    required this.wrongChoice,
+    required this.correctChoice,
+    required this.onChoose,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Buligi ang tindera mag-ihap. $progressText',
+      footer: _LessonOneBlueButton(label: 'Tapuson', onTap: onNext),
+      child: Column(
+        children: [
+          const _G3MarketSceneLayer(
+            stallAsset: _grade3MarketInventoryStallAsset,
+            vendorAsset: _grade3MarketVendorAsset,
+          ),
+          const SizedBox(height: 8),
+          _G3ResultText(text: round.prompt, compact: true),
+          const SizedBox(height: 8),
+          _G3ObjectTray(
+            baseAsset: _grade3MarketCounterAsset,
+            objectAssets: [
+              for (var index = 0; index < round.count; index++)
+                round.objectAsset,
+            ],
+          ),
+          const SizedBox(height: 10),
+          _G3AnswerRow(
+            choices: round.choices,
+            wrongChoice: wrongChoice,
+            correctChoice: correctChoice,
+            onChoose: onChoose,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3MarketRewardPage extends StatelessWidget {
+  final VoidCallback onComplete;
+
+  const _G3MarketRewardPage({required this.onComplete});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Maayo gid!',
+      footer: _LessonOneBlueButton(label: 'Padayon', onTap: onComplete),
+      child: Column(
+        children: const [
+          SizedBox(height: 12),
+          _LessonKokaMascot(size: 150, mood: KokaMood.hi),
+          SizedBox(height: 8),
+          Icon(Icons.star_rounded, color: TudloColors.gold, size: 112),
+          SizedBox(height: 8),
+          _G3ResultText(text: 'Natapos mo ang leksyon.'),
+        ],
+      ),
+    );
+  }
+}
+
+enum _G3ShopStep {
+  listIntro,
+  map,
+  stallHotspot,
+  priceDemo,
+  priceChoice,
+  ageContrast,
+  ageChoice,
+  sentenceModel,
+  sentenceArrange,
+  reward,
+}
+
+enum _G3ShopPhase { quantity, price }
+
+class _GradeThreeShoppingFlow extends StatefulWidget {
+  final VoidCallback onExit;
+  final VoidCallback onLessonComplete;
+
+  const _GradeThreeShoppingFlow({
+    required this.onExit,
+    required this.onLessonComplete,
+  });
+
+  @override
+  State<_GradeThreeShoppingFlow> createState() =>
+      _GradeThreeShoppingFlowState();
+}
+
+class _GradeThreeShoppingFlowState extends State<_GradeThreeShoppingFlow> {
+  _G3ShopStep _step = _G3ShopStep.listIntro;
+  bool _listOpen = false;
+  String? _wrongId;
+  String? _correctId;
+  int _wrongPulse = 0;
+  final List<String?> _sentenceSlots = List<String?>.filled(2, null);
+  String? _selectedTile;
+
+  double get _progress =>
+      (_G3ShopStep.values.indexOf(_step) + 1) / _G3ShopStep.values.length;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _playStepVoice();
+    });
+  }
+
+  void _next() {
+    final index = _G3ShopStep.values.indexOf(_step);
+    if (index >= _G3ShopStep.values.length - 1) return;
+    setState(() {
+      _step = _G3ShopStep.values[index + 1];
+      _wrongId = null;
+      _correctId = null;
+      _selectedTile = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _playStepVoice();
+    });
+  }
+
+  int _clipForStep() {
+    return switch (_step) {
+      _G3ShopStep.listIntro => _listOpen ? 2 : 1,
+      _G3ShopStep.map => 3,
+      _G3ShopStep.stallHotspot => 4,
+      _G3ShopStep.priceDemo => 5,
+      _G3ShopStep.priceChoice => 6,
+      _G3ShopStep.ageContrast => 7,
+      _G3ShopStep.ageChoice => 8,
+      _G3ShopStep.sentenceModel => 9,
+      _G3ShopStep.sentenceArrange => 10,
+      _G3ShopStep.reward => 11,
+    };
+  }
+
+  Future<void> _playClip(int clip) async {
+    await TudloVoiceButton.stop();
+    await AppAudioService.instance.lowerBackgroundVolume();
+    try {
+      await AppAudioService.instance.playVoiceAssets([
+        'audio/VO-final/grade3/Gr_3_Les_1_3_$clip.wav',
+      ]);
+    } finally {
+      await AppAudioService.instance.restoreBackgroundVolume();
+    }
+  }
+
+  Future<void> _playStepVoice() => _playClip(_clipForStep());
+
+  Future<void> _choose(String id, String answer) async {
+    if (_correctId != null) return;
+    if (id != answer) {
+      setState(() {
+        _wrongId = id;
+        _wrongPulse++;
+      });
+      await AppAudioService.instance.playWrong();
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        'Hmmm, hindi amo na.',
+        hiligaynon: true,
+      );
+      if (mounted) setState(() => _wrongId = null);
+      return;
+    }
+    setState(() => _correctId = id);
+    await AppAudioService.instance.playCorrect();
+    if (_step == _G3ShopStep.priceChoice) {
+      await _playClip(7);
+    } else if (_step == _G3ShopStep.ageChoice) {
+      await _playClip(9);
+    }
+  }
+
+  Future<void> _placeSentence(String tile, int slot) async {
+    const answer = ['It costs', 'ten pesos.'];
+    if (tile != answer[slot]) {
+      setState(() => _wrongPulse++);
+      await AppAudioService.instance.playWrong();
+      if (!mounted) return;
+      await TudloVoiceButton.speak(
+        context,
+        'Hmmm, hindi amo na.',
+        hiligaynon: true,
+      );
+      return;
+    }
+    setState(() {
+      _sentenceSlots[slot] = tile;
+      _selectedTile = null;
+    });
+    if (_sentenceSlots.indexed.every((entry) => entry.$2 == answer[entry.$1])) {
+      await AppAudioService.instance.playCorrect();
+    }
+  }
+
+  Future<void> _openList() async {
+    if (_listOpen) return;
+    setState(() => _listOpen = true);
+    await AppAudioService.instance.playCorrect();
+    await _playClip(2);
+  }
+
+  Future<void> _hotspotNext({int? clip}) async {
+    await AppAudioService.instance.playCorrect();
+    if (clip != null) await _playClip(clip);
+    if (mounted) _next();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    assert(_g3ShoppingLegacyReferenceSink != null);
+    return _G3ShoppingChrome(
+      progress: _progress,
+      onExit: widget.onExit,
+      onReplay: _playStepVoice,
+      child: switch (_step) {
+        _G3ShopStep.listIntro => _G3ShopListIntroPage(
+          opened: _listOpen,
+          onOpen: () => unawaited(_openList()),
+          onNext: _listOpen ? _next : null,
+        ),
+        _G3ShopStep.map => _G3ShopMapPage(
+          onTapMarket: () => unawaited(_hotspotNext(clip: 4)),
+        ),
+        _G3ShopStep.stallHotspot => _G3ShopBananaStallPage(
+          prompt: 'Pangitaa ang banana stall.',
+          onTapStall: () => unawaited(_hotspotNext()),
+        ),
+        _G3ShopStep.priceDemo => _G3ShopBananaPriceDemo(onNext: _next),
+        _G3ShopStep.priceChoice => _G3ShopPriceChoicePage(
+          wrongId: _wrongId,
+          correctId: _correctId,
+          wrongPulse: _wrongPulse,
+          onChoose: (id) => unawaited(_choose(id, '10')),
+          onNext: _correctId == null ? null : _next,
+        ),
+        _G3ShopStep.ageContrast => _G3ShopAgeContrastPage(onNext: _next),
+        _G3ShopStep.ageChoice => _G3ShopAgeChoicePage(
+          wrongId: _wrongId,
+          correctId: _correctId,
+          wrongPulse: _wrongPulse,
+          onChoose: (id) => unawaited(_choose(id, 'I am nine years old.')),
+          onNext: _correctId == null ? null : _next,
+        ),
+        _G3ShopStep.sentenceModel => _G3ShopSentenceModelPage(onNext: _next),
+        _G3ShopStep.sentenceArrange => _G3ShopSentencePage(
+          slots: _sentenceSlots,
+          selectedTile: _selectedTile,
+          wrongPulse: _wrongPulse,
+          onSelectTile: (tile) => setState(() => _selectedTile = tile),
+          onPlace: (tile, slot) => unawaited(_placeSentence(tile, slot)),
+          onTapSlot: (slot) {
+            final tile = _selectedTile;
+            if (tile != null) unawaited(_placeSentence(tile, slot));
+          },
+          onNext: _sentenceSlots.every((value) => value != null) ? _next : null,
+        ),
+        _G3ShopStep.reward => _G3ShopRewardPage(
+          onComplete: widget.onLessonComplete,
+        ),
+      },
+    );
+  }
+}
+
+class _G3ShoppingChrome extends StatelessWidget {
+  final double progress;
+  final VoidCallback onExit;
+  final VoidCallback onReplay;
+  final Widget child;
+
+  const _G3ShoppingChrome({
+    required this.progress,
+    required this.onExit,
+    required this.onReplay,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LessonOneChrome(
+      progress: progress,
+      onExit: onExit,
+      onReplay: onReplay,
+      backgroundAsset: _g3ShopBg,
+      child: child,
+    );
+  }
+}
+
+Object? get _g3ShoppingLegacyReferenceSink => (
+  _g3ShopFishVendor,
+  _g3ShopFishStall,
+  _g3ShopFlowerStall,
+  _g3ShopInventoryStall,
+  _g3ShopFlower,
+  _g3ShopSpoon,
+  _G3ShopIntroPage(onNext: () {}),
+  _G3QuestionTypesPage(opened: const {}, onOpen: (_) {}, onNext: null),
+  _G3ShopQuestionPage(
+    prompt: '',
+    stallAsset: _g3ShopFishStall,
+    vendorAsset: _g3ShopFishVendor,
+    productAsset: _g3ShopFish,
+    count: 1,
+    price: 1,
+    choices: const [''],
+    answer: '',
+    wrongId: null,
+    correctId: null,
+    wrongPulse: 0,
+    onChoose: (_, _) async {},
+    onNext: () {},
+  ),
+  _G3AgeQuestionPage(
+    wrongId: null,
+    correctId: null,
+    wrongPulse: 0,
+    onChoose: (_, _) async {},
+    onNext: () {},
+  ),
+  _G3PriceOnlyPage(
+    wrongId: null,
+    correctId: null,
+    wrongPulse: 0,
+    onChoose: (_, _) async {},
+    onNext: () {},
+  ),
+  _G3SpeakAtStallPage(done: false, onRecord: () {}, onNext: null),
+  _g3ShoppingRounds,
+  _G3ShoppingListPage(
+    round: _g3ShoppingRounds.first,
+    roundIndex: 0,
+    phase: _G3ShopPhase.quantity,
+    basketCount: 0,
+    basketPulse: 0,
+    wrongId: null,
+    correctId: null,
+    wrongPulse: 0,
+    onAdd: () {},
+    onRemove: () {},
+    onCheckQuantity: () async {},
+    onChoosePrice: (_) {},
+  ),
+  _G3ShopPhase.price,
+  _G3ShopReviewPage(
+    done: const {},
+    wrongId: null,
+    wrongPulse: 0,
+    onAnswer: (_, _) {},
+    onNext: null,
+  ),
+);
+
+class _G3ShopListIntroPage extends StatelessWidget {
+  final bool opened;
+  final VoidCallback onOpen;
+  final VoidCallback? onNext;
+
+  const _G3ShopListIntroPage({
+    required this.opened,
+    required this.onOpen,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G3MarketContentFrame(
+      prompt: opened
+          ? 'Bukas ang shopping list. Saging ang unahon ta.'
+          : 'May listahan ako sang baklon. Buligi ako gamit ang numero.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: SizedBox(
+        height: view.height * .54,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 2,
+              bottom: 0,
+              child: _LessonKokaMascot(
+                size: (view.width * .34).clamp(130.0, 190.0),
+                mood: KokaMood.hi,
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              width: 170,
+              height: 238,
+              child: _LessonPictureAsset(
+                asset: opened ? _g3ShopNanayBasket : _g3ShopNanayList,
+                fit: BoxFit.contain,
+              ),
+            ),
+            Positioned(
+              left: view.width * .30,
+              right: 8,
+              top: 8,
+              child: GestureDetector(
+                onTap: onOpen,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.all(14),
+                  decoration: _g3SoftPanelDecoration(
+                    fill: opened ? const Color(0xFFE3FFD8) : Colors.white,
+                    borderColor: opened ? TudloColors.green : TudloColors.blue,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        height: 110,
+                        child: _LessonPictureAsset(asset: _g3ShopList),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        opened ? 'saging\nP10' : 'I-tap ang listahan',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: TudloColors.ink,
+                          fontSize: 22,
+                          height: 1.05,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G3ShopMapPage extends StatelessWidget {
+  final VoidCallback onTapMarket;
+
+  const _G3ShopMapPage({required this.onTapMarket});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Kadtu kita sa Market. I-tap ang banana stall.',
+      footer: const SizedBox(height: 64),
+      child: GestureDetector(
+        onTap: onTapMarket,
+        child: SizedBox(
+          height: 360,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const _LessonPictureAsset(
+                asset: 'assets/images/level_game/backgrounds/tudlomap.svg',
+                fit: BoxFit.cover,
+              ),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: const BoxDecoration(
+                  color: TudloColors.coral,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: Colors.white,
+                  size: 48,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _G3ShopBananaStallPage extends StatelessWidget {
+  final String prompt;
+  final VoidCallback onTapStall;
+
+  const _G3ShopBananaStallPage({
+    required this.prompt,
+    required this.onTapStall,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: prompt,
+      footer: const SizedBox(height: 64),
+      child: GestureDetector(
+        onTap: onTapStall,
+        child: Column(
+          children: [
+            const _G3MarketSceneLayer(
+              stallAsset: _g3ShopFruitStall,
+              vendorAsset: _g3ShopFruitVendor,
+            ),
+            const SizedBox(height: 10),
+            _G3ObjectTray(
+              baseAsset: _g3ShopTray,
+              objectAssets: [
+                for (var index = 0; index < 5; index++) _g3ShopBanana,
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G3ShopBananaPriceDemo extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _G3ShopBananaPriceDemo({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Ang saging nagabalor ten pesos.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          _G3ObjectTray(
+            baseAsset: _g3ShopTray,
+            objectAssets: [
+              for (var index = 0; index < 4; index++) _g3ShopBanana,
+            ],
+          ),
+          const Positioned(right: 18, top: 12, child: _G3PriceTag(price: 10)),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopPriceChoicePage extends StatelessWidget {
+  final String? wrongId;
+  final String? correctId;
+  final int wrongPulse;
+  final ValueChanged<String> onChoose;
+  final VoidCallback? onNext;
+
+  const _G3ShopPriceChoicePage({
+    required this.wrongId,
+    required this.correctId,
+    required this.wrongPulse,
+    required this.onChoose,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Tan-awa ang tatlo ka price tag kag pilia ang ten pesos.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          _G3ObjectTray(
+            baseAsset: _g3ShopTray,
+            objectAssets: [
+              for (var index = 0; index < 4; index++) _g3ShopBanana,
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (final price in const [5, 10, 20])
+                _FeedbackMotion(
+                  key: ValueKey('g3-shop-price-$price-$wrongPulse-$correctId'),
+                  correct: correctId == '$price',
+                  wrong: wrongId == '$price',
+                  child: GestureDetector(
+                    onTap: correctId == null ? () => onChoose('$price') : null,
+                    child: _G3PriceTag(price: price),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopAgeContrastPage extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _G3ShopAgeContrastPage({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'How old are you? Nine years old ang bata.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Row(
+        children: [
+          const Expanded(
+            child: SizedBox(
+              height: 190,
+              child: _LessonPictureAsset(asset: _g3ShopBoy),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: _g3SoftPanelDecoration(),
+              child: Text(
+                'How old?\n\nI am nine years old.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.ink,
+                  fontSize: 25,
+                  height: 1.1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopAgeChoicePage extends StatelessWidget {
+  final String? wrongId;
+  final String? correctId;
+  final int wrongPulse;
+  final ValueChanged<String> onChoose;
+  final VoidCallback? onNext;
+
+  const _G3ShopAgeChoicePage({
+    required this.wrongId,
+    required this.correctId,
+    required this.wrongPulse,
+    required this.onChoose,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Pilia ang sabat nga I am nine years old.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          const SizedBox(
+            height: 130,
+            child: _LessonPictureAsset(asset: _g3ShopBoy),
+          ),
+          const SizedBox(height: 12),
+          _G3TextChoiceWrap(
+            choices: const [
+              'It costs ten pesos.',
+              'I am nine years old.',
+              'I have ten bananas.',
+            ],
+            wrongId: wrongId,
+            correctId: correctId,
+            wrongPulse: wrongPulse,
+            onChoose: onChoose,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopSentenceModelPage extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _G3ShopSentenceModelPage({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Ihan-ay: It costs - ten pesos.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: const Column(
+        children: [
+          _G3PriceTag(price: 10),
+          SizedBox(height: 16),
+          _G3ResultText(text: 'It costs ten pesos.'),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopIntroPage extends StatelessWidget {
+  final VoidCallback onNext;
+
+  const _G3ShopIntroPage({required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return _G3MarketContentFrame(
+      prompt: 'Mabakal kita sa merkado!',
+      footer: _LessonOneBlueButton(label: 'Sugdi', onTap: onNext),
+      child: SizedBox(
+        height: view.height * .54,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 4,
+              bottom: 0,
+              child: _LessonKokaMascot(
+                size: (view.width * .38).clamp(140.0, 210.0),
+                mood: KokaMood.hi,
+              ),
+            ),
+            const Positioned(
+              right: 6,
+              bottom: 0,
+              width: 180,
+              height: 260,
+              child: _LessonPictureAsset(
+                asset: _g3ShopNanayList,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const Positioned(
+              left: 120,
+              right: 0,
+              top: 12,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                children: [
+                  _Grade3MarketLearningChip(label: 'EDAD'),
+                  _Grade3MarketLearningChip(label: 'KADAMUON'),
+                  _Grade3MarketLearningChip(label: 'PRESYO'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G3QuestionTypesPage extends StatelessWidget {
+  final Set<String> opened;
+  final ValueChanged<String> onOpen;
+  final VoidCallback? onNext;
+
+  const _G3QuestionTypesPage({
+    required this.opened,
+    required this.onOpen,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Tulo ka pangutana.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Row(
+        children: [
+          Expanded(
+            child: _G3TypeCard(
+              id: 'age',
+              title: 'HOW OLD?',
+              asset: _g3ShopBoy,
+              text: 'I am 9.',
+              active: opened.contains('age'),
+              onTap: onOpen,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _G3TypeCard(
+              id: 'many',
+              title: 'HOW MANY?',
+              asset: _g3ShopChair,
+              text: 'Twelve chairs.',
+              copies: 12,
+              active: opened.contains('many'),
+              onTap: onOpen,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _G3TypeCard(
+              id: 'much',
+              title: 'HOW MUCH?',
+              asset: _g3ShopMango,
+              text: 'Ten pesos.',
+              price: 10,
+              active: opened.contains('much'),
+              onTap: onOpen,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3TypeCard extends StatelessWidget {
+  final String id;
+  final String title;
+  final String asset;
+  final String text;
+  final int copies;
+  final int? price;
+  final bool active;
+  final ValueChanged<String> onTap;
+
+  const _G3TypeCard({
+    required this.id,
+    required this.title,
+    required this.asset,
+    required this.text,
+    required this.active,
+    required this.onTap,
+    this.copies = 1,
+    this.price,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onTap(id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.all(8),
+        decoration: _g3SoftPanelDecoration(
+          fill: active ? const Color(0xFFE3FFD8) : Colors.white,
+          borderColor: active ? TudloColors.green : TudloColors.blue,
+        ),
+        child: Column(
+          children: [
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: TudloColors.ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 2,
+                    runSpacing: 2,
+                    children: [
+                      for (var index = 0; index < copies; index++)
+                        SizedBox(
+                          width: copies > 1 ? 26 : 76,
+                          height: copies > 1 ? 26 : 76,
+                          child: _LessonPictureAsset(asset: asset),
+                        ),
+                    ],
+                  ),
+                  if (price != null)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: _G3PriceTag(price: price!, small: true),
+                    ),
+                ],
+              ),
+            ),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: TudloColors.blue,
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _G3ShopQuestionPage extends StatelessWidget {
+  final String prompt;
+  final String? stallAsset;
+  final String? vendorAsset;
+  final String productAsset;
+  final int count;
+  final int? price;
+  final List<String> choices;
+  final String answer;
+  final String? wrongId;
+  final String? correctId;
+  final int wrongPulse;
+  final Future<void> Function(String id, String answer) onChoose;
+  final VoidCallback onNext;
+
+  const _G3ShopQuestionPage({
+    required this.prompt,
+    required this.productAsset,
+    required this.count,
+    required this.choices,
+    required this.answer,
+    required this.wrongId,
+    required this.correctId,
+    required this.wrongPulse,
+    required this.onChoose,
+    required this.onNext,
+    this.stallAsset,
+    this.vendorAsset,
+    this.price,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: prompt,
+      footer: _LessonOneBlueButton(
+        label: 'Sunod',
+        onTap: correctId == null ? null : onNext,
+      ),
+      child: Column(
+        children: [
+          if (stallAsset != null)
+            _G3MarketSceneLayer(
+              stallAsset: stallAsset!,
+              vendorAsset: vendorAsset,
+            ),
+          const SizedBox(height: 8),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              _G3ObjectTray(
+                baseAsset: _g3ShopTray,
+                objectAssets: [
+                  for (var index = 0; index < count; index++) productAsset,
+                ],
+              ),
+              if (price != null)
+                Positioned(
+                  right: 14,
+                  top: 8,
+                  child: _G3PriceTag(price: price!),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _G3TextChoiceWrap(
+            choices: choices,
+            wrongId: wrongId,
+            correctId: correctId,
+            wrongPulse: wrongPulse,
+            onChoose: (id) => unawaited(onChoose(id, answer)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3AgeQuestionPage extends StatelessWidget {
+  final String? wrongId;
+  final String? correctId;
+  final int wrongPulse;
+  final Future<void> Function(String id, String answer) onChoose;
+  final VoidCallback onNext;
+
+  const _G3AgeQuestionPage({
+    required this.wrongId,
+    required this.correctId,
+    required this.wrongPulse,
+    required this.onChoose,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Juan has eight birthday candles. How old is Juan?',
+      footer: _LessonOneBlueButton(
+        label: 'Sunod',
+        onTap: correctId == null ? null : onNext,
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 120,
+            child: Row(
+              children: [
+                const Expanded(child: _LessonPictureAsset(asset: _g3ShopBoy)),
+                Expanded(
+                  flex: 2,
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    children: [
+                      for (var i = 0; i < 8; i++)
+                        const SizedBox(
+                          width: 34,
+                          height: 54,
+                          child: _LessonPictureAsset(asset: _g3ShopCandle),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _G3TextChoiceWrap(
+            choices: const ['Eight years old', 'Eight candles', 'Eight pesos'],
+            wrongId: wrongId,
+            correctId: correctId,
+            wrongPulse: wrongPulse,
+            onChoose: (id) => unawaited(onChoose(id, 'Eight years old')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3PriceOnlyPage extends StatelessWidget {
+  final String? wrongId;
+  final String? correctId;
+  final int wrongPulse;
+  final Future<void> Function(String id, String answer) onChoose;
+  final VoidCallback onNext;
+
+  const _G3PriceOnlyPage({
+    required this.wrongId,
+    required this.correctId,
+    required this.wrongPulse,
+    required this.onChoose,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'How much is it?',
+      footer: _LessonOneBlueButton(
+        label: 'Sunod',
+        onTap: correctId == null ? null : onNext,
+      ),
+      child: Column(
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 84,
+                height: 84,
+                child: _LessonPictureAsset(asset: _g3ShopCoin),
+              ),
+              SizedBox(width: 12),
+              SizedBox(
+                width: 112,
+                height: 84,
+                child: _LessonPictureAsset(asset: _g3ShopBill),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const _G3PriceTag(price: 20),
+          const SizedBox(height: 12),
+          _G3TextChoiceWrap(
+            choices: const ['Twenty pesos', 'Twenty items', 'Twelve pesos'],
+            wrongId: wrongId,
+            correctId: correctId,
+            wrongPulse: wrongPulse,
+            onChoose: (id) => unawaited(onChoose(id, 'Twenty pesos')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3TextChoiceWrap extends StatelessWidget {
+  final List<String> choices;
+  final String? wrongId;
+  final String? correctId;
+  final int wrongPulse;
+  final ValueChanged<String> onChoose;
+
+  const _G3TextChoiceWrap({
+    required this.choices,
+    required this.wrongId,
+    required this.correctId,
+    required this.wrongPulse,
+    required this.onChoose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (final choice in choices)
+          _FeedbackMotion(
+            key: ValueKey('shop-choice-$choice-$wrongPulse-$correctId'),
+            correct: correctId == choice,
+            wrong: wrongId == choice,
+            child: GestureDetector(
+              onTap: correctId == null ? () => onChoose(choice) : null,
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 132, minHeight: 58),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: _g3SoftPanelDecoration(
+                  fill: correctId == choice
+                      ? const Color(0xFFE3FFD8)
+                      : Colors.white,
+                  borderColor: correctId == choice
+                      ? TudloColors.green
+                      : TudloColors.blue,
+                ),
+                child: Text(
+                  choice,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.ink,
+                    fontSize: 18,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _G3PriceTag extends StatelessWidget {
+  final int price;
+  final bool small;
+
+  const _G3PriceTag({required this.price, this.small = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: small ? 74 : 110,
+      height: small ? 48 : 70,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Positioned.fill(child: _LessonPictureAsset(asset: _g3ShopTag)),
+          Text(
+            'P$price',
+            style: GoogleFonts.nunito(
+              color: TudloColors.ink,
+              fontSize: small ? 18 : 28,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopSentencePage extends StatelessWidget {
+  final List<String?> slots;
+  final String? selectedTile;
+  final int wrongPulse;
+  final ValueChanged<String> onSelectTile;
+  final void Function(String tile, int slot) onPlace;
+  final ValueChanged<int> onTapSlot;
+  final VoidCallback? onNext;
+
+  const _G3ShopSentencePage({
+    required this.slots,
+    required this.selectedTile,
+    required this.wrongPulse,
+    required this.onSelectTile,
+    required this.onPlace,
+    required this.onTapSlot,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const tiles = ['ten pesos.', 'It costs'];
+    final placed = slots.whereType<String>().toSet();
+    return _G3MarketContentFrame(
+      prompt: 'Ihan-ay ang It costs kag ten pesos.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          const SizedBox(height: 82, child: _G3PriceTag(price: 10)),
+          Row(
+            children: [
+              for (var index = 0; index < slots.length; index++) ...[
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => onTapSlot(index),
+                    child: _G3SentenceSlot(
+                      value: slots[index],
+                      onAccept: (tile) => onPlace(tile, index),
+                    ),
+                  ),
+                ),
+                if (index < slots.length - 1) const SizedBox(width: 6),
+              ],
+            ],
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tile in tiles)
+                if (!placed.contains(tile))
+                  GestureDetector(
+                    onTap: () => onSelectTile(tile),
+                    child: _G3SentenceTile(label: tile),
+                  ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3SpeakAtStallPage extends StatelessWidget {
+  final bool done;
+  final VoidCallback onRecord;
+  final VoidCallback? onNext;
+
+  const _G3SpeakAtStallPage({
+    required this.done,
+    required this.onRecord,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Ten pesos, please!',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          const _G3MarketSceneLayer(
+            stallAsset: _g3ShopCounter,
+            vendorAsset: _g3ShopVendor,
+          ),
+          const SizedBox(height: 10),
+          const _G3ResultText(text: 'Ten   pesos   please!'),
+          const SizedBox(height: 18),
+          GestureDetector(
+            onTap: onRecord,
+            child: Container(
+              width: 112,
+              height: 112,
+              decoration: const BoxDecoration(
+                color: TudloColors.blue,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                done ? Icons.check_rounded : Icons.mic_rounded,
+                color: Colors.white,
+                size: 58,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShoppingRound {
+  final String label;
+  final String asset;
+  final int quantity;
+  final List<int> prices;
+
+  const _G3ShoppingRound({
+    required this.label,
+    required this.asset,
+    required this.quantity,
+    required this.prices,
+  });
+}
+
+const List<_G3ShoppingRound> _g3ShoppingRounds = [
+  _G3ShoppingRound(
+    label: 'bananas',
+    asset: _g3ShopBanana,
+    quantity: 4,
+    prices: [15, 20, 25],
+  ),
+  _G3ShoppingRound(
+    label: 'eggs',
+    asset: _g3ShopEgg,
+    quantity: 6,
+    prices: [12, 18, 20],
+  ),
+  _G3ShoppingRound(
+    label: 'cups',
+    asset: _g3ShopCup,
+    quantity: 2,
+    prices: [8, 10, 12],
+  ),
+  _G3ShoppingRound(
+    label: 'mangoes',
+    asset: _g3ShopMango,
+    quantity: 3,
+    prices: [20, 30, 40],
+  ),
+  _G3ShoppingRound(
+    label: 'fish',
+    asset: _g3ShopFish,
+    quantity: 1,
+    prices: [10, 15, 25],
+  ),
+];
+
+class _G3ShoppingListPage extends StatelessWidget {
+  final _G3ShoppingRound round;
+  final int roundIndex;
+  final _G3ShopPhase phase;
+  final int basketCount;
+  final int basketPulse;
+  final String? wrongId;
+  final String? correctId;
+  final int wrongPulse;
+  final VoidCallback onAdd;
+  final VoidCallback onRemove;
+  final Future<void> Function() onCheckQuantity;
+  final ValueChanged<int> onChoosePrice;
+
+  const _G3ShoppingListPage({
+    required this.round,
+    required this.roundIndex,
+    required this.phase,
+    required this.basketCount,
+    required this.basketPulse,
+    required this.wrongId,
+    required this.correctId,
+    required this.wrongPulse,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onCheckQuantity,
+    required this.onChoosePrice,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final quantityPhase = phase == _G3ShopPhase.quantity;
+    return _G3MarketContentFrame(
+      prompt: quantityPhase
+          ? '${round.quantity} ${round.label}'
+          : 'Tap ang presyo sang ${round.label}.',
+      footer: _LessonOneBlueButton(
+        label: quantityPhase ? 'Sabat' : 'Padayon',
+        onTap: quantityPhase && basketCount > 0
+            ? () => unawaited(onCheckQuantity())
+            : null,
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(
+                width: 82,
+                height: 120,
+                child: _LessonPictureAsset(asset: _g3ShopNanayBasket),
+              ),
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const SizedBox(
+                      height: 120,
+                      child: _LessonPictureAsset(asset: _g3ShopList),
+                    ),
+                    Text(
+                      '${roundIndex + 1}/5\n${round.quantity} ${round.label}',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: TudloColors.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (quantityPhase) ...[
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < round.quantity + 3; i++)
+                  Draggable<int>(
+                    data: i,
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: SizedBox(
+                        width: 54,
+                        height: 54,
+                        child: _LessonPictureAsset(asset: round.asset),
+                      ),
+                    ),
+                    child: GestureDetector(
+                      onTap: onAdd,
+                      child: SizedBox(
+                        width: 54,
+                        height: 54,
+                        child: _LessonPictureAsset(asset: round.asset),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            DragTarget<int>(
+              onWillAcceptWithDetails: (_) => true,
+              onAcceptWithDetails: (_) => onAdd(),
+              builder: (context, candidate, rejected) {
+                return _FeedbackMotion(
+                  key: ValueKey('basket-$basketPulse'),
+                  correct: false,
+                  wrong: basketPulse > 0,
+                  child: GestureDetector(
+                    onTap: onRemove,
+                    child: Container(
+                      height: 118,
+                      padding: const EdgeInsets.all(10),
+                      decoration: _g3SoftPanelDecoration(
+                        borderColor: candidate.isNotEmpty
+                            ? TudloColors.green
+                            : TudloColors.blue,
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const _LessonPictureAsset(asset: _g3ShopBasket),
+                          Text(
+                            '$basketCount/${round.quantity}',
+                            style: GoogleFonts.nunito(
+                              color: TudloColors.ink,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ] else
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final price in round.prices)
+                  _FeedbackMotion(
+                    key: ValueKey('price-$price-$wrongPulse-$correctId'),
+                    correct: correctId == '$price',
+                    wrong: wrongId == '$price',
+                    child: GestureDetector(
+                      onTap: correctId == null
+                          ? () => onChoosePrice(price)
+                          : null,
+                      child: _G3PriceTag(price: price),
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopReviewPage extends StatelessWidget {
+  final Set<int> done;
+  final String? wrongId;
+  final int wrongPulse;
+  final void Function(int index, String id) onAnswer;
+  final VoidCallback? onNext;
+
+  const _G3ShopReviewPage({
+    required this.done,
+    required this.wrongId,
+    required this.wrongPulse,
+    required this.onAnswer,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const cards = [
+      ('How old?', 'Age', 'age'),
+      ('How many?', 'Quantity', 'quantity'),
+      ('How much?', 'Price', 'price'),
+    ];
+    return _G3MarketContentFrame(
+      prompt: 'Balikan ta ang tatlo ka pangutana.',
+      footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
+      child: Column(
+        children: [
+          for (var index = 0; index < cards.length; index++) ...[
+            Text(
+              cards[index].$1,
+              style: GoogleFonts.nunito(
+                color: TudloColors.ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            _G3TextChoiceWrap(
+              choices: const ['Age', 'Quantity', 'Price'],
+              wrongId: wrongId,
+              correctId: done.contains(index) ? cards[index].$2 : null,
+              wrongPulse: wrongPulse,
+              onChoose: (label) => onAnswer(index, label.toLowerCase()),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ShopRewardPage extends StatelessWidget {
+  final VoidCallback onComplete;
+
+  const _G3ShopRewardPage({required this.onComplete});
+
+  @override
+  Widget build(BuildContext context) {
+    return _G3MarketContentFrame(
+      prompt: 'Maayo gid! Maalam ka na mamakal.',
+      footer: Row(
+        children: [
+          Expanded(
+            child: _LessonOneBlueButton(
+              label: 'Balik sa Mapa',
+              onTap: onComplete,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _LessonOneBlueButton(label: 'Padayon', onTap: onComplete),
+          ),
+        ],
+      ),
+      child: const Column(
+        children: [
+          _LessonKokaMascot(size: 132, mood: KokaMood.hi),
+          SizedBox(height: 8),
+          Icon(
+            Icons.workspace_premium_rounded,
+            color: TudloColors.gold,
+            size: 112,
+          ),
+          SizedBox(height: 8),
+          _G3ResultText(text: 'NUMERO UNIT'),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3MarketContentFrame extends StatelessWidget {
+  final String prompt;
+  final Widget child;
+  final Widget footer;
+
+  const _G3MarketContentFrame({
+    required this.prompt,
+    required this.child,
+    required this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        view.width * .045,
+        view.height * .12,
+        view.width * .045,
+        view.height * .032,
+      ),
+      child: Column(
+        children: [
+          _LessonOneMessageCard(message: prompt, compact: true),
+          const SizedBox(height: 10),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .76),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(color: Colors.white, width: 3),
+                ),
+                child: child,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          footer,
+        ],
+      ),
+    );
+  }
+}
+
+class _G3MarketSceneLayer extends StatelessWidget {
+  final String stallAsset;
+  final String? vendorAsset;
+
+  const _G3MarketSceneLayer({required this.stallAsset, this.vendorAsset});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 106,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Positioned.fill(
+            child: _LessonPictureAsset(asset: stallAsset, fit: BoxFit.contain),
+          ),
+          if (vendorAsset != null)
+            Positioned(
+              right: 8,
+              bottom: 0,
+              width: 82,
+              child: _LessonPictureAsset(
+                asset: vendorAsset!,
+                fit: BoxFit.contain,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3ObjectTray extends StatelessWidget {
+  final String? baseAsset;
+  final List<String> objectAssets;
+  final bool waterMode;
+
+  const _G3ObjectTray({
+    required this.objectAssets,
+    this.baseAsset,
+    this.waterMode = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 130),
+      padding: const EdgeInsets.all(12),
+      decoration: _g3SoftPanelDecoration(
+        fill: waterMode ? const Color(0xFFBFEFFF) : Colors.white,
+        borderColor: waterMode ? TudloColors.blue : const Color(0xFFBBD9EA),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (baseAsset != null)
+            Positioned.fill(
+              child: Opacity(
+                opacity: .86,
+                child: _LessonPictureAsset(
+                  asset: baseAsset!,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final asset in objectAssets)
+                SizedBox(
+                  width: objectAssets.length >= 8 ? 48 : 58,
+                  height: objectAssets.length >= 8 ? 48 : 58,
+                  child: _LessonPictureAsset(asset: asset, fit: BoxFit.contain),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _G3AnswerRow extends StatelessWidget {
+  final List<int> choices;
+  final int? wrongChoice;
+  final int? correctChoice;
+  final int wrongPulse;
+  final ValueChanged<int> onChoose;
+
+  const _G3AnswerRow({
+    required this.choices,
+    required this.wrongChoice,
+    required this.correctChoice,
+    this.wrongPulse = 0,
+    required this.onChoose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final choice in choices) ...[
+          Expanded(
+            child: _G3NumberAnswerButton(
+              value: choice,
+              wrong: wrongChoice == choice,
+              correct: correctChoice == choice,
+              pulse: wrongPulse,
+              onTap: () => onChoose(choice),
+            ),
+          ),
+          if (choice != choices.last) const SizedBox(width: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _G3NumberAnswerButton extends StatelessWidget {
+  final int value;
+  final bool wrong;
+  final bool correct;
+  final int pulse;
+  final VoidCallback onTap;
+
+  const _G3NumberAnswerButton({
+    required this.value,
+    required this.wrong,
+    required this.correct,
+    this.pulse = 0,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      key: ValueKey('g3-market-$value-$wrong-$correct-$pulse'),
+      correct: correct,
+      wrong: wrong,
+      child: GestureDetector(
+        onTap: correct ? null : onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 62,
+          alignment: Alignment.center,
+          decoration: _g3SoftPanelDecoration(
+            fill: correct ? const Color(0xFFE3FFD8) : Colors.white,
+            borderColor: correct ? TudloColors.green : TudloColors.blue,
+          ),
+          child: Text(
+            '$value',
+            style: GoogleFonts.nunito(
+              color: correct ? TudloColors.green : TudloColors.blue,
+              fontSize: 32,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _G3GroupChoiceCard extends StatelessWidget {
+  final int count;
+  final String objectAsset;
+  final bool selectedWrong;
+  final bool selectedCorrect;
+  final VoidCallback onTap;
+
+  const _G3GroupChoiceCard({
+    required this.count,
+    required this.objectAsset,
+    required this.selectedWrong,
+    required this.selectedCorrect,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeedbackMotion(
+      key: ValueKey('g3-group-$count-$selectedWrong-$selectedCorrect'),
+      correct: selectedCorrect,
+      wrong: selectedWrong,
+      child: GestureDetector(
+        onTap: selectedCorrect ? null : onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 150,
+          padding: const EdgeInsets.all(8),
+          decoration: _g3SoftPanelDecoration(
+            fill: selectedCorrect ? const Color(0xFFE3FFD8) : Colors.white,
+            borderColor: selectedCorrect
+                ? TudloColors.green
+                : const Color(0xFFBBD9EA),
+          ),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 3,
+            runSpacing: 3,
+            children: [
+              for (var index = 0; index < count; index++)
+                SizedBox(
+                  width: count >= 9 ? 28 : 34,
+                  height: count >= 9 ? 28 : 34,
+                  child: _LessonPictureAsset(
+                    asset: objectAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _G3ResultText extends StatelessWidget {
+  final String text;
+  final bool compact;
+
+  const _G3ResultText({required this.text, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 16,
+        vertical: compact ? 6 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFBBD9EA), width: 2),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.nunito(
+          color: TudloColors.ink,
+          fontSize: compact ? 18 : 23,
+          height: 1.05,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+BoxDecoration _g3SoftPanelDecoration({
+  Color fill = Colors.white,
+  Color borderColor = const Color(0xFFBBD9EA),
+}) {
+  return BoxDecoration(
+    color: fill.withValues(alpha: .96),
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(color: borderColor, width: 3),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: .09),
+        blurRadius: 10,
+        offset: const Offset(0, 5),
+      ),
+    ],
+  );
 }
 
 class _Grade3SimpleActionStep extends StatelessWidget {
@@ -1634,13 +5274,16 @@ class _Grade3StoryScreen extends StatelessWidget {
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: AspectRatio(
-              aspectRatio: 1.25,
-              child: Image.asset(
-                page.imagePath,
+            child: SizedBox(
+              height: (MediaQuery.sizeOf(context).height * .34).clamp(
+                220.0,
+                310.0,
+              ),
+              width: double.infinity,
+              child: _LessonPictureAsset(
+                asset: page.imagePath,
                 fit: BoxFit.cover,
-                filterQuality: FilterQuality.high,
-                errorBuilder: (_, __, ___) => const _StoryImageFallback(),
+                errorBuilder: (_) => const _StoryImageFallback(),
               ),
             ),
           ),
@@ -31104,12 +34747,10 @@ class _StoryIllustration extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              imagePath,
+            child: _LessonPictureAsset(
+              asset: imagePath,
               fit: BoxFit.cover,
-              alignment: Alignment.center,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (_, __, ___) => const _StoryImageFallback(),
+              errorBuilder: (_) => const _StoryImageFallback(),
             ),
           ),
         ],
@@ -31122,7 +34763,8 @@ String _storyImagePathForActiveGrade() {
   return switch (AppData.selectedGradeLevel) {
     GradeLevel.grade1 => 'assets/images/level_game/empty-poem-page.png',
     GradeLevel.grade2 => 'assets/images/level_game/classroom.png',
-    GradeLevel.grade3 => 'assets/images/level_game/empty-poem-page.png',
+    GradeLevel.grade3 =>
+      'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/MarketLandscape.svg',
   };
 }
 

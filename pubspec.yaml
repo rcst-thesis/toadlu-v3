@@ -91,6 +91,20 @@ flutter:
     - assets/images/level_game/grade2/backgrounds/
     - assets/images/level_game/grade2/people/
     - assets/images/level_game/grade2/lesson-game-assets/
+    - assets/images/level_game/grade3/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/animals/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/people/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/props/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/clues/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/map/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/reward/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/counting_objects/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/inventory/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/people/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/shells/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/stalls/
+    - assets/images/level_game/backgrounds/grade3_landscape/
     - assets/images/lesson-sticker/
     - assets/images/word-of-the-day/
     - assets/audio/effects/
