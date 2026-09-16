@@ -8153,74 +8153,43 @@ class _G2BirthdaySevenStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: backgroundAsset,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .07,
-          view.height * .14,
-          view.width * .07,
-          view.height * .045,
-        ),
-        child: Column(
-          children: [
-            const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: view.height * .28,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: .92),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: TudloColors.gold, width: 4),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '7',
-                          style: GoogleFonts.nunito(
-                            color: TudloColors.coral,
-                            fontSize: (view.width * .22).clamp(82.0, 130.0),
-                            height: .85,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                        Text(
-                          'seven',
-                          style: GoogleFonts.nunito(
-                            color: TudloColors.blue,
-                            fontSize: 28,
-                            height: 1,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(width: view.width * .04),
-                SizedBox(
-                  width: view.width * .32,
-                  height: view.height * .38,
-                  child: _LessonPictureAsset(
-                    asset: anaAsset,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ],
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .04,
+            top: view.height * .20,
+            width: view.width * .72,
+            height: view.height * .48,
+            child: Image.asset(
+              'assets/images/level_game/numbers/7.png',
+              fit: BoxFit.contain,
             ),
-            const Spacer(),
-            const _LessonOneMessageCard(message: 'Seven years old si Ana.'),
-            SizedBox(height: view.height * .018),
-            _LessonOneBlueButton(
+          ),
+          Positioned(
+            right: -view.width * .12,
+            top: view.height * .30,
+            width: view.width * .72,
+            height: view.height * .43,
+            child: _LessonPictureAsset(asset: anaAsset, fit: BoxFit.contain),
+          ),
+          Positioned(
+            left: view.width * .08,
+            right: view.width * .08,
+            bottom: view.height * .125,
+            child: const _LessonOneMessageCard(
+              message: 'Seven years old si Ana.',
+            ),
+          ),
+          Positioned(
+            left: view.width * .08,
+            right: view.width * .08,
+            bottom: view.height * .035,
+            child: _LessonOneBlueButton(
               label: 'Padayon',
               onTap: inputReady ? onNext : null,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -8261,21 +8230,31 @@ class _G2BirthdayChooseSevenStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: backgroundAsset,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .06,
-          view.height * .14,
-          view.width * .06,
-          view.height * .05,
-        ),
-        child: Column(
-          children: [
-            const _LessonOneMessageCard(message: 'Pilia ang 7.', compact: true),
-            const Spacer(),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: view.width * .025,
-              runSpacing: view.height * .015,
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .22,
+            right: view.width * .22,
+            top: view.height * .15,
+            child: const _LessonOneMessageCard(
+              message: 'Pilia ang 7.',
+              compact: true,
+            ),
+          ),
+          Positioned(
+            left: view.width * .03,
+            bottom: view.height * .095,
+            child: _LessonKokaMascot(
+              size: (view.width * .34).clamp(112.0, 168.0),
+              mood: KokaMood.idle,
+            ),
+          ),
+          Positioned(
+            left: view.width * .16,
+            right: view.width * .08,
+            bottom: view.height * .15,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 for (final choice in choices)
                   _BirthdayAgeChoiceBalloon(
@@ -8287,9 +8266,8 @@ class _G2BirthdayChooseSevenStep extends StatelessWidget {
                   ),
               ],
             ),
-            const Spacer(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -8319,47 +8297,17 @@ class _BirthdayAgeChoiceBalloon extends StatelessWidget {
       wrong: wrong,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
-        child: SizedBox(
-          width: view.width * .20,
-          height: view.height * .23,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              _LessonPictureAsset(
-                asset:
-                    'assets/images/level_game/lesson-game-assets/Tudlo_Birthday_Balloon_$number.svg',
-                fit: BoxFit.contain,
-              ),
-              Container(
-                width: view.width * .09,
-                height: view.width * .09,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xFFE5FFD5)
-                      : Colors.white.withValues(alpha: .92),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected
-                        ? TudloColors.green
-                        : wrong
-                        ? TudloColors.coral
-                        : Colors.transparent,
-                    width: 3,
-                  ),
-                ),
-                child: Text(
-                  number,
-                  style: GoogleFonts.nunito(
-                    color: TudloColors.blue,
-                    fontSize: (view.width * .08).clamp(26.0, 38.0),
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-            ],
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 160),
+          scale: selected ? 1.12 : 1,
+          child: SizedBox(
+            width: view.width * .17,
+            height: view.height * .18,
+            child: _LessonPictureAsset(
+              asset:
+                  'assets/images/level_game/lesson-game-assets/Tudlo_Birthday_Balloon_$number.svg',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ),
