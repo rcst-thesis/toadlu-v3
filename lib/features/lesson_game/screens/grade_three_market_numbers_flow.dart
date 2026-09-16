@@ -520,9 +520,9 @@ class _GradeThreeMarketNumbersFlowState
       _at(120, 105, 280, 95, _speech('Isa ka mansanas\nuna.')),
       _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
       _at(662, 112, 250, 335, _asset(_vendor)),
-      _at(245, 335, 260, 88, _appleRow(4, numbered: false)),
-      _at(450, 260, 310, 205, _basketWithApples(1, numbered: false)),
-      _at(372, 188, 80, 80, _asset(_apple)),
+      _at(245, 305, 270, 125, _appleShelf(4)),
+      _at(468, 268, 310, 205, _basketDropTarget()),
+      _at(392, 198, 82, 82, _asset(_apple)),
       _at(585, 115, 100, 125, _counterCard(1, '1/5')),
       _at(
         650,
@@ -550,8 +550,8 @@ class _GradeThreeMarketNumbersFlowState
       ),
       _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
       _at(662, 112, 250, 335, _asset(_vendor)),
-      _at(410, 255, 330, 215, _basketWithApples(count, numbered: false)),
-      _at(305, 360, 90, 80, _remainingApples()),
+      _at(425, 258, 330, 215, _basketDropTarget()),
+      _at(250, 330, 210, 118, _remainingApples()),
       _at(585, 115, 100, 125, _counterCard(count, '$count/5')),
     ];
   }
@@ -561,7 +561,7 @@ class _GradeThreeMarketNumbersFlowState
       _at(118, 108, 292, 88, _speech('Lima ka mansanas\nsa basket!')),
       _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
       _at(662, 112, 250, 335, _asset(_vendor)),
-      _at(315, 250, 410, 225, _basketWithApples(5, numbered: true)),
+      _at(350, 258, 380, 215, _basketWithApples(5, numbered: true)),
       _at(585, 115, 100, 125, _counterCard(5, '5/5')),
       _at(
         650,
@@ -709,15 +709,47 @@ class _GradeThreeMarketNumbersFlowState
       children: [
         for (final entry in remaining.indexed)
           Positioned(
-            left: entry.$1 * 38,
+            left: entry.$1 * 42,
             top: entry.$1.isEven ? 0 : 24,
-            width: 58,
-            height: 58,
-            child: GestureDetector(
-              onTap: () => unawaited(_placeApple(entry.$2)),
+            width: 64,
+            height: 64,
+            child: Draggable<int>(
+              data: entry.$2,
+              maxSimultaneousDrags: _busy ? 0 : 1,
+              feedback: Material(
+                color: Colors.transparent,
+                child: SizedBox(width: 68, height: 68, child: _asset(_apple)),
+              ),
+              childWhenDragging: Opacity(opacity: .25, child: _asset(_apple)),
               child: _pulse(active: !_busy, child: _asset(_apple)),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _appleShelf(int count) {
+    return Stack(
+      children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 38,
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFBA7A38),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 10,
+          right: 10,
+          bottom: 26,
+          height: 75,
+          child: _appleRow(count, numbered: false),
+        ),
       ],
     );
   }
@@ -914,6 +946,21 @@ class _GradeThreeMarketNumbersFlowState
           child: _appleRow(count, numbered: numbered),
         ),
       ],
+    );
+  }
+
+  Widget _basketDropTarget() {
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (details) =>
+          !_busy && !_placedApples.contains(details.data),
+      onAcceptWithDetails: (details) => unawaited(_placeApple(details.data)),
+      builder: (context, candidates, rejected) {
+        final count = math.max(1, _placedApples.length);
+        return _pulse(
+          active: candidates.isNotEmpty,
+          child: _basketWithApples(count, numbered: false),
+        );
+      },
     );
   }
 
