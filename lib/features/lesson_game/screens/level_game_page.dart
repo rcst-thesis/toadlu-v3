@@ -21,6 +21,10 @@ import 'package:tudloapp/features/navigation/app_shell.dart';
 
 const int _lessonQuizCount = 5;
 const String _lessonStickerAssetRoot = 'assets/images/lesson-sticker';
+const String _g2ClassroomWithoutAnaBackground =
+    'assets/images/level_game/grade2/backgrounds/Tudlo_Classroom_Background_Without_Ana.svg';
+const String _g2BirthdayWithoutAnaBackground =
+    'assets/images/level_game/grade2/backgrounds/Tudlo_Birthday_Background_Without_Ana.svg';
 const List<String> _lessonHomeStickerAssets = [
   '$_lessonStickerAssetRoot/farm-home-sticker.svg',
   '$_lessonStickerAssetRoot/park-home-sticker.svg',
@@ -2892,7 +2896,7 @@ class _G2MeetAnaStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      backgroundAsset: _g2ClassroomWithoutAnaBackground,
       child: Stack(
         children: [
           Positioned.fill(
@@ -3004,7 +3008,7 @@ class _G2FriendChoiceStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      backgroundAsset: _g2ClassroomWithoutAnaBackground,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .055,
@@ -3192,7 +3196,7 @@ class _G2AnaAnswerStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      backgroundAsset: _g2ClassroomWithoutAnaBackground,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .07,
@@ -3271,7 +3275,7 @@ class _G2BuildResponseStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      backgroundAsset: _g2ClassroomWithoutAnaBackground,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .055,
@@ -3501,7 +3505,7 @@ class _G2NewFriendRewardStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
+      backgroundAsset: _g2ClassroomWithoutAnaBackground,
       child: _StickerUnlockRewardContent(
         fallback: const _FamilyReferenceBadge(label: 'ABYAN\n1'),
         message: 'Nakilala mo ang bag-o nga abyan!',
@@ -3595,6 +3599,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
       'assets/images/level_game/grade2/people/Tudlo_Ana_Celebrating_Age_Seven.svg';
   static const _backgroundAsset =
       'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
+  static const _activityBackgroundAsset = _g2BirthdayWithoutAnaBackground;
   static const _answerOrder = ['i_am', 'seven_years_old'];
 
   _G2BirthdayStep _step = _G2BirthdayStep.invitation;
@@ -3811,7 +3816,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
           ),
           _G2BirthdayStep.balloons => _G2BirthdayBalloonsStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _activityBackgroundAsset,
             revealed: _revealedBalloons,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
@@ -3820,7 +3825,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
           ),
           _G2BirthdayStep.askAge => _G2BirthdayAskAgeStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _activityBackgroundAsset,
             anaAsset: _anaAsset,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
@@ -3829,7 +3834,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
           ),
           _G2BirthdayStep.seven => _G2BirthdaySevenStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _activityBackgroundAsset,
             anaAsset: _anaCelebrateAsset,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
@@ -3838,7 +3843,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
           ),
           _G2BirthdayStep.chooseSeven => _G2BirthdayChooseSevenStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _activityBackgroundAsset,
             selectedId: _selectedAgeId,
             wrongId: _wrongAgeId,
             inputReady: !_voicePlaying,
@@ -3848,7 +3853,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
           ),
           _G2BirthdayStep.buildAnswer => _G2BirthdayBuildAnswerStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _activityBackgroundAsset,
             anaAsset: _anaCelebrateAsset,
             slots: _answerSlots,
             wrongTileId: _wrongTileId,
@@ -3860,7 +3865,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
           ),
           _G2BirthdayStep.reward => _G2BirthdayRewardStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _activityBackgroundAsset,
             anaAsset: _anaCelebrateAsset,
             onExit: widget.onExit,
             onReplay: _speakForStep,
@@ -7232,12 +7237,12 @@ class _GradeTwoTalkBuildSolveLessonState
 
   String get _backgroundAsset {
     if (widget.content.unitNumber == 1 && widget.content.lessonNumber == 2) {
-      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
+      return _g2BirthdayWithoutAnaBackground;
     }
     if (widget.content.unitNumber == 2) {
       return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
     }
-    return 'assets/images/level_game/backgrounds/classroom.svg';
+    return _g2ClassroomWithoutAnaBackground;
   }
 
   @override
@@ -31058,8 +31063,11 @@ String _lessonCompleteBackgroundAsset(int level) {
   }
 
   if (grade == GradeLevel.grade2) {
+    if (unit == 1 && lesson == 1) {
+      return _g2ClassroomWithoutAnaBackground;
+    }
     if (unit == 1 && lesson == 2) {
-      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
+      return _g2BirthdayWithoutAnaBackground;
     }
     if (unit == 2) {
       return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
