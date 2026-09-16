@@ -1529,7 +1529,8 @@ bool _isGrade3MarketNumbersLesson(LevelContent content) {
 
 const String _g3ShopRoot =
     'assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets';
-const String _g3ShopBg = '$_g3ShopRoot/background/MarketLandscape.svg';
+const String _g3ShopBg =
+    'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/G3_U1_L1_3_intro.png';
 const String _g3ShopNanayList = '$_g3ShopRoot/people/Nanay_Shopping_List.svg';
 const String _g3ShopNanayBasket =
     '$_g3ShopRoot/people/Nanay_Shopping_Basket.svg';
@@ -3698,7 +3699,7 @@ class _G3ShopListIntroPage extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              left: 2,
+              left: -view.width * .02,
               bottom: 0,
               child: _LessonKokaMascot(
                 size: (view.width * .34).clamp(130.0, 190.0),
@@ -4037,7 +4038,7 @@ class _G3ShopIntroPage extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              left: 4,
+              left: -view.width * .02,
               bottom: 0,
               child: _LessonKokaMascot(
                 size: (view.width * .38).clamp(140.0, 210.0),
