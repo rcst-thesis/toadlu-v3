@@ -15,11 +15,12 @@ import 'package:tudlo/features/map/presentation/widgets/map_expand_button.dart';
 import 'package:tudlo/features/map/presentation/widgets/rive_map_scene.dart';
 
 /// Pannable/zoomable barangay map, framed on Koka's house by default. The
-/// map art lives inside the Rive scene; this screen frames/pans/zooms it,
-/// detects location taps (the Rive scene has no click listeners of its
-/// own), and owns navigation: firing each location's squash-feedback
-/// trigger, debouncing taps, resolving default vs. active-event routes, and
-/// navigating. See [MapDefaultRoutes] and [MapEventOverrides].
+/// map art lives inside the Rive scene; this screen frames/pans/zooms it and
+/// owns navigation -- reacting to `locationTapped` events the Rive scene
+/// itself detects and fires (Rive owns hit-testing and press/locked-tap
+/// feedback in this asset), debouncing taps, resolving default vs.
+/// active-event routes, and navigating, or showing a locked explanation
+/// instead. See [MapDefaultRoutes] and [MapEventOverrides].
 ///
 /// The map itself renders full-bleed behind the status bar so it isn't cut
 /// off at the top of the screen; only the overlay controls (label, expand/
@@ -95,6 +96,12 @@ class _MapScreenState extends State<MapScreen> {
   var _isFullscreen = false;
   var _isHandlingTap = false;
 
+  // Rate-limits the locked-location SnackBar -- without this, mashing a
+  // locked location spams a new SnackBar on every single tap. `null` means
+  // none has been shown yet this screen instance.
+  static const _lockedMessageCooldown = Duration(seconds: 5);
+  DateTime? _lastLockedMessageAt;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -107,43 +114,54 @@ class _MapScreenState extends State<MapScreen> {
     // sync pass, so it's included in the very first replay.
     for (final id in _learnerController.profile?.unlockedMapLocations ??
         const <String>{}) {
-      final location = MapLocation.fromRiveId(id);
+      final location = MapLocation.fromPersistedId(id);
       if (location != null) _mapProgress.unlock(location);
     }
     _eventOverrides.addListener(_syncEventVisuals);
     _dependenciesResolved = true;
   }
 
-  // Keeps two Rive-visible booleans in sync with whether each location
-  // currently has an event override: `isActive` (golden/bouncy visual hint)
-  // follows it exactly, on while the override is set and off once it's
-  // cleared. `isAvailable` only ever moves one direction here -- forced true
-  // the first time a location gets an override (and recorded in
-  // `_mapProgress.unlockedLocations`, then persisted onto the current
-  // learner via `_learnerController.unlockMapLocation`), left true
+  // Keeps two Flutter-owned, Rive-visible booleans in sync: `hasEvent`
+  // (golden/bouncy visual hint) follows whether each location currently has
+  // an event override exactly, on while the override is set and off once
+  // it's cleared. `isUnlocked` only ever moves one direction here for a
+  // given location -- forced true the first time it gets an override (and
+  // recorded in `_mapProgress.unlockedLocations`, then persisted onto the
+  // current learner via `_learnerController.unlockMapLocation`), left true
   // afterwards even once that override clears. An event permanently unlocks
-  // a location it touches; it never re-locks one. Every previously-unlocked
-  // location is also replayed here, since the Rive scene itself resets to
-  // the asset's packaged defaults every time it's reloaded (i.e. every time
-  // this screen is rebuilt) -- `_mapProgress` is what makes that unlock
-  // survive leaving and returning to the Map tab within a session, and
-  // `_learnerController` is what makes it survive an app restart too, once
-  // that learner is loaded again.
+  // a location it touches; it never re-locks one. House is always unlocked,
+  // permanently, from the start of a new game -- not conditional on
+  // progression like every other location.
+  //
+  // Unlike the previous map asset, `isUnlocked` isn't partially Rive-owned
+  // here -- Flutter is the sole source of truth for it now, so every
+  // location's unlocked state (not just newly-overridden ones) is written
+  // explicitly on every sync, from `_mapProgress.unlockedLocations`. That
+  // list is what makes an unlock survive leaving and returning to the Map
+  // tab within a session (the Rive scene itself resets to the asset's
+  // packaged defaults every time it's reloaded, i.e. every time this screen
+  // is rebuilt), and `_learnerController` is what makes it survive an app
+  // restart too, once that learner is loaded again.
   //
   // Runs whenever MapEventOverrides changes, and once more when the Rive
   // scene finishes loading, to pick up overrides/unlocks that already
   // existed before this screen existed.
   void _syncEventVisuals() {
-    for (final location in _mapProgress.unlockedLocations) {
-      _riveMapController.setAvailable(location, true);
+    _riveMapController.setUnlocked(MapLocation.house, true);
+    for (final location in MapLocation.values) {
+      if (location == MapLocation.house) continue;
+      _riveMapController.setUnlocked(
+        location,
+        _mapProgress.unlockedLocations.contains(location),
+      );
     }
     for (final location in MapLocation.values) {
       final hasOverride = _eventOverrides.overrideFor(location) != null;
-      _riveMapController.setActive(location, hasOverride);
+      _riveMapController.setHasEvent(location, hasOverride);
       if (hasOverride) {
-        _riveMapController.setAvailable(location, true);
+        _riveMapController.setUnlocked(location, true);
         _mapProgress.unlock(location);
-        unawaited(_learnerController.unlockMapLocation(location.riveId));
+        unawaited(_learnerController.unlockMapLocation(location.persistedId));
       }
     }
   }
@@ -191,16 +209,34 @@ class _MapScreenState extends State<MapScreen> {
           );
   }
 
-  // Rive has no click listeners of its own in this map; Flutter detects the
-  // tap, fires that location's squash-feedback trigger, and only then
-  // resolves/navigates. `_isHandlingTap` blocks a second tap from
-  // interrupting the in-flight one.
+  // Rive detects the tap itself and fires `locationTapped` -- for every tap
+  // it registers, locked or not, playing its own press or locked-shake
+  // feedback internally. Flutter just decides what a tap on an unlocked vs.
+  // locked location means. `_isHandlingTap` blocks a second tap from
+  // interrupting an in-flight navigation.
   Future<void> _handleLocationTapped(MapLocation location) async {
     if (_isHandlingTap) return;
-    _isHandlingTap = true;
 
-    _riveMapController.fireTrigger(location);
-    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!_riveMapController.isUnlocked(location)) {
+      final now = DateTime.now();
+      final lastShown = _lastLockedMessageAt;
+      if (lastShown == null ||
+          now.difference(lastShown) >= _lockedMessageCooldown) {
+        _lastLockedMessageAt = now;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_lockedMessageFor(location)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    _isHandlingTap = true;
+    // A short beat so Rive's own press feedback is visible before the
+    // screen navigates away.
+    await Future<void>.delayed(const Duration(milliseconds: 150));
     if (!mounted) return;
 
     switch (_eventOverrides.resolve(location)) {
@@ -212,6 +248,25 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     _isHandlingTap = false;
+  }
+
+  static const _locationNames = {
+    MapLocation.house: 'house',
+    MapLocation.school: 'school',
+    MapLocation.plaza: 'plaza',
+    MapLocation.market: 'market',
+    MapLocation.farm: 'farm',
+    MapLocation.beach: 'beach',
+    MapLocation.church: 'church',
+    MapLocation.hospital: 'hospital',
+  };
+
+  // Child-friendly, not a bare "locked" error -- explains a locked tap
+  // without technical language, per the map's not-busy/not-distracting,
+  // playful-but-inviting design.
+  String _lockedMessageFor(MapLocation location) {
+    final name = _locationNames[location] ?? 'this place';
+    return 'The $name is still locked! Finish more lessons to open it.';
   }
 
   void _enterFullscreen() {

@@ -52,15 +52,17 @@ This status is based only on current code and tests.
 
 ### Barangay Map
 
-- Real interactive Rive map (`mapvtwo.riv`), pan/zoom framed on Koka's
+- Real interactive Rive map (`toadlu_map.riv`), pan/zoom framed on Koka's
   house by default, fullscreen landscape toggle.
-- Flutter-side tap detection (the asset has no click listeners), gated by
-  each location's Rive-owned `isAvailable`; fires squash press feedback,
-  debounces double taps, resolves destination, navigates.
+- Rive-side tap detection (this asset has its own internal Listener
+  components per location, unlike the previous map asset); Flutter reacts to
+  `locationTapped`, gated by each location's Flutter-owned `isUnlocked` --
+  shows a locked explanation instead of navigating when not unlocked,
+  otherwise debounces double taps, resolves destination, navigates.
 - Active-event system: an event can temporarily override a location's
-  destination (`MapEventOverrides`) and marks it `isActive` (golden/bouncy
+  destination (`MapEventOverrides`) and marks it `hasEvent` (golden glow
   visual) for the override's duration; the first time an event touches a
-  location it also permanently force-unlocks it (`isAvailable`), which does
+  location it also permanently force-unlocks it (`isUnlocked`), which does
   not revert when the override clears.
 - Full details, including how to trigger an event and add a real screen for
   a location: `docs/MAP_GUIDE.md`. Rive asset contract: `docs/RIVE_INTEGRATION.md`.

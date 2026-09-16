@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
 import 'package:tudlo/features/map/domain/map_location.dart';
+import 'package:tudlo/features/map/domain/map_rive_asset.dart';
 
-/// Lets a caller fire a location's press feedback without reaching into
-/// [RiveMapScene]'s internals. Bound automatically once the scene's Rive
-/// file finishes loading; calls made before that (or after the scene is
-/// disposed) are silently no-ops, same as every other Rive input in this
-/// app that can be asked for before its file is ready.
+/// Lets a caller drive a location's Rive-visible state, and read back what
+/// Flutter itself last set, without reaching into [RiveMapScene]'s
+/// internals. Bound automatically once the scene's Rive file finishes
+/// loading; calls made before that (or after the scene is disposed) are
+/// silently no-ops, same as every other Rive input in this app that can be
+/// asked for before its file is ready.
 class RiveMapSceneController {
   _RiveMapSceneState? _state;
 
@@ -19,47 +21,49 @@ class RiveMapSceneController {
     if (identical(_state, state)) _state = null;
   }
 
-  /// Fires `<location>/eventTriggered` so Rive plays that location's 200ms
-  /// squash press animation. Purely a visual cue; Flutter still owns
-  /// whether/where to navigate.
-  void fireTrigger(MapLocation location) => _state?._fireTrigger(location);
+  /// Sets `<location>/isUnlocked` -- Flutter-owned truth for whether
+  /// [location] is currently reachable. Rive reads this to render the
+  /// location gray/locked vs. full-color/accessible, and to play the
+  /// locked-tap shake instead of the normal press feedback. Flutter is the
+  /// sole owner: there's no Rive-side unlock logic to read back, unlike the
+  /// previous map asset.
+  void setUnlocked(MapLocation location, bool value) =>
+      _state?._setUnlocked(location, value);
 
-  /// Sets `<location>/isActive`, which Rive uses to render that location's
-  /// golden/bouncy "active event" visual. Flutter is the source of truth for
-  /// this -- it should be `true` exactly while an active lesson/event has an
-  /// override set for that location (see `MapEventOverrides` and
-  /// `MapScreen._syncEventVisuals`).
-  void setActive(MapLocation location, bool value) =>
-      _state?._setActive(location, value);
+  /// Sets `<location>/hasEvent` -- Flutter-owned truth for whether
+  /// [location] currently has an active lesson/event. Rive reads this to
+  /// render the golden "active event" glow on top of that location's
+  /// normal unlocked visual. Independent of [setUnlocked]: a location can
+  /// be unlocked with no event, or (in principle) have an event flagged
+  /// while still locked -- callers decide the actual combination.
+  void setHasEvent(MapLocation location, bool value) =>
+      _state?._setHasEvent(location, value);
 
-  /// Sets `<location>/isAvailable`. Normally Rive-owned (unlocked by
-  /// whatever the app's real progression system is) and Flutter only reads
-  /// it -- the one exception is an active lesson/event, which needs a
-  /// location to be tappable even if it isn't normally unlocked yet.
-  /// `MapScreen._syncEventVisuals` is the only caller: it forces this `true`
-  /// the moment a location gets an event override, and leaves it `true`
-  /// afterwards -- an event permanently unlocks a location, it never
-  /// re-locks one.
-  void setAvailable(MapLocation location, bool value) =>
-      _state?._setAvailable(location, value);
+  /// The unlocked state Flutter itself last set for [location] via
+  /// [setUnlocked] (or `false` if the scene isn't ready yet, or nothing's
+  /// been set for it yet) -- read this when handling a `locationTapped`
+  /// event to decide whether to navigate or show a locked explanation.
+  bool isUnlocked(MapLocation location) =>
+      _state?._isUnlocked(location) ?? false;
 }
 
-/// Interactive Koka's barangay map (`mapvtwo.riv`, artboard "Brgy. Koka").
-/// The Rive file owns the map art and each location's availability/active
-/// press-feedback *visuals* via `MapAvailabilityStateMachine` and the
-/// `MapLocationStates` view model; it has no click listeners of its own.
-/// `isAvailable` is normally Rive-owned data (Flutter only reads it to gate
-/// taps) and `isActive` is Flutter-owned (Rive only renders it) -- but see
-/// [RiveMapSceneController.setAvailable] for the one case where Flutter
-/// temporarily writes `isAvailable` too: an active lesson/event.
+/// Interactive Koka's barangay map (`toadlu_map.riv`, default artboard).
+/// The Rive file owns the map art, each location's locked/unlocked and
+/// active-event *visuals*, its own press/locked-tap feedback, and -- unlike
+/// the previous map asset -- tap detection itself, via a `locationTapped`
+/// trigger per location that fires from Rive's own internal Listener
+/// components. Flutter never lays external tap zones over the art here.
 ///
-/// Flutter owns tap detection: this widget lays one transparent tap zone
-/// per [MapLocation] over the map, positioned in the artboard's native
-/// 2400x1400 coordinate space so they scale/pan together with the Rive
-/// scene's own transform (see [RiveMapScene.artboardWidth]/[artboardHeight])
-/// instead of fixed phone pixels. A tap calls [onLocationTapped]; firing the
-/// squash-feedback trigger, debouncing, delaying, resolving the route, and
-/// navigating are the caller's job (see `MapScreen`).
+/// Per the `MapState` view model's `LocationState` contract (see
+/// `docs/RIVE_INTEGRATION.md#barangay-map-contract`):
+/// - `<location>/isUnlocked` and `<location>/hasEvent` are Flutter-owned;
+///   Rive only renders them (see [RiveMapSceneController.setUnlocked]/
+///   [setHasEvent]).
+/// - `<location>/locationTapped` is Rive-owned; Flutter only listens (see
+///   [onLocationTapped] -- fires for every tap Rive detects, locked or not,
+///   the caller decides what a locked tap should do).
+/// - `<location>/pressTrigger` is internal to Rive's own press-feedback
+///   animation. Flutter must never set or depend on it.
 class RiveMapScene extends StatefulWidget {
   const RiveMapScene({
     required this.onLocationTapped,
@@ -71,29 +75,11 @@ class RiveMapScene extends StatefulWidget {
   static const artboardWidth = 2400.0;
   static const artboardHeight = 1400.0;
 
-  static const _assetPath = 'assets/images/mapvtwo.riv';
-  static const _artboardName = 'Brgy. Koka';
-  static const _stateMachineName = 'MapAvailabilityStateMachine';
-
-  /// Each location's tap zone in artboard coordinates, calibrated against
-  /// the exported map art. Update these if the art's location layout
-  /// changes.
-  static const Map<MapLocation, Rect> _tapZones = {
-    MapLocation.church: Rect.fromLTWH(589, 230, 340, 300),
-    MapLocation.farm: Rect.fromLTWH(1719, 70, 420, 300),
-    MapLocation.school: Rect.fromLTWH(77, 430, 380, 260),
-    MapLocation.plaza: Rect.fromLTWH(959, 330, 380, 260),
-    MapLocation.market: Rect.fromLTWH(1382, 470, 380, 260),
-    MapLocation.beach: Rect.fromLTWH(179, 930, 380, 300),
-    MapLocation.hospital: Rect.fromLTWH(946, 770, 340, 260),
-    MapLocation.house: Rect.fromLTWH(1887, 820, 420, 260),
-  };
-
   final Future<void> Function(MapLocation location) onLocationTapped;
   final RiveMapSceneController? controller;
 
   /// Called once the Rive file has finished loading and [controller]'s
-  /// imperative methods (`fireTrigger`, `setActive`) start actually doing
+  /// imperative methods (`setUnlocked`, `setHasEvent`) start actually doing
   /// something. Callers that need to sync state in from before the scene
   /// was ready (e.g. active-event overrides set while Map wasn't on screen)
   /// should do that sync here.
@@ -104,12 +90,12 @@ class RiveMapScene extends StatefulWidget {
 }
 
 class _RiveMapSceneState extends State<RiveMapScene> {
-  rive.File? _file;
   rive.RiveWidgetController? _controller;
   rive.ViewModelInstance? _viewModel;
-  final _triggers = <MapLocation, rive.ViewModelInstanceTrigger>{};
-  final _availability = <MapLocation, rive.ViewModelInstanceBoolean>{};
-  final _activeStates = <MapLocation, rive.ViewModelInstanceBoolean>{};
+  final _unlockedProps = <MapLocation, rive.ViewModelInstanceBoolean>{};
+  final _hasEventProps = <MapLocation, rive.ViewModelInstanceBoolean>{};
+  final _tappedTriggers = <MapLocation, rive.ViewModelInstanceTrigger>{};
+  final _tappedListeners = <MapLocation, void Function(bool)>{};
 
   @override
   void initState() {
@@ -128,88 +114,84 @@ class _RiveMapSceneState extends State<RiveMapScene> {
   }
 
   Future<void> _load() async {
-    final file = await rive.File.asset(
-      RiveMapScene._assetPath,
-      riveFactory: rive.Factory.flutter,
-    );
-    if (!mounted || file == null) {
-      file?.dispose();
-      return;
-    }
+    // Shared, app-lifetime file -- decoded once (see MapRiveAsset), never
+    // owned/disposed by this widget. This is what makes opening the Map tab
+    // instant after the very first load instead of re-decoding a ~4.5MB
+    // file on every tab switch.
+    final file = await MapRiveAsset.preload();
+    if (!mounted || file == null) return;
 
     final controller = rive.RiveWidgetController(
       file,
-      artboardSelector:
-          rive.ArtboardSelector.byName(RiveMapScene._artboardName),
-      stateMachineSelector:
-          rive.StateMachineSelector.byName(RiveMapScene._stateMachineName),
+      artboardSelector: rive.ArtboardSelector.byDefault(),
+      stateMachineSelector: rive.StateMachineSelector.byDefault(),
     );
     final viewModel = controller.dataBind(rive.DataBind.auto());
     if (!mounted) {
       viewModel.dispose();
       controller.dispose();
-      file.dispose();
       return;
     }
 
-    final triggers = <MapLocation, rive.ViewModelInstanceTrigger>{};
-    final availability = <MapLocation, rive.ViewModelInstanceBoolean>{};
-    final activeStates = <MapLocation, rive.ViewModelInstanceBoolean>{};
+    final unlockedProps = <MapLocation, rive.ViewModelInstanceBoolean>{};
+    final hasEventProps = <MapLocation, rive.ViewModelInstanceBoolean>{};
+    final tappedTriggers = <MapLocation, rive.ViewModelInstanceTrigger>{};
+    final tappedListeners = <MapLocation, void Function(bool)>{};
     for (final location in MapLocation.values) {
-      final trigger = viewModel.trigger('${location.riveId}/eventTriggered');
-      if (trigger != null) triggers[location] = trigger;
-      final isAvailable = viewModel.boolean('${location.riveId}/isAvailable');
-      if (isAvailable != null) availability[location] = isAvailable;
-      final isActive = viewModel.boolean('${location.riveId}/isActive');
-      if (isActive != null) activeStates[location] = isActive;
+      final isUnlocked = viewModel.boolean('${location.riveId}/isUnlocked');
+      if (isUnlocked != null) unlockedProps[location] = isUnlocked;
+      final hasEvent = viewModel.boolean('${location.riveId}/hasEvent');
+      if (hasEvent != null) hasEventProps[location] = hasEvent;
+
+      final tapped = viewModel.trigger('${location.riveId}/locationTapped');
+      if (tapped != null) {
+        tappedTriggers[location] = tapped;
+        void listener(bool _) => unawaited(widget.onLocationTapped(location));
+        tapped.addListener(listener);
+        tappedListeners[location] = listener;
+      }
     }
 
     setState(() {
-      _file = file;
       _controller = controller;
       _viewModel = viewModel;
-      _triggers
+      _unlockedProps
         ..clear()
-        ..addAll(triggers);
-      _availability
+        ..addAll(unlockedProps);
+      _hasEventProps
         ..clear()
-        ..addAll(availability);
-      _activeStates
+        ..addAll(hasEventProps);
+      _tappedTriggers
         ..clear()
-        ..addAll(activeStates);
+        ..addAll(tappedTriggers);
+      _tappedListeners
+        ..clear()
+        ..addAll(tappedListeners);
     });
     widget.onReady?.call();
   }
 
-  void _fireTrigger(MapLocation location) {
-    _triggers[location]?.trigger();
+  void _setUnlocked(MapLocation location, bool value) {
+    _unlockedProps[location]?.value = value;
   }
 
-  void _setActive(MapLocation location, bool value) {
-    _activeStates[location]?.value = value;
+  void _setHasEvent(MapLocation location, bool value) {
+    _hasEventProps[location]?.value = value;
   }
 
-  // A location with no `isAvailable` property (shouldn't happen for this
-  // asset's contract) fails closed: not tappable rather than silently
-  // always-on.
-  bool _isAvailable(MapLocation location) =>
-      _availability[location]?.value ?? false;
-
-  void _setAvailable(MapLocation location, bool value) {
-    _availability[location]?.value = value;
-  }
-
-  void _handleTap(MapLocation location) {
-    if (!_isAvailable(location)) return;
-    widget.onLocationTapped(location);
-  }
+  bool _isUnlocked(MapLocation location) =>
+      _unlockedProps[location]?.value ?? false;
 
   @override
   void dispose() {
     widget.controller?._detach(this);
+    for (final entry in _tappedListeners.entries) {
+      _tappedTriggers[entry.key]?.removeListener(entry.value);
+    }
     _controller?.dispose();
     _viewModel?.dispose();
-    _file?.dispose();
+    // Deliberately not disposing a File here -- MapRiveAsset's cached file
+    // is shared and app-lifetime, not owned by this widget.
     super.dispose();
   }
 
@@ -221,24 +203,10 @@ class _RiveMapSceneState extends State<RiveMapScene> {
       height: RiveMapScene.artboardHeight,
       child: controller == null
           ? const SizedBox.shrink()
-          : Stack(
-              children: [
-                Positioned.fill(
-                  child: rive.RiveWidget(
-                    controller: controller,
-                    fit: rive.Fit.contain,
-                    alignment: Alignment.center,
-                  ),
-                ),
-                for (final entry in RiveMapScene._tapZones.entries)
-                  Positioned.fromRect(
-                    rect: entry.value,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _handleTap(entry.key),
-                    ),
-                  ),
-              ],
+          : rive.RiveWidget(
+              controller: controller,
+              fit: rive.Fit.contain,
+              alignment: Alignment.center,
             ),
     );
   }

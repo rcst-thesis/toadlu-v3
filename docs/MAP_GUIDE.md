@@ -14,26 +14,29 @@ lib/features/map/
     map_route_resolver.dart  # MapDefaultRoutes, MapEventOverrides, route actions
   presentation/
     screens/map_screen.dart          # Owns navigation, tap debounce, camera framing
-    widgets/rive_map_scene.dart      # Loads the .riv, tap zones, availability gating
+    widgets/rive_map_scene.dart      # Loads the .riv, unlock/event writes, tap listening
     widgets/map_expand_button.dart   # Fullscreen toggle (portrait -> landscape)
     widgets/map_exit_landscape_button.dart
 ```
 
-Asset: `assets/images/mapvtwo.riv`.
+Asset: `assets/images/toadlu_map.riv`.
 
 ## How a tap becomes a navigation
 
-1. `RiveMapScene` lays one invisible tap zone per `MapLocation`, positioned
-   in the artboard's native 2400x1400 coordinate space (calibrated against
-   the exported art — see `RiveMapScene._tapZones`).
-2. On tap, it checks that location's `isAvailable` (read from the Rive view
-   model). **Not available → the tap does nothing.** This is Rive-owned data;
-   Flutter only reads it, never writes it (except for local testing — see
-   below).
-3. If available, `MapScreen._handleLocationTapped` runs:
-   - blocks a second tap while one is in flight (no double-navigation),
-   - fires that location's squash-feedback trigger (`<location>/eventTriggered`),
-   - waits ~120ms for the animation,
+1. `RiveMapScene` doesn't detect taps itself -- **this Rive file does**, via
+   its own internal per-location Listener components. `RiveWidget`'s
+   built-in hit-testing routes pointer events to them automatically; Flutter
+   lays no tap zones over the art.
+2. Rive fires `<location>/locationTapped` for every tap it registers,
+   **locked or not** -- it already played its own press or locked-shake
+   feedback by the time Flutter hears about it. `RiveMapScene` forwards this
+   to `MapScreen.onLocationTapped`.
+3. `MapScreen._handleLocationTapped` runs:
+   - if `RiveMapSceneController.isUnlocked(location)` is `false`, shows a
+     brief locked-explanation `SnackBar` and stops -- no navigation,
+   - otherwise blocks a second tap while one is in flight (no
+     double-navigation),
+   - waits ~150ms (so Rive's already-playing press animation is visible),
    - resolves the destination (see next section),
    - navigates.
 
@@ -111,14 +114,14 @@ void endDogFindingEvent(MapEventOverrides overrides) {
 Every location not explicitly overridden keeps working normally the whole
 time — you only ever touch the locations the event actually affects.
 
-### The visual side: isActive, and permanently unlocking on first activation
+### The visual side: hasEvent, and permanently unlocking on first activation
 
 Setting an override doesn't just change where a tap goes — it also:
 
-1. makes Rive render that location as **active**: a golden, bouncy visual
-   distinct from its normal idle look, so the player can see at a glance
-   where the event's stop is — **only while the override is set**, same as
-   the tap-redirect itself;
+1. makes Rive render that location with its **golden event glow**, distinct
+   from its normal idle look, so the player can see at a glance where the
+   event's stop is — **only while the override is set**, same as the
+   tap-redirect itself;
 2. **permanently unlocks it**, the first time it gets an override, even if
    it wasn't normally available yet — an event shouldn't be unreachable just
    because the player hasn't progressed far enough to unlock that location
@@ -128,20 +131,26 @@ Setting an override doesn't just change where a tap goes — it also:
 
 Both are wired automatically by `MapScreen._syncEventVisuals`, which runs on
 every `MapEventOverrides` change (and once more when the Rive scene finishes
-loading, to catch overrides set before the map was even on screen):
+loading, to catch overrides set before the map was even on screen). Every
+location's `isUnlocked` is also explicitly (re)written on every sync pass
+from `MapProgressController.unlockedLocations` -- not just newly-overridden
+ones -- since Flutter is the sole owner of that boolean now (see
+[`RIVE_INTEGRATION.md`](RIVE_INTEGRATION.md#barangay-map-contract)):
 
 ```
+setUnlocked(house, true)  // always, unconditionally
+for every other location:
+  setUnlocked(location, mapProgress.unlockedLocations.contains(location))
 for every location:
   hasOverride = overrides.overrideFor(location) != null
-  isActive    = hasOverride           // follows it exactly, on and off
-  if hasOverride: isAvailable = true  // one-way -- never set back to false
+  setHasEvent(location, hasOverride)          // follows it exactly, on and off
+  if hasOverride: setUnlocked(location, true) // one-way -- never set back to false
 ```
 
-**No active event, nothing overridden → `isActive` stays `false`
-everywhere**, and every location's `isAvailable` is whatever it naturally
-is (Rive's own unlock logic, or `true` for good if some earlier event
-already touched it). This only ever changes for locations an event
-explicitly targets.
+**No active event, nothing overridden → every location's `hasEvent` is
+`false`**, and `isUnlocked` is exactly `MapProgressController.unlockedLocations`
+(always `true` for House). This only ever changes for locations an event
+explicitly targets, or that get unlocked through normal progression.
 
 **Persistence: real, and per-learner.** `MapProgressController.unlockedLocations`
 (`lib/features/map/domain/map_progress.dart`) is still just an in-memory
@@ -155,12 +164,12 @@ including how to add new persisted learner data, are in
 actually persists.
 
 You don't call any of this yourself — just call `setOverride`/
-`clearOverride` as shown above and both the golden/bouncy visual and the
-permanent unlock follow automatically, for every location you touch. This
-also means: don't call `setActive`/`setAvailable` on the Rive scene directly
-from your own code, and don't set an override "just for the visual" without
-meaning to also redirect and permanently unlock that location — all three
-are the same signal by design.
+`clearOverride` as shown above and both the golden glow and the permanent
+unlock follow automatically, for every location you touch. This also means:
+don't call `setHasEvent`/`setUnlocked` on the Rive scene directly from your
+own code, and don't set an override "just for the visual" without meaning
+to also redirect and permanently unlock that location — all three are the
+same signal by design.
 
 ### Wiring it up — already done, here's how
 
@@ -207,63 +216,65 @@ the shared one). Real app code shouldn't need it.
 ### What NOT to do
 
 - Don't put per-lesson/per-event navigation logic inside `RiveMapScene` or
-  the Rive asset. Rive only renders visuals (availability, active/golden
-  state, squash press); Flutter decides what each boolean means and when to
-  set it. Route resolution is 100% Flutter's job, via `MapEventOverrides`.
+  the Rive asset. Rive only renders visuals (locked/unlocked, event glow,
+  press/locked-shake feedback, and now tap detection itself); Flutter
+  decides what each boolean means and when to set it. Route resolution is
+  100% Flutter's job, via `MapEventOverrides`.
 - Don't forget to clear an override when its event ends. A forgotten
   override permanently hijacks that location's tap *and* leaves it stuck
-  golden/bouncy until the app restarts.
+  glowing until the app restarts.
 - Don't hand-roll a second "is there an active event" check elsewhere —
   `MapEventOverrides.resolve()` is the single source of truth Map already
   consults on every tap, and `overrideFor()` is what drives the visual.
 
-## Availability (isAvailable)
+## Unlocking (isUnlocked)
 
-Each location's *normal* availability is Rive-owned data
-(`<location>/isAvailable` in the `MapLocationStates` view model) — Flutter
-reads it to decide whether a tap does anything, but doesn't drive it.
-Whatever unlocks a location (finishing a prior lesson, reaching some
-milestone, etc.) needs to set that boolean through Rive's own data binding
-for the location to become tappable.
+Each location's unlocked state is **entirely Flutter-owned** data now
+(`<location>/isUnlocked` in the `MapState` view model's `LocationState`
+instances) — Rive only renders it (gray/locked vs. full-color/accessible)
+and reads it to decide whether a tap plays the locked-shake or the normal
+press feedback. Unlike the previous map asset, there's no Rive-side unlock
+logic to defer to: whatever unlocks a location (finishing a prior lesson,
+reaching some milestone, etc.) needs to add it to
+`MapProgressController.unlockedLocations` (and persist it via
+`LearnerController.unlockMapLocation`) so the next `_syncEventVisuals` pass
+writes `true` for it.
 
-The one exception is the active-event override system described above,
-which permanently unlocks a location the first time it gets an event
-override -- that's the *only* place Flutter is allowed to write this
-boolean. Don't add a second place that does.
+House is the one location whose `isUnlocked` never depends on progression —
+`MapScreen._syncEventVisuals` writes `true` for it unconditionally, every
+time, from the start of a new game.
 
-For **local testing only**, you can force a location available by setting
-its bound boolean's `.value` directly in `RiveMapScene._load()` (this is a
-runtime write to the view model instance, not an edit to the `.riv` file
-itself, so it's safe/reversible):
+The active-event override system described above is the only *other* place
+Flutter permanently sets `isUnlocked` to `true` outside of normal
+progression. Don't add a second place that does.
+
+For **local testing only**, you can force a location unlocked by adding it
+to `MapProgressController.unlockedLocations` directly, or by setting its
+bound boolean's `.value` directly in `RiveMapScene._load()` (a runtime
+write to the view model instance, not an edit to the `.riv` file itself,
+so it's safe/reversible):
 
 ```dart
-// TEMP: force <location> available for testing. Remove when done.
-availability[MapLocation.plaza]?.value = true;
+// TEMP: force <location> unlocked for testing. Remove when done.
+unlockedProps[MapLocation.plaza]?.value = true;
 ```
 
 Remove it before shipping — it's a debug convenience, not a feature.
 
-## Tap zone calibration
+## Tap detection
 
-If the map art changes (new export, moved buildings), the tap zones in
-`RiveMapScene._tapZones` need recalibrating — they're plain `Rect`s in the
-2400x1400 artboard coordinate space, hand-measured against the exported
-art. There's no automatic way to derive them from the `.riv` file's hit
-regions since (per the asset's contract) it has no click listeners of its
-own.
-
-To recalibrate: render the artboard (e.g. a throwaway `flutter test`
-`matchesGoldenFile` on `RiveWidget` at native 2400x1400 resolution),
-identify each location's marker/building center in the image, and convert
-pixel coordinates back to artboard space using the image's known scale.
+This map asset detects taps itself via internal Listener components per
+location — there's nothing to calibrate on the Flutter side (no tap-zone
+`Rect`s, unlike the previous map asset). If a future art export changes
+which area triggers a location's tap, that's an asset-side change made in
+the Rive editor, not a Flutter code change.
 
 ## Hot reload vs. restart
 
 Rive loading happens in `RiveMapScene`'s `initState()`, which only runs
 once per State instance. **Hot reload will not pick up changes to:**
 - the `.riv` asset file itself,
-- tap zone rects,
-- availability-gating logic,
+- unlock/event-write logic,
 - anything else inside `_load()`.
 
 Use a **full restart** (`R` in `flutter run`, or stop + rerun if a hot

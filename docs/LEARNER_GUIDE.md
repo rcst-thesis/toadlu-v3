@@ -190,7 +190,7 @@ truth in `LearnerProfile.unlockedMapLocations`:
 
 The two are deliberately separate types (`MapLocation` enum vs. raw
 `String` ids in `LearnerProfile`) so `map`'s domain and `learner`'s domain
-don't depend on each other — `MapLocation.fromRiveId(String)` is the
+don't depend on each other — `MapLocation.fromPersistedId(String)` is the
 conversion point, and `MapScreen` (presentation, allowed to know about both
 features) is the only thing that bridges them. Don't have `learner` import
 `map`'s types or vice versa.

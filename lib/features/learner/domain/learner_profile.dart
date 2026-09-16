@@ -3,7 +3,7 @@
 /// map locations an event has permanently unlocked).
 ///
 /// Deliberately holds no dependency on any other feature's domain types --
-/// [unlockedMapLocations] stores raw location ids (`MapLocation.riveId`
+/// [unlockedMapLocations] stores raw location ids (`MapLocation.persistedId`
 /// strings), not `MapLocation` values, so this stays a plain, storable data
 /// shape that `map`'s domain doesn't need to know exists and vice versa.
 /// Whatever bridges the two lives in presentation code (`MapScreen`).

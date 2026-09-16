@@ -59,7 +59,7 @@ class LearnerController extends ChangeNotifier {
     }
   }
 
-  /// Records [locationId] (a `MapLocation.riveId`) as permanently unlocked
+  /// Records [locationId] (a `MapLocation.persistedId`) as permanently unlocked
   /// on the current learner and best-effort persists it. A no-op if there's
   /// no current learner yet, or it's already unlocked.
   Future<void> unlockMapLocation(String locationId) async {
