@@ -98,6 +98,87 @@ class LearnerController extends ChangeNotifier {
       // Best-effort, same as createAndSave.
     }
   }
+
+  /// Records [id] (a `DictionaryEntry.id`) as the current learner's word of
+  /// the day for [date], plus the updated rotation [history], and
+  /// best-effort persists it. A no-op if there's no current learner yet.
+  Future<void> recordWordOfTheDay({
+    required String id,
+    required DateTime date,
+    required Set<String> history,
+  }) async {
+    final current = _profile;
+    if (current == null) return;
+    final updated = current.copyWith(
+      wordOfTheDayId: id,
+      wordOfTheDayDate: date,
+      wordOfTheDayHistory: history,
+    );
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
+  /// Bumps [category]'s per-learner interest counter (used by
+  /// `resolveFeatured` to rank which categories the featured tray should
+  /// draw from) and best-effort persists it. A no-op if there's no current
+  /// learner yet.
+  Future<void> incrementCategorySearchCount(String category) async {
+    final current = _profile;
+    if (current == null) return;
+    final count = (current.categorySearchCounts[category] ?? 0) + 1;
+    final updated = current.copyWith(
+      categorySearchCounts: {
+        ...current.categorySearchCounts,
+        category: count,
+      },
+    );
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
+  /// Records [ids] (`DictionaryEntry.id`s) as the current learner's
+  /// featured-tray picks for [date], plus the updated rotation [history],
+  /// and best-effort persists it. A no-op if there's no current learner
+  /// yet.
+  ///
+  /// [decayedCategoryCounts], when passed, replaces the stored
+  /// `categorySearchCounts` in the same save -- `DictionaryBrowseScreen`
+  /// passes `decayCategorySearchCounts(profile.categorySearchCounts)` here
+  /// once a day (whenever this is a fresh pick, not a same-day cache hit)
+  /// so old interest fades instead of accumulating forever. Omit it to
+  /// leave the counts untouched.
+  Future<void> recordFeatured({
+    required List<String> ids,
+    required DateTime date,
+    required Set<String> history,
+    Map<String, int>? decayedCategoryCounts,
+  }) async {
+    final current = _profile;
+    if (current == null) return;
+    final updated = current.copyWith(
+      featuredIds: ids,
+      featuredDate: date,
+      featuredHistory: history,
+      categorySearchCounts: decayedCategoryCounts,
+    );
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
 }
 
 /// Makes the app's one [LearnerController] available to every screen,

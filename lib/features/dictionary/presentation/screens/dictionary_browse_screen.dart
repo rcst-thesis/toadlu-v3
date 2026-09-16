@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/features/dictionary/domain/dictionary_entry.dart';
+import 'package:tudlo/features/dictionary/domain/dictionary_search.dart';
 import 'package:tudlo/features/dictionary/domain/dictionary_words.dart';
+import 'package:tudlo/features/dictionary/domain/featured_words.dart';
 import 'package:tudlo/features/dictionary/presentation/dictionary_colors.dart';
 import 'package:tudlo/features/dictionary/presentation/dictionary_layout.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_bento_grid.dart';
@@ -56,19 +59,95 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
   String? _selectedCategory;
   DictionaryEntry? _selectedEntry;
 
+  /// Categories already bumped for the current (non-empty) search
+  /// session -- avoids re-incrementing on every keystroke while the set of
+  /// matched categories stays the same.
+  var _trackedQueryCategories = <String>{};
+
+  List<String> _featuredIds = const [];
+  var _resolvedFeatured = false;
+
   @override
   void initState() {
     super.initState();
     _selectedEntry = widget.initialEntry;
-    _searchController.addListener(() {
-      setState(() => _query = _searchController.text.trim().toLowerCase());
-    });
+    _searchController.addListener(_handleQueryChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only resolve once per mount -- didChangeDependencies can fire again
+    // for unrelated inherited-widget changes.
+    if (_resolvedFeatured) return;
+    _resolvedFeatured = true;
+
+    final controller = LearnerScope.of(context);
+    final profile = controller.profile;
+    final eligiblePool =
+        widget.entries.where((e) => e.favThumbImage != null).toList();
+    if (eligiblePool.isEmpty) return;
+
+    final selection = resolveFeatured(
+      pool: eligiblePool,
+      categoryCounts: profile?.categorySearchCounts ?? const {},
+      storedIds: profile?.featuredIds,
+      storedDate: profile?.featuredDate,
+      history: profile?.featuredHistory ?? const {},
+    );
+    _featuredIds = selection.ids;
+    if (selection.isNew) {
+      // A fresh (not same-day-cached) pick -- also decay categorySearchCounts
+      // here, once per day, so old interest fades instead of accumulating
+      // forever and permanently locking in whichever category got an early
+      // lead.
+      final decayedCounts = decayCategorySearchCounts(
+        profile?.categorySearchCounts ?? const {},
+      );
+      // Defer the actual persistence (which calls notifyListeners) past
+      // this build/dependency-resolution phase to avoid a reentrant-build
+      // assertion.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          controller.recordFeatured(
+            ids: selection.ids,
+            date: DateTime.now(),
+            history: selection.history,
+            decayedCategoryCounts: decayedCounts,
+          ),
+        );
+      });
+    }
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_handleQueryChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _handleQueryChanged() {
+    final query = _searchController.text.trim().toLowerCase();
+    setState(() => _query = query);
+    if (query.isEmpty) {
+      _trackedQueryCategories = {};
+      return;
+    }
+    final matchedCategories = {
+      for (final entry in widget.entries)
+        if (matchesSearch(entry.word, query) ||
+            matchesSearch(entry.definition, query))
+          entry.category,
+    };
+    final newlyMatched = matchedCategories.difference(_trackedQueryCategories);
+    if (newlyMatched.isEmpty) return;
+    _trackedQueryCategories = {..._trackedQueryCategories, ...newlyMatched};
+    final controller = LearnerScope.of(context);
+    for (final category in newlyMatched) {
+      unawaited(controller.incrementCategorySearchCount(category));
+    }
   }
 
   void _handleBack() {
@@ -79,8 +158,29 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
     }
   }
 
-  List<DictionaryEntry> get _featured =>
-      widget.entries.where((e) => e.featured).toList();
+  void _selectEntry(DictionaryEntry entry) {
+    unawaited(
+      LearnerScope.of(context).incrementCategorySearchCount(entry.category),
+    );
+    setState(() => _selectedEntry = entry);
+  }
+
+  void _selectCategory(String? category) {
+    if (category != null) {
+      unawaited(
+        LearnerScope.of(context).incrementCategorySearchCount(category),
+      );
+    }
+    setState(() => _selectedCategory = category);
+  }
+
+  List<DictionaryEntry> get _featured {
+    final byId = {for (final e in widget.entries) e.id: e};
+    return [
+      for (final id in _featuredIds)
+        if (byId[id] != null) byId[id]!,
+    ];
+  }
 
   List<String> get _categories =>
       {for (final e in widget.entries) e.category}.toList()..sort();
@@ -89,9 +189,8 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
     final category = _selectedCategory;
     return widget.entries.where((entry) {
       final matchesCategory = category == null || entry.category == category;
-      final matchesQuery = _query.isEmpty ||
-          entry.word.toLowerCase().contains(_query) ||
-          entry.definition.toLowerCase().contains(_query);
+      final matchesQuery = matchesSearch(entry.word, _query) ||
+          matchesSearch(entry.definition, _query);
       return matchesCategory && matchesQuery;
     }).toList();
   }
@@ -102,6 +201,14 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
       grouped.putIfAbsent(entry.category, () => []).add(entry);
     }
     return grouped;
+  }
+
+  /// "Did you mean...?" picks for a typo'd search -- only computed when the
+  /// query actually came up empty, so a normal successful search never
+  /// pays for the extra edit-distance scan.
+  List<DictionaryEntry> get _suggestions {
+    if (_query.isEmpty || _filtered.isNotEmpty) return const [];
+    return closestWordMatches(_query, widget.entries);
   }
 
   @override
@@ -146,7 +253,7 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
                             if (selected != null)
                               Align(
                                 alignment: Alignment.centerLeft,
-                                child: _BackPill(
+                                child: _CompactBackButton(
                                   key: const Key(
                                     'dictionary-browse-back-pill',
                                   ),
@@ -189,14 +296,11 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
                                     featured: _featured,
                                     categories: _categories,
                                     selectedCategory: _selectedCategory,
-                                    onCategorySelected: (category) => setState(
-                                      () => _selectedCategory = category,
-                                    ),
+                                    onCategorySelected: _selectCategory,
                                     grouped: _groupedByCategory,
                                     isSearching: _query.isNotEmpty,
-                                    onSelect: (entry) => setState(
-                                      () => _selectedEntry = entry,
-                                    ),
+                                    suggestions: _suggestions,
+                                    onSelect: _selectEntry,
                                     allEntries: widget.entries,
                                   ),
                           ],
@@ -267,6 +371,36 @@ class _BackPill extends StatelessWidget {
   }
 }
 
+/// A small, standard-looking back control for the definition page -- no
+/// search bar sits beside it here, so it doesn't need [_BackPill]'s
+/// "cut bar" illusion sizing (full stadium shape, search-bar height). Just
+/// a compact rounded icon button.
+class _CompactBackButton extends StatelessWidget {
+  const _CompactBackButton({required this.onTap, super.key});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: DictionaryColors.background,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(
+            Icons.arrow_back_rounded,
+            size: 18,
+            color: DictionaryColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SelectedWordView extends StatelessWidget {
   const _SelectedWordView({required this.entry});
 
@@ -295,6 +429,7 @@ class _BrowseListView extends StatelessWidget {
     required this.onCategorySelected,
     required this.grouped,
     required this.isSearching,
+    required this.suggestions,
     required this.onSelect,
     required this.allEntries,
   });
@@ -305,6 +440,11 @@ class _BrowseListView extends StatelessWidget {
   final ValueChanged<String?> onCategorySelected;
   final Map<String, List<DictionaryEntry>> grouped;
   final bool isSearching;
+
+  /// "Did you mean...?" picks for a typo'd search that came up empty --
+  /// always empty when [grouped] isn't (see
+  /// [_DictionaryBrowseScreenState._suggestions]).
+  final List<DictionaryEntry> suggestions;
   final ValueChanged<DictionaryEntry> onSelect;
 
   /// Full, unfiltered dataset -- the letter index browses everything,
@@ -340,16 +480,42 @@ class _BrowseListView extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (grouped.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text(
-                'no words found',
-                style: TextStyle(
-                  fontFamily: 'ComicRelief',
-                  color: DictionaryColors.ink,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              children: [
+                const Text(
+                  'no words found',
+                  style: TextStyle(
+                    fontFamily: 'ComicRelief',
+                    color: DictionaryColors.ink,
+                  ),
                 ),
-              ),
+                if (suggestions.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'did you mean:',
+                    style: TextStyle(
+                      fontFamily: 'ComicRelief',
+                      fontSize: 12,
+                      color: DictionaryColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final entry in suggestions)
+                        _SuggestionChip(
+                          entry: entry,
+                          onTap: () => onSelect(entry),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           )
         else
@@ -381,6 +547,41 @@ class _BrowseListView extends StatelessWidget {
         const SizedBox(height: 8),
         DictionaryLetterIndex(entries: allEntries, onSelect: onSelect),
       ],
+    );
+  }
+}
+
+/// A tappable "did you mean: `word`" pill -- tapping one jumps straight to
+/// that word's definition, same as tapping any other catalog/letter-index
+/// entry, rather than just correcting the search box text.
+class _SuggestionChip extends StatelessWidget {
+  const _SuggestionChip({required this.entry, required this.onTap});
+
+  final DictionaryEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: DictionaryColors.cardBackground,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        key: Key('dictionary-suggestion-${entry.id}'),
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Text(
+            entry.word,
+            style: const TextStyle(
+              fontFamily: 'ComicRelief',
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: DictionaryColors.ink,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -20,6 +20,13 @@ class LearnerProfile {
     this.currentStreak = 1,
     this.unlockedMapLocations = const {},
     this.favoritedWords = const {},
+    this.wordOfTheDayId,
+    this.wordOfTheDayDate,
+    this.wordOfTheDayHistory = const {},
+    this.categorySearchCounts = const {},
+    this.featuredIds = const [],
+    this.featuredDate,
+    this.featuredHistory = const {},
   });
 
   final String id;
@@ -34,6 +41,26 @@ class LearnerProfile {
   final Set<String> unlockedMapLocations;
   final Set<String> favoritedWords;
 
+  /// The currently-selected word-of-the-day entry's id (a
+  /// `DictionaryEntry.id`), the calendar date that selection was made for
+  /// (compared by year/month/day only), and which ids have already been
+  /// shown this rotation cycle. Same "raw id, not the other feature's
+  /// domain type" rule as [unlockedMapLocations] -- the rotation logic
+  /// lives in `dictionary`'s domain, not here.
+  final String? wordOfTheDayId;
+  final DateTime? wordOfTheDayDate;
+  final Set<String> wordOfTheDayHistory;
+
+  /// Per-category interest counter for this learner (bumped by search
+  /// queries, category chip taps, and word lookups in the browse screen)
+  /// -- drives which categories `resolveFeatured` prioritizes. Same
+  /// same-day-lock-in + rotation-history shape as the word-of-the-day
+  /// fields above, for the browse screen's featured tray specifically.
+  final Map<String, int> categorySearchCounts;
+  final List<String> featuredIds;
+  final DateTime? featuredDate;
+  final Set<String> featuredHistory;
+
   LearnerProfile copyWith({
     int? lessonsFinished,
     int? stickersEarned,
@@ -41,6 +68,13 @@ class LearnerProfile {
     int? currentStreak,
     Set<String>? unlockedMapLocations,
     Set<String>? favoritedWords,
+    String? wordOfTheDayId,
+    DateTime? wordOfTheDayDate,
+    Set<String>? wordOfTheDayHistory,
+    Map<String, int>? categorySearchCounts,
+    List<String>? featuredIds,
+    DateTime? featuredDate,
+    Set<String>? featuredHistory,
   }) {
     return LearnerProfile(
       id: id,
@@ -54,6 +88,13 @@ class LearnerProfile {
       currentStreak: currentStreak ?? this.currentStreak,
       unlockedMapLocations: unlockedMapLocations ?? this.unlockedMapLocations,
       favoritedWords: favoritedWords ?? this.favoritedWords,
+      wordOfTheDayId: wordOfTheDayId ?? this.wordOfTheDayId,
+      wordOfTheDayDate: wordOfTheDayDate ?? this.wordOfTheDayDate,
+      wordOfTheDayHistory: wordOfTheDayHistory ?? this.wordOfTheDayHistory,
+      categorySearchCounts: categorySearchCounts ?? this.categorySearchCounts,
+      featuredIds: featuredIds ?? this.featuredIds,
+      featuredDate: featuredDate ?? this.featuredDate,
+      featuredHistory: featuredHistory ?? this.featuredHistory,
     );
   }
 
@@ -69,6 +110,13 @@ class LearnerProfile {
         'currentStreak': currentStreak,
         'unlockedMapLocations': unlockedMapLocations.toList(),
         'favoritedWords': favoritedWords.toList(),
+        'wordOfTheDayId': wordOfTheDayId,
+        'wordOfTheDayDate': wordOfTheDayDate?.toIso8601String(),
+        'wordOfTheDayHistory': wordOfTheDayHistory.toList(),
+        'categorySearchCounts': categorySearchCounts,
+        'featuredIds': featuredIds,
+        'featuredDate': featuredDate?.toIso8601String(),
+        'featuredHistory': featuredHistory.toList(),
       };
 
   factory LearnerProfile.fromJson(Map<String, Object?> json) {
@@ -87,6 +135,25 @@ class LearnerProfile {
               .cast<String>()
               .toSet(),
       favoritedWords: (json['favoritedWords'] as List<Object?>? ?? const [])
+          .cast<String>()
+          .toSet(),
+      wordOfTheDayId: json['wordOfTheDayId'] as String?,
+      wordOfTheDayDate: json['wordOfTheDayDate'] != null
+          ? DateTime.parse(json['wordOfTheDayDate']! as String)
+          : null,
+      wordOfTheDayHistory:
+          (json['wordOfTheDayHistory'] as List<Object?>? ?? const [])
+              .cast<String>()
+              .toSet(),
+      categorySearchCounts:
+          (json['categorySearchCounts'] as Map<String, Object?>? ?? const {})
+              .map((key, value) => MapEntry(key, value! as int)),
+      featuredIds:
+          (json['featuredIds'] as List<Object?>? ?? const []).cast<String>(),
+      featuredDate: json['featuredDate'] != null
+          ? DateTime.parse(json['featuredDate']! as String)
+          : null,
+      featuredHistory: (json['featuredHistory'] as List<Object?>? ?? const [])
           .cast<String>()
           .toSet(),
     );

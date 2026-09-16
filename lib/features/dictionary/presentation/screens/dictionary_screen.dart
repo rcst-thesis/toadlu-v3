@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_conten
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_favorites_carousel.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_header.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_search_bar.dart';
+import 'package:tudlo/features/dictionary/domain/word_of_the_day.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_word_card.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 
@@ -20,7 +22,7 @@ import 'package:tudlo/features/learner/domain/learner_scope.dart';
 /// carousel, backed by a small placeholder word dataset
 /// ([DictionaryWords.all]). The search bar here is a decoy -- tapping it
 /// opens [DictionaryBrowseScreen], which has the real, functional search.
-class DictionaryScreen extends StatelessWidget {
+class DictionaryScreen extends StatefulWidget {
   const DictionaryScreen({this.entries = DictionaryWords.all, super.key});
 
   /// Override for tests; defaults to the real placeholder dataset.
@@ -29,11 +31,55 @@ class DictionaryScreen extends StatelessWidget {
   static const _backgroundColor = Color(0xFFF9C4CE);
   static const _designWidth = 412.0;
 
+  @override
+  State<DictionaryScreen> createState() => _DictionaryScreenState();
+}
+
+class _DictionaryScreenState extends State<DictionaryScreen> {
+  DictionaryEntry? _wordOfTheDay;
+  var _resolvedWordOfTheDay = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only resolve once per mount -- didChangeDependencies can fire again
+    // for unrelated inherited-widget changes.
+    if (_resolvedWordOfTheDay) return;
+    _resolvedWordOfTheDay = true;
+
+    final controller = LearnerScope.of(context);
+    final profile = controller.profile;
+    final eligiblePool =
+        widget.entries.where((e) => e.frontCardImage != null).toList();
+    final selection = resolveWordOfTheDay(
+      pool: eligiblePool.isNotEmpty ? eligiblePool : widget.entries,
+      storedId: profile?.wordOfTheDayId,
+      storedDate: profile?.wordOfTheDayDate,
+      history: profile?.wordOfTheDayHistory ?? const {},
+    );
+    _wordOfTheDay = selection.entry;
+    if (selection.isNew) {
+      // Defer the actual persistence (which calls notifyListeners) past
+      // this build/dependency-resolution phase to avoid a reentrant-build
+      // assertion.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          controller.recordWordOfTheDay(
+            id: selection.entry.id,
+            date: DateTime.now(),
+            history: selection.history,
+          ),
+        );
+      });
+    }
+  }
+
   void _openBrowse(BuildContext context, {DictionaryEntry? initialEntry}) {
     Navigator.of(context).push(
       FadePageRoute<void>(
         page: DictionaryBrowseScreen(
-          entries: entries,
+          entries: widget.entries,
           initialEntry: initialEntry,
         ),
       ),
@@ -44,13 +90,13 @@ class DictionaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = LearnerScope.of(context);
     final favoritedWords = controller.profile?.favoritedWords ?? const {};
-    final wordOfTheDay = entries.first;
+    final wordOfTheDay = _wordOfTheDay ?? widget.entries.first;
     final favorites =
-        entries.where((e) => favoritedWords.contains(e.id)).toList();
+        widget.entries.where((e) => favoritedWords.contains(e.id)).toList();
 
     return Scaffold(
       key: const Key('dictionary-screen'),
-      backgroundColor: _backgroundColor,
+      backgroundColor: DictionaryScreen._backgroundColor,
       bottomNavigationBar: const AppBottomTabNavigation(currentIndex: 4),
       // Full-bleed: no SafeArea (that plus this padding stacked into a
       // visible top gap). dictionaryTopOffset clears the status bar
@@ -59,7 +105,7 @@ class DictionaryScreen extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, viewport) {
           final canvasWidth = math.min(viewport.maxWidth, 720.0);
-          final scale = canvasWidth / _designWidth;
+          final scale = canvasWidth / DictionaryScreen._designWidth;
           final footerHeight = 48 * scale;
           return SingleChildScrollView(
             key: const Key('dictionary-content-scroll-view'),

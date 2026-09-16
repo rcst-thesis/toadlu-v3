@@ -64,32 +64,25 @@ class _DictionaryLookupPageState extends State<DictionaryLookupPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _SpeakerButton(
-                pressed: _speakerPressed,
-                onTap: _requestPronunciation,
-                semanticLabel: 'Play pronunciation for ${entry.word}',
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DictionaryStrokedText(
+          // A bit lower than the back button above it.
+          const SizedBox(height: 24),
+          // Speaker centered above the word, not beside it.
+          Center(
+            child: Column(
+              children: [
+                _SpeakerButton(
+                  pressed: _speakerPressed,
+                  onTap: _requestPronunciation,
+                  semanticLabel: 'Play pronunciation for ${entry.word}',
+                ),
+                const SizedBox(height: 8),
+                DictionaryStrokedText(
                   entry.word,
-                  fontSize: 34,
+                  fontSize: 44,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              _FavoriteButton(
-                favorited: widget.isFavorited,
-                onTap: () => widget.onFavoriteChanged?.call(
-                  !widget.isFavorited,
-                ),
-                semanticLabel: widget.isFavorited
-                    ? 'Remove ${entry.word} from favorites'
-                    : 'Add ${entry.word} to favorites',
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -119,6 +112,20 @@ class _DictionaryLookupPageState extends State<DictionaryLookupPage> {
               fontSize: 14,
               fontStyle: FontStyle.italic,
               color: DictionaryColors.ink.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Bottom-right of the content block, not the page's own footer.
+          Align(
+            alignment: Alignment.centerRight,
+            child: _FavoriteButton(
+              favorited: widget.isFavorited,
+              onTap: () => widget.onFavoriteChanged?.call(
+                !widget.isFavorited,
+              ),
+              semanticLabel: widget.isFavorited
+                  ? 'Remove ${entry.word} from favorites'
+                  : 'Add ${entry.word} to favorites',
             ),
           ),
         ],

@@ -12,9 +12,136 @@ import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_heart_
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_lookup_page.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 
+/// A small, fixed dataset for these widget tests -- deliberately not
+/// [DictionaryWords.all] (real, ~900-word content that changes over time
+/// and isn't something tests should be coupled to). Mirrors the shape of
+/// the old placeholder dataset so every existing assertion (ids, examples,
+/// categories, the "animals" chip being in the chips row's initial scroll
+/// viewport, "balay" being the only art-eligible entry) still holds.
+const _testEntries = [
+  DictionaryEntry(
+    id: 'balay',
+    word: 'balay',
+    phonetic: '/ba-lay/',
+    definition:
+        'n. ang balay ay isa ka pisikal nga tinukod ukon estraktura nga '
+        'gindesinyo kag gintukod para istaran sang mga tawo.',
+    example: 'naga istar ako sa akon balay',
+    category: 'home',
+    frontCardImage: 'assets/images/balay_dictionary.png',
+    favThumbImage: 'assets/images/balay_dictionary_fav_thumb.png',
+  ),
+  DictionaryEntry(
+    id: 'ido',
+    word: 'ido',
+    phonetic: '/i-do/',
+    definition: 'n. ang ido isa ka sapat nga sagad ginabantayan sang tawo.',
+    example: 'nagahulat ang akon ido sa balay',
+    category: 'animals',
+  ),
+  DictionaryEntry(
+    id: 'kuring',
+    word: 'kuring',
+    phonetic: '/ku-ring/',
+    definition: 'n. ang kuring isa ka gamay nga sapat nga sagad ginaatipan '
+        'sa balay.',
+    example: 'nagatulog ang kuring sa ibabaw sang lamesa',
+    category: 'animals',
+  ),
+  DictionaryEntry(
+    id: 'iloy',
+    word: 'iloy',
+    phonetic: '/i-loy/',
+    definition: 'n. ang iloy amo ang babaye nga ginikanan.',
+    example: 'nagabasa sang libro ang akon iloy para sa akon',
+    category: 'family',
+  ),
+  DictionaryEntry(
+    id: 'amay',
+    word: 'amay',
+    phonetic: '/a-may/',
+    definition: 'n. ang amay amo ang lalaki nga ginikanan.',
+    example: 'nagatudlo ang akon amay sa akon magbisikleta',
+    category: 'family',
+  ),
+  DictionaryEntry(
+    id: 'tubig',
+    word: 'tubig',
+    phonetic: '/tu-big/',
+    definition: 'n. ang tubig isa ka likido nga kinahanglanon sa kabuhi.',
+    example: 'nagainom ako sang tubig kada adlaw',
+    category: 'nature',
+  ),
+  DictionaryEntry(
+    id: 'uma',
+    word: 'uma',
+    phonetic: '/u-ma/',
+    definition: 'n. ang uma isa ka lugar nga ginatamnan sang mga pananom.',
+    example: 'nagatrabaho ang akon lolo sa uma',
+    category: 'nature',
+  ),
+  DictionaryEntry(
+    id: 'kan-on',
+    word: 'kan-on',
+    phonetic: '/kan-on/',
+    definition: 'n. ang kan-on isa ka pagkaon nga halin sa bugas.',
+    example: 'nagakaon kami sang kan-on sa paniudto',
+    category: 'food',
+  ),
+  DictionaryEntry(
+    id: 'tinapay',
+    word: 'tinapay',
+    phonetic: '/ti-na-pay/',
+    definition: 'n. ang tinapay isa ka pagkaon nga ginluto halin sa arina.',
+    example: 'nagapamalit kami sang tinapay sa tinda',
+    category: 'food',
+  ),
+  DictionaryEntry(
+    id: 'simbahan',
+    word: 'simbahan',
+    phonetic: '/sim-ba-han/',
+    definition: 'n. ang simbahan isa ka lugar nga ginasimbahan sang mga '
+        'tawo.',
+    example: 'nagasimba kami sa simbahan kada Domingo',
+    category: 'places',
+  ),
+  DictionaryEntry(
+    id: 'parke',
+    word: 'parke',
+    phonetic: '/par-ke/',
+    definition: 'n. ang parke isa ka lugar nga ginadulaan sang mga bata.',
+    example: 'nagadula kami sa parke pagkatapos sang klase',
+    category: 'places',
+  ),
+  DictionaryEntry(
+    id: 'eskwelahan',
+    word: 'eskwelahan',
+    phonetic: '/es-kwe-la-han/',
+    definition: 'n. ang eskwelahan isa ka lugar nga ginatun-an sang mga '
+        'bata.',
+    example: 'nagatambong ako sa eskwelahan kada adlaw',
+    category: 'places',
+  ),
+];
+
 Future<LearnerController> _controllerWithProfile() async {
   final controller = LearnerController();
   await controller.createAndSave(name: 'Josh', grade: 2, energy: 60);
+  // Pin word-of-the-day to "balay" so existing tests stay deterministic --
+  // without this, resolveWordOfTheDay would pick a random pool entry on
+  // first render since no rotation history is stored yet.
+  await controller.recordWordOfTheDay(
+    id: 'balay',
+    date: DateTime.now(),
+    history: {'balay'},
+  );
+  // Pin the featured tray to "balay" too (today's only art-eligible entry
+  // for the featured slot) so existing tests stay deterministic.
+  await controller.recordFeatured(
+    ids: ['balay'],
+    date: DateTime.now(),
+    history: {'balay'},
+  );
   return controller;
 }
 
@@ -41,7 +168,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('dictionary-header')), findsOneWidget);
@@ -54,7 +182,8 @@ void main() {
   testWidgets('Dictionary bottom nav renders at index 4', (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     final nav = tester.widget<AppBottomTabNavigation>(
@@ -68,7 +197,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -92,7 +222,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     expect(find.text('naga istar ako sa akon balay'), findsNothing);
@@ -108,7 +239,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     // Flip to the back face where the favorite button lives.
@@ -142,7 +274,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -166,7 +299,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -187,7 +321,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -212,11 +347,66 @@ void main() {
   });
 
   testWidgets(
+      'A typo\'d search shows "did you mean" suggestions, tapping one opens its definition',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
+    await tester.pumpAndSettle();
+
+    // "balat" is a one-letter typo of "balay" -- no exact/substring match,
+    // but close enough to suggest.
+    await tester.enterText(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      'balat',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('no words found'), findsOneWidget);
+    expect(find.text('did you mean:'), findsOneWidget);
+    expect(
+      find.byKey(const Key('dictionary-suggestion-balay')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('dictionary-suggestion-balay')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DictionaryLookupPage), findsOneWidget);
+  });
+
+  testWidgets('A search with no close matches shows no suggestions',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      'zzzzzzzzzz',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('no words found'), findsOneWidget);
+    expect(find.text('did you mean:'), findsNothing);
+  });
+
+  testWidgets(
       'Searching a term that only appears in a definition still finds that word',
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -240,7 +430,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -267,7 +458,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -285,7 +477,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -308,7 +501,8 @@ void main() {
   testWidgets('Back pill and search bar are the same height', (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -324,7 +518,7 @@ void main() {
   });
 
   testWidgets(
-      'Bento tray pads missing featured entries with blank compartments',
+      'Bento tray shows just a single hero compartment when only one entry is featured',
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
@@ -335,9 +529,8 @@ void main() {
         phonetic: '/so-lo/',
         definition: 'n. test entry.',
         example: 'test',
-        imageAsset: 'assets/images/home_sticker_house.png',
         category: 'test',
-        featured: true,
+        favThumbImage: 'assets/images/home_sticker_house.png',
       ),
     ];
     await tester.pumpWidget(
@@ -349,8 +542,8 @@ void main() {
       find.byKey(const Key('dictionary-bento-tile-solo')),
       findsOneWidget,
     );
-    // 5 slots total, only 1 real (tappable) entry -- the other 4 are
-    // blank, non-interactive compartments (no InkWell).
+    // No blank/placeholder compartments -- the tray only ever renders as
+    // many tappable compartments as there are real entries.
     expect(
       find.descendant(
         of: find.byType(DictionaryBentoGrid),
@@ -361,11 +554,98 @@ void main() {
   });
 
   testWidgets(
+      'Bento tray grows a compartment per entry, up to all of them, with no blanks',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    const entries = [
+      DictionaryEntry(
+        id: 'one',
+        word: 'one',
+        phonetic: '/one/',
+        definition: 'n. test entry one.',
+        example: 'test',
+        category: 'test',
+        favThumbImage: 'assets/images/home_sticker_house.png',
+      ),
+      DictionaryEntry(
+        id: 'two',
+        word: 'two',
+        phonetic: '/two/',
+        definition: 'n. test entry two.',
+        example: 'test',
+        category: 'test',
+        favThumbImage: 'assets/images/home_sticker_dog.png',
+      ),
+      DictionaryEntry(
+        id: 'three',
+        word: 'three',
+        phonetic: '/three/',
+        definition: 'n. test entry three.',
+        example: 'test',
+        category: 'test',
+        favThumbImage: 'assets/images/home_sticker_cat.png',
+      ),
+    ];
+    await tester.pumpWidget(
+      _wrap(const DictionaryBrowseScreen(entries: entries), controller),
+    );
+    await tester.pumpAndSettle();
+
+    for (final id in ['one', 'two', 'three']) {
+      expect(
+        find.byKey(Key('dictionary-bento-tile-$id')),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(
+        of: find.byType(DictionaryBentoGrid),
+        matching: find.byType(InkWell),
+      ),
+      findsNWidgets(3),
+    );
+  });
+
+  testWidgets(
+      'Catalog card does not overflow when the word is long (real dictionary content)',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    const entries = [
+      DictionaryEntry(
+        id: 'eskwelahan',
+        word: 'eskweláhan',
+        phonetic: '/es-kwe-la-han/',
+        definition: 'n. School-house, school.',
+        example: 'test',
+        category: 'places',
+      ),
+      DictionaryEntry(
+        id: 'arroz-caldo',
+        word: 'arroz caldo',
+        phonetic: '/ar-roz-cal-do/',
+        definition:
+            'n. Porridge cooked with spring onions, ginger and chicken.',
+        example: 'test',
+        category: 'food',
+      ),
+    ];
+    await tester.pumpWidget(
+      _wrap(const DictionaryBrowseScreen(entries: entries), controller),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
       'Letter index is collapsible: tapping a letter expands it, tapping again collapses it',
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
@@ -401,7 +681,8 @@ void main() {
       (tester) async {
     await setLargeViewport(tester);
     final controller = await _controllerWithProfile();
-    await tester.pumpWidget(_wrap(const DictionaryScreen(), controller));
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
     await tester.pumpAndSettle();
 
     // Favorite "balay" via the word-of-the-day card.
@@ -434,5 +715,24 @@ void main() {
       find.byKey(const Key('dictionary-browse-back-pill')),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+      'With no word-of-the-day history yet, some valid pool entry renders',
+      (tester) async {
+    await setLargeViewport(tester);
+    // A fresh profile with no recordWordOfTheDay call yet -- unlike
+    // _controllerWithProfile(), which pins it to "balay" for the other
+    // tests here.
+    final controller = LearnerController();
+    await controller.createAndSave(name: 'Josh', grade: 2, energy: 60);
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('dictionary-word-card')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    // Something was picked and persisted -- not left unresolved.
+    expect(controller.profile!.wordOfTheDayId, isNotNull);
   });
 }

@@ -4,9 +4,13 @@ import 'package:tudlo/features/dictionary/domain/dictionary_entry.dart';
 import 'package:tudlo/features/dictionary/presentation/dictionary_colors.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_card_front.dart';
 
-/// Horizontal "my favorites" carousel: one card per page, dot indicator,
-/// and a right-arrow control to advance.
-class DictionaryFavoritesCarousel extends StatefulWidget {
+/// "my favorites": one outer box holding the whole feature -- a
+/// continuously, freely scrollable belt of tightly-spaced cards (no
+/// page-snapping, no dots -- just drag through them). Card ratio
+/// (366:584, height = width * 1.6) matches the user-supplied thumbnail
+/// art's real proportions so `BoxFit.contain` (in [DictionaryCardFront])
+/// never crops or letterboxes it. About 3 cards are visible at once.
+class DictionaryFavoritesCarousel extends StatelessWidget {
   const DictionaryFavoritesCarousel({
     required this.entries,
     this.onSelect,
@@ -19,133 +23,109 @@ class DictionaryFavoritesCarousel extends StatefulWidget {
   /// that word's definition screen.
   final ValueChanged<DictionaryEntry>? onSelect;
 
-  @override
-  State<DictionaryFavoritesCarousel> createState() =>
-      _DictionaryFavoritesCarouselState();
-}
+  static const _cardGap = 8.0;
+  static const _cardAspectRatio = 366 / 584;
+  // ~3 cards visible at once, sized relative to the row's own width.
+  static const _cardWidthFraction = 0.3;
 
-class _DictionaryFavoritesCarouselState
-    extends State<DictionaryFavoritesCarousel> {
-  late final PageController _pageController;
-  var _page = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.6);
-    _pageController.addListener(_onPageChanged);
-  }
-
-  void _onPageChanged() {
-    final page = _pageController.page?.round() ?? 0;
-    if (page != _page) setState(() => _page = page);
-  }
-
-  void _next() {
-    final target = (_page + 1).clamp(0, widget.entries.length - 1);
-    _pageController.animateToPage(
-      target,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
+  Widget _buildTile(DictionaryEntry entry, double width, double height) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: Key('dictionary-favorite-tile-${entry.id}'),
+          borderRadius: BorderRadius.circular(12),
+          onTap: onSelect == null ? null : () => onSelect!(entry),
+          child: DictionaryCardFront(
+            entry: entry,
+            wordFontSize: 10,
+            borderRadius: 12,
+          ),
+        ),
+      ),
     );
   }
 
   @override
-  void dispose() {
-    _pageController.removeListener(_onPageChanged);
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.entries.isEmpty) {
+    if (entries.isEmpty) {
+      // Explicit width and height -- a landscape rectangle (wider than
+      // tall) standing in for the carousel container when there's nothing
+      // to show yet.
       return Container(
         key: const Key('dictionary-favorites-empty-card'),
-        height: 120,
+        width: double.infinity,
+        height: 140,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: DictionaryColors.background,
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
-        child: const Text(
-          'No favorites yet -- tap the heart on a word to add one.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'ComicRelief',
-            color: DictionaryColors.ink,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.favorite_border_rounded,
+              size: 28,
+              color: DictionaryColors.ink.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No favorites yet -- tap the heart on a word to add one.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'ComicRelief',
+                color: DictionaryColors.ink,
+              ),
+            ),
+          ],
         ),
       );
     }
-    return Column(
-      children: [
-        SizedBox(
-          height: 120,
-          child: Row(
-            children: [
-              Expanded(
-                child: PageView.builder(
-                  key: const Key('dictionary-favorites-page-view'),
-                  controller: _pageController,
-                  itemCount: widget.entries.length,
-                  itemBuilder: (context, index) {
-                    final entry = widget.entries[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          key: Key('dictionary-favorite-tile-${entry.id}'),
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: widget.onSelect == null
-                              ? null
-                              : () => widget.onSelect!(entry),
-                          child: DictionaryCardFront(
-                            entry: entry,
-                            wordFontSize: 14,
-                            borderRadius: 16,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+
+    return Container(
+      key: const Key('dictionary-favorites-container'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DictionaryColors.background,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cardWidth = constraints.maxWidth * _cardWidthFraction;
+          final cardHeight = cardWidth / _cardAspectRatio;
+          // A single favorite has nothing to scroll through -- center it
+          // instead of leaving it stuck at the left edge.
+          if (entries.length == 1) {
+            return SizedBox(
+              height: cardHeight,
+              child: Center(
+                key: const Key('dictionary-favorites-page-view'),
+                child: _buildTile(entries.first, cardWidth, cardHeight),
               ),
-              if (widget.entries.length > 1)
-                IconButton(
-                  key: const Key('dictionary-favorites-next-button'),
-                  onPressed: _next,
-                  icon: const Icon(Icons.arrow_forward_ios_rounded),
-                  color: const Color(0xFF5C2233),
-                ),
-            ],
-          ),
-        ),
-        if (widget.entries.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(widget.entries.length, (index) {
-                final active = index == _page;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: active ? 10 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? const Color(0xFF5C2233)
-                        : const Color(0xFFEB8FA0),
-                    borderRadius: BorderRadius.circular(3),
+            );
+          }
+          return SizedBox(
+            height: cardHeight,
+            child: ListView.builder(
+              key: const Key('dictionary-favorites-page-view'),
+              scrollDirection: Axis.horizontal,
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    right: index == entries.length - 1 ? 0 : _cardGap,
                   ),
+                  child: _buildTile(entries[index], cardWidth, cardHeight),
                 );
-              }),
+              },
             ),
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 }

@@ -8,9 +8,7 @@ class DictionaryEntry {
     required this.phonetic,
     required this.definition,
     required this.example,
-    required this.imageAsset,
     required this.category,
-    this.featured = false,
     this.frontCardImage,
     this.favThumbImage,
   });
@@ -20,27 +18,24 @@ class DictionaryEntry {
   final String phonetic;
   final String definition;
   final String example;
-  final String imageAsset;
 
   /// Groups entries for the browse screen's category filter/catalog
   /// sections (e.g. "home", "animals", "family").
   final String category;
 
-  /// Whether this entry can appear in the browse screen's "featured" bento
-  /// tray. Independent of having dedicated art -- the tray shows plain
-  /// placeholder boxes regardless.
-  final bool featured;
-
   /// A fully-designed front-card image (art + word label already baked in)
-  /// for the word-of-the-day flip card specifically. When null, the flip
-  /// card's front face falls back to the generic [imageAsset] + Flutter-
-  /// drawn label composition that every entry uses for the favorites
-  /// carousel/search thumbnails regardless.
+  /// for the word-of-the-day flip card. Also doubles as this entry's
+  /// **word-of-the-day eligibility gate** -- `resolveWordOfTheDay` only
+  /// ever picks from entries where this is non-null, since the flip
+  /// card's front face has nothing worth showing otherwise.
   final String? frontCardImage;
 
   /// A fully-designed small card image (art + word label already baked in)
-  /// for the favorites carousel and search-result thumbnails. When null,
-  /// those fall back to the generic [imageAsset] + Flutter-drawn label
-  /// composition.
+  /// for the favorites carousel and browse-screen featured tray. Also
+  /// doubles as this entry's **featured-tray eligibility gate** --
+  /// `resolveFeatured` only ever picks from entries where this is
+  /// non-null. When null, this entry still appears in the favorites
+  /// carousel/search thumbnails as a blank card (word label, no image), just
+  /// never in the featured tray.
   final String? favThumbImage;
 }

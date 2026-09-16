@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/features/dictionary/domain/dictionary_entry.dart';
 import 'package:tudlo/features/dictionary/presentation/dictionary_colors.dart';
+import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_asset_image.dart';
 
-/// One catalog card: a placeholder box, the word, and a one-line
-/// definition snippet. Used in the browse screen's category-grouped
-/// catalog grid, in place of a bare text row.
+/// One catalog card: an image box (the word's [DictionaryEntry.frontCardImage]
+/// when it has one, cropped to fill via `BoxFit.cover` rather than
+/// letterboxed -- alignment matters more than showing 100% of the art here;
+/// a plain semi-transparent placeholder box otherwise), the word, and a
+/// one-line definition snippet. Used in the browse screen's
+/// category-grouped catalog grid, in place of a bare text row.
 class DictionaryWordGridCard extends StatelessWidget {
   const DictionaryWordGridCard({
     required this.entry,
@@ -31,16 +35,29 @@ class DictionaryWordGridCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: entry.frontCardImage != null
+                    ? SizedBox(
+                        height: 56,
+                        width: double.infinity,
+                        child: DictionaryAssetImage(
+                          path: entry.frontCardImage!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
+                      ),
               ),
               const SizedBox(height: 8),
               Text(
                 entry.word,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: 'ComicRelief',
                   fontWeight: FontWeight.bold,
