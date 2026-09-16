@@ -13,7 +13,6 @@ import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/features/energy/widgets/energy_indicator.dart';
-import 'package:tudloapp/features/lesson_game/screens/lesson_intro_page.dart';
 import 'package:tudloapp/features/lesson_game/screens/level_game_page.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
 
@@ -389,20 +388,12 @@ class _HomeMapPageState extends State<HomeMapPage> {
     }
     await AppStateScope.of(context).saveActiveProfileProgress();
     if (!mounted) return;
-    // Enough energy: close the popup, then open the animated lesson intro
-    // before the game screen.
+    // Enough energy: close the popup, then open the lesson game directly.
     _closeLevelPopup();
     if (!mounted) return;
-    final useReferenceFlow =
-        AppData.selectedGradeLevel == GradeLevel.grade1 &&
-        (level == 1 || level == 7 || level == 10 || level == 13);
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => useReferenceFlow
-            ? LevelGamePage(level: level)
-            : LessonIntroPage(level: level),
-      ),
+      MaterialPageRoute(builder: (_) => LevelGamePage(level: level)),
     );
     if (mounted) {
       setState(() => _launchingLevel = false);
@@ -603,7 +594,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
   @override
   Widget build(BuildContext context) {
     if (AppData.selectedGradeLevel == GradeLevel.grade1 ||
-        AppData.selectedGradeLevel == GradeLevel.grade2) {
+        AppData.selectedGradeLevel == GradeLevel.grade2 ||
+        AppData.selectedGradeLevel == GradeLevel.grade3) {
       return _buildGradeOneDashboard(context);
     }
 
@@ -2154,7 +2146,17 @@ String _lessonThumbnailForDashboard(int unitNumber, int lessonNumber) {
     (GradeLevel.grade2, 1, 2) =>
       'assets/images/level_game/grade2/backgrounds/Tudlo_Birthday_Background_Ana_Holding_Cake.svg',
     (GradeLevel.grade2, 2, _) =>
-      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg',
+      'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg',
+    (GradeLevel.grade3, 1, _) =>
+      'assets/images/level_game/backgrounds/classroom.svg',
+    (GradeLevel.grade3, 2, _) =>
+      'assets/images/level_game/backgrounds/house.svg',
+    (GradeLevel.grade3, 3, _) =>
+      'assets/images/level_game/backgrounds/garden.svg',
+    (GradeLevel.grade3, 4, _) =>
+      'assets/images/level_game/backgrounds/lesson3-popup.svg',
+    (GradeLevel.grade3, 5, _) =>
+      'assets/images/level_game/backgrounds/lesson4-popup.svg',
     _ => 'assets/images/level_game/backgrounds/classroom.svg',
   };
 }

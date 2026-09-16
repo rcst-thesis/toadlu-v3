@@ -4865,7 +4865,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     extends State<_GradeTwoUnitTwoLessonOneParkGreetingFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _backgroundAsset =
-      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+      'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg';
   static const _friendGirlOne =
       'assets/images/level_game/grade2/people/Tudlo_Park_Friend_Girl_1.svg';
   static const _friendBoy =
@@ -4935,17 +4935,17 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
 
   Future<void> _speakForStep() async {
     final clips = switch (_step) {
-      _G2ParkGreetingStep.intro => const [2, 3],
-      _G2ParkGreetingStep.map => const [4, 5],
-      _G2ParkGreetingStep.morningTeach => const [6],
-      _G2ParkGreetingStep.morningPractice => const [7],
-      _G2ParkGreetingStep.afternoonTeach => const [8],
-      _G2ParkGreetingStep.afternoonPractice => const [9],
-      _G2ParkGreetingStep.eveningTeach => const [10],
-      _G2ParkGreetingStep.eveningPractice => const [11],
-      _G2ParkGreetingStep.review => const [12, 13],
-      _G2ParkGreetingStep.match => const [14, 15],
-      _G2ParkGreetingStep.reward => const [20],
+      _G2ParkGreetingStep.intro => const [2],
+      _G2ParkGreetingStep.map => const [3],
+      _G2ParkGreetingStep.morningTeach => const [4],
+      _G2ParkGreetingStep.morningPractice => const [5, 6],
+      _G2ParkGreetingStep.afternoonTeach => const [9],
+      _G2ParkGreetingStep.afternoonPractice => const [10, 11],
+      _G2ParkGreetingStep.eveningTeach => const [14],
+      _G2ParkGreetingStep.eveningPractice => const [15, 16],
+      _G2ParkGreetingStep.review => const [19],
+      _G2ParkGreetingStep.match => const [19],
+      _G2ParkGreetingStep.reward => const [22],
     };
     setState(() => _voicePlaying = true);
     try {
@@ -4965,7 +4965,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           _G2ParkGreetingStep.eveningTeach => 'Good evening sa gab-i.',
           _G2ParkGreetingStep.eveningPractice => 'Pilia ang Good evening.',
           _G2ParkGreetingStep.review =>
-            'Pamatian liwat ang aga, hapon, kag gab-i.',
+            'Ipares ang greeting sa aga, hapon, kag gab-i.',
           _G2ParkGreetingStep.match =>
             'Ipares ang greeting sa aga, hapon, kag gab-i.',
           _G2ParkGreetingStep.reward =>
@@ -5011,7 +5011,11 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     });
     if (!correct) {
       await AppAudioService.instance.playWrong();
-      await _playVoice(const [16]);
+      await _playVoice(switch (timeId) {
+        'morning' => const [8],
+        'afternoon' => const [13],
+        _ => const [18],
+      });
       await Future<void>.delayed(const Duration(milliseconds: 460));
       if (!mounted) return;
       setState(() {
@@ -5028,7 +5032,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     _goToStep(switch (timeId) {
       'morning' => _G2ParkGreetingStep.afternoonTeach,
       'afternoon' => _G2ParkGreetingStep.eveningTeach,
-      _ => _G2ParkGreetingStep.review,
+      _ => _G2ParkGreetingStep.match,
     });
   }
 
@@ -5049,7 +5053,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     if (!correct) {
       setState(() => _wrongMatchGreetingId = greetingId);
       await AppAudioService.instance.playWrong();
-      await _playVoice(const [16]);
+      await _playVoice(const [21]);
       await Future<void>.delayed(const Duration(milliseconds: 430));
       if (mounted) setState(() => _wrongMatchGreetingId = null);
       return;
@@ -5061,6 +5065,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     await AppAudioService.instance.playCorrect();
     if (_matchedGreetings.length == 3) {
       widget.onQuizCorrect(3);
+      await _playVoice(const [20]);
       await Future<void>.delayed(const Duration(milliseconds: 620));
       if (mounted) _goToStep(_G2ParkGreetingStep.reward);
     }
@@ -5105,8 +5110,9 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           ),
           _G2ParkGreetingStep.morningTeach => _G2ParkGreetingTeachStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _parkGreetingTimes[0].backgroundAsset,
             time: _parkGreetingTimes[0],
+            characterAsset: _friendGirlOne,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
@@ -5114,9 +5120,10 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           ),
           _G2ParkGreetingStep.morningPractice => _G2ParkGreetingPracticeStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _parkGreetingTimes[0].backgroundAsset,
             time: _parkGreetingTimes[0],
             characterAsset: _friendGirlOne,
+            completedTimes: _completedTimes,
             characterTapped: _characterTapped,
             selectedId: _selectedGreetingId,
             wrongId: _wrongGreetingId,
@@ -5128,8 +5135,9 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           ),
           _G2ParkGreetingStep.afternoonTeach => _G2ParkGreetingTeachStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _parkGreetingTimes[1].backgroundAsset,
             time: _parkGreetingTimes[1],
+            characterAsset: _friendBoy,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
@@ -5137,9 +5145,10 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           ),
           _G2ParkGreetingStep.afternoonPractice => _G2ParkGreetingPracticeStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _parkGreetingTimes[1].backgroundAsset,
             time: _parkGreetingTimes[1],
             characterAsset: _friendBoy,
+            completedTimes: _completedTimes,
             characterTapped: _characterTapped,
             selectedId: _selectedGreetingId,
             wrongId: _wrongGreetingId,
@@ -5151,8 +5160,9 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           ),
           _G2ParkGreetingStep.eveningTeach => _G2ParkGreetingTeachStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _parkGreetingTimes[2].backgroundAsset,
             time: _parkGreetingTimes[2],
+            characterAsset: _friendGirlTwo,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
@@ -5160,9 +5170,10 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           ),
           _G2ParkGreetingStep.eveningPractice => _G2ParkGreetingPracticeStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _parkGreetingTimes[2].backgroundAsset,
             time: _parkGreetingTimes[2],
             characterAsset: _friendGirlTwo,
+            completedTimes: _completedTimes,
             characterTapped: _characterTapped,
             selectedId: _selectedGreetingId,
             wrongId: _wrongGreetingId,
@@ -5184,7 +5195,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
           ),
           _G2ParkGreetingStep.match => _G2ParkGreetingMatchStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _parkGreetingTimes[0].backgroundAsset,
             activeTimeId: _activeMatchTimeId,
             matchedGreetings: _matchedGreetings,
             wrongGreetingId: _wrongMatchGreetingId,
@@ -5214,6 +5225,8 @@ class _ParkGreetingTime {
   final String timeLabel;
   final String localLabel;
   final String greeting;
+  final String stickerAsset;
+  final String backgroundAsset;
   final IconData icon;
   final Color color;
   final Color tint;
@@ -5223,6 +5236,8 @@ class _ParkGreetingTime {
     required this.timeLabel,
     required this.localLabel,
     required this.greeting,
+    required this.stickerAsset,
+    required this.backgroundAsset,
     required this.icon,
     required this.color,
     required this.tint,
@@ -5235,6 +5250,10 @@ const _parkGreetingTimes = [
     timeLabel: 'Morning',
     localLabel: 'aga',
     greeting: 'Good morning',
+    stickerAsset:
+        'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Morning_Sunrise_Sticker.svg',
+    backgroundAsset:
+        'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Morning_Background.svg',
     icon: Icons.wb_sunny_rounded,
     color: Color(0xFFFFC928),
     tint: Color(0x22FFD35C),
@@ -5244,6 +5263,10 @@ const _parkGreetingTimes = [
     timeLabel: 'Afternoon',
     localLabel: 'hapon',
     greeting: 'Good afternoon',
+    stickerAsset:
+        'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Afternoon_High_Sun_Sticker.svg',
+    backgroundAsset:
+        'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Afternoon_Background.svg',
     icon: Icons.light_mode_rounded,
     color: Color(0xFFFF8A28),
     tint: Color(0x33FF9F43),
@@ -5253,6 +5276,10 @@ const _parkGreetingTimes = [
     timeLabel: 'Evening',
     localLabel: 'gab-i',
     greeting: 'Good evening',
+    stickerAsset:
+        'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Evening_Sunset_Sticker.svg',
+    backgroundAsset:
+        'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Night_Background.svg',
     icon: Icons.dark_mode_rounded,
     color: Color(0xFF536DFE),
     tint: Color(0x44304B9B),
@@ -5293,13 +5320,7 @@ class _G2ParkScene extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: backgroundAsset,
-      child: Stack(
-        children: [
-          if (time != null)
-            Positioned.fill(child: ColoredBox(color: time!.tint)),
-          child,
-        ],
-      ),
+      child: Stack(children: [child]),
     );
   }
 }
@@ -5437,6 +5458,7 @@ class _G2ParkGreetingTeachStep extends StatelessWidget {
   final double progress;
   final String backgroundAsset;
   final _ParkGreetingTime time;
+  final String characterAsset;
   final bool inputReady;
   final VoidCallback onExit;
   final VoidCallback onReplay;
@@ -5446,6 +5468,7 @@ class _G2ParkGreetingTeachStep extends StatelessWidget {
     required this.progress,
     required this.backgroundAsset,
     required this.time,
+    required this.characterAsset,
     required this.inputReady,
     required this.onExit,
     required this.onReplay,
@@ -5470,36 +5493,23 @@ class _G2ParkGreetingTeachStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(child: _ParkTimeCard(time: time, selected: true)),
-                SizedBox(width: view.width * .035),
-                Expanded(
-                  child: _ParkGreetingCard(
-                    label: time.greeting,
-                    correct: true,
-                    wrong: false,
-                    enabled: false,
-                    onTap: () {},
-                  ),
-                ),
-              ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: (view.width * .25).clamp(86.0, 116.0),
+                child: _ParkTimeCard(time: time, selected: true),
+              ),
             ),
-            const Spacer(),
-            Icon(
-              time.icon,
-              color: time.color,
-              size: (view.width * .30).clamp(112.0, 170.0),
-              shadows: [
-                Shadow(
-                  color: Colors.white.withValues(alpha: .85),
-                  blurRadius: 18,
-                ),
-              ],
+            Expanded(
+              child: _ParkCharacterGreetingStage(
+                time: time,
+                characterAsset: characterAsset,
+                greeting: time.greeting,
+              ),
             ),
-            const Spacer(),
             _LessonOneMessageCard(
               message: '${time.greeting} sa ${time.localLabel}.',
+              compact: true,
             ),
             SizedBox(height: view.height * .018),
             _LessonOneBlueButton(
@@ -5518,6 +5528,7 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
   final String backgroundAsset;
   final _ParkGreetingTime time;
   final String characterAsset;
+  final Set<String> completedTimes;
   final bool characterTapped;
   final String? selectedId;
   final String? wrongId;
@@ -5532,6 +5543,7 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
     required this.backgroundAsset,
     required this.time,
     required this.characterAsset,
+    required this.completedTimes,
     required this.characterTapped,
     required this.selectedId,
     required this.wrongId,
@@ -5569,72 +5581,24 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
               compact: true,
             ),
             Expanded(
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: view.width * .03,
-                    bottom: view.height * .04,
-                    child: _LessonKokaMascot(
-                      size: (view.width * .34).clamp(120.0, 175.0),
-                      mood: KokaMood.idle,
-                    ),
-                  ),
-                  Positioned(
-                    right: view.width * .10,
-                    bottom: view.height * .02,
-                    width: view.width * .42,
-                    height: view.height * .42,
-                    child: GestureDetector(
-                      onTap: inputReady ? onTapCharacter : null,
-                      child: _FeedbackMotion(
-                        correct: characterTapped,
-                        wrong: false,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          clipBehavior: Clip.none,
-                          children: [
-                            if (!characterTapped)
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: time.color.withValues(alpha: .50),
-                                      blurRadius: 26,
-                                      spreadRadius: 6,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            _LessonPictureAsset(
-                              asset: characterAsset,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_) => Icon(
-                                Icons.person_rounded,
-                                color: TudloColors.blue,
-                                size: view.width * .28,
-                              ),
-                            ),
-                            if (!characterTapped)
-                              Positioned(
-                                right: -view.width * .02,
-                                bottom: view.height * .05,
-                                child: const _FamilyTapCue(),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: GestureDetector(
+                onTap: inputReady ? onTapCharacter : null,
+                child: _ParkCharacterGreetingStage(
+                  time: time,
+                  characterAsset: characterAsset,
+                  greeting: time.greeting,
+                  showTapCue: !characterTapped,
+                  active: characterTapped,
+                ),
               ),
             ),
-            Row(
+            Column(
               children: [
                 for (final choice in _parkGreetingChoices)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: SizedBox(
+                      width: double.infinity,
                       child: _ParkGreetingCard(
                         label: choice.label,
                         correct:
@@ -5648,9 +5612,90 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
                   ),
               ],
             ),
+            if (time.id != 'morning') ...[
+              SizedBox(height: view.height * .01),
+              _ParkTimeReviewStrip(completedTimes: completedTimes),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ParkCharacterGreetingStage extends StatelessWidget {
+  final _ParkGreetingTime time;
+  final String characterAsset;
+  final String greeting;
+  final bool showTapCue;
+  final bool active;
+
+  const _ParkCharacterGreetingStage({
+    required this.time,
+    required this.characterAsset,
+    required this.greeting,
+    this.showTapCue = false,
+    this.active = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+          left: view.width * .01,
+          bottom: view.height * .03,
+          child: _LessonKokaMascot(
+            size: (view.width * .34).clamp(124.0, 176.0),
+            mood: KokaMood.idle,
+          ),
+        ),
+        Positioned(
+          right: view.width * .02,
+          bottom: view.height * .02,
+          width: view.width * .42,
+          height: view.height * .40,
+          child: _FeedbackMotion(
+            correct: active,
+            wrong: false,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                _LessonPictureAsset(
+                  asset: characterAsset,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_) => Icon(
+                    Icons.person_rounded,
+                    color: TudloColors.blue,
+                    size: view.width * .28,
+                  ),
+                ),
+                if (showTapCue)
+                  Positioned(
+                    right: -view.width * .01,
+                    bottom: view.height * .045,
+                    child: const _FamilyTapCue(),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: view.width * .25,
+          right: view.width * .25,
+          bottom: view.height * .19,
+          child: _ParkGreetingCard(
+            label: greeting,
+            correct: active,
+            wrong: false,
+            enabled: false,
+            onTap: () {},
+          ),
+        ),
+      ],
     );
   }
 }
@@ -5806,6 +5851,8 @@ class _G2ParkGreetingMatchStep extends StatelessWidget {
                             hidden: usedGreetingIds.contains(choice.id),
                             wrong: wrongGreetingId == choice.id,
                             enabled: inputReady,
+                            onAcceptTime: (timeId) =>
+                                onMatch(choice.id, timeId),
                             onTap: () => onTapGreeting(choice.id),
                           ),
                           SizedBox(height: view.height * .018),
@@ -5847,6 +5894,8 @@ class _G2ParkGreetingRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
+        stickerAsset:
+            'assets/images/lesson-sticker/Tudlo_Panamyaw_1_Greeting_Star_Completion_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n1'),
         message: 'Kabalo ka na mag-greet sa nagkalain-lain nga tion!',
         onDone: onDone,
@@ -5858,48 +5907,76 @@ class _G2ParkGreetingRewardStep extends StatelessWidget {
 class _ParkTimeCard extends StatelessWidget {
   final _ParkGreetingTime time;
   final bool selected;
+  final bool checked;
 
-  const _ParkTimeCard({required this.time, required this.selected});
+  const _ParkTimeCard({
+    required this.time,
+    required this.selected,
+    this.checked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFFE8FFD8) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: selected ? TudloColors.green : const Color(0xFFD8E8F6),
-          width: 3,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .13),
-            blurRadius: 9,
-            offset: const Offset(0, 5),
+    return _FeedbackMotion(
+      correct: checked || selected,
+      wrong: false,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _LessonPictureAsset(
+            asset: time.stickerAsset,
+            fit: BoxFit.contain,
+            errorBuilder: (_) => Icon(time.icon, color: time.color, size: 58),
           ),
+          if (checked)
+            Positioned(
+              right: -4,
+              bottom: -4,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: TudloColors.green,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(time.icon, color: time.color, size: 34),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              time.localLabel,
-              style: GoogleFonts.nunito(
-                color: TudloColors.blue,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
+    );
+  }
+}
+
+class _ParkTimeReviewStrip extends StatelessWidget {
+  final Set<String> completedTimes;
+
+  const _ParkTimeReviewStrip({required this.completedTimes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final time in _parkGreetingTimes)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: SizedBox(
+                height: 64,
+                child: _ParkTimeCard(
+                  time: time,
+                  selected: false,
+                  checked: completedTimes.contains(time.id),
+                ),
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -6043,7 +6120,7 @@ class _ParkTimeDropTarget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locked = greetingId != null;
-    return DragTarget<String>(
+    final card = DragTarget<String>(
       onWillAcceptWithDetails: (_) => inputReady && !locked,
       onAcceptWithDetails: (details) {
         unawaited(onAccept(details.data));
@@ -6102,6 +6179,16 @@ class _ParkTimeDropTarget extends StatelessWidget {
         );
       },
     );
+    if (locked || !inputReady) return card;
+    return Draggable<String>(
+      data: time.id,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(width: 120, child: card),
+      ),
+      childWhenDragging: Opacity(opacity: .36, child: card),
+      child: card,
+    );
   }
 }
 
@@ -6110,6 +6197,7 @@ class _DraggableGreetingCard extends StatelessWidget {
   final bool hidden;
   final bool wrong;
   final bool enabled;
+  final Future<void> Function(String timeId) onAcceptTime;
   final VoidCallback onTap;
 
   const _DraggableGreetingCard({
@@ -6117,20 +6205,27 @@ class _DraggableGreetingCard extends StatelessWidget {
     required this.hidden,
     required this.wrong,
     required this.enabled,
+    required this.onAcceptTime,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final child = AnimatedOpacity(
-      duration: const Duration(milliseconds: 160),
-      opacity: hidden ? .22 : 1,
-      child: _ParkGreetingCard(
-        label: choice.label,
-        correct: hidden,
-        wrong: wrong,
-        enabled: enabled && !hidden,
-        onTap: onTap,
+    final child = DragTarget<String>(
+      onWillAcceptWithDetails: (_) => enabled && !hidden,
+      onAcceptWithDetails: (details) {
+        unawaited(onAcceptTime(details.data));
+      },
+      builder: (context, _, __) => AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: hidden ? .22 : 1,
+        child: _ParkGreetingCard(
+          label: choice.label,
+          correct: hidden,
+          wrong: wrong,
+          enabled: enabled && !hidden,
+          onTap: onTap,
+        ),
       ),
     );
     if (hidden || !enabled) return child;
@@ -6177,11 +6272,11 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
     extends State<_GradeTwoUnitTwoLessonTwoParkDialogueFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _backgroundAsset =
-      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+      'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg';
   static const _anaAsset =
-      'assets/images/level_game/grade2/people/Tudlo_Ana_Full_Body_Character_1.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Full_Body_Character_Facing_Left.svg';
   static const _anaSmileAsset =
-      'assets/images/level_game/grade2/people/Tudlo_Ana_Correct_Response_Smiling.svg';
+      'assets/images/level_game/grade2/people/Tudlo_Ana_Half_Body_Eyes_Closed_Smiling.svg';
   static const _benchAsset =
       'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Park_Wooden_Bench_Exact.svg';
   static const _dialogueOrder = ['how_are_you', 'fine_thank_you'];
@@ -6997,6 +7092,8 @@ class _G2ParkDialogueRewardStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       child: _StickerUnlockRewardContent(
+        stickerAsset:
+            'assets/images/lesson-sticker/Tudlo_Panamyaw_2_Dialogue_Star_Completion_Sticker.svg',
         fallback: const _FamilyReferenceBadge(label: 'PANAMYAW\n2'),
         message: 'Nahimo mo ang bug-os nga greeting exchange!',
         onDone: onDone,
@@ -7240,7 +7337,7 @@ class _GradeTwoTalkBuildSolveLessonState
       return _g2BirthdayWithoutAnaBackground;
     }
     if (widget.content.unitNumber == 2) {
-      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+      return 'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg';
     }
     return _g2ClassroomWithoutAnaBackground;
   }
@@ -11300,12 +11397,14 @@ class _LessonOneRewardStep extends StatelessWidget {
 }
 
 class _StickerUnlockRewardContent extends StatefulWidget {
+  final String? stickerAsset;
   final Widget fallback;
   final String message;
   final String buttonLabel;
   final VoidCallback onDone;
 
   const _StickerUnlockRewardContent({
+    this.stickerAsset,
     required this.fallback,
     required this.message,
     this.buttonLabel = 'OK',
@@ -11319,7 +11418,8 @@ class _StickerUnlockRewardContent extends StatefulWidget {
 
 class _StickerUnlockRewardContentState
     extends State<_StickerUnlockRewardContent> {
-  late final String _selectedStickerAsset = _randomLessonStickerAsset();
+  late final String _selectedStickerAsset =
+      widget.stickerAsset ?? _randomLessonStickerAsset();
 
   @override
   Widget build(BuildContext context) {
@@ -31070,7 +31170,7 @@ String _lessonCompleteBackgroundAsset(int level) {
       return _g2BirthdayWithoutAnaBackground;
     }
     if (unit == 2) {
-      return 'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
+      return 'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg';
     }
     return 'assets/images/level_game/backgrounds/classroom.svg';
   }
