@@ -619,15 +619,27 @@ class _DetailsPanel extends StatelessWidget {
             width: 294,
             child: Divider(height: 1, thickness: 1, color: Colors.black),
           ),
+          // Just one label, not two -- there's only ever one bar below,
+          // and it shows `energy` (the level the learner picked for
+          // themselves during onboarding, static thereafter -- nothing
+          // in the app ever changes it again). Previously this said "hil
+          // progress" / "eng progress" side by side, implying two
+          // separate Hiligaynon/English progress metrics that don't
+          // exist; the percentage on the right is the same number the
+          // bar visualizes, for a quick read without counting segments.
           const Positioned(
             left: 23,
             top: 47,
-            child: Text('hil progress', style: TextStyle(fontSize: 12)),
+            child: Text('energy', style: TextStyle(fontSize: 12)),
           ),
-          const Positioned(
+          Positioned(
             right: 20,
             top: 47,
-            child: Text('eng progress', style: TextStyle(fontSize: 12)),
+            child: Text(
+              '$energy%',
+              key: const Key('learner-card-energy-value'),
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
           Positioned(
             left: 23,
@@ -684,8 +696,14 @@ class _SegmentedProgress extends StatelessWidget {
   final Color trackColor;
   final Color inactiveColor;
 
+  static const _segmentCount = 20;
+
   @override
   Widget build(BuildContext context) {
+    // Same 0-100 clamp convention as HomeEnergyIndicator, so this bar and
+    // the home screen's energy indicator always agree on what a given
+    // energy value looks like.
+    final filledCount = (value.clamp(0, 100) / 100 * _segmentCount).round();
     return Semantics(
       label: '$value percent learning energy',
       child: Container(
@@ -698,19 +716,19 @@ class _SegmentedProgress extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Row(
           children: [
-            for (var index = 0; index < 20; index++) ...[
+            for (var index = 0; index < _segmentCount; index++) ...[
               Expanded(
                 child: SizedBox.expand(
                   child: DecoratedBox(
                     key: Key('learner-card-progress-segment-$index'),
                     decoration: BoxDecoration(
-                      color: inactiveColor,
+                      color: index < filledCount ? color : inactiveColor,
                       borderRadius: BorderRadius.circular(1.5),
                     ),
                   ),
                 ),
               ),
-              if (index != 19) const SizedBox(width: 1.25),
+              if (index != _segmentCount - 1) const SizedBox(width: 1.25),
             ],
           ],
         ),

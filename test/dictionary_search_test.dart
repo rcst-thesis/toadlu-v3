@@ -30,6 +30,57 @@ const _pool = [
   ),
 ];
 
+const _autocompletePool = [
+  DictionaryEntry(
+    id: 'balay',
+    word: 'balay',
+    phonetic: '/ba-lay/',
+    definition: 'n. house.',
+    example: 'test',
+    category: 'home',
+  ),
+  DictionaryEntry(
+    id: 'balita',
+    word: 'balita',
+    phonetic: '/ba-li-ta/',
+    definition: 'n. news.',
+    example: 'test',
+    category: 'general',
+  ),
+  DictionaryEntry(
+    id: 'bag-o',
+    word: 'bag-o',
+    phonetic: '/bag-o/',
+    definition: 'adj. new.',
+    example: 'test',
+    category: 'descriptions',
+  ),
+  DictionaryEntry(
+    id: 'adobo',
+    word: 'adóbo',
+    phonetic: '/a-do-bo/',
+    definition: 'n. meat cooked in vinegar.',
+    example: 'test',
+    category: 'food',
+  ),
+  DictionaryEntry(
+    id: 'atis',
+    word: 'atis',
+    phonetic: '/a-tis/',
+    definition: 'n. custard-apple.',
+    example: 'test',
+    category: 'food',
+  ),
+  DictionaryEntry(
+    id: 'atubangan',
+    word: 'atubangan',
+    phonetic: '/a-tu-ban-gan/',
+    definition: 'n. in front of.',
+    example: 'test',
+    category: 'general',
+  ),
+];
+
 void main() {
   group('normalizeForSearch', () {
     test('strips accents', () {
@@ -133,6 +184,89 @@ void main() {
 
     test('empty query returns nothing', () {
       expect(closestWordMatches('', _pool), isEmpty);
+    });
+  });
+
+  group('autocompleteSuggestion', () {
+    test('empty typed text returns nothing', () {
+      expect(autocompleteSuggestion('', _autocompletePool), isNull);
+    });
+
+    test('returns the remaining suffix of the shortest matching word', () {
+      // "balay" (5) and "balita" (6) both start with "bal" -- the shorter,
+      // less-presumptuous completion wins.
+      expect(autocompleteSuggestion('bal', _autocompletePool), 'ay');
+      // "atis" (4) and "atubangan" (9) both start with "at".
+      expect(autocompleteSuggestion('at', _autocompletePool), 'is');
+    });
+
+    test('breaks ties between equal-length words alphabetically', () {
+      const pool = [
+        DictionaryEntry(
+          id: 'baya',
+          word: 'baya',
+          phonetic: '/ba-ya/',
+          definition: 'n. test.',
+          example: 'test',
+          category: 'test',
+        ),
+        DictionaryEntry(
+          id: 'bayo',
+          word: 'bayo',
+          phonetic: '/ba-yo/',
+          definition: 'n. test.',
+          example: 'test',
+          category: 'test',
+        ),
+      ];
+      // Both are 4 letters starting with "ba" -- "baya" sorts first.
+      expect(autocompleteSuggestion('ba', pool), 'ya');
+    });
+
+    test('is accent-insensitive but returns the real suffix with accents', () {
+      // Typed plain "ado" should still suggest the rest of "adóbo",
+      // accent included, since only matching is accent-insensitive.
+      expect(autocompleteSuggestion('ado', _autocompletePool), 'bo');
+    });
+
+    test('keeps the typed text\'s separators/casing out of the comparison', () {
+      // "bag-o" (5 chars incl. hyphen) vs typed "bag" (3) -- a genuine
+      // prefix match once accents are stripped (no hyphen-dropping here,
+      // unlike normalizeForSearch, so this only works because "bag" really
+      // is a literal prefix of "bag-o").
+      expect(autocompleteSuggestion('bag', _autocompletePool), '-o');
+    });
+
+    test('returns null when nothing is a plausible completion', () {
+      expect(autocompleteSuggestion('zzz', _autocompletePool), isNull);
+    });
+
+    test('returns null once the typed text already equals a whole word', () {
+      expect(autocompleteSuggestion('balay', _autocompletePool), isNull);
+    });
+  });
+
+  group('indexLetterFor', () {
+    test('accented vowels merge into their plain letter\'s bucket', () {
+      expect(indexLetterFor('ádlaw'), 'A');
+      expect(indexLetterFor('íwat'), 'I');
+      expect(indexLetterFor('óras'), 'O');
+      expect(indexLetterFor('úbra'), 'U');
+    });
+
+    test('plain words return their own uppercase first letter', () {
+      expect(indexLetterFor('balay'), 'B');
+      expect(indexLetterFor('Abril'), 'A');
+    });
+
+    test('leading punctuation is skipped in favor of the first real letter',
+        () {
+      expect(indexLetterFor("'iwat"), 'I');
+    });
+
+    test('a word with no letters at all falls back to #', () {
+      expect(indexLetterFor("'-"), '#');
+      expect(indexLetterFor(''), '#');
     });
   });
 }

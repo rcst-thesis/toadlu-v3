@@ -2638,14 +2638,6 @@ abstract final class DictionaryWords {
       category: 'colors',
     ),
     DictionaryEntry(
-      id: 'iwat',
-      word: '\'iwat',
-      phonetic: '/\'iw-at/',
-      definition: 'v. Again; repeat.',
-      example: 'Gusto ko mag\'iwat.',
-      category: 'actions',
-    ),
-    DictionaryEntry(
       id: 'iya',
       word: 'iya',
       phonetic: '/iy-a/',

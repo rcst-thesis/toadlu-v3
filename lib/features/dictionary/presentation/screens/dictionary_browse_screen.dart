@@ -14,7 +14,6 @@ import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_bento_
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_category_chips.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_content_footer.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_header.dart';
-import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_letter_index.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_lookup_page.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_search_bar.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_stroked_text.dart';
@@ -55,6 +54,7 @@ class DictionaryBrowseScreen extends StatefulWidget {
 
 class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   var _query = '';
   String? _selectedCategory;
   DictionaryEntry? _selectedEntry;
@@ -67,11 +67,27 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
   List<String> _featuredIds = const [];
   var _resolvedFeatured = false;
 
+  // _filtered/_groupedByCategory/_suggestions/_ghostSuggestion used to be
+  // plain getters re-scanning the whole ~940-entry pool on every build --
+  // including builds triggered by things that don't change their inputs at
+  // all (focus changes, category taps, selecting a word). Caching them and
+  // only recomputing when the actual input (query/category/focus/cursor)
+  // changes turns a keystroke from ~4 full-pool scans into 1-2.
+  var _filtered = const <DictionaryEntry>[];
+  var _groupedByCategory = const <String, List<DictionaryEntry>>{};
+  var _suggestions = const <DictionaryEntry>[];
+  String? _ghostSuggestion;
+
   @override
   void initState() {
     super.initState();
     _selectedEntry = widget.initialEntry;
+    _recomputeFilter();
+    _recomputeGhostSuggestion();
     _searchController.addListener(_handleQueryChanged);
+    // Ghost-text autocomplete only makes sense while the field is actually
+    // focused -- rebuild so it disappears the moment focus leaves.
+    _searchFocusNode.addListener(_handleFocusChanged);
   }
 
   @override
@@ -125,12 +141,20 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
   void dispose() {
     _searchController.removeListener(_handleQueryChanged);
     _searchController.dispose();
+    _searchFocusNode.removeListener(_handleFocusChanged);
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
+  void _handleFocusChanged() => setState(_recomputeGhostSuggestion);
+
   void _handleQueryChanged() {
     final query = _searchController.text.trim().toLowerCase();
-    setState(() => _query = query);
+    setState(() {
+      _query = query;
+      _recomputeFilter();
+      _recomputeGhostSuggestion();
+    });
     if (query.isEmpty) {
       _trackedQueryCategories = {};
       return;
@@ -171,7 +195,10 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
         LearnerScope.of(context).incrementCategorySearchCount(category),
       );
     }
-    setState(() => _selectedCategory = category);
+    setState(() {
+      _selectedCategory = category;
+      _recomputeFilter();
+    });
   }
 
   List<DictionaryEntry> get _featured {
@@ -185,30 +212,56 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
   List<String> get _categories =>
       {for (final e in widget.entries) e.category}.toList()..sort();
 
-  List<DictionaryEntry> get _filtered {
+  /// Recomputes [_filtered]/[_groupedByCategory]/[_suggestions] together --
+  /// call whenever [_query] or [_selectedCategory] actually changes (never
+  /// from `build()`; see the class doc comment above the cache fields).
+  void _recomputeFilter() {
     final category = _selectedCategory;
-    return widget.entries.where((entry) {
+    _filtered = widget.entries.where((entry) {
       final matchesCategory = category == null || entry.category == category;
       final matchesQuery = matchesSearch(entry.word, _query) ||
           matchesSearch(entry.definition, _query);
       return matchesCategory && matchesQuery;
     }).toList();
-  }
 
-  Map<String, List<DictionaryEntry>> get _groupedByCategory {
     final grouped = <String, List<DictionaryEntry>>{};
     for (final entry in _filtered) {
       grouped.putIfAbsent(entry.category, () => []).add(entry);
     }
-    return grouped;
+    _groupedByCategory = grouped;
+
+    // "Did you mean...?" picks for a typo'd search -- only computed when
+    // the query actually came up empty, so a normal successful search
+    // never pays for the extra edit-distance scan.
+    _suggestions = _query.isEmpty || _filtered.isNotEmpty
+        ? const []
+        : closestWordMatches(_query, widget.entries);
   }
 
-  /// "Did you mean...?" picks for a typo'd search -- only computed when the
-  /// query actually came up empty, so a normal successful search never
-  /// pays for the extra edit-distance scan.
-  List<DictionaryEntry> get _suggestions {
-    if (_query.isEmpty || _filtered.isNotEmpty) return const [];
-    return closestWordMatches(_query, widget.entries);
+  /// Recomputes [_ghostSuggestion] -- call whenever the typed text or focus
+  /// state actually changes (never from `build()`).
+  ///
+  /// Inline "ghost text" autocomplete suffix for whatever's currently typed
+  /// -- a pure spelling aid, not tappable/acceptable (see
+  /// `DictionarySearchBar.ghostSuggestion`). Deliberately uses the raw,
+  /// un-trimmed/un-lowercased `_searchController.text` (not [_query]) since
+  /// the invisible "typed" span it's laid over must pixel-match exactly
+  /// what's rendered in the real field, including case and a trailing
+  /// space mid-typing. Suppressed unless the field is focused with the
+  /// cursor collapsed at the very end -- showing a suffix anywhere else
+  /// would be visually wrong.
+  void _recomputeGhostSuggestion() {
+    if (!_searchFocusNode.hasFocus) {
+      _ghostSuggestion = null;
+      return;
+    }
+    final text = _searchController.text;
+    final selection = _searchController.selection;
+    if (text.isEmpty || selection.baseOffset != text.length) {
+      _ghostSuggestion = null;
+      return;
+    }
+    _ghostSuggestion = autocompleteSuggestion(text, widget.entries);
   }
 
   @override
@@ -224,103 +277,104 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
           final canvasWidth = math.min(viewport.maxWidth, 720.0);
           final scale = canvasWidth / DictionaryBrowseScreen._designWidth;
           final footerHeight = 48 * scale;
-          return SingleChildScrollView(
-            key: const Key('dictionary-browse-scroll-view'),
-            // ConstrainedBox(minHeight) + Stack/Positioned pins the footer
-            // to the actual bottom of the screen even when content is
-            // short (e.g. a single looked-up word), while still scrolling
-            // normally when content is taller than the viewport.
-            // (Deliberately not IntrinsicHeight here -- that combo crashes
-            // when the subtree contains scrollables like GridView/
-            // horizontal ListViews, which this screen's catalog/chips do.)
+          return Center(
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: viewport.maxHeight),
-              child: Stack(
-                children: [
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: canvasWidth),
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: 20 * scale,
-                          right: 20 * scale,
-                          top: dictionaryTopOffset(context, scale),
-                          bottom: 24 * scale + footerHeight,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (selected != null)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: _CompactBackButton(
+              constraints: BoxConstraints(maxWidth: canvasWidth),
+              // A CustomScrollView/slivers, not a SingleChildScrollView over
+              // a Column, so the catalog grid below (potentially hundreds of
+              // cards, unfiltered) only builds the cards actually near the
+              // viewport instead of all of them up front -- see
+              // _CategoryCardGrid.
+              child: CustomScrollView(
+                key: const Key('dictionary-browse-scroll-view'),
+                slivers: [
+                  _sliverBox(
+                    scale: scale,
+                    padding: EdgeInsets.only(
+                      left: 20 * scale,
+                      right: 20 * scale,
+                      top: dictionaryTopOffset(context, scale),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (selected != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: _CompactBackButton(
+                              key: const Key('dictionary-browse-back-pill'),
+                              onTap: _handleBack,
+                            ),
+                          )
+                        else ...[
+                          Center(
+                            child: DictionaryHeader(width: 220 * scale),
+                          ),
+                          SizedBox(height: 20 * scale),
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _BackPill(
                                   key: const Key(
                                     'dictionary-browse-back-pill',
                                   ),
                                   onTap: _handleBack,
                                 ),
-                              )
-                            else ...[
-                              Center(
-                                child: DictionaryHeader(width: 220 * scale),
-                              ),
-                              SizedBox(height: 20 * scale),
-                              IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    _BackPill(
-                                      key: const Key(
-                                        'dictionary-browse-back-pill',
-                                      ),
-                                      onTap: _handleBack,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: DictionarySearchBar(
+                                    controller: _searchController,
+                                    focusNode: _searchFocusNode,
+                                    ghostSuggestion: _ghostSuggestion,
+                                    fieldKey: const Key(
+                                      'dictionary-browse-search-field',
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: DictionarySearchBar(
-                                        controller: _searchController,
-                                        fieldKey: const Key(
-                                          'dictionary-browse-search-field',
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            SizedBox(height: 20 * scale),
-                            selected != null
-                                ? _SelectedWordView(entry: selected)
-                                : _BrowseListView(
-                                    featured: _featured,
-                                    categories: _categories,
-                                    selectedCategory: _selectedCategory,
-                                    onCategorySelected: _selectCategory,
-                                    grouped: _groupedByCategory,
-                                    isSearching: _query.isNotEmpty,
-                                    suggestions: _suggestions,
-                                    onSelect: _selectEntry,
-                                    allEntries: widget.entries,
                                   ),
-                          ],
-                        ),
-                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: 20 * scale),
+                      ],
                     ),
                   ),
-                  // Edge-to-edge, matching Home/Me's content footer (never
-                  // inset), but still width-capped on very wide screens.
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: canvasWidth),
-                        child: SizedBox(
-                          height: footerHeight,
-                          child: const DictionaryContentFooter(),
-                        ),
+                  if (selected != null)
+                    _sliverBox(
+                      scale: scale,
+                      child: _SelectedWordView(entry: selected),
+                    )
+                  else
+                    _BrowseListView(
+                      scale: scale,
+                      featured: _featured,
+                      categories: _categories,
+                      selectedCategory: _selectedCategory,
+                      onCategorySelected: _selectCategory,
+                      grouped: _groupedByCategory,
+                      isSearching: _query.isNotEmpty,
+                      suggestions: _suggestions,
+                      onSelect: _selectEntry,
+                    ),
+                  // Standard sliver idiom for "glue to the bottom of a
+                  // short page, otherwise sit right after long content":
+                  // when everything above is shorter than the viewport,
+                  // the leftover space plus Align pins the footer to the
+                  // true bottom; when it's taller, there's ~no leftover
+                  // space and the footer sits right after the content,
+                  // same as scrolling to the end today. (In the rare
+                  // case content's height lands within footerHeight of
+                  // the viewport's height, the footer can render
+                  // slightly short for that one layout -- a minor, rare
+                  // edge case.)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: SizedBox(
+                        height: footerHeight,
+                        child: const DictionaryContentFooter(),
                       ),
                     ),
                   ),
@@ -332,6 +386,22 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
       ),
     );
   }
+}
+
+/// Wraps [child] as a `SliverToBoxAdapter` with the horizontal side inset
+/// shared by every content sliver on this screen (scaled to match), so a
+/// plain box widget can sit directly in a `CustomScrollView`'s sliver list.
+/// [padding] overrides the default horizontal-only inset -- used once, for
+/// the very first sliver, which also carries the screen's top inset.
+Widget _sliverBox({
+  required Widget child,
+  required double scale,
+  EdgeInsets? padding,
+}) {
+  return SliverPadding(
+    padding: padding ?? EdgeInsets.symmetric(horizontal: 20 * scale),
+    sliver: SliverToBoxAdapter(child: child),
+  );
 }
 
 /// Styled identically to [DictionarySearchBar]'s own pill (same fill color,
@@ -423,6 +493,7 @@ class _SelectedWordView extends StatelessWidget {
 
 class _BrowseListView extends StatelessWidget {
   const _BrowseListView({
+    required this.scale,
     required this.featured,
     required this.categories,
     required this.selectedCategory,
@@ -431,9 +502,9 @@ class _BrowseListView extends StatelessWidget {
     required this.isSearching,
     required this.suggestions,
     required this.onSelect,
-    required this.allEntries,
   });
 
+  final double scale;
   final List<DictionaryEntry> featured;
   final List<String> categories;
   final String? selectedCategory;
@@ -447,105 +518,119 @@ class _BrowseListView extends StatelessWidget {
   final List<DictionaryEntry> suggestions;
   final ValueChanged<DictionaryEntry> onSelect;
 
-  /// Full, unfiltered dataset -- the letter index browses everything,
-  /// independent of the category filter/search above it.
-  final List<DictionaryEntry> allEntries;
-
   @override
   Widget build(BuildContext context) {
-    return Column(
+    // A group of slivers under one key, not a single box widget -- keeps
+    // the existing find.byKey('dictionary-browse-list') presence/absence
+    // checks working while letting the catalog grid below be a real,
+    // lazily-built SliverGrid (see _CategoryCardGrid) instead of a Column
+    // child that forces every card to build immediately.
+    return SliverMainAxisGroup(
       key: const Key('dictionary-browse-list'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (!isSearching && featured.isNotEmpty) ...[
-          const DictionaryStrokedText(
-            'featured',
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-          const SizedBox(height: 8),
-          DictionaryBentoGrid(entries: featured, onTap: onSelect),
-          const SizedBox(height: 20),
-        ],
-        const DictionaryStrokedText(
-          'all words',
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-        const SizedBox(height: 8),
-        DictionaryCategoryChips(
-          categories: categories,
-          selected: selectedCategory,
-          onSelected: onCategorySelected,
-        ),
-        const SizedBox(height: 12),
-        if (grouped.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
+      slivers: [
+        if (!isSearching && featured.isNotEmpty)
+          _sliverBox(
+            scale: scale,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'no words found',
-                  style: TextStyle(
-                    fontFamily: 'ComicRelief',
-                    color: DictionaryColors.ink,
-                  ),
+                const DictionaryStrokedText(
+                  'featured',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-                if (suggestions.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                DictionaryBentoGrid(entries: featured, onTap: onSelect),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        _sliverBox(
+          scale: scale,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const DictionaryStrokedText(
+                'all words',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              const SizedBox(height: 8),
+              DictionaryCategoryChips(
+                categories: categories,
+                selected: selectedCategory,
+                onSelected: onCategorySelected,
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+        if (grouped.isEmpty)
+          _sliverBox(
+            scale: scale,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
                   const Text(
-                    'did you mean:',
+                    'no words found',
                     style: TextStyle(
                       fontFamily: 'ComicRelief',
-                      fontSize: 12,
                       color: DictionaryColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final entry in suggestions)
-                        _SuggestionChip(
-                          entry: entry,
-                          onTap: () => onSelect(entry),
-                        ),
-                    ],
-                  ),
+                  if (suggestions.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'did you mean:',
+                      style: TextStyle(
+                        fontFamily: 'ComicRelief',
+                        fontSize: 12,
+                        color: DictionaryColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final entry in suggestions)
+                          _SuggestionChip(
+                            entry: entry,
+                            onTap: () => onSelect(entry),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           )
         else
           for (final category in grouped.keys) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                category,
-                style: const TextStyle(
-                  fontFamily: 'ComicRelief',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: DictionaryColors.ink,
+            _sliverBox(
+              scale: scale,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  category,
+                  style: const TextStyle(
+                    fontFamily: 'ComicRelief',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: DictionaryColors.ink,
+                  ),
                 ),
               ),
             ),
             _CategoryCardGrid(
+              scale: scale,
               entries: grouped[category]!,
               onSelect: onSelect,
             ),
-            const SizedBox(height: 16),
+            _sliverBox(scale: scale, child: const SizedBox(height: 16)),
           ],
-        const SizedBox(height: 8),
-        const DictionaryStrokedText(
-          'browse by letter',
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-        const SizedBox(height: 8),
-        DictionaryLetterIndex(entries: allEntries, onSelect: onSelect),
       ],
     );
   }
@@ -586,29 +671,44 @@ class _SuggestionChip extends StatelessWidget {
   }
 }
 
+/// A real, lazily-built sliver grid -- only cards actually near the
+/// viewport (plus Flutter's small default cache-extent buffer) get built,
+/// unlike the `GridView.count(shrinkWrap: true, physics:
+/// NeverScrollableScrollPhysics())` this replaced, which forced every card
+/// in [entries] to build immediately regardless of what was visible (the
+/// root cause of the browse screen's initial-load lag with the full,
+/// unfiltered ~940-word catalog).
 class _CategoryCardGrid extends StatelessWidget {
-  const _CategoryCardGrid({required this.entries, required this.onSelect});
+  const _CategoryCardGrid({
+    required this.scale,
+    required this.entries,
+    required this.onSelect,
+  });
 
+  final double scale;
   final List<DictionaryEntry> entries;
   final ValueChanged<DictionaryEntry> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      key: const Key('dictionary-catalog-grid'),
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.1,
-      children: [
-        for (final entry in entries)
-          DictionaryWordGridCard(
-            entry: entry,
-            onTap: () => onSelect(entry),
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: 20 * scale),
+      sliver: SliverGrid(
+        key: const Key('dictionary-catalog-grid'),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.1,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, i) => DictionaryWordGridCard(
+            entry: entries[i],
+            onTap: () => onSelect(entries[i]),
           ),
-      ],
+          childCount: entries.length,
+        ),
+      ),
     );
   }
 }

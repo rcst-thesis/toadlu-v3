@@ -18,7 +18,23 @@ class NameScreen extends StatefulWidget {
 class _NameScreenState extends State<NameScreen> {
   final _nameController = TextEditingController();
   final _nameFocus = FocusNode();
+  // GlobalKey, not a plain Key -- this lets the same live TextField
+  // element (and its in-progress keyboard connection) move to a different
+  // parent in the tree (canvas slot <-> elevated overlay slot) without
+  // losing focus or state. See _buildNameField/_isEditing below.
+  final _nameFieldKey = GlobalKey();
   bool _voiceOverPlaying = false;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameFocus.addListener(_handleFocusChanged);
+  }
+
+  void _handleFocusChanged() {
+    setState(() => _isEditing = _nameFocus.hasFocus);
+  }
 
   Future<void> _playVoiceOver() async {
     if (_voiceOverPlaying) return;
@@ -39,6 +55,7 @@ class _NameScreenState extends State<NameScreen> {
 
   @override
   void dispose() {
+    _nameFocus.removeListener(_handleFocusChanged);
     _nameController.dispose();
     _nameFocus.dispose();
     super.dispose();
@@ -57,10 +74,64 @@ class _NameScreenState extends State<NameScreen> {
     );
   }
 
+  Widget _buildNameField() {
+    // KeyedSubtree carries the stable, findable ValueKey (used by
+    // existing tests/tooling); the GlobalKey underneath it is what lets
+    // the actual TextField element move between the canvas slot and the
+    // elevated overlay slot without losing focus/state -- GlobalKeys
+    // aren't meant to double as a public lookup key, so the two are kept
+    // separate deliberately.
+    return KeyedSubtree(
+      key: const Key('name-input'),
+      child: TextField(
+        key: _nameFieldKey,
+        controller: _nameController,
+        focusNode: _nameFocus,
+        autofocus: false,
+        textAlign: TextAlign.center,
+        textCapitalization: TextCapitalization.words,
+        textInputAction: TextInputAction.done,
+        autofillHints: const [AutofillHints.name],
+        maxLength: 24,
+        maxLines: 1,
+        onSubmitted: (_) => _continue(),
+        decoration: InputDecoration(
+          counterText: '',
+          hintText: 'isulat ang ngalan mo',
+          hintStyle: TextStyle(
+            color: Colors.black.withValues(alpha: 0.42),
+            fontSize: 18,
+          ),
+          filled: true,
+          fillColor: const Color(0xFFD9D9D9),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 22,
+            vertical: 19,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(21),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
+      // false -- the fixed-design canvas below is scaled uniformly via
+      // FittedBox; letting the Scaffold shrink its body when the keyboard
+      // opens would shrink that whole canvas along with it. Instead the
+      // canvas keeps its full size and the name field relocates itself
+      // above the keyboard (see _isEditing/_buildNameField) while a dim
+      // scrim covers everything else.
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Positioned.fill(
@@ -168,42 +239,15 @@ class _NameScreenState extends State<NameScreen> {
                             top: 488,
                             width: 352,
                             height: 67,
-                            child: TextField(
-                              key: const Key('name-input'),
-                              controller: _nameController,
-                              focusNode: _nameFocus,
-                              autofocus: false,
-                              textAlign: TextAlign.center,
-                              textCapitalization: TextCapitalization.words,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.name],
-                              maxLength: 24,
-                              maxLines: 1,
-                              onSubmitted: (_) => _continue(),
-                              decoration: InputDecoration(
-                                counterText: '',
-                                hintText: 'isulat ang ngalan mo',
-                                hintStyle: TextStyle(
-                                  color: Colors.black.withValues(alpha: 0.42),
-                                  fontSize: 18,
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFD9D9D9),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 22,
-                                  vertical: 19,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(21),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            // While editing, the real field is relocated
+                            // to the elevated overlay above the keyboard
+                            // (see build()'s outer Stack) -- an empty
+                            // placeholder of the same size holds this
+                            // slot's layout so nothing else in the canvas
+                            // shifts.
+                            child: _isEditing
+                                ? const SizedBox.shrink()
+                                : _buildNameField(),
                           ),
                           Positioned(
                             left: 30,
@@ -218,6 +262,30 @@ class _NameScreenState extends State<NameScreen> {
               ),
             ),
           ),
+          if (_isEditing) ...[
+            // Dims everything behind the elevated field while typing;
+            // tapping it unfocuses (dismissing the keyboard), which puts
+            // the field back in its normal canvas spot.
+            Positioned.fill(
+              child: GestureDetector(
+                key: const Key('name-field-scrim'),
+                behavior: HitTestBehavior.opaque,
+                onTap: _nameFocus.unfocus,
+                child: ColoredBox(
+                  color: Colors.black.withValues(alpha: 0.55),
+                ),
+              ),
+            ),
+            // Real screen coordinates (not the scaled canvas's design
+            // units) -- this is what makes it reliably sit above the
+            // keyboard regardless of how the canvas itself is scaled.
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              child: _buildNameField(),
+            ),
+          ],
           SafeArea(
             child: AdaptiveBackButtonPlacement(
               onPressed: () => Navigator.of(context).pop(),

@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: LayoutBuilder(
                           builder: (context, scene) {
                             final sceneScale =
-                                scene.maxWidth / _HomeSceneLayout.designWidth;
+                              scene.maxWidth / _HomeSceneLayout.designWidth;
                             return Stack(
                               children: [
                                 const Positioned.fill(
@@ -454,9 +454,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 left: canvasSideInset + (30 * topControlScale),
                 width: 78 * topControlScale,
                 height: 52 * topControlScale,
-                child: const FittedBox(
+                child: FittedBox(
                   fit: BoxFit.contain,
-                  child: HomeEnergyIndicator(),
+                  child: HomeEnergyIndicator(energy: _energy),
                 ),
               ),
             ],

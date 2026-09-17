@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -183,10 +184,23 @@ class _MapScreenState extends State<MapScreen> {
   }) {
     final scale = viewport.width / cropWidth;
     final cropHeight = viewport.height / scale;
-    final cropLeft =
-        (centerX - cropWidth / 2).clamp(0.0, _mapWidth - cropWidth);
+    // `_mapWidth - cropWidth`/`_mapHeight - cropHeight` are normally
+    // positive (the crop is smaller than the full map), but a transient
+    // viewport whose aspect ratio doesn't match `cropWidth` yet -- e.g. one
+    // frame mid orientation-change during the fullscreen toggle, where
+    // `viewport` still reflects the old portrait dimensions while framing
+    // is being computed for the new crop width -- can make the computed
+    // crop *taller/wider than the map itself*, driving these negative.
+    // `clamp(0.0, negative)` throws (lowerLimit > upperLimit), so floor
+    // the upper bound at 0.0: this just pins the crop to the map's
+    // top/left origin for that one bad frame instead of crashing: the
+    // next real layout recomputes a sane crop.
+    final cropLeft = (centerX - cropWidth / 2)
+        .clamp(0.0, math.max(0.0, _mapWidth - cropWidth))
+        .toDouble();
     final cropTop = (centerY - cropHeight * verticalAnchor)
-        .clamp(0.0, _mapHeight - cropHeight);
+        .clamp(0.0, math.max(0.0, _mapHeight - cropHeight))
+        .toDouble();
     return Matrix4.identity()
       ..scaleByDouble(scale, scale, scale, 1)
       ..translateByDouble(-cropLeft, -cropTop, 0, 1);
@@ -299,20 +313,43 @@ class _MapScreenState extends State<MapScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final viewport = Size(constraints.maxWidth, constraints.maxHeight);
-          if (_viewportSize != viewport) {
+          // A transient zero-size OR unbounded/infinite layout pass (e.g.
+          // mid orientation-change during the fullscreen toggle, or a
+          // moment where the Scaffold body gets unconstrained constraints)
+          // would otherwise divide by zero -- or by infinity, producing
+          // NaN -- in _framedOn's scale math and crash on the resulting
+          // clamp (NaN bounds make `lowerLimit <= upperLimit` false no
+          // matter what, which Dart's clamp rejects). isFinite catches
+          // both double.infinity and NaN, not just <= 0. Skip it and wait
+          // for the next, real layout -- don't cache this size in
+          // _viewportSize either, so that next real layout still counts as
+          // a change and triggers a proper re-framing.
+          final hasValidViewport = viewport.width.isFinite &&
+              viewport.height.isFinite &&
+              viewport.width > 0 &&
+              viewport.height > 0;
+          if (_viewportSize != viewport && hasValidViewport) {
             _viewportSize = viewport;
             _transformationController.value = _defaultFramingFor(viewport);
           }
           final cropWidth =
               _isFullscreen ? _fullscreenCropWidth : _portraitCropWidth;
+          // Same invalid-viewport case as above would otherwise produce a
+          // zero/non-finite minScale here, which InteractiveViewer asserts
+          // must be > 0 -- fall back to a harmless placeholder for this one
+          // transient frame; nothing is visible at zero/unbounded size
+          // anyway, and the next real layout recomputes everything
+          // properly.
           // The larger of the two fit ratios, so the map always fully
           // covers the viewport at the minimum zoom (never leaves a gap
           // exposing the Scaffold's background behind it).
-          final minScale =
-              viewport.width / _mapWidth > viewport.height / _mapHeight
+          final minScale = !hasValidViewport
+              ? 1.0
+              : viewport.width / _mapWidth > viewport.height / _mapHeight
                   ? viewport.width / _mapWidth
                   : viewport.height / _mapHeight;
-          final initialScale = viewport.width / cropWidth;
+          final initialScale =
+              hasValidViewport ? viewport.width / cropWidth : 1.0;
 
           return Stack(
             key: const Key('map-content-stack'),

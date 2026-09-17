@@ -523,6 +523,8 @@ void main() {
     expect(learnerName.style?.fontWeight, FontWeight.w700);
     expect(find.text('grade 2'), findsOneWidget);
     expect(find.bySemanticsLabel('80 percent learning energy'), findsOneWidget);
+    // energy: 80 out of 100 -> 16 of the 20 segments filled (grade 2's
+    // accent color), the rest inactive.
     for (var index = 0; index < 20; index++) {
       expect(
         find.byKey(Key('learner-card-progress-segment-$index')),
@@ -532,8 +534,25 @@ void main() {
         find.byKey(Key('learner-card-progress-segment-$index')),
       );
       final decoration = segment.decoration as BoxDecoration;
-      expect(decoration.color, const Color(0xFF8EA7BB));
+      expect(
+        decoration.color,
+        index < 16 ? const Color(0xFF3E75A6) : const Color(0xFF8EA7BB),
+      );
     }
+    // A single, honest "energy" label (plus the matching percentage) --
+    // not the old "hil progress" / "eng progress" pair, which implied two
+    // separate Hiligaynon/English progress metrics that neither the bar
+    // nor the rest of the app actually tracks.
+    expect(find.text('energy'), findsOneWidget);
+    expect(find.text('hil progress'), findsNothing);
+    expect(find.text('eng progress'), findsNothing);
+    expect(find.byKey(const Key('learner-card-energy-value')), findsOneWidget);
+    expect(
+      tester.widget<Text>(
+        find.byKey(const Key('learner-card-energy-value')),
+      ),
+      isA<Text>().having((text) => text.data, 'data', '80%'),
+    );
     final progressTrack = tester.getRect(
       find.byKey(const Key('learner-card-energy')),
     );
@@ -584,6 +603,41 @@ void main() {
         find.byKey(const Key('learner-card-continue-button')), findsOneWidget);
     expect(find.text('hop. hop. hop. lets gooo'), findsOneWidget);
     expect(find.text('yeheyy!'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'learner card energy bar fills proportionally, including exact '
+      'boundaries', (tester) async {
+    Color? segmentColorAt(int index) {
+      final segment = tester.widget<DecoratedBox>(
+        find.byKey(Key('learner-card-progress-segment-$index')),
+      );
+      return (segment.decoration as BoxDecoration).color;
+    }
+
+    // energy: 0 -> every segment inactive.
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: LearnerCardScreen(learnerName: 'Maya', grade: 2, energy: 0),
+      ),
+    );
+    await tester.pump();
+    for (var index = 0; index < 20; index++) {
+      expect(segmentColorAt(index), const Color(0xFF8EA7BB));
+    }
+
+    // energy: 100 -> every segment filled with the grade's accent color.
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: LearnerCardScreen(learnerName: 'Maya', grade: 2, energy: 100),
+      ),
+    );
+    await tester.pump();
+    for (var index = 0; index < 20; index++) {
+      expect(segmentColorAt(index), const Color(0xFF3E75A6));
+    }
+
     expect(tester.takeException(), isNull);
   });
 
@@ -792,6 +846,61 @@ void main() {
     await tester.tap(find.byKey(const Key('name-voice-over-button')));
     await tester.pumpAndSettle();
     expect(playCount, 1);
+  });
+
+  testWidgets(
+      'name field relocates above a dim scrim while focused, and returns '
+      'when dismissed, without losing typed text', (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: NameScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('name-field-scrim')), findsNothing);
+    final restingRect = tester.getRect(find.byKey(const Key('name-input')));
+
+    await tester.enterText(find.byKey(const Key('name-input')), 'Maya');
+    await tester.pump();
+
+    expect(find.byKey(const Key('name-field-scrim')), findsOneWidget);
+    final editingRect = tester.getRect(find.byKey(const Key('name-input')));
+    expect(editingRect, isNot(equals(restingRect)));
+    expect(
+      tester
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(const Key('name-input')),
+              matching: find.byType(TextField),
+            ),
+          )
+          .controller!
+          .text,
+      'Maya',
+    );
+
+    await tester.tap(find.byKey(const Key('name-field-scrim')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('name-field-scrim')), findsNothing);
+    expect(
+      tester.getRect(find.byKey(const Key('name-input'))),
+      restingRect,
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(const Key('name-input')),
+              matching: find.byType(TextField),
+            ),
+          )
+          .controller!
+          .text,
+      'Maya',
+    );
   });
 
   testWidgets('load cards keep two columns and horizontal button labels',

@@ -4,12 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/features/dictionary/domain/dictionary_entry.dart';
+import 'package:tudlo/features/dictionary/domain/dictionary_words.dart';
 import 'package:tudlo/features/dictionary/presentation/screens/dictionary_browse_screen.dart';
 import 'package:tudlo/features/dictionary/presentation/screens/dictionary_screen.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_bento_grid.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_header.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_heart_icon.dart';
 import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_lookup_page.dart';
+import 'package:tudlo/features/dictionary/presentation/widgets/dictionary_word_grid_card.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 
 /// A small, fixed dataset for these widget tests -- deliberately not
@@ -295,6 +297,23 @@ void main() {
   });
 
   testWidgets(
+      'The full, unfiltered catalog only builds cards near the viewport '
+      '(regression: shrinkWrap + NeverScrollableScrollPhysics previously '
+      'forced all ~940 cards to build immediately on first open)',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    // The real, full dataset -- not the small test fixture -- since the
+    // bug only manifests with a catalog large enough that eagerly building
+    // every card is actually expensive.
+    await tester.pumpWidget(_wrap(const DictionaryBrowseScreen(), controller));
+    await tester.pumpAndSettle();
+
+    final builtCards = find.byType(DictionaryWordGridCard).evaluate().length;
+    expect(builtCards, lessThan(DictionaryWords.all.length));
+  });
+
+  testWidgets(
       'Selecting a word in the browse screen shows its card inline, without leaving the screen',
       (tester) async {
     await setLargeViewport(tester);
@@ -344,6 +363,160 @@ void main() {
     );
     // Featured section hides while actively searching.
     expect(find.byType(DictionaryBentoGrid), findsNothing);
+  });
+
+  testWidgets(
+      'Clearing a search restores the full catalog '
+      '(regression: filtered/grouped results were cached, must not go stale)',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      'ido',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('dictionary-catalog-card-balay')),
+      findsNothing,
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      '',
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('dictionary-catalog-card-balay')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('dictionary-catalog-card-ido')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Typing a prefix shows a faded inline autocomplete suggestion',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
+    await tester.pumpAndSettle();
+
+    // "balay" is the only fixture word starting with "bal".
+    await tester.enterText(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      'bal',
+    );
+    await tester.pumpAndSettle();
+
+    final ghost = tester.widget<Text>(
+      find.byKey(const Key('dictionary-search-ghost-text')),
+    );
+    final spans = (ghost.textSpan! as TextSpan).children!.cast<TextSpan>();
+    expect(spans[0].text, 'bal');
+    expect(spans[1].text, 'ay');
+  });
+
+  testWidgets(
+      'The autocomplete suggestion disappears once the query exactly matches a word',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      'balay',
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('dictionary-search-ghost-text')),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+      'The search field keeps its live element (and keyboard connection) '
+      'when the ghost suggestion appears and disappears mid-typing '
+      '(regression: swapping between a bare TextField and a Stack-wrapped '
+      "one tore down the field's keyboard connection, dismissing the "
+      'keyboard out from under the learner)', (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
+    await tester.pumpAndSettle();
+
+    final fieldFinder = find.byKey(const Key('dictionary-browse-search-field'));
+
+    // "bal" has a plausible completion ("balay") -- ghost text shows.
+    await tester.enterText(fieldFinder, 'bal');
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('dictionary-search-ghost-text')),
+      findsOneWidget,
+    );
+    final editableTextBefore = tester.state<EditableTextState>(
+      find.descendant(of: fieldFinder, matching: find.byType(EditableText)),
+    );
+
+    // "balay" exactly matches -- ghost text disappears, changing the
+    // search bar's internal tree shape.
+    await tester.enterText(fieldFinder, 'balay');
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('dictionary-search-ghost-text')),
+      findsNothing,
+    );
+
+    final editableTextAfter = tester.state<EditableTextState>(
+      find.descendant(of: fieldFinder, matching: find.byType(EditableText)),
+    );
+    expect(
+      identical(editableTextBefore, editableTextAfter),
+      isTrue,
+      reason: "the search field's element must survive the ghost text "
+          'toggling on and off, not be torn down and recreated',
+    );
+  });
+
+  testWidgets(
+      'The decoy search bar on the main screen never shows an autocomplete suggestion',
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(
+        _wrap(const DictionaryScreen(entries: _testEntries), controller));
+    await tester.pumpAndSettle();
+
+    // Decoy bar is readOnly -- enterText can't actually put text in it, but
+    // confirm there's no ghost-text layer at all regardless.
+    expect(
+      find.byKey(const Key('dictionary-search-ghost-text')),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -637,43 +810,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets(
-      'Letter index is collapsible: tapping a letter expands it, tapping again collapses it',
-      (tester) async {
-    await setLargeViewport(tester);
-    final controller = await _controllerWithProfile();
-    await tester.pumpWidget(
-        _wrap(const DictionaryScreen(entries: _testEntries), controller));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const Key('dictionary-search-bar-tap')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('dictionary-letter-panel')), findsNothing);
-
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('dictionary-letter-chip-B')),
-      300,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const Key('dictionary-browse-scroll-view')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.tap(find.byKey(const Key('dictionary-letter-chip-B')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('dictionary-letter-panel')), findsOneWidget);
-    expect(
-      find.byKey(const Key('dictionary-letter-entry-balay')),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byKey(const Key('dictionary-letter-chip-B')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('dictionary-letter-panel')), findsNothing);
   });
 
   testWidgets(

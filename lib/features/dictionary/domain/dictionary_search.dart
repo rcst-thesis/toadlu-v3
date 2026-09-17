@@ -84,6 +84,77 @@ bool matchesSearch(String haystack, String query) {
   return normalizeForSearch(haystack).contains(normalizeForSearch(query));
 }
 
+/// Lowercases and strips accents only -- unlike [normalizeForSearch], does
+/// *not* drop separators or fold phonetically-similar letters together.
+/// Two uses need exactly this, neither the fuzzier one:
+/// [autocompleteSuggestion] needs a strict, position-aligned prefix match
+/// against the literal characters still in the search field (so the
+/// remaining suffix it returns lines up character-for-character with what's
+/// already typed); [indexLetterFor] and the A-Z letter index's sort need
+/// "how a human alphabetizes this," which cares about accents (á sorts
+/// with a, not off in its own bucket after z) but not about separators or
+/// phonetic near-misses (kan-on should still sort near kanon-shaped words,
+/// not have its hyphen silently deleted from the comparison).
+String stripAccentsLower(String input) {
+  final buffer = StringBuffer();
+  for (final rune in input.toLowerCase().runes) {
+    final char = String.fromCharCode(rune);
+    buffer.write(_diacriticMap[char] ?? char);
+  }
+  return buffer.toString();
+}
+
+/// The A-Z index "letter" [word] should be filed under: its first actual
+/// letter, accents stripped and uppercased (so "ádlaw" files under "A",
+/// not a separate "Á" bucket off at the end of the alphabet) -- skipping
+/// any leading punctuation, so "'iwat" files under "I", not its own
+/// punctuation-mark bucket. Falls back to `'#'` if [word] has no letters at
+/// all.
+String indexLetterFor(String word) {
+  for (final rune in word.runes) {
+    final char = String.fromCharCode(rune).toLowerCase();
+    final normalized = _diacriticMap[char] ?? char;
+    final code = normalized.codeUnitAt(0);
+    if (normalized.length == 1 && code >= 97 && code <= 122) {
+      return normalized.toUpperCase();
+    }
+  }
+  return '#';
+}
+
+/// The inline "ghost text" completion for [typed] -- the remaining
+/// characters (in the matched word's real spelling/casing) of whichever
+/// pool word looks like the most plausible completion, or `null` if
+/// [typed] is empty or nothing in [pool] is a plausible completion.
+///
+/// Matching is a case-insensitive, accent-stripped *prefix* match (see
+/// [stripAccentsLower]) -- deliberately stricter than [matchesSearch]'s
+/// fuzzy substring matching, since this is meant to visually continue what
+/// the learner already typed, not surface a loosely-related word. Among
+/// every word that's a plausible completion, the shortest one wins (the
+/// least presumptuous guess), ties broken alphabetically for a
+/// deterministic pick.
+String? autocompleteSuggestion(String typed, List<DictionaryEntry> pool) {
+  if (typed.isEmpty) return null;
+  final normalizedTyped = stripAccentsLower(typed);
+
+  DictionaryEntry? best;
+  for (final entry in pool) {
+    final word = entry.word;
+    if (word.length <= typed.length) continue;
+    final normalizedWord = stripAccentsLower(word);
+    if (!normalizedWord.startsWith(normalizedTyped)) continue;
+
+    if (best == null ||
+        word.length < best.word.length ||
+        (word.length == best.word.length && word.compareTo(best.word) < 0)) {
+      best = entry;
+    }
+  }
+
+  return best?.word.substring(typed.length);
+}
+
 /// Levenshtein (edit) distance between [a] and [b]: the minimum number of
 /// single-character insertions, deletions, or substitutions to turn one
 /// into the other. Classic dynamic-programming implementation, O(a.length *

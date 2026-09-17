@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudlo/tudlo.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_energy_indicator.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart';
 
 void main() {
@@ -483,6 +484,55 @@ void main() {
     expect(find.byKey(const Key('home-energy-indicator')), findsOneWidget);
     expect(find.byKey(const Key('home-energy-label')), findsOneWidget);
     expect(find.text('60%'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Home energy indicator on the real Home screen reflects a non-default '
+      'energy value', (tester) async {
+    // Regression: HomeEnergyIndicator() was constructed with no `energy:`
+    // argument at its call site in HomeScreen, so it silently always used
+    // its own default (60) no matter what the learner's real energy was.
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 30)));
+
+    expect(find.text('30%'), findsOneWidget);
+    expect(find.text('60%'), findsNothing);
+    for (var index = 0; index < 3; index++) {
+      expect(find.byKey(Key('home-energy-bar-$index')), findsOneWidget);
+    }
+    expect(find.byKey(const Key('home-energy-bar-3')), findsNothing);
+  });
+
+  testWidgets(
+      'Home energy indicator fills a number of bars proportional to energy '
+      '(one bar per 10%)', (tester) async {
+    Future<void> pumpEnergy(int energy) => tester.pumpWidget(
+          MaterialApp(home: HomeEnergyIndicator(energy: energy)),
+        );
+
+    // 0/10 bars.
+    await pumpEnergy(0);
+    expect(find.byKey(const Key('home-energy-bar-0')), findsNothing);
+
+    // 5/10 bars (50%).
+    await pumpEnergy(50);
+    for (var index = 0; index < 5; index++) {
+      expect(find.byKey(Key('home-energy-bar-$index')), findsOneWidget);
+    }
+    expect(find.byKey(const Key('home-energy-bar-5')), findsNothing);
+
+    // 10/10 bars (100%).
+    await pumpEnergy(100);
+    for (var index = 0; index < 10; index++) {
+      expect(find.byKey(Key('home-energy-bar-$index')), findsOneWidget);
+    }
+
+    // Out-of-range values still clamp sanely instead of over/under-filling.
+    await pumpEnergy(150);
+    for (var index = 0; index < 10; index++) {
+      expect(find.byKey(Key('home-energy-bar-$index')), findsOneWidget);
+    }
+
     expect(tester.takeException(), isNull);
   });
 
