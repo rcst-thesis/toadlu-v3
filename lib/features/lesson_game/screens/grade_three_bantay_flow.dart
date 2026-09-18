@@ -17,7 +17,7 @@ const _bantayRoot =
 const _bantayBackgroundRoot =
     'assets/images/level_game/backgrounds/grade3_landscape';
 const _bantayEvents = ['missing', 'clue', 'found'];
-const _bantayStickerRoot = 'assets/images/lesson-sticker';
+const _bantayStickerRoot = 'assets/images/stickers/rewards/home';
 const List<String> _bantayRewardStickerAssets = [
   '$_bantayStickerRoot/farm-home-sticker.svg',
   '$_bantayStickerRoot/park-home-sticker.svg',

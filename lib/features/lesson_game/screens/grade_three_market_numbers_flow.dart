@@ -18,7 +18,7 @@ const String _fruitStall = '$_marketRoot/stalls/Stall_Fruit_Empty.svg';
 const String _vendor = '$_marketRoot/people/Vendor_Female.svg';
 const String _apple = 'assets/images/level_game/apple.png';
 const String _crate = '$_marketRoot/inventory/Produce_Crate_Empty.svg';
-const String _marketStickerRoot = 'assets/images/lesson-sticker';
+const String _marketStickerRoot = 'assets/images/stickers/rewards/home';
 const List<String> _marketRewardStickerAssets = [
   '$_marketStickerRoot/farm-home-sticker.svg',
   '$_marketStickerRoot/park-home-sticker.svg',

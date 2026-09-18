@@ -24,7 +24,7 @@ import 'grade_three_bantay_flow.dart';
 import 'grade_three_market_numbers_flow.dart';
 
 const int _lessonQuizCount = 5;
-const String _lessonStickerAssetRoot = 'assets/images/lesson-sticker';
+const String _lessonStickerAssetRoot = 'assets/images/stickers/rewards/home';
 const String _g2ClassroomWithoutAnaBackground =
     'assets/images/level_game/grade2/backgrounds/Tudlo_Classroom_Background_Without_Ana.svg';
 const String _g2BirthdayWithoutAnaBackground =
