@@ -40,7 +40,10 @@ class AppData {
   static bool developerMode = false;
   static int dailyWordDemoOffset = 0;
   static GradeLevel selectedGradeLevel = GradeLevel.grade1;
+  static int? activeLessonLevel;
+  static int? lessonDashboardFocusLevel;
   static final Map<int, int> levelStars = {};
+  static final Map<int, String> lessonStickers = {};
   static final Map<String, LessonScoreStats> lessonScores = {};
   static final Set<int> completedLevels = {};
 
@@ -176,6 +179,7 @@ class AppData {
     streakDays = profile.streakDays;
     lastDailyStreakDate = profile.lastDailyStreakDate;
     selectedGradeLevel = profile.parsedGrade;
+    lessonDashboardFocusLevel = null;
     mapHelpDone = profile.mapHelpDone;
     unlockedLevel = profile.unlockedLevel.clamp(1, maxLevel);
     currentEnergy = profile.currentEnergy.clamp(0, maxEnergy).toInt();
@@ -183,6 +187,9 @@ class AppData {
     levelStars
       ..clear()
       ..addAll(profile.levelStars);
+    lessonStickers
+      ..clear()
+      ..addAll(profile.lessonStickers);
     lessonScores
       ..clear()
       ..addAll(profile.lessonScores);
@@ -199,6 +206,7 @@ class AppData {
       lastDailyStreakDate: lastDailyStreakDate,
       currentEnergy: currentEnergy,
       levelStars: Map<int, int>.from(levelStars),
+      lessonStickers: Map<int, String>.from(lessonStickers),
       lessonScores: Map<String, LessonScoreStats>.from(lessonScores),
       completedLevels: Set<int>.from(completedLevels),
       mapHelpDone: mapHelpDone,
@@ -209,9 +217,11 @@ class AppData {
     streakDays = 0;
     lastDailyStreakDate = null;
     unlockedLevel = 1;
+    lessonDashboardFocusLevel = null;
     currentEnergy = maxEnergy;
     _lastEnergyAt = DateTime.now();
     levelStars.clear();
+    lessonStickers.clear();
     lessonScores.clear();
     completedLevels.clear();
     mapHelpDone = false;

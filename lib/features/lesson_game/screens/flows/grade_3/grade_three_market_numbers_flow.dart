@@ -18,18 +18,7 @@ const String _fruitStall = '$_marketRoot/stalls/Stall_Fruit_Empty.svg';
 const String _vendor = '$_marketRoot/people/Vendor_Female.svg';
 const String _apple = 'assets/images/level_game/apple.png';
 const String _crate = '$_marketRoot/inventory/Produce_Crate_Empty.svg';
-const String _marketStickerRoot = 'assets/images/stickers/rewards/home';
-const List<String> _marketRewardStickerAssets = [
-  '$_marketStickerRoot/farm-home-sticker.svg',
-  '$_marketStickerRoot/park-home-sticker.svg',
-  '$_marketStickerRoot/market-home-sticker.svg',
-  '$_marketStickerRoot/church-home-sticker.svg',
-  '$_marketStickerRoot/school-home-sticker.svg',
-  '$_marketStickerRoot/cat-home-sticker.svg',
-  '$_marketStickerRoot/mother-home-sticker.svg',
-  '$_marketStickerRoot/house-home-sticker.svg',
-  '$_marketStickerRoot/dog-home-sticker.svg',
-];
+const Duration _marketCompletionHold = Duration(seconds: 3);
 
 enum _MarketState {
   intro,
@@ -52,11 +41,13 @@ enum _MarketState {
 class GradeThreeMarketNumbersFlow extends StatefulWidget {
   final VoidCallback onExit;
   final VoidCallback onLessonComplete;
+  final String rewardStickerAsset;
 
   const GradeThreeMarketNumbersFlow({
     super.key,
     required this.onExit,
     required this.onLessonComplete,
+    required this.rewardStickerAsset,
   });
 
   @override
@@ -87,10 +78,7 @@ class _GradeThreeMarketNumbersFlowState
   bool _stallOpened = false;
   bool _rewardCollected = false;
   bool _completedCallbackSent = false;
-  late final String _rewardStickerAsset =
-      _marketRewardStickerAssets[math.Random().nextInt(
-        _marketRewardStickerAssets.length,
-      )];
+  late final String _rewardStickerAsset = widget.rewardStickerAsset;
 
   double get _progress =>
       (_MarketState.values.indexOf(_state) + 1) / _MarketState.values.length;
@@ -340,6 +328,8 @@ class _GradeThreeMarketNumbersFlowState
     await _save();
     if (!mounted) return;
     setState(() => _busy = false);
+    await Future<void>.delayed(_marketCompletionHold);
+    if (!mounted) return;
     await _go(_MarketState.reward, voice: false);
   }
 

@@ -17,18 +17,6 @@ const _bantayRoot =
 const _bantayBackgroundRoot =
     'assets/images/level_game/backgrounds/grade3_landscape';
 const _bantayEvents = ['missing', 'clue', 'found'];
-const _bantayStickerRoot = 'assets/images/stickers/rewards/home';
-const List<String> _bantayRewardStickerAssets = [
-  '$_bantayStickerRoot/farm-home-sticker.svg',
-  '$_bantayStickerRoot/park-home-sticker.svg',
-  '$_bantayStickerRoot/market-home-sticker.svg',
-  '$_bantayStickerRoot/church-home-sticker.svg',
-  '$_bantayStickerRoot/school-home-sticker.svg',
-  '$_bantayStickerRoot/cat-home-sticker.svg',
-  '$_bantayStickerRoot/mother-home-sticker.svg',
-  '$_bantayStickerRoot/house-home-sticker.svg',
-  '$_bantayStickerRoot/dog-home-sticker.svg',
-];
 
 enum _BantayStage {
   house,
@@ -49,12 +37,14 @@ class GradeThreeBantayFlow extends StatefulWidget {
   final VoidCallback onLessonComplete;
   final VoidCallback onBackToMap;
   final VoidCallback onContinue;
+  final String rewardStickerAsset;
   const GradeThreeBantayFlow({
     super.key,
     required this.onExit,
     required this.onLessonComplete,
     required this.onBackToMap,
     required this.onContinue,
+    required this.rewardStickerAsset,
   });
   @override
   State<GradeThreeBantayFlow> createState() => _GradeThreeBantayFlowState();
@@ -79,10 +69,7 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
   Set<String> _nudging = {};
   int _voiceGeneration = 0;
   Set<String> _voiceAssets = {};
-  late final String _rewardStickerAsset =
-      _bantayRewardStickerAssets[math.Random().nextInt(
-        _bantayRewardStickerAssets.length,
-      )];
+  late final String _rewardStickerAsset = widget.rewardStickerAsset;
   bool get _sequenceCorrect =>
       _slots.indexed.every((e) => e.$2 == _bantayEvents[e.$1]);
   String get _location => switch (_stage) {

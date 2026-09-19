@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
-import 'package:tudloapp/features/lesson_game/screens/grade_three_bantay_flow.dart';
+import 'package:tudloapp/features/lesson_game/screens/flows/grade_3/grade_three_bantay_flow.dart';
 
 const saveKey = 'bantay.g3.u2.l2.1.guest';
 
@@ -61,6 +61,8 @@ void main() {
               onLessonComplete: () {},
               onBackToMap: () {},
               onContinue: () {},
+              rewardStickerAsset:
+                  'assets/images/stickers/rewards/home/dog-home-sticker.svg',
             ),
           ),
         ),

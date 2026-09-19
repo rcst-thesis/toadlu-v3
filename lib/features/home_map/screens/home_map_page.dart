@@ -261,11 +261,10 @@ class _HomeMapPageState extends State<HomeMapPage> {
   @override
   void initState() {
     super.initState();
-    _selectedUnitNumber = AppData.unitForLevel(
-      AppData.firstUnlockedIncompleteLevel,
-    ).number;
-    _selectedLessonIndex =
-        AppData.lessonNumberForLevel(AppData.firstUnlockedIncompleteLevel) - 1;
+    final initialLevel = _initialDashboardLevel();
+    final initialUnit = AppData.unitForLevel(initialLevel);
+    _selectedUnitNumber = initialUnit.number;
+    _selectedLessonIndex = AppData.lessonNumberForLevel(initialLevel) - 1;
     _lessonCarouselController = PageController(
       viewportFraction: .88,
       initialPage: _selectedLessonIndex,
@@ -276,6 +275,17 @@ class _HomeMapPageState extends State<HomeMapPage> {
     });
   }
 
+  int _initialDashboardLevel() {
+    final focused = AppData.lessonDashboardFocusLevel;
+    if (focused != null &&
+        focused >= 1 &&
+        focused <= AppData.maxLevel &&
+        AppData.isLevelUnlocked(focused)) {
+      return focused;
+    }
+    return AppData.firstUnlockedIncompleteLevel;
+  }
+
   @override
   void dispose() {
     _scrollController
@@ -284,6 +294,11 @@ class _HomeMapPageState extends State<HomeMapPage> {
     _lessonCarouselController.dispose();
     unawaited(AppAudioService.instance.stopVoice());
     super.dispose();
+  }
+
+  void _stopLessonCardVoice() {
+    _lastLessonCardVoiceAsset = null;
+    unawaited(AppAudioService.instance.stopVoice());
   }
 
   String? _lessonCardVoiceAssetForLevel(int level) {
@@ -374,6 +389,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
   Future<void> _startLevel(int level) async {
     if (_launchingLevel) return;
     if (!AppData.isProductionLessonAvailable(level)) return;
+    AppData.lessonDashboardFocusLevel = level;
+    _stopLessonCardVoice();
     _launchingLevel = true;
     // Start button in the level popup:
     // Refresh real-time energy before gating access. If the learner has less
@@ -416,6 +433,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
     if (selected == null || selected == _selectedUnitNumber) return;
     final unit = AppData.unitForNumber(selected);
     if (!AppData.isLevelUnlocked(unit.startLevel)) return;
+    _stopLessonCardVoice();
+    AppData.lessonDashboardFocusLevel = unit.startLevel;
     setState(() {
       _selectedUnitNumber = selected;
       _selectedLessonIndex = 0;
@@ -429,6 +448,8 @@ class _HomeMapPageState extends State<HomeMapPage> {
     final unit = AppData.unitForNumber(_selectedUnitNumber);
     final next = (_selectedLessonIndex + delta).clamp(0, unit.lessonCount - 1);
     if (next == _selectedLessonIndex) return;
+    _stopLessonCardVoice();
+    AppData.lessonDashboardFocusLevel = unit.startLevel + next;
     _lessonCarouselController.animateToPage(
       next,
       duration: const Duration(milliseconds: 360),
@@ -568,10 +589,16 @@ class _HomeMapPageState extends State<HomeMapPage> {
                           selectedIndex: selectedLessonIndex,
                           launching: _launchingLevel,
                           onPageChanged: (index) {
+                            _stopLessonCardVoice();
+                            final level = unit.startLevel + index;
+                            AppData.lessonDashboardFocusLevel = level;
                             setState(() => _selectedLessonIndex = index);
                             unawaited(_playSelectedLessonCardVoice());
                           },
                           onCenterCard: (index) {
+                            _stopLessonCardVoice();
+                            AppData.lessonDashboardFocusLevel =
+                                unit.startLevel + index;
                             _lessonCarouselController.animateToPage(
                               index,
                               duration: const Duration(milliseconds: 320),
