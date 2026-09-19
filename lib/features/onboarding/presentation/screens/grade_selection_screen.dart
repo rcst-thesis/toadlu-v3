@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/energy_setter_screen.dart';
+import 'package:tudlo/features/onboarding/presentation/widgets/onboarding_koka_greeting.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
@@ -271,16 +272,12 @@ class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
                               ),
                             ),
                           ),
-                          Positioned(
+                          const Positioned(
                             left: 167,
                             top: 309,
                             width: 78,
                             height: 108,
-                            child: Image.asset(
-                              'assets/images/name_character.png',
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.high,
-                            ),
+                            child: OnboardingKokaGreeting(),
                           ),
                           for (final index in sideCards)
                             _AnimatedGradeCard(

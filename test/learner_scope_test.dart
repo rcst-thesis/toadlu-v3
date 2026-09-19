@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
+import 'package:tudlo/features/settings/domain/app_settings.dart';
 
 void main() {
   setUp(() {
@@ -73,5 +74,64 @@ void main() {
 
     expect(controller.profile, isNull);
     expect((await controller.loadLastUsedProfile())?.name, 'Anna');
+  });
+
+  test('createAndSave seeds settings from initialSettings when given',
+      () async {
+    const seeded = AppSettings(
+      language: AppLanguage.english,
+      masterVolume: 30,
+      musicEnabled: false,
+      musicVolume: 30,
+      sfxEnabled: false,
+      sfxVolume: 30,
+      voiceEnabled: false,
+      voiceVolume: 30,
+      ambientAnimationsEnabled: false,
+      performanceQuality: PerformanceQuality.batterySaver,
+      lessonRemindersEnabled: false,
+    );
+    final controller = LearnerController();
+
+    await controller.createAndSave(
+      name: 'Anna',
+      grade: 1,
+      energy: 60,
+      initialSettings: seeded,
+    );
+
+    expect(controller.profile!.settings.language, AppLanguage.english);
+    expect(controller.profile!.settings.masterVolume, 30);
+    expect(
+      controller.profile!.settings.performanceQuality,
+      PerformanceQuality.batterySaver,
+    );
+  });
+
+  test(
+      'createAndSave without initialSettings falls back to AppSettings.defaults',
+      () async {
+    final controller = LearnerController();
+
+    await controller.createAndSave(name: 'Anna', grade: 1, energy: 60);
+
+    expect(
+        controller.profile!.settings.language, AppSettings.defaults.language);
+  });
+
+  test('updateSettings replaces the current learner\'s settings and persists',
+      () async {
+    final controller = LearnerController();
+    await controller.createAndSave(name: 'Anna', grade: 1, energy: 60);
+
+    await controller.updateSettings(
+      controller.profile!.settings.copyWith(language: AppLanguage.english),
+    );
+
+    expect(controller.profile!.settings.language, AppLanguage.english);
+
+    final fresh = LearnerController();
+    await fresh.loadSaved();
+    expect(fresh.profile!.settings.language, AppLanguage.english);
   });
 }

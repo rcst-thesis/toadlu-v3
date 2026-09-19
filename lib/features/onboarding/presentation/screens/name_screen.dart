@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/grade_selection_screen.dart';
+import 'package:tudlo/features/onboarding/presentation/widgets/onboarding_koka_greeting.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 import 'package:tudlo/shared/widgets/rive_long_button.dart';
 
@@ -221,17 +222,16 @@ class _NameScreenState extends State<NameScreen> {
                               ),
                             ),
                           ),
-                          Positioned(
+                          const Positioned(
                             left: 167,
                             top: 325,
                             width: 77,
                             height: 103,
-                            child: Image.asset(
-                              'assets/images/name_character.png',
-                              fit: BoxFit.fill,
-                              filterQuality: FilterQuality.high,
-                              semanticLabel: 'Koka character',
-                            ),
+                            // `contain`, not `fill` -- unlike the old
+                            // static placeholder image, stretching Rive's
+                            // own artwork non-uniformly visibly distorts
+                            // the character.
+                            child: OnboardingKokaGreeting(),
                           ),
                           Positioned(
                             left: 29,

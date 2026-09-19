@@ -340,21 +340,24 @@ void main() {
 
     expect(find.byKey(const Key('grade-selected-card-1')), findsOneWidget);
     expect(find.text('Grade one kana subong?'), findsOneWidget);
+    // Bounded pumps, not pumpAndSettle -- the onboarding Koka greeting now
+    // loops continuously (see OnboardingKokaGreeting), so this screen
+    // never settles.
     await tester.tap(find.byKey(const Key('grade-next-button')));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byKey(const Key('grade-selected-card-2')), findsOneWidget);
     expect(find.text('Grade two kana subong?'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('grade-next-button')));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byKey(const Key('grade-selected-card-3')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('grade-next-button')));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byKey(const Key('grade-selected-card-1')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('grade-previous-button')));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byKey(const Key('grade-selected-card-3')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -392,13 +395,13 @@ void main() {
         tester.getTopLeft(find.byKey(const Key('grade-intro-bubble'))).dy;
     expect(headingBottom, lessThan(introBubbleTop));
     await tester.tap(find.byKey(const Key('grade-intro-voice-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(introPlays, 1);
 
     await tester.tap(find.byKey(const Key('grade-next-button')));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.byKey(const Key('grade-selection-voice-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(spokenGrade, 2);
   });
 
@@ -412,11 +415,12 @@ void main() {
     expect(find.text('grade 3 na ako'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('grade-selected-card-1')));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(GradeSelectionScreen), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('grade-1-select-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(EnergySetterScreen), findsOneWidget);
   });
 
@@ -441,10 +445,10 @@ void main() {
     final energyText = tester.widget<Text>(find.text('60%'));
     expect(energyText.style?.fontSize, 40);
     await tester.tap(find.byKey(const Key('energy-plus-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(find.text('70%'), findsOneWidget);
     await tester.tap(find.byKey(const Key('energy-minus-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(find.text('60%'), findsOneWidget);
     expect(find.byType(SingleChildScrollView), findsNothing);
     expect(tester.takeException(), isNull);
@@ -463,7 +467,7 @@ void main() {
     );
 
     await tester.tap(find.byKey(const Key('energy-voice-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(plays, 1);
   });
 
@@ -890,7 +894,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
 
       await tester.pumpWidget(const MaterialApp(home: NameScreen()));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
       final nameBack = paintedRect(
         find.byKey(const Key('load-back-button')),
       );
@@ -927,12 +931,12 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.textContaining('gusto ni koka ma bal an'), findsOneWidget);
     expect(find.textContaining('hey, hey, hey! abyan'), findsOneWidget);
     await tester.tap(find.byKey(const Key('name-voice-over-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(playCount, 1);
   });
 
@@ -945,7 +949,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MaterialApp(home: NameScreen()));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byKey(const Key('name-field-scrim')), findsNothing);
     final restingRect = tester.getRect(find.byKey(const Key('name-input')));
@@ -970,7 +974,7 @@ void main() {
     );
 
     await tester.tap(find.byKey(const Key('name-field-scrim')));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byKey(const Key('name-field-scrim')), findsNothing);
     expect(
@@ -1235,7 +1239,9 @@ void main() {
           home: GradeSelectionScreen(learnerName: 'A longer learner name'),
         ),
       );
-      await tester.pumpAndSettle();
+      // Bounded pump, not pumpAndSettle -- the onboarding Koka greeting
+      // loops continuously.
+      await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull, reason: 'Grade selector at $size');
 
       await tester.pumpWidget(
@@ -1246,7 +1252,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull, reason: 'Energy setter at $size');
     }
 

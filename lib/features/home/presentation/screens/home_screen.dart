@@ -110,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openSettings(BuildContext context) {
     Navigator.of(context).push(
       FadePageRoute<void>(
-        page: const SettingsScreen(),
+        page: const SettingsScreen(insideLearnerProfile: true),
       ),
     );
   }

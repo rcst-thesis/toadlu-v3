@@ -379,8 +379,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home settings button opens the existing Settings destination',
-      (tester) async {
+  testWidgets(
+      'Home settings button opens the Settings category picker, which leads '
+      'to the animation toggle under Display & Performance', (tester) async {
     final animationController = AppAnimationController();
     await tester.pumpWidget(
       AppAnimationScope(
@@ -397,7 +398,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('animations'), findsOneWidget);
+    final displayPerformanceCard =
+        find.byKey(const Key('settings-category-display-performance'));
+    expect(displayPerformanceCard, findsOneWidget);
+    await tester.ensureVisible(displayPerformanceCard);
+    await tester.tap(find.text('Display & Performance'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Halt Animations'), findsOneWidget);
     expect(find.byKey(const Key('settings-animation-switch')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -411,6 +420,15 @@ void main() {
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
+
+    final displayPerformanceCard =
+        find.byKey(const Key('settings-category-display-performance'));
+    await tester.ensureVisible(displayPerformanceCard);
+    await tester.tap(find.text('Display & Performance'));
+    // pumpAndSettle, not a fixed pump -- expanding also scrolls the panel
+    // into view (settings_screen.dart's _scrollExpandedPanelIntoView),
+    // and tapping mid-scroll can miss the toggle entirely as it moves.
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('settings-animation-switch')));
     await tester.pump();

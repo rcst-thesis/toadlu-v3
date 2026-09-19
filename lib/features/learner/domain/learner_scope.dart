@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'package:tudlo/features/learner/domain/learner_profile.dart';
 import 'package:tudlo/features/learner/domain/learner_repository.dart';
+import 'package:tudlo/features/settings/domain/app_settings.dart';
 
 /// The app's one current [LearnerProfile], if any, and the single place
 /// that creates/updates/persists it. `profile` is `null` until either
@@ -38,10 +39,19 @@ class LearnerController extends ChangeNotifier {
   /// current immediately (so the rest of the app sees it right away), then
   /// best-effort persists it -- a failed save shouldn't block finishing
   /// onboarding, it just means the profile won't survive a restart.
+  ///
+  /// [initialSettings] seeds the new learner's own `LearnerProfile.settings`
+  /// -- pass the current device-wide `AppSettingsController.settings` at
+  /// the call site so a brand new learner starts from whatever was already
+  /// configured at the main menu. This is a one-time copy, not a live
+  /// link: once created, the learner's settings are fully independent from
+  /// the device-wide ones and from every other learner's own copy. Omit it
+  /// to fall back to [AppSettings.defaults].
   Future<void> createAndSave({
     required String name,
     required int grade,
     required int energy,
+    AppSettings? initialSettings,
   }) async {
     final created = LearnerProfile(
       id: LearnerRepository.generateId(),
@@ -49,6 +59,7 @@ class LearnerController extends ChangeNotifier {
       grade: grade,
       energy: energy,
       createdAt: DateTime.now(),
+      settings: initialSettings ?? AppSettings.defaults,
     );
     _profile = created;
     notifyListeners();
@@ -121,6 +132,45 @@ class LearnerController extends ChangeNotifier {
     }
     try {
       await _repository.deleteProfile(id);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
+  /// Updates the current learner's energy level (10-100, in 10% steps --
+  /// same range/step as onboarding's energy setter) and best-effort
+  /// persists it. This is the "parent controlled" value the Learning &
+  /// Energy settings panel edits, and what Home's lesson panel reads to
+  /// cap how many lessons are available today
+  /// (`home_lesson_panel.dart`'s `_availableLessons`). A no-op if there's
+  /// no current learner yet.
+  Future<void> setEnergy(int energy) async {
+    final current = _profile;
+    if (current == null) return;
+    final updated = current.copyWith(energy: energy);
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
+  /// Replaces the current learner's own [AppSettings] (language, volumes,
+  /// animation/quality preferences, lesson reminders) and best-effort
+  /// persists it. This is what General/Sound & Voice/Display &
+  /// Performance/Learning & Energy's "Lesson Reminders" write to while
+  /// `insideLearnerProfile` is true, instead of the device-wide
+  /// `AppSettingsController`. A no-op if there's no current learner yet.
+  Future<void> updateSettings(AppSettings settings) async {
+    final current = _profile;
+    if (current == null) return;
+    final updated = current.copyWith(settings: settings);
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
     } catch (_) {
       // Best-effort, same as createAndSave.
     }

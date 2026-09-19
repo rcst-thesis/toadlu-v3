@@ -93,7 +93,9 @@ class _MeScreenState extends State<MeScreen> {
 
   void _openSettings(BuildContext context) {
     Navigator.of(context).push(
-      FadePageRoute<void>(page: const SettingsScreen()),
+      FadePageRoute<void>(
+        page: const SettingsScreen(insideLearnerProfile: true),
+      ),
     );
   }
 
@@ -300,6 +302,11 @@ class _LogoutConfirmationDialog extends StatelessWidget {
   static const _pearlShadow = Color(0xFFCFE0C2);
   static const _tintGreen = Color(0xFFA9D98E);
   static const _tintGreenDepth = Color(0xFF7CAD5F);
+  // Labels softened to match: plain white reads too harsh on a pastel
+  // button, and the app's usual vivid red is jarring against this calmer
+  // palette -- a deep, muted version of each button's own hue instead.
+  static const _tintGreenLabel = Color(0xFF3E6B2C);
+  static const _softRed = Color(0xFFC9615F);
 
   @override
   Widget build(BuildContext context) {
@@ -349,6 +356,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                       fontSize: 14,
                       frontColor: _tintGreen,
                       depthColor: _tintGreenDepth,
+                      labelColor: _tintGreenLabel,
                       onPressed: () => Navigator.pop(context, false),
                     ),
                   ),
@@ -361,7 +369,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                       fontSize: 14,
                       frontColor: _tintGreen,
                       depthColor: _tintGreenDepth,
-                      labelColor: const Color(0xFFFF5260),
+                      labelColor: _softRed,
                       onPressed: () => Navigator.pop(context, true),
                     ),
                   ),

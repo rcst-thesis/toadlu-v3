@@ -8,6 +8,7 @@ import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/home/presentation/screens/home_loading_screen.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
 import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
@@ -55,6 +56,7 @@ class LearnerCardScreen extends StatelessWidget {
         name: learnerName,
         grade: grade,
         energy: energy,
+        initialSettings: AppSettingsScope.of(context).settings,
       ),
     );
     Navigator.of(context).pushAndRemoveUntil(

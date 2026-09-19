@@ -1,3 +1,5 @@
+import 'package:tudlo/features/settings/domain/app_settings.dart';
+
 /// A saved learner: everything onboarding collects, plus progression data
 /// that accumulates afterward (lessons, stickers, badges, streak, and which
 /// map locations an event has permanently unlocked).
@@ -27,6 +29,7 @@ class LearnerProfile {
     this.featuredIds = const [],
     this.featuredDate,
     this.featuredHistory = const {},
+    this.settings = AppSettings.defaults,
   });
 
   final String id;
@@ -61,7 +64,15 @@ class LearnerProfile {
   final DateTime? featuredDate;
   final Set<String> featuredHistory;
 
+  /// This learner's own Settings values (language, volumes, animation/
+  /// quality preferences, lesson reminders) -- seeded once from the
+  /// device-wide `AppSettingsController` at creation
+  /// (`LearnerController.createAndSave`'s `initialSettings` param), then
+  /// fully independent from it and from every other learner's own copy.
+  final AppSettings settings;
+
   LearnerProfile copyWith({
+    int? energy,
     int? lessonsFinished,
     int? stickersEarned,
     int? badgesEarned,
@@ -75,12 +86,13 @@ class LearnerProfile {
     List<String>? featuredIds,
     DateTime? featuredDate,
     Set<String>? featuredHistory,
+    AppSettings? settings,
   }) {
     return LearnerProfile(
       id: id,
       name: name,
       grade: grade,
-      energy: energy,
+      energy: energy ?? this.energy,
       createdAt: createdAt,
       lessonsFinished: lessonsFinished ?? this.lessonsFinished,
       stickersEarned: stickersEarned ?? this.stickersEarned,
@@ -95,6 +107,7 @@ class LearnerProfile {
       featuredIds: featuredIds ?? this.featuredIds,
       featuredDate: featuredDate ?? this.featuredDate,
       featuredHistory: featuredHistory ?? this.featuredHistory,
+      settings: settings ?? this.settings,
     );
   }
 
@@ -117,6 +130,7 @@ class LearnerProfile {
         'featuredIds': featuredIds,
         'featuredDate': featuredDate?.toIso8601String(),
         'featuredHistory': featuredHistory.toList(),
+        'settings': settings.toJson(),
       };
 
   factory LearnerProfile.fromJson(Map<String, Object?> json) {
@@ -156,6 +170,9 @@ class LearnerProfile {
       featuredHistory: (json['featuredHistory'] as List<Object?>? ?? const [])
           .cast<String>()
           .toSet(),
+      settings: json['settings'] != null
+          ? AppSettings.fromJson(json['settings']! as Map<String, Object?>)
+          : AppSettings.defaults,
     );
   }
 }
