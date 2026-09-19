@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
-import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_badge_collection.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_collections_header.dart';
@@ -289,6 +288,19 @@ class _MeScreenState extends State<MeScreen> {
 class _LogoutConfirmationDialog extends StatelessWidget {
   const _LogoutConfirmationDialog();
 
+  // Pearl white with a faint green tint, not the same bright green fill as
+  // the onboarding reset dialog -- log out reads as a calmer, lighter
+  // moment than a destructive reset. The shadow/border and the buttons all
+  // share this one softer, tinted-green family instead of the app's usual
+  // vivid green, so the whole card reads as one coherent palette -- a
+  // deeper shade of the card's own pearl white, the same "flat shadow is a
+  // darker tint of the card's own fill" convention used elsewhere (e.g.
+  // SaveCard).
+  static const _pearlWhite = Color(0xFFF4F9EE);
+  static const _pearlShadow = Color(0xFFCFE0C2);
+  static const _tintGreen = Color(0xFFA9D98E);
+  static const _tintGreenDepth = Color(0xFF7CAD5F);
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -298,13 +310,15 @@ class _LogoutConfirmationDialog extends StatelessWidget {
           key: const Key('me-logout-dialog'),
           width: 304,
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
-          decoration: BoxDecoration(
-            color: const Color(0xFF98EF6F),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.darkGreen, width: 1.5),
-            boxShadow: const [
+          decoration: const BoxDecoration(
+            color: _pearlWhite,
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+            border: Border.fromBorderSide(
+              BorderSide(color: _pearlShadow, width: 1.5),
+            ),
+            boxShadow: [
               BoxShadow(
-                color: AppColors.darkGreen,
+                color: _pearlShadow,
                 offset: Offset(0, 8),
                 blurRadius: 0,
               ),
@@ -333,8 +347,8 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                       label: 'cancel',
                       height: 44,
                       fontSize: 14,
-                      frontColor: AppColors.green,
-                      depthColor: AppColors.darkGreen,
+                      frontColor: _tintGreen,
+                      depthColor: _tintGreenDepth,
                       onPressed: () => Navigator.pop(context, false),
                     ),
                   ),
@@ -345,8 +359,8 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                       label: 'log out',
                       height: 44,
                       fontSize: 14,
-                      frontColor: AppColors.green,
-                      depthColor: AppColors.darkGreen,
+                      frontColor: _tintGreen,
+                      depthColor: _tintGreenDepth,
                       labelColor: const Color(0xFFFF5260),
                       onPressed: () => Navigator.pop(context, true),
                     ),

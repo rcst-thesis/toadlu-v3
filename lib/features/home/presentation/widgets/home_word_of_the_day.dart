@@ -10,16 +10,20 @@ import 'package:tudlo/shared/widgets/tilt_thumbnail_tile.dart';
 class HomeWordOfTheDay extends StatefulWidget {
   const HomeWordOfTheDay({
     this.word = 'balay',
-    this.definition = 'naga istar ako sa akong balay',
-    this.initiallyFavorited = false,
+    this.example = 'naga istar ako sa akong balay',
+    required this.isFavorited,
     this.onFavoriteChanged,
     this.onPronunciationRequested = _placeholderPronunciation,
     super.key,
   });
 
   final String word;
-  final String definition;
-  final bool initiallyFavorited;
+  final String example;
+
+  /// Whether this word is currently favorited -- driven by the caller
+  /// (the real, shared favorites set), not local state, so this card can
+  /// never drift from it.
+  final bool isFavorited;
   final ValueChanged<bool>? onFavoriteChanged;
 
   /// Inject the real pronunciation player here when its VO is available.
@@ -44,16 +48,12 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
 
   Timer? _heartFeedbackTimer;
   Timer? _speakerFeedbackTimer;
-  late bool _isFavorited = widget.initiallyFavorited;
   var _heartPopped = false;
   var _speakerPressed = false;
 
   void _toggleFavorite() {
-    setState(() {
-      _isFavorited = !_isFavorited;
-      _heartPopped = true;
-    });
-    widget.onFavoriteChanged?.call(_isFavorited);
+    setState(() => _heartPopped = true);
+    widget.onFavoriteChanged?.call(!widget.isFavorited);
     _heartFeedbackTimer?.cancel();
     _heartFeedbackTimer = Timer(_feedbackDuration, () {
       if (mounted) setState(() => _heartPopped = false);
@@ -81,7 +81,7 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
   Widget build(BuildContext context) {
     return Semantics(
       key: const Key('home-word-of-the-day'),
-      label: 'Word of the day: ${widget.word}. ${widget.definition}',
+      label: 'Word of the day: ${widget.word}. ${widget.example}',
       child: AspectRatio(
         aspectRatio: _artboardWidth / _artboardHeight,
         child: LayoutBuilder(
@@ -171,7 +171,7 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
                       autoFit: true,
                     ),
                     SvgCardText(
-                      text: widget.definition,
+                      text: widget.example,
                       left: 76,
                       top: 176,
                       width: 226,
@@ -196,10 +196,10 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
                       height: 54 * scale,
                       child: _WordCardIconButton(
                         key: const Key('home-word-favorite-button'),
-                        semanticLabel: _isFavorited
+                        semanticLabel: widget.isFavorited
                             ? 'Remove ${widget.word} from favorites'
                             : 'Add ${widget.word} to favorites',
-                        toggled: _isFavorited,
+                        toggled: widget.isFavorited,
                         onTap: _toggleFavorite,
                         child: AnimatedScale(
                           scale: _heartPopped ? 1.12 : 1,
@@ -213,10 +213,10 @@ class _HomeWordOfTheDayState extends State<HomeWordOfTheDay> {
                               child: child,
                             ),
                             child: Icon(
-                              _isFavorited
+                              widget.isFavorited
                                   ? Icons.favorite_rounded
                                   : Icons.favorite_border_rounded,
-                              key: ValueKey(_isFavorited),
+                              key: ValueKey(widget.isFavorited),
                               color: _heartColor,
                               size: 34 * scale,
                             ),

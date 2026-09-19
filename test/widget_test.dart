@@ -307,6 +307,26 @@ void main() {
     expect(find.byKey(const Key('grade-selected-card-1')), findsOneWidget);
   });
 
+  testWidgets(
+      "Submitting the name field via the keyboard's done action does not "
+      'advance -- only the actual Next button does', (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: NameScreen()));
+    await tester.pump();
+
+    await tester.enterText(find.byKey(const Key('name-input')), 'Maya');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    expect(find.byType(GradeSelectionScreen), findsNothing);
+    expect(find.byType(NameScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('grade arrows rotate the active card and wrap around',
       (tester) async {
     tester.view.physicalSize = const Size(412, 917);
@@ -1072,6 +1092,54 @@ void main() {
 
     expect(find.text('Koka 5'), findsNothing);
     expect(find.text('1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Loading a real save clears the main menu from the stack (regression: '
+      "otherwise the bottom nav's Home tab, which pops to route.isFirst, "
+      'would land back on the main menu instead of staying on Home)',
+      (tester) async {
+    final controller = await _controllerWithSaves(['Anna']);
+    await tester.pumpWidget(
+      _wrapWithSaves(const MainMenuScreen(), controller),
+    );
+
+    await tester.tap(find.text('load'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LoadScreen), findsOneWidget);
+
+    // Index 1: the demo card is always first, the real "Anna" save second.
+    await tester.tap(find.text('load').at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirmation-yes-button')));
+    await tester.pump();
+    // Let the fade transition finish so the removed routes actually leave
+    // the widget tree.
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // This is the actual regression: with the main menu still stranded
+    // underneath, AppBottomTabNavigation's Home tab (`popUntil((route) =>
+    // route.isFirst)`) would pop past Home and land back on the main menu.
+    // `canPop() == false` here means this loading screen -- and, once it
+    // finishes, Home -- is the navigator's only/first route.
+    expect(find.byType(MainMenuScreen), findsNothing);
+    expect(find.byType(LoadScreen), findsNothing);
+    expect(find.byType(FourthLoadingScreen), findsOneWidget);
+    expect(
+      Navigator.of(tester.element(find.byType(FourthLoadingScreen))).canPop(),
+      isFalse,
+    );
+
+    // Let FourthLoadingScreen's real minimum-display-duration timer finish
+    // for real (not just elapsed fake time) so none is left pending once
+    // the test ends -- this test doesn't need to wait for it to actually
+    // finish transitioning into Home, only to confirm the stack shape
+    // above, which is already decided synchronously.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(seconds: 6)),
+    );
+    await tester.pump(const Duration(seconds: 6));
     expect(tester.takeException(), isNull);
   });
 

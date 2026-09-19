@@ -94,7 +94,6 @@ class _NameScreenState extends State<NameScreen> {
         autofillHints: const [AutofillHints.name],
         maxLength: 24,
         maxLines: 1,
-        onSubmitted: (_) => _continue(),
         decoration: InputDecoration(
           counterText: '',
           hintText: 'isulat ang ngalan mo',

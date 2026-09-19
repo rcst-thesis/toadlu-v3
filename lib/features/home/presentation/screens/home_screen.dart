@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
+import 'package:tudlo/features/dictionary/domain/dictionary_entry.dart';
+import 'package:tudlo/features/dictionary/domain/dictionary_words.dart';
+import 'package:tudlo/features/dictionary/domain/word_of_the_day.dart';
 import 'package:tudlo/features/home/presentation/widgets/animated_home_window.dart';
 import 'package:tudlo/features/home/presentation/widgets/animated_glow_border.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bookshelf.dart';
@@ -49,10 +53,53 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
   bool _lessonsCollapsed = false;
 
+  DictionaryEntry? _wordOfTheDay;
+  var _resolvedWordOfTheDay = false;
+
   String get _learnerName =>
       widget.learnerName ?? LearnerScope.of(context).profile?.name ?? '';
   int get _energy =>
       widget.energy ?? LearnerScope.of(context).profile?.energy ?? 60;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only resolve once per mount -- didChangeDependencies can fire again
+    // for unrelated inherited-widget changes. Same word-of-the-day
+    // resolution the Dictionary tab uses (reads/writes the same profile
+    // fields through the one shared LearnerController), so whichever
+    // screen is opened first picks the word for the day and the other
+    // just reads it back.
+    if (_resolvedWordOfTheDay) return;
+    _resolvedWordOfTheDay = true;
+
+    final controller = LearnerScope.of(context);
+    final profile = controller.profile;
+    final pool =
+        DictionaryWords.all.where((e) => e.frontCardImage != null).toList();
+    final selection = resolveWordOfTheDay(
+      pool: pool.isNotEmpty ? pool : DictionaryWords.all,
+      storedId: profile?.wordOfTheDayId,
+      storedDate: profile?.wordOfTheDayDate,
+      history: profile?.wordOfTheDayHistory ?? const {},
+    );
+    _wordOfTheDay = selection.entry;
+    if (selection.isNew) {
+      // Defer the actual persistence (which calls notifyListeners) past
+      // this build/dependency-resolution phase to avoid a reentrant-build
+      // assertion.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          controller.recordWordOfTheDay(
+            id: selection.entry.id,
+            date: DateTime.now(),
+            history: selection.history,
+          ),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -166,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: LayoutBuilder(
                           builder: (context, scene) {
                             final sceneScale =
-                              scene.maxWidth / _HomeSceneLayout.designWidth;
+                                scene.maxWidth / _HomeSceneLayout.designWidth;
                             return Stack(
                               children: [
                                 const Positioned.fill(
@@ -302,7 +349,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                       sceneScale,
                                   height: _HomeSceneLayout.wordOfTheDay.height *
                                       sceneScale,
-                                  child: const HomeWordOfTheDay(),
+                                  child: HomeWordOfTheDay(
+                                    word: _wordOfTheDay?.word ?? 'balay',
+                                    example: _wordOfTheDay?.example ??
+                                        'naga istar ako sa akong balay',
+                                    isFavorited: _wordOfTheDay != null &&
+                                        (LearnerScope.of(context)
+                                                .profile
+                                                ?.favoritedWords
+                                                .contains(_wordOfTheDay!.id) ??
+                                            false),
+                                    onFavoriteChanged: (_) {
+                                      final id = _wordOfTheDay?.id;
+                                      if (id != null) {
+                                        LearnerScope.of(context)
+                                            .toggleFavoriteWord(id);
+                                      }
+                                    },
+                                  ),
                                 ),
                                 Positioned(
                                   left: _HomeSceneLayout.lessonPanel.left *

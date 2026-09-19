@@ -89,13 +89,21 @@ class _LoadScreenState extends State<LoadScreen> {
     }
 
     if (save.isDemo) {
-      Navigator.of(context).pushReplacement(
+      // pushAndRemoveUntil, not pushReplacement -- this can be reached with
+      // the main menu still underneath in the stack (opened via a plain
+      // `push`), and Home is meant to be the navigator's first route (see
+      // AppBottomTabNavigation's `popUntil((route) => route.isFirst)`).
+      // A mere pushReplacement would leave the main menu route stranded
+      // beneath Home, so tapping the bottom nav's Home tab would pop past
+      // Home and land back on the main menu instead of staying on Home.
+      Navigator.of(context).pushAndRemoveUntil(
         FadePageRoute<void>(
           page: FourthLoadingScreen(
             homeBuilder: (context) =>
                 const HomeScreen(learnerName: 'demo koka', energy: 60),
           ),
         ),
+        (route) => false,
       );
       return;
     }
@@ -105,8 +113,10 @@ class _LoadScreenState extends State<LoadScreen> {
     if (profile == null) return;
     await LearnerScope.of(context).switchTo(profile);
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
+    // Same reasoning as the demo branch above.
+    Navigator.of(context).pushAndRemoveUntil(
       FadePageRoute<void>(page: const FourthLoadingScreen()),
+      (route) => false,
     );
   }
 
