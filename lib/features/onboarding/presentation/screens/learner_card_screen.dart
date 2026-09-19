@@ -9,6 +9,7 @@ import 'package:tudlo/features/home/presentation/screens/home_loading_screen.dar
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class LearnerCardScreen extends StatelessWidget {
   const LearnerCardScreen({
@@ -281,16 +282,14 @@ class _ResetLearnerDialog extends StatelessWidget {
             color: const Color(0xFF98EF6F),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.darkGreen, width: 1.5),
+            // Flat, hard-edged shadow only -- matching the app's sticker-card
+            // convention (e.g. HomeLessonPreviewDialog's `blurRadius: 0`
+            // shadows) instead of mixing in a second, soft/blurred shadow.
             boxShadow: const [
               BoxShadow(
                 color: AppColors.darkGreen,
                 offset: Offset(0, 8),
                 blurRadius: 0,
-              ),
-              BoxShadow(
-                color: Color(0x33000000),
-                offset: Offset(0, 12),
-                blurRadius: 16,
               ),
             ],
           ),
@@ -312,17 +311,25 @@ class _ResetLearnerDialog extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _ResetDialogButton(
+                    child: StickerPressButton(
                       key: const Key('learner-reset-cancel-button'),
                       label: 'cancel',
+                      height: 44,
+                      fontSize: 14,
+                      frontColor: AppColors.green,
+                      depthColor: AppColors.darkGreen,
                       onPressed: () => Navigator.pop(context, false),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _ResetDialogButton(
+                    child: StickerPressButton(
                       key: const Key('learner-reset-confirm-button'),
                       label: 'reset',
+                      height: 44,
+                      fontSize: 14,
+                      frontColor: AppColors.green,
+                      depthColor: AppColors.darkGreen,
                       labelColor: const Color(0xFFFF5260),
                       onPressed: () => Navigator.pop(context, true),
                     ),
@@ -332,62 +339,6 @@ class _ResetLearnerDialog extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ResetDialogButton extends StatelessWidget {
-  const _ResetDialogButton({
-    required this.label,
-    required this.onPressed,
-    this.labelColor = Colors.white,
-    super.key,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final Color labelColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            top: 5,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.darkGreen,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            bottom: 5,
-            child: FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: AppColors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: labelColor,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -462,6 +413,10 @@ class _LearnerCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFF24361F), width: 1.2),
         borderRadius: BorderRadius.circular(17),
         boxShadow: const [
+          // The golden aura is a deliberate "magic reveal" glow for this
+          // one-time card moment, not a card-lift shadow -- left as soft/
+          // blurred on purpose, unlike the flat sticker-shadow convention
+          // used everywhere else in the app.
           BoxShadow(
             color: Color(0xAAFFF176),
             spreadRadius: 4,
@@ -472,8 +427,15 @@ class _LearnerCard extends StatelessWidget {
             spreadRadius: 9,
             blurRadius: 30,
           ),
+          // The actual card-lift shadow, though, now matches the app's flat
+          // hard-edged convention (see e.g. the reset dialog above) instead
+          // of a soft blurred drop shadow -- using the card's own border
+          // color for a cohesive bevel.
           BoxShadow(
-              color: Color(0x55000000), offset: Offset(0, 5), blurRadius: 6),
+            color: Color(0xFF24361F),
+            offset: Offset(0, 6),
+            blurRadius: 0,
+          ),
         ],
       ),
       clipBehavior: Clip.antiAlias,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/shared/widgets/rive_long_button.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 enum OnboardingPrimaryButtonStyle { green, white }
 
@@ -44,12 +45,14 @@ class OnboardingBottomActions extends StatelessWidget {
             width: width,
             height: RiveLongButton.height,
             child: white
-                ? _WhitePrimaryButton(
+                ? StickerPressButton(
                     label: primaryLabel,
                     onPressed: onPrimaryPressed,
                     frontColor: frontColor,
                     depthColor: depthColor,
-                    foregroundColor: foregroundColor,
+                    labelColor: foregroundColor,
+                    height: 44,
+                    fontSize: 15,
                   )
                 : RiveLongButton(
                     label: primaryLabel,
@@ -76,68 +79,6 @@ class OnboardingBottomActions extends StatelessWidget {
                 ),
               ),
               child: Text(secondaryLabel),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WhitePrimaryButton extends StatelessWidget {
-  const _WhitePrimaryButton({
-    required this.label,
-    required this.onPressed,
-    required this.frontColor,
-    required this.depthColor,
-    required this.foregroundColor,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final Color frontColor;
-  final Color depthColor;
-  final Color foregroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            top: 4.373,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: depthColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            bottom: 4.373,
-            child: FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: frontColor,
-                foregroundColor: foregroundColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
             ),
           ),
         ],

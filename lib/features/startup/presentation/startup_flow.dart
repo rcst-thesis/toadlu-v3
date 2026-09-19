@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/main_menu/presentation/main_menu_screen.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class StartupFlow extends StatefulWidget {
   const StartupFlow({
@@ -89,15 +90,21 @@ class _StartupFlowState extends State<StartupFlow> {
             children: [
               const Text('wala natapos ang paghanda'),
               const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () {
-                  setState(() {
-                    _stage = 0;
-                    _startupError = null;
-                  });
-                  unawaited(_runStartup());
-                },
-                child: const Text('try liwat'),
+              SizedBox(
+                width: 160,
+                height: 44,
+                child: StickerPressButton(
+                  label: 'try liwat',
+                  onPressed: () {
+                    setState(() {
+                      _stage = 0;
+                      _startupError = null;
+                    });
+                    unawaited(_runStartup());
+                  },
+                  frontColor: AppColors.green,
+                  depthColor: AppColors.darkGreen,
+                ),
               ),
             ],
           ),

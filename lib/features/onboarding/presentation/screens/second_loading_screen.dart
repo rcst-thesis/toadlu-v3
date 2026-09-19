@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/learner_card_screen.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class SecondLoadingScreen extends StatefulWidget {
   const SecondLoadingScreen({
@@ -125,14 +126,16 @@ class _SecondLoadingScreenState extends State<SecondLoadingScreen> {
                       const SizedBox(height: 18),
                       const Text('wala natapos ang paghanda'),
                       const SizedBox(height: 12),
-                      FilledButton(
-                        key: const Key('second-loading-retry-button'),
-                        onPressed: _prepareAndContinue,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.green,
-                          foregroundColor: Colors.white,
+                      SizedBox(
+                        width: 160,
+                        height: 44,
+                        child: StickerPressButton(
+                          key: const Key('second-loading-retry-button'),
+                          label: 'try liwat',
+                          onPressed: _prepareAndContinue,
+                          frontColor: AppColors.green,
+                          depthColor: AppColors.darkGreen,
                         ),
-                        child: const Text('try liwat'),
                       ),
                     ],
                   ],

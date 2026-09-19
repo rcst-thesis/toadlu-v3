@@ -3,9 +3,30 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/tudlo.dart';
 
+/// Seeds a fresh [LearnerController] with [names] real, individually saved
+/// profiles (none of them left "current" -- the Load screen's real save
+/// list doesn't depend on which one is current).
+Future<LearnerController> _controllerWithSaves(List<String> names) async {
+  final controller = LearnerController();
+  for (final name in names) {
+    await controller.createAndSave(name: name, grade: 1, energy: 60);
+  }
+  return controller;
+}
+
+Widget _wrapWithSaves(Widget child, LearnerController controller) {
+  return MaterialApp(home: LearnerScope(controller: controller, child: child));
+}
+
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('welcome farm keeps its SVG proportions and depth interaction',
       (tester) async {
     await tester.pumpWidget(
@@ -162,6 +183,53 @@ void main() {
       find.bySemanticsLabel('maayong pag balik! Load saved progress'),
       findsOneWidget,
     );
+  });
+
+  testWidgets("main menu continue shows the current learner's name",
+      (tester) async {
+    // Deliberately not `pumpAndSettle` -- the Rive asset's own async load
+    // can finish mid-test and swap the fallback `Text` this checks for
+    // with a canvas-drawn Rive graphic that `find.text` can't see into.
+    // Every other test in this file that reads a RiveLongButton's label
+    // relies on the same single-frame window.
+    final controller = await _controllerWithSaves(['Anna']);
+    await tester.pumpWidget(
+      _wrapWithSaves(const MainMenuScreen(), controller),
+    );
+    expect(find.text('continue as Anna'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('main menu continue truncates a name too long to fit the button',
+      (tester) async {
+    final controller = await _controllerWithSaves(['Bartholomew Cruz']);
+    await tester.pumpWidget(
+      _wrapWithSaves(const MainMenuScreen(), controller),
+    );
+    expect(find.text('continue as Barthol...'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'main menu continue keeps naming the last-used learner after logout',
+      (tester) async {
+    final controller = LearnerController();
+    await controller.createAndSave(name: 'Anna', grade: 1, energy: 60);
+    await controller.logOut();
+    expect(controller.profile, isNull);
+
+    // Checked via semantics rather than `find.text`: the async last-used
+    // lookup needs a couple of pumps to resolve, and by then the Rive
+    // asset's own async load has often finished too, replacing the
+    // fallback `Text` with a canvas-drawn Rive graphic that `find.text`
+    // can't see into. The `Semantics` wrapper is present either way.
+    await tester.pumpWidget(
+      _wrapWithSaves(const MainMenuScreen(), controller),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.bySemanticsLabel('continue as Anna'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('main menu continue opens loading 4', (tester) async {
@@ -910,13 +978,23 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MaterialApp(home: LoadScreen()));
+    final controller = await _controllerWithSaves([
+      'Koka pero kulay blue',
+      'Koka 3',
+      'Koka pero kulay red',
+      'Koka 5',
+      'Koka 6',
+      'Koka 7',
+    ]);
+    await tester.pumpWidget(_wrapWithSaves(const LoadScreen(), controller));
     await tester.pumpAndSettle();
 
     expect(find.byType(SingleChildScrollView), findsNothing);
     expect(find.byType(SaveCard), findsNWidgets(4));
     expect(find.text('load'), findsNWidgets(4));
-    expect(find.text('delete'), findsNWidgets(4));
+    // The fixed demo card has no delete action -- only the 3 real saves on
+    // this page do.
+    expect(find.text('delete'), findsNWidgets(3));
     expect(find.byKey(const Key('load-pagination')), findsOneWidget);
 
     final cards = find.byType(SaveCard);
@@ -955,7 +1033,15 @@ void main() {
 
   testWidgets('pagination shows four saves then three top-left aligned saves',
       (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: LoadScreen()));
+    final controller = await _controllerWithSaves([
+      'Koka pero kulay blue',
+      'Koka 3',
+      'Koka pero kulay red',
+      'Koka 5',
+      'Koka 6',
+      'Koka 7',
+    ]);
+    await tester.pumpWidget(_wrapWithSaves(const LoadScreen(), controller));
     await tester.pumpAndSettle();
 
     expect(find.byType(SaveCard), findsNWidgets(4));
@@ -996,7 +1082,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MaterialApp(home: LoadScreen()));
+    final controller = await _controllerWithSaves(['Koka pero kulay blue']);
+    await tester.pumpWidget(_wrapWithSaves(const LoadScreen(), controller));
     await tester.tap(find.text('load').first);
     await tester.pumpAndSettle();
 

@@ -280,16 +280,15 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
           return Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: canvasWidth),
-              // A CustomScrollView/slivers, not a SingleChildScrollView over
-              // a Column, so the catalog grid below (potentially hundreds of
-              // cards, unfiltered) only builds the cards actually near the
-              // viewport instead of all of them up front -- see
-              // _CategoryCardGrid.
-              child: CustomScrollView(
-                key: const Key('dictionary-browse-scroll-view'),
-                slivers: [
-                  _sliverBox(
-                    scale: scale,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Fixed, never scrolls away: the search bar and category
+                  // chips are how a learner actually gets anywhere on this
+                  // screen, so they stay reachable no matter how far down
+                  // the catalog they've scrolled -- no more scrolling back
+                  // up just to change what you're looking for.
+                  Padding(
                     padding: EdgeInsets.only(
                       left: 20 * scale,
                       right: 20 * scale,
@@ -335,47 +334,64 @@ class _DictionaryBrowseScreenState extends State<DictionaryBrowseScreen> {
                               ],
                             ),
                           ),
+                          SizedBox(height: 12 * scale),
+                          DictionaryCategoryChips(
+                            categories: _categories,
+                            selected: _selectedCategory,
+                            onSelected: _selectCategory,
+                          ),
                         ],
-                        SizedBox(height: 20 * scale),
+                        SizedBox(height: 12 * scale),
                       ],
                     ),
                   ),
-                  if (selected != null)
-                    _sliverBox(
-                      scale: scale,
-                      child: _SelectedWordView(entry: selected),
-                    )
-                  else
-                    _BrowseListView(
-                      scale: scale,
-                      featured: _featured,
-                      categories: _categories,
-                      selectedCategory: _selectedCategory,
-                      onCategorySelected: _selectCategory,
-                      grouped: _groupedByCategory,
-                      isSearching: _query.isNotEmpty,
-                      suggestions: _suggestions,
-                      onSelect: _selectEntry,
-                    ),
-                  // Standard sliver idiom for "glue to the bottom of a
-                  // short page, otherwise sit right after long content":
-                  // when everything above is shorter than the viewport,
-                  // the leftover space plus Align pins the footer to the
-                  // true bottom; when it's taller, there's ~no leftover
-                  // space and the footer sits right after the content,
-                  // same as scrolling to the end today. (In the rare
-                  // case content's height lands within footerHeight of
-                  // the viewport's height, the footer can render
-                  // slightly short for that one layout -- a minor, rare
-                  // edge case.)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: SizedBox(
-                        height: footerHeight,
-                        child: const DictionaryContentFooter(),
-                      ),
+                  Expanded(
+                    // A CustomScrollView/slivers, not a SingleChildScrollView
+                    // over a Column, so the catalog grid below (potentially
+                    // hundreds of cards, unfiltered) only builds the cards
+                    // actually near the viewport instead of all of them up
+                    // front -- see _CategoryCardGrid.
+                    child: CustomScrollView(
+                      key: const Key('dictionary-browse-scroll-view'),
+                      slivers: [
+                        if (selected != null)
+                          _sliverBox(
+                            scale: scale,
+                            child: _SelectedWordView(entry: selected),
+                          )
+                        else
+                          _BrowseListView(
+                            scale: scale,
+                            featured: _featured,
+                            selectedCategory: _selectedCategory,
+                            onCategorySelected: _selectCategory,
+                            grouped: _groupedByCategory,
+                            isSearching: _query.isNotEmpty,
+                            suggestions: _suggestions,
+                            onSelect: _selectEntry,
+                          ),
+                        // Standard sliver idiom for "glue to the bottom of a
+                        // short page, otherwise sit right after long
+                        // content": when everything above is shorter than
+                        // the viewport, the leftover space plus Align pins
+                        // the footer to the true bottom; when it's taller,
+                        // there's ~no leftover space and the footer sits
+                        // right after the content, same as scrolling to the
+                        // end today. (In the rare case content's height
+                        // lands within footerHeight of the viewport's
+                        // height, the footer can render slightly short for
+                        // that one layout -- a minor, rare edge case.)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: SizedBox(
+                              height: footerHeight,
+                              child: const DictionaryContentFooter(),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -495,7 +511,6 @@ class _BrowseListView extends StatelessWidget {
   const _BrowseListView({
     required this.scale,
     required this.featured,
-    required this.categories,
     required this.selectedCategory,
     required this.onCategorySelected,
     required this.grouped,
@@ -506,7 +521,6 @@ class _BrowseListView extends StatelessWidget {
 
   final double scale;
   final List<DictionaryEntry> featured;
-  final List<String> categories;
   final String? selectedCategory;
   final ValueChanged<String?> onCategorySelected;
   final Map<String, List<DictionaryEntry>> grouped;
@@ -518,8 +532,17 @@ class _BrowseListView extends StatelessWidget {
   final List<DictionaryEntry> suggestions;
   final ValueChanged<DictionaryEntry> onSelect;
 
+  /// How many cards to show per category before offering "see all" --
+  /// only while browsing everything with no category picked and no active
+  /// search (picking a category, or searching, already narrows things down
+  /// enough that a cap would just add an extra tap for no reason). Cuts a
+  /// scroll through hundreds of cards in every category down to a quick
+  /// scan, with a deliberate tap to go deeper into any one category.
+  static const _previewCap = 6;
+
   @override
   Widget build(BuildContext context) {
+    final showPreviews = selectedCategory == null && !isSearching;
     // A group of slivers under one key, not a single box widget -- keeps
     // the existing find.byKey('dictionary-browse-list') presence/absence
     // checks working while letting the catalog grid below be a real,
@@ -547,22 +570,13 @@ class _BrowseListView extends StatelessWidget {
           ),
         _sliverBox(
           scale: scale,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const DictionaryStrokedText(
-                'all words',
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              const SizedBox(height: 8),
-              DictionaryCategoryChips(
-                categories: categories,
-                selected: selectedCategory,
-                onSelected: onCategorySelected,
-              ),
-              const SizedBox(height: 12),
-            ],
+          child: const Padding(
+            padding: EdgeInsets.only(bottom: 4),
+            child: DictionaryStrokedText(
+              'all words',
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         if (grouped.isEmpty)
@@ -613,25 +627,91 @@ class _BrowseListView extends StatelessWidget {
               scale: scale,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  category,
-                  style: const TextStyle(
-                    fontFamily: 'ComicRelief',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: DictionaryColors.ink,
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        category,
+                        style: const TextStyle(
+                          fontFamily: 'ComicRelief',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: DictionaryColors.ink,
+                        ),
+                      ),
+                    ),
+                    if (showPreviews && grouped[category]!.length > _previewCap)
+                      _SeeAllButton(
+                        category: category,
+                        count: grouped[category]!.length,
+                        onTap: () => onCategorySelected(category),
+                      ),
+                  ],
                 ),
               ),
             ),
             _CategoryCardGrid(
               scale: scale,
-              entries: grouped[category]!,
+              entries: showPreviews
+                  ? grouped[category]!.take(_previewCap).toList()
+                  : grouped[category]!,
               onSelect: onSelect,
             ),
             _sliverBox(scale: scale, child: const SizedBox(height: 16)),
           ],
       ],
+    );
+  }
+}
+
+/// "see all 42" -- tapping it is exactly equivalent to tapping that
+/// category's chip up in the fixed header (same [onTap] callback,
+/// `onCategorySelected`), so browsing that category to completion reuses
+/// the existing category-filter behavior instead of inventing a second,
+/// parallel "expanded" state to keep in sync.
+class _SeeAllButton extends StatelessWidget {
+  const _SeeAllButton({
+    required this.category,
+    required this.count,
+    required this.onTap,
+  });
+
+  final String category;
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: Key('dictionary-see-all-$category'),
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'see all $count',
+                style: TextStyle(
+                  fontFamily: 'ComicRelief',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: DictionaryColors.ink.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: DictionaryColors.ink.withValues(alpha: 0.6),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

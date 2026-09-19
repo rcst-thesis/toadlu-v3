@@ -38,7 +38,18 @@ WordOfTheDaySelection resolveWordOfTheDay({
   required Set<String> history,
   DateTime? now,
 }) {
-  assert(pool.isNotEmpty, 'resolveWordOfTheDay requires a non-empty pool');
+  // A real (non-`assert`) check: `assert` is stripped in release builds, so
+  // relying on it here would mean an empty pool fails loudly in debug/tests
+  // but silently misbehaves (or throws a much less clear error, deep inside
+  // `.first`) in release -- exactly the kind of gap that stays invisible
+  // until a future caller forgets to pre-check emptiness themselves.
+  if (pool.isEmpty) {
+    throw ArgumentError.value(
+      pool,
+      'pool',
+      'resolveWordOfTheDay requires a non-empty pool',
+    );
+  }
   final today = now ?? DateTime.now();
 
   if (storedId != null && storedDate != null && _isSameDay(storedDate, today)) {

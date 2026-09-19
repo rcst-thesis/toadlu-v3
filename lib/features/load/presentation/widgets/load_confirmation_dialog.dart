@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class LoadConfirmationDialog extends StatelessWidget {
   const LoadConfirmationDialog({
@@ -246,46 +247,15 @@ class _ConfirmationButton extends StatelessWidget {
     return SizedBox(
       width: 92,
       height: 54,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            top: 5,
-            width: 92,
-            height: 49,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.darkGreen,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            top: 0,
-            width: 92,
-            height: 49,
-            child: Material(
-              color: AppColors.green,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: onPressed,
-                child: Center(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: labelColor,
-                      fontSize: 30,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+      child: StickerPressButton(
+        label: label,
+        onPressed: onPressed,
+        frontColor: AppColors.green,
+        depthColor: AppColors.darkGreen,
+        labelColor: labelColor,
+        height: 54,
+        restLift: 5,
+        fontSize: 30,
       ),
     );
   }

@@ -59,6 +59,73 @@ class LearnerController extends ChangeNotifier {
     }
   }
 
+  /// Logs out the current learner: clears it from memory immediately (so
+  /// every screen watching [profile] sees `null` right away) and
+  /// best-effort forgets it as "current" on disk too, so a fresh app
+  /// launch doesn't silently resume this learner. A no-op if there's no
+  /// current learner.
+  Future<void> logOut() async {
+    if (_profile == null) return;
+    _profile = null;
+    notifyListeners();
+    try {
+      await _repository.clearCurrent();
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
+  /// The most recently active learner, even after [logOut] -- unlike
+  /// [profile], logging out does not clear this. Lets the main menu's
+  /// "continue" keep naming whoever you'd resume, independent of whether
+  /// anyone is actively signed in right now. `null` if nothing has ever
+  /// been used on this device, or storage is unavailable.
+  Future<LearnerProfile?> loadLastUsedProfile() async {
+    try {
+      return await _repository.loadLastUsed();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Every learner profile currently saved on this device -- the Load
+  /// screen's real save list.
+  Future<List<LearnerProfile>> listSavedProfiles() async {
+    try {
+      return await _repository.listSavedProfiles();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Makes [profile] the current learner (e.g. picking a real save to load)
+  /// -- same effect [createAndSave] has, just for an already-existing
+  /// profile instead of a brand new one.
+  Future<void> switchTo(LearnerProfile profile) async {
+    _profile = profile;
+    notifyListeners();
+    try {
+      await _repository.setCurrent(profile);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
+  /// Deletes [id] outright. If it's the profile currently in memory, clears
+  /// it (same in-memory effect as [logOut]) so nothing keeps reading a
+  /// profile that no longer exists on disk.
+  Future<void> deleteProfile(String id) async {
+    if (_profile?.id == id) {
+      _profile = null;
+      notifyListeners();
+    }
+    try {
+      await _repository.deleteProfile(id);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
   /// Records [locationId] (a `MapLocation.persistedId`) as permanently unlocked
   /// on the current learner and best-effort persists it. A no-op if there's
   /// no current learner yet, or it's already unlocked.

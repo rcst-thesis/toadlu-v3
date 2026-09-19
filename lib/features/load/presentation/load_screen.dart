@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/features/home/presentation/screens/fourth_loading_screen.dart';
+import 'package:tudlo/features/home/presentation/screens/home_screen.dart';
+import 'package:tudlo/features/learner/domain/learner_profile.dart';
+import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/load/domain/save_preview.dart';
 import 'package:tudlo/features/load/presentation/widgets/load_confirmation_dialog.dart';
 import 'package:tudlo/features/load/presentation/widgets/save_card.dart';
@@ -17,38 +22,37 @@ class LoadScreen extends StatefulWidget {
 class _LoadScreenState extends State<LoadScreen> {
   static const _pageSize = 4;
 
-  final saves = const <SavePreview>[
-    SavePreview(
-      name: 'Koka',
-      grade: GradeLevel.grade1,
-    ),
-    SavePreview(
-      name: 'Koka pero kulay blue',
-      grade: GradeLevel.grade2,
-    ),
-    SavePreview(
-      name: 'Koka 3',
-      grade: GradeLevel.grade1,
-    ),
-    SavePreview(
-      name: 'Koka pero kulay red',
-      grade: GradeLevel.grade3,
-    ),
-    SavePreview(
-      name: 'Koka 5',
-      grade: GradeLevel.grade1,
-    ),
-    SavePreview(
-      name: 'Koka 6',
-      grade: GradeLevel.grade2,
-    ),
-    SavePreview(
-      name: 'Koka 7',
-      grade: GradeLevel.grade3,
-    ),
-  ];
+  /// The one fixed, non-persisted sample save -- always present, never
+  /// deletable, and loading it never touches [LearnerScope].
+  static const _demoSave =
+      SavePreview(name: 'demo koka', grade: GradeLevel.grade1);
 
+  var saves = const <SavePreview>[_demoSave];
+  var _profiles = const <LearnerProfile>[];
+  var _resolvedSaves = false;
   int _currentPage = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only resolve once per mount -- didChangeDependencies can fire again
+    // for unrelated inherited-widget changes.
+    if (_resolvedSaves) return;
+    _resolvedSaves = true;
+    _refreshSaves();
+  }
+
+  Future<void> _refreshSaves() async {
+    final profiles = await LearnerScope.of(context).listSavedProfiles();
+    if (!mounted) return;
+    setState(() {
+      _profiles = profiles;
+      saves = [_demoSave, ...profiles.map(SavePreview.fromProfile)];
+      if (_currentPage >= _pageCount) {
+        _currentPage = (_pageCount - 1).clamp(0, _pageCount - 1);
+      }
+    });
+  }
 
   int get _pageCount => (saves.length / _pageSize).ceil();
 
@@ -76,10 +80,33 @@ class _LoadScreenState extends State<LoadScreen> {
       ),
     );
     if (!mounted || accepted != true) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content:
-              Text(deleting ? '${save.name} deleted' : '${save.name} loaded')),
+
+    if (deleting) {
+      await LearnerScope.of(context).deleteProfile(save.profileId!);
+      if (!mounted) return;
+      await _refreshSaves();
+      return;
+    }
+
+    if (save.isDemo) {
+      Navigator.of(context).pushReplacement(
+        FadePageRoute<void>(
+          page: FourthLoadingScreen(
+            homeBuilder: (context) =>
+                const HomeScreen(learnerName: 'demo koka', energy: 60),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final profile =
+        _profiles.where((profile) => profile.id == save.profileId).firstOrNull;
+    if (profile == null) return;
+    await LearnerScope.of(context).switchTo(profile);
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      FadePageRoute<void>(page: const FourthLoadingScreen()),
     );
   }
 
@@ -156,8 +183,10 @@ class _LoadScreenState extends State<LoadScreen> {
                                                 visibleSaves[index].assetPath,
                                             onLoad: () => _confirm(
                                                 pageStart + index, false),
-                                            onDelete: () => _confirm(
-                                                pageStart + index, true),
+                                            onDelete: visibleSaves[index].isDemo
+                                                ? null
+                                                : () => _confirm(
+                                                    pageStart + index, true),
                                           ),
                                         ),
                                     ],

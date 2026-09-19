@@ -6,6 +6,7 @@ import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/energy_setter_screen.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class GradeSelectionScreen extends StatefulWidget {
   const GradeSelectionScreen({
@@ -478,41 +479,16 @@ class _GradeCard extends StatelessWidget {
                 SizedBox(height: selected ? 18 : 13),
                 SizedBox(
                   height: selected ? 65 : 52,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        top: selected ? 7 : 6,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: grade.buttonBack,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        bottom: selected ? 7 : 6,
-                        child: Material(
-                          color: grade.accent,
-                          borderRadius: BorderRadius.circular(8),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            key: Key('grade-${grade.number}-select-button'),
-                            onTap: selected ? onSelected : null,
-                            child: Center(
-                              child: Text(
-                                'grade ${grade.number} na ako',
-                                maxLines: 1,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18 * scale,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: StickerPressButton(
+                    key: Key('grade-${grade.number}-select-button'),
+                    label: 'grade ${grade.number} na ako',
+                    fontSize: 18 * scale,
+                    height: selected ? 65 : 52,
+                    restLift: selected ? 7 : 6,
+                    frontColor: grade.accent,
+                    depthColor: grade.buttonBack,
+                    enabled: selected,
+                    onPressed: onSelected ?? () {},
                   ),
                 ),
               ],
@@ -541,40 +517,19 @@ class _ArrowButton extends StatelessWidget {
     return SizedBox(
       width: 145,
       height: 73,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            top: 7.25,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C6121),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+      child: StickerPressButton(
+        onPressed: onPressed,
+        frontColor: const Color(0xFF4E9F3E),
+        depthColor: const Color(0xFF2C6121),
+        restLift: 7.25,
+        child: Transform.rotate(
+          angle: direction == _ArrowDirection.left ? math.pi : 0,
+          child: const Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: Colors.white,
+            size: 36,
           ),
-          Positioned.fill(
-            bottom: 7.25,
-            child: FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: const Color(0xFF4E9F3E),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Transform.rotate(
-                angle: direction == _ArrowDirection.left ? math.pi : 0,
-                child: const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.white,
-                  size: 36,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

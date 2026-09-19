@@ -13,6 +13,7 @@ import 'package:tudlo/features/map/domain/map_progress.dart';
 import 'package:tudlo/features/map/domain/map_route_resolver.dart';
 import 'package:tudlo/features/map/presentation/widgets/map_exit_landscape_button.dart';
 import 'package:tudlo/features/map/presentation/widgets/map_expand_button.dart';
+import 'package:tudlo/features/map/presentation/widgets/map_locked_toast.dart';
 import 'package:tudlo/features/map/presentation/widgets/rive_map_scene.dart';
 
 /// Pannable/zoomable barangay map, framed on Koka's house by default. The
@@ -97,11 +98,13 @@ class _MapScreenState extends State<MapScreen> {
   var _isFullscreen = false;
   var _isHandlingTap = false;
 
-  // Rate-limits the locked-location SnackBar -- without this, mashing a
-  // locked location spams a new SnackBar on every single tap. `null` means
-  // none has been shown yet this screen instance.
+  // Rate-limits the locked-location toast per location -- without this,
+  // mashing a locked location spams a new toast on every single tap.
+  // Tracked per [MapLocation] rather than one shared timestamp, so tapping
+  // a *different* locked location always shows its own toast right away
+  // instead of being suppressed by whichever location was tapped last.
   static const _lockedMessageCooldown = Duration(seconds: 5);
-  DateTime? _lastLockedMessageAt;
+  final _lastLockedMessageAt = <MapLocation, DateTime>{};
 
   @override
   void didChangeDependencies() {
@@ -233,16 +236,11 @@ class _MapScreenState extends State<MapScreen> {
 
     if (!_riveMapController.isUnlocked(location)) {
       final now = DateTime.now();
-      final lastShown = _lastLockedMessageAt;
+      final lastShown = _lastLockedMessageAt[location];
       if (lastShown == null ||
           now.difference(lastShown) >= _lockedMessageCooldown) {
-        _lastLockedMessageAt = now;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_lockedMessageFor(location)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        _lastLockedMessageAt[location] = now;
+        showMapLockedToast(context, _lockedMessageFor(location));
       }
       return;
     }

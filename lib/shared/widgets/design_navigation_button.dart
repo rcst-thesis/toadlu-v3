@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/shared/widgets/rive_back_button.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class AdaptiveBackButtonPlacement extends StatelessWidget {
   const AdaptiveBackButtonPlacement({required this.onPressed, super.key});
@@ -67,61 +68,31 @@ class DesignNavigationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const radius = BorderRadius.all(Radius.circular(8));
-
     return SizedBox(
       width: 93,
       height: 44,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 4.3732,
-            height: 39.6269,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: enabled
-                    ? AppColors.darkGreen
-                    : AppColors.darkGreen.withValues(alpha: 0.35),
-                borderRadius: radius,
+      child: StickerPressButton(
+        onPressed: onPressed ?? () {},
+        enabled: enabled && onPressed != null,
+        frontColor: AppColors.green,
+        depthColor: AppColors.darkGreen,
+        restLift: 4.3732,
+        fontSize: 15,
+        child: icon != null
+            ? const SizedBox(
+                width: 93,
+                height: 39.6269,
+                child: CustomPaint(painter: _BackArrowPainter()),
+              )
+            : Text(
+                label!,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            height: 39.6269,
-            child: FilledButton(
-              onPressed: enabled ? onPressed : null,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: AppColors.green,
-                disabledBackgroundColor:
-                    AppColors.green.withValues(alpha: 0.35),
-                foregroundColor: Colors.white,
-                disabledForegroundColor: Colors.white70,
-                shape: const RoundedRectangleBorder(borderRadius: radius),
-              ),
-              child: icon != null
-                  ? const SizedBox(
-                      width: 93,
-                      height: 39.6269,
-                      child: CustomPaint(painter: _BackArrowPainter()),
-                    )
-                  : Text(
-                      label!,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/welcome/presentation/screens/welcome_aboard_screen.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class HomeLoadingScreen extends StatefulWidget {
   const HomeLoadingScreen({
@@ -229,14 +230,16 @@ class _HomeLoadingScreenState extends State<HomeLoadingScreen> {
                         style: TextStyle(fontSize: 15),
                       ),
                       const SizedBox(height: 12),
-                      FilledButton(
-                        key: const Key('home-loading-retry-button'),
-                        onPressed: _prepareAndContinue,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.green,
-                          foregroundColor: Colors.white,
+                      SizedBox(
+                        width: 160,
+                        height: 44,
+                        child: StickerPressButton(
+                          key: const Key('home-loading-retry-button'),
+                          label: 'try liwat',
+                          onPressed: _prepareAndContinue,
+                          frontColor: AppColors.green,
+                          depthColor: AppColors.darkGreen,
                         ),
-                        child: const Text('try liwat'),
                       ),
                     ],
                   ],

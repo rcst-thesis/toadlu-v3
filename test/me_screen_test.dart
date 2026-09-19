@@ -1,9 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudlo/features/me/presentation/screens/me_screen.dart';
+import 'package:tudlo/features/main_menu/presentation/main_menu_screen.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_learner_card.dart';
 
 void main() {
+  testWidgets(
+      'Log out shows a confirmation dialog; cancel stays, confirm returns '
+      'to the main menu', (tester) async {
+    tester.view.physicalSize = const Size(412, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: MeScreen()));
+    await tester.pumpAndSettle();
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const Key('me-content-scroll-view')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final logoutButton = find.byKey(const Key('me-logout-button'));
+    await tester.scrollUntilVisible(logoutButton, 500, scrollable: scrollable);
+
+    await tester.tap(logoutButton);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('me-logout-dialog')), findsOneWidget);
+
+    // Cancel: dialog closes, still on the Me screen.
+    await tester.tap(find.byKey(const Key('me-logout-cancel-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('me-logout-dialog')), findsNothing);
+    expect(find.byKey(const Key('me-screen')), findsOneWidget);
+
+    // Confirm: navigates away to the name screen.
+    await tester.tap(logoutButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('me-logout-confirm-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('me-screen')), findsNothing);
+    expect(find.byType(MainMenuScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Me details tab shows age/friendship/human; about tab hides it',
       (tester) async {
     tester.view.physicalSize = const Size(412, 1400);

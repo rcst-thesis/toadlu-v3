@@ -66,8 +66,6 @@ class HomeBottomNavigation extends StatelessWidget {
       child: Material(
         key: const Key('home-bottom-navigation'),
         color: backgroundColor,
-        elevation: 8,
-        shadowColor: const Color(0x55000000),
         child: SafeArea(
           top: false,
           child: Padding(

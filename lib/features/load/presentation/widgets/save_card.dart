@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class SaveCard extends StatelessWidget {
   const SaveCard({
@@ -9,7 +10,7 @@ class SaveCard extends StatelessWidget {
     required this.previewShadowColor,
     required this.previewAsset,
     required this.onLoad,
-    required this.onDelete,
+    this.onDelete,
     super.key,
   });
 
@@ -18,7 +19,10 @@ class SaveCard extends StatelessWidget {
   final Color previewShadowColor;
   final String previewAsset;
   final VoidCallback onLoad;
-  final VoidCallback onDelete;
+
+  /// `null` hides the delete button entirely -- used for the fixed demo
+  /// card, which has nothing on disk to delete.
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -114,13 +118,15 @@ class SaveCard extends StatelessWidget {
                           onPressed: onLoad,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SaveCardButton(
-                          label: 'delete',
-                          onPressed: onDelete,
+                      if (onDelete != null) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: SaveCardButton(
+                            label: 'delete',
+                            onPressed: onDelete!,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
@@ -145,24 +151,14 @@ class SaveCardButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
+    return StickerPressButton(
+      label: label,
       onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 38),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        backgroundColor: AppColors.green,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          maxLines: 1,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        ),
-      ),
+      frontColor: AppColors.green,
+      depthColor: AppColors.darkGreen,
+      height: 38,
+      borderRadius: 7,
+      fontSize: 12,
     );
   }
 }

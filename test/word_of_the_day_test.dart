@@ -152,6 +152,24 @@ void main() {
       // set plus the pick.
       expect(selection.history, {selection.entry.id});
     });
+
+    test(
+        'throws a clear error for an empty pool in every build mode '
+        '(regression: this used to be a debug-only `assert`, which is '
+        "stripped in release -- a caller that forgot to pre-check "
+        'emptiness would crash release-only with `.first`\'s cryptic '
+        '"Bad state: No element" instead)', () {
+      expect(
+        () => resolveWordOfTheDay(
+          pool: const [],
+          storedId: null,
+          storedDate: null,
+          history: const {},
+          now: DateTime(2026, 1, 15),
+        ),
+        throwsArgumentError,
+      );
+    });
   });
 
   group('LearnerProfile word-of-the-day fields', () {
@@ -312,6 +330,23 @@ void main() {
       expect(selection.ids.length, 5);
       expect(selection.ids.toSet(), _featuredPool.map((e) => e.id).toSet());
     });
+
+    test(
+        'throws a clear error for an empty pool in every build mode '
+        '(regression: this used to be a debug-only `assert`, which is '
+        'stripped in release)', () {
+      expect(
+        () => resolveFeatured(
+          pool: const [],
+          categoryCounts: const {},
+          storedIds: null,
+          storedDate: null,
+          history: const {},
+          now: DateTime(2026, 1, 15),
+        ),
+        throwsArgumentError,
+      );
+    });
   });
 
   group('decayCategorySearchCounts', () {
@@ -414,6 +449,38 @@ void main() {
       expect(controller.profile!.featuredIds, ['balay', 'ido']);
       expect(controller.profile!.featuredDate, DateTime(2026, 1, 15));
       expect(controller.profile!.featuredHistory, {'balay', 'ido'});
+    });
+  });
+
+  group('LearnerController.logOut', () {
+    test('is a no-op with no current learner', () async {
+      final controller = LearnerController();
+      await controller.logOut();
+      expect(controller.profile, isNull);
+    });
+
+    test('clears the in-memory profile immediately', () async {
+      final controller = LearnerController();
+      await controller.createAndSave(name: 'Josh', grade: 2, energy: 60);
+      expect(controller.profile, isNotNull);
+
+      await controller.logOut();
+
+      expect(controller.profile, isNull);
+    });
+
+    test('forgets the learner as "current" on disk, not just in memory',
+        () async {
+      final controller = LearnerController();
+      await controller.createAndSave(name: 'Josh', grade: 2, energy: 60);
+
+      await controller.logOut();
+
+      // A fresh controller/repository read (simulating a relaunch) must not
+      // resume the logged-out learner.
+      final reloaded = LearnerController();
+      await reloaded.loadSaved();
+      expect(reloaded.profile, isNull);
     });
   });
 }

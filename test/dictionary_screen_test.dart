@@ -314,6 +314,69 @@ void main() {
   });
 
   testWidgets(
+      'Search bar and category chips stay put while the catalog scrolls '
+      '(fixed above the scroll view, not part of it)', (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    await tester.pumpWidget(_wrap(const DictionaryBrowseScreen(), controller));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('dictionary-category-chips')), findsOneWidget);
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const Key('dictionary-browse-scroll-view')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.drag(scrollable, const Offset(0, -2000));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('dictionary-browse-search-field')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('dictionary-category-chips')), findsOneWidget);
+  });
+
+  testWidgets(
+      'A category with more words than the preview cap shows a "see all" '
+      "link, which selects that category (same as tapping its chip)",
+      (tester) async {
+    await setLargeViewport(tester);
+    final controller = await _controllerWithProfile();
+    // "general" has 257 words in the real dataset -- comfortably over the
+    // 6-word preview cap.
+    await tester.pumpWidget(_wrap(const DictionaryBrowseScreen(), controller));
+    await tester.pumpAndSettle();
+
+    final seeAllGeneral = find.byKey(const Key('dictionary-see-all-general'));
+    await tester.scrollUntilVisible(
+      seeAllGeneral,
+      500,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('dictionary-browse-scroll-view')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(seeAllGeneral, findsOneWidget);
+
+    await tester.tap(seeAllGeneral);
+    await tester.pumpAndSettle();
+
+    // Selecting via "see all" is the same as tapping the category chip --
+    // the chip now shows "general" as selected, and the cap no longer
+    // applies (no "see all" link left, since only one category is shown).
+    expect(find.byKey(const Key('dictionary-see-all-general')), findsNothing);
+  });
+
+  testWidgets(
       'Selecting a word in the browse screen shows its card inline, without leaving the screen',
       (tester) async {
     await setLargeViewport(tester);

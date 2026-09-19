@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
+import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_badge_collection.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_collections_header.dart';
@@ -12,10 +13,12 @@ import 'package:tudlo/features/me/presentation/widgets/me_daily_streak_card.dart
 import 'package:tudlo/features/me/presentation/widgets/me_edit_button.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_learner_card.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_section_wave_divider.dart';
+import 'package:tudlo/features/main_menu/presentation/main_menu_screen.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_settings_button.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 import 'package:tudlo/shared/widgets/rive_settings_button.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 /// Incremental Me screen. Currently hosts the top Settings/Edit buttons,
 /// the learner card with its about/details/progress tabs, and the daily
@@ -104,6 +107,30 @@ class _MeScreenState extends State<MeScreen> {
           icon: Icons.edit_rounded,
         ),
       ),
+    );
+  }
+
+  Future<void> _logOut(BuildContext context) async {
+    final confirmed = await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Log out confirmation',
+      barrierColor: Colors.black45,
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const _LogoutConfirmationDialog(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) =>
+          FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await LearnerScope.of(context).logOut();
+    if (!context.mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      FadePageRoute<void>(page: const MainMenuScreen()),
+      (route) => false,
     );
   }
 
@@ -223,7 +250,20 @@ class _MeScreenState extends State<MeScreen> {
                             ),
                             child: const MeBadgeCollection(),
                           ),
-                          SizedBox(height: 24 * sceneScale),
+                          SizedBox(height: 100 * sceneScale),
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 19 * sceneScale,
+                            ),
+                            child: StickerPressButton(
+                              key: const Key('me-logout-button'),
+                              label: 'log out',
+                              frontColor: const Color(0xFFFF5260),
+                              depthColor: const Color(0xFFB23347),
+                              onPressed: () => _logOut(context),
+                            ),
+                          ),
+                          SizedBox(height: 12 * sceneScale),
                           SizedBox(
                             height: 48 * sceneScale,
                             child: const MeContentFooter(),
@@ -237,6 +277,85 @@ class _MeScreenState extends State<MeScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Confirmation dialog, styled identically to
+/// `learner_card_screen.dart`'s `_ResetLearnerDialog` -- the app's
+/// established sticker-card pattern for a "this leaves your current
+/// session" confirmation.
+class _LogoutConfirmationDialog extends StatelessWidget {
+  const _LogoutConfirmationDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          key: const Key('me-logout-dialog'),
+          width: 304,
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+          decoration: BoxDecoration(
+            color: const Color(0xFF98EF6F),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.darkGreen, width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.darkGreen,
+                offset: Offset(0, 8),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'log out?',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 23, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'balik ka sa main menu kag mag-log in liwat',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, height: 1.3),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: StickerPressButton(
+                      key: const Key('me-logout-cancel-button'),
+                      label: 'cancel',
+                      height: 44,
+                      fontSize: 14,
+                      frontColor: AppColors.green,
+                      depthColor: AppColors.darkGreen,
+                      onPressed: () => Navigator.pop(context, false),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StickerPressButton(
+                      key: const Key('me-logout-confirm-button'),
+                      label: 'log out',
+                      height: 44,
+                      fontSize: 14,
+                      frontColor: AppColors.green,
+                      depthColor: AppColors.darkGreen,
+                      labelColor: const Color(0xFFFF5260),
+                      onPressed: () => Navigator.pop(context, true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

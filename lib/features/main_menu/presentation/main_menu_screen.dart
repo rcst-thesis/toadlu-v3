@@ -1,16 +1,51 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/home/presentation/screens/fourth_loading_screen.dart';
+import 'package:tudlo/features/learner/domain/learner_profile.dart';
+import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/load/presentation/load_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 import 'package:tudlo/shared/widgets/rive_long_button.dart';
 import 'package:tudlo/shared/widgets/rive_settings_button.dart';
 
-class MainMenuScreen extends StatelessWidget {
+class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
+
+  @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen> {
+  /// How many characters of the learner's name the "continue" button will
+  /// show before cutting it off with "..." -- the button is a fixed-size
+  /// Rive graphic, not a text field that can wrap or shrink to fit.
+  static const _maxContinueNameLength = 10;
+
+  LearnerProfile? _lastUsedProfile;
+  var _resolvedLastUsed = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only resolve once per mount -- didChangeDependencies can fire again
+    // for unrelated inherited-widget changes. No need to fetch anything if
+    // someone's already actively signed in.
+    if (_resolvedLastUsed) return;
+    _resolvedLastUsed = true;
+    if (LearnerScope.of(context).profile != null) return;
+    unawaited(_loadLastUsedProfile());
+  }
+
+  Future<void> _loadLastUsedProfile() async {
+    final profile = await LearnerScope.of(context).loadLastUsedProfile();
+    if (!mounted || profile == null) return;
+    setState(() => _lastUsedProfile = profile);
+  }
 
   void _open(BuildContext context, Widget screen) {
     Navigator.of(context).push(FadePageRoute<void>(page: screen));
@@ -18,6 +53,35 @@ class MainMenuScreen extends StatelessWidget {
 
   void _replaceWith(BuildContext context, Widget screen) {
     Navigator.of(context).pushReplacement(FadePageRoute<void>(page: screen));
+  }
+
+  /// "continue" alone if nobody's ever used this device, otherwise
+  /// "continue as `name`" -- naming whoever's actively signed in, or
+  /// failing that, whoever was last signed in (see [LearnerController.
+  /// loadLastUsedProfile], which survives logging out). Cuts the name off
+  /// with "..." once it'd make the label too long for the button.
+  String _continueLabel(BuildContext context) {
+    final name =
+        (LearnerScope.of(context).profile?.name ?? _lastUsedProfile?.name)
+            ?.trim();
+    if (name == null || name.isEmpty) return 'continue';
+    final shown = name.length > _maxContinueNameLength
+        ? '${name.substring(0, _maxContinueNameLength - 3)}...'
+        : name;
+    return 'continue as $shown';
+  }
+
+  /// Resuming with nobody actively signed in (e.g. right after logging
+  /// out) silently signs back into whoever "continue" named, so Home
+  /// actually shows that learner instead of empty defaults.
+  Future<void> _continue(BuildContext context) async {
+    final scope = LearnerScope.of(context);
+    if (scope.profile == null) {
+      final resume = _lastUsedProfile ?? await scope.loadLastUsedProfile();
+      if (resume != null) await scope.switchTo(resume);
+    }
+    if (!context.mounted) return;
+    _replaceWith(context, const FourthLoadingScreen());
   }
 
   @override
@@ -88,9 +152,8 @@ class MainMenuScreen extends StatelessWidget {
                     width: 352,
                     height: RiveLongButton.height,
                     child: RiveLongButton(
-                      label: 'continue',
-                      onPressed: () =>
-                          _replaceWith(context, const FourthLoadingScreen()),
+                      label: _continueLabel(context),
+                      onPressed: () => unawaited(_continue(context)),
                     ),
                   ),
                   Positioned(

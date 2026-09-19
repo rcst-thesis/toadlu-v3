@@ -253,6 +253,47 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+      'Collapsing with several lessons then Energy dropping below 10 does '
+      "not crash (regression: the collapsed deck called `.first` on "
+      "_visibleLessons, which is empty once Energy makes zero lessons "
+      'available)', (tester) async {
+    Widget buildPanel(int energy) => MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 378,
+              child: HomeLessonPanel(
+                energy: energy,
+                additionalLessons: const [
+                  HomeLessonPreview(
+                    unitTitle: 'yunit 2',
+                    category: 'MGA KULAY',
+                    status: HomeLessonStatus.available,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(buildPanel(60));
+    final toggle = find.byKey(const Key('home-lesson-collapse-toggle'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(find.byKey(const Key('home-lesson-card')), findsOneWidget);
+
+    // Energy falls below 10 (e.g. spent down, or a new day) while the
+    // panel is still collapsed from when there were several lessons.
+    await tester.pumpWidget(buildPanel(5));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('home-lesson-card')), findsNothing);
+    expect(find.byKey(const Key('home-lesson-availability')), findsOneWidget);
+    expect(find.text('0 lessons subong nga adlaw!'), findsOneWidget);
+  });
+
   testWidgets('A single available lesson has no collapse control',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 10)));

@@ -5,6 +5,7 @@ import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/second_loading_screen.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 import 'package:tudlo/shared/widgets/rive_long_button.dart';
+import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class EnergySetterScreen extends StatefulWidget {
   const EnergySetterScreen({
@@ -407,55 +408,55 @@ class _BatteryCell extends StatelessWidget {
       child: SizedBox(
         width: 23,
         height: 81,
-        child: Stack(
-          children: [
-            if (filled || isIncrease)
-              Positioned.fill(
-                top: 2,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color:
-                        filled ? AppColors.darkGreen : const Color(0xFF616161),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            if (filled || isIncrease)
-              Positioned.fill(
-                bottom: 2,
-                child: Material(
-                  key: isIncrease
-                      ? const Key('energy-plus-button')
-                      : isDecrease
-                          ? const Key('energy-minus-button')
-                          : null,
-                  color: filled ? AppColors.green : const Color(0xFF797777),
-                  borderRadius: BorderRadius.circular(10),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: isIncrease
-                        ? onIncrease
-                        : isDecrease && decreaseEnabled
-                            ? onDecrease
-                            : null,
-                    child: Center(
-                      child: isIncrease
-                          ? const Icon(Icons.add_rounded,
-                              color: AppColors.green, size: 20)
-                          : isDecrease && decreaseEnabled
-                              ? const Icon(
-                                  Icons.remove_rounded,
-                                  key: Key('energy-minus-icon'),
-                                  color: Colors.white,
-                                  size: 20,
-                                )
-                              : null,
+        child: interactive
+            ? StickerPressButton(
+                key: isIncrease
+                    ? const Key('energy-plus-button')
+                    : const Key('energy-minus-button'),
+                onPressed: isIncrease ? onIncrease : onDecrease,
+                frontColor: filled ? AppColors.green : const Color(0xFF797777),
+                depthColor:
+                    filled ? AppColors.darkGreen : const Color(0xFF616161),
+                restLift: 2,
+                borderRadius: 10,
+                child: isIncrease
+                    ? const Icon(Icons.add_rounded,
+                        color: AppColors.green, size: 20)
+                    : const Icon(
+                        Icons.remove_rounded,
+                        key: Key('energy-minus-icon'),
+                        color: Colors.white,
+                        size: 20,
+                      ),
+              )
+            : Stack(
+                children: [
+                  if (filled || isIncrease)
+                    Positioned.fill(
+                      top: 2,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: filled
+                              ? AppColors.darkGreen
+                              : const Color(0xFF616161),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  if (filled || isIncrease)
+                    Positioned.fill(
+                      bottom: 2,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: filled
+                              ? AppColors.green
+                              : const Color(0xFF797777),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-          ],
-        ),
       ),
     );
   }
