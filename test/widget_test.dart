@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
+import 'package:tudlo/shared/widgets/rive_long_button.dart';
 import 'package:tudlo/tudlo.dart';
 
 /// Seeds a fresh [LearnerController] with [names] real, individually saved
@@ -123,6 +124,73 @@ void main() {
     expect(find.text('load'), findsOneWidget);
   });
 
+  testWidgets(
+      'The Maral splash plays its logo audio 2 seconds in, not before, '
+      'and not once the Tudlo splash has taken over', (tester) async {
+    var playCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StartupFlow(
+          splashDuration: const Duration(seconds: 5),
+          splashWarmup: () async {},
+          assetWarmup: () async {},
+          logoAudioPlayer: () async {
+            playCount++;
+          },
+        ),
+      ),
+    );
+
+    await tester.pump(const Duration(milliseconds: 1999));
+    expect(playCount, 0);
+
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(playCount, 1);
+
+    // Still within the 5s Maral splash -- must not fire again.
+    await tester.pump(const Duration(seconds: 2));
+    expect(playCount, 1);
+
+    // Drain the rest of the splash sequence's own timers so none are left
+    // pending when the test ends.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      "The logo audio doesn't fire once the splash duration is too short "
+      'for it to still be on the Maral stage', (tester) async {
+    var playCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StartupFlow(
+          splashDuration: const Duration(milliseconds: 500),
+          splashWarmup: () async {},
+          assetWarmup: () async {},
+          logoAudioPlayer: () async {
+            playCount++;
+          },
+        ),
+      ),
+    );
+
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.bySemanticsLabel('Tudlo splash screen'), findsOneWidget);
+
+    // The 2s audio timer fires here, well after stage 0 has already
+    // moved on -- _playLogoAudio's own `_stage != 0` guard must skip it.
+    await tester.pump(const Duration(seconds: 2));
+    expect(playCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Tudlo splash waits until background preparation is ready',
       (tester) async {
     final preparation = Completer<void>();
@@ -178,11 +246,26 @@ void main() {
     await tester.tap(find.text('load'));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(FadeTransition), findsWidgets);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(
       find.bySemanticsLabel('maayong pag balik! Load saved progress'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('main menu continue is disabled on a fresh install',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MainMenuScreen()));
+    await tester.pump();
+
+    final continueButton = tester.widget<RiveLongButton>(
+      find.byWidgetPredicate(
+        (widget) => widget is RiveLongButton && widget.label == 'continue',
+      ),
+    );
+    expect(continueButton.enabled, isFalse);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets("main menu continue shows the current learner's name",
@@ -229,13 +312,89 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.bySemanticsLabel('continue as Anna'), findsOneWidget);
+    final continueButton = tester.widget<RiveLongButton>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is RiveLongButton && widget.label == 'continue as Anna',
+      ),
+    );
+    expect(continueButton.enabled, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'main menu continue resets to a disabled plain label after its '
+      'last-used save is deleted from Load (regression: it previously kept '
+      'naming and re-signing into a save that no longer exists, since the '
+      "cached last-used profile was never refreshed after Load's own "
+      'delete)', (tester) async {
+    final controller = await _controllerWithSaves(['Anna']);
+    await controller.logOut();
+    await tester.pumpWidget(
+      _wrapWithSaves(const MainMenuScreen(), controller),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.bySemanticsLabel('continue as Anna'), findsOneWidget);
+
+    // A widget predicate, not `find.text('load')` -- by now the Rive
+    // asset's own async load has often finished for every RiveLongButton on
+    // this screen (not just "continue"'s), swapping their fallback `Text`
+    // for a canvas-drawn Rive graphic that `find.text` can't see into. The
+    // predicate targets the button widget itself, so it works either way.
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) => widget is RiveLongButton && widget.label == 'load',
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.byType(LoadScreen), findsOneWidget);
+
+    await tester.tap(find.text('delete'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.tap(find.byKey(const Key('confirmation-yes-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    await tester.tap(find.byKey(const Key('load-back-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.byType(MainMenuScreen), findsOneWidget);
+
+    expect(find.bySemanticsLabel('continue'), findsOneWidget);
+    final continueButton = tester.widget<RiveLongButton>(
+      find.byWidgetPredicate(
+        (widget) => widget is RiveLongButton && widget.label == 'continue',
+      ),
+    );
+    expect(continueButton.enabled, isFalse);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('main menu continue opens loading 4', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: MainMenuScreen()));
+    // Needs a real last-used profile now that "continue" is disabled with
+    // nothing to continue to (regression test above) -- tapping it with no
+    // profile at all is no longer a reachable path.
+    final controller = await _controllerWithSaves(['Anna']);
+    await controller.logOut();
+    await tester.pumpWidget(
+      _wrapWithSaves(const MainMenuScreen(), controller),
+    );
+    await tester.pump();
+    await tester.pump();
 
-    await tester.tap(find.text('continue'));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is RiveLongButton && widget.label == 'continue as Anna',
+      ),
+    );
+    // Extra pump: unlike the no-profile path, this now awaits a real
+    // `switchTo` (a `SharedPreferences` write) before the navigation call
+    // fires.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.byType(FourthLoadingScreen), findsOneWidget);
@@ -900,7 +1059,8 @@ void main() {
       );
 
       await tester.pumpWidget(const MaterialApp(home: LoadScreen()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       final loadBack = paintedRect(
         find.byKey(const Key('load-back-button')),
       );
@@ -1011,7 +1171,8 @@ void main() {
       'Koka 7',
     ]);
     await tester.pumpWidget(_wrapWithSaves(const LoadScreen(), controller));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.byType(SingleChildScrollView), findsNothing);
     expect(find.byType(SaveCard), findsNWidgets(4));
@@ -1066,14 +1227,16 @@ void main() {
       'Koka 7',
     ]);
     await tester.pumpWidget(_wrapWithSaves(const LoadScreen(), controller));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.byType(SaveCard), findsNWidgets(4));
     expect(find.text('Koka 5'), findsNothing);
     expect(find.text('1'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('load-next-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.byType(SaveCard), findsNWidgets(3));
     expect(find.text('Koka 5'), findsOneWidget);
@@ -1092,7 +1255,8 @@ void main() {
     expect(third.top, greaterThan(first.top));
 
     await tester.tap(find.byKey(const Key('load-previous-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('Koka 5'), findsNothing);
     expect(find.text('1'), findsOneWidget);
@@ -1110,12 +1274,14 @@ void main() {
     );
 
     await tester.tap(find.text('load'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.byType(LoadScreen), findsOneWidget);
 
     // Index 1: the demo card is always first, the real "Anna" save second.
     await tester.tap(find.text('load').at(1));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.tap(find.byKey(const Key('confirmation-yes-button')));
     await tester.pump();
     // Let the fade transition finish so the removed routes actually leave
@@ -1156,8 +1322,10 @@ void main() {
 
     final controller = await _controllerWithSaves(['Koka pero kulay blue']);
     await tester.pumpWidget(_wrapWithSaves(const LoadScreen(), controller));
+    await tester.pump();
     await tester.tap(find.text('load').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('do you want to load\nthis one?'), findsOneWidget);
     expect(
@@ -1174,9 +1342,11 @@ void main() {
     );
 
     await tester.tap(find.byKey(const Key('confirmation-no-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.tap(find.text('delete').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('are you sure to\ndelete this one?'), findsOneWidget);
     final yesText = tester.widget<Text>(find.text('yes'));
@@ -1201,7 +1371,8 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'Main menu at $size');
 
       await tester.pumpWidget(const MaterialApp(home: LoadScreen()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       expect(tester.takeException(), isNull, reason: 'Load screen at $size');
       if (size == const Size(800, 1200)) {
         final tabletCard =

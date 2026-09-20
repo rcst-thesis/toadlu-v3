@@ -1,7 +1,19 @@
 import 'package:flutter/widgets.dart';
 
+import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/settings/domain/app_settings.dart';
 import 'package:tudlo/features/settings/domain/app_settings_repository.dart';
+
+/// The [AppSettings] actually in effect right now: the signed-in learner's
+/// own copy if one is signed in, otherwise the device-wide "main menu"
+/// copy. For app-wide consumers (e.g. background music) that always want
+/// "whichever settings currently apply," not `SettingsScreen`'s own
+/// per-panel choice -- see that screen's `_readSettings` for the distinct
+/// "am I editing the device-wide copy or a specific learner's" case, which
+/// this deliberately doesn't replace.
+AppSettings effectiveAppSettings(BuildContext context) =>
+    LearnerScope.of(context).profile?.settings ??
+    AppSettingsScope.of(context).settings;
 
 /// The app's one device-wide [AppSettings] -- in effect whenever nobody is
 /// signed in (the main menu), and what a brand new learner's own settings

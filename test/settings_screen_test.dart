@@ -797,4 +797,96 @@ void main() {
     expect(versionBottom, lessThanOrEqualTo(640));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'The back button scrolls away with the content, same as Me screen\'s '
+      'own settings button (me_screen.dart) -- not a fixed overlay',
+      (tester) async {
+    // Short viewport so there's actually something to scroll.
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+    await tester.pumpAndSettle();
+
+    final backButton = find.byKey(const Key('load-back-button'));
+    expect(backButton, findsOneWidget);
+    final before = tester.getTopLeft(backButton).dy;
+
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(backButton).dy, lessThan(before));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      "The back button's left inset tracks the centered content's own "
+      'left edge, not the raw window edge (regression: it previously '
+      'scaled off MediaQuery\'s full window width while nested inside a '
+      "420-wide ConstrainedBox, drifting away from the content's actual "
+      'left edge on any window wider than that)', (tester) async {
+    tester.view.physicalSize = const Size(900, 917);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+    await tester.pumpAndSettle();
+
+    final backButtonLeft = tester
+        .getTopLeft(
+          find.byKey(const Key('load-back-button')),
+        )
+        .dx;
+    // The General panel stretches to the content column's full width, so
+    // its own left edge is the true reference point -- unlike "General"
+    // the text, which is center-aligned within it and tells us nothing
+    // about where the column itself starts.
+    final contentLeft = tester
+        .getTopLeft(find.byKey(const Key('settings-category-general')))
+        .dx;
+
+    // The button's own left padding (16-32px) plus the content's own 18px
+    // horizontal padding puts them within a small, bounded range of each
+    // other -- not hundreds of pixels apart, which is what the old
+    // MediaQuery-based calculation produced on a 900-wide window (it
+    // clamped to a fixed 32px from the real window edge while the centered
+    // 420-wide content itself started at (900-420)/2 = 240px in).
+    expect((backButtonLeft - contentLeft).abs(), lessThan(30));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'The back button sits near the top of the screen with every panel '
+      'collapsed (regression: Center also centers vertically, and a '
+      "SingleChildScrollView shrink-wraps to its content's height when "
+      "given loose constraints -- with nothing expanded (the content's "
+      "shortest state), that combination floated the whole column, back "
+      "button included, toward the screen's vertical middle instead of "
+      'its top)', (tester) async {
+    // Taller than the collapsed content, so if it were vertically centered
+    // there'd be real, measurable empty space above it.
+    tester.view.physicalSize = const Size(412, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+    await tester.pumpAndSettle();
+
+    final backButtonTop =
+        tester.getTopLeft(find.byKey(const Key('load-back-button'))).dy;
+
+    // The button's own top inset clamps to at most 32px -- well under a
+    // fraction of the 1400-tall screen a vertically-centered layout would
+    // have pushed it down by instead.
+    expect(backButtonTop, lessThan(100));
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -20,6 +20,8 @@ The current runtime-contract inventory is:
 | `assets/images/green_back_button.riv` | `Artboard` (93 × 44) | `State Machine 1` | View Model `Button` (`pressed` boolean only; no trigger) drives press motion | `RiveBackButton` |
 | `assets/images/edit_button_me.riv` | `Artboard` (190 × 198) | `State Machine 1` | View Model `Button` (`down` boolean only; no trigger) drives press motion | `RiveEditButton` (via `MeEditButton`) |
 | `assets/images/toadlu_map.riv` | Default artboard (2400 × 1400) | Default state machine + one nested `LocationStateMachine<Name>` per location (internal only, not Flutter-referenced) | View Model `MapState`: per-location (`house`, `school`, `park`, `market`, `farm`, `beach`, `church`, `hospital` -- note `park` not `plaza`) `LocationState` instance with `isUnlocked`/`hasEvent` booleans (Flutter-owned) and `locationTapped` trigger (Rive-owned, Flutter listens); `pressTrigger` is internal-only. Has its own click detection -- no external Flutter tap zones. | `RiveMapScene` (via `MapScreen`) |
+| `assets/images/avatar.riv` + `avatar_2.riv`…`avatar_8.riv` | `Ok_Color` (500 × 500, only Artboard in `avatar.riv`) plus one Artboard per extra file (see "Avatar contract" below -- their internal names are not repeated here) | `State Machine 1` | No View Model/data binding (`viewModelCount` is 0) -- an internal, self-contained blink + pupil-follow ambient loop per Artboard; Flutter neither sets nor reads any input | `RiveAvatar` (Me screen's learner card and its Edit popup) |
+| `assets/images/avatar_bg_grade1.riv` / `_grade2.riv` / `_grade3.riv` | `Grade1_Background` / `Grade2_Background` / `Grade3_Background` (one per file) | `Grade1_Background_StateMachine` / `Grade2_Background_StateMachine` / `Grade3_Background_StateMachine` | No View Model/data binding (`viewModelCount` is 0) -- an internal, self-contained diagonal-scroll ambient loop (`Diagonal_Scroll_Layer`); Flutter neither sets nor reads any input | `RiveAvatarBackground` (behind `RiveAvatar` in both the learner card and the Edit popup) |
 
 ### Long button contract
 
@@ -181,6 +183,75 @@ On a `locationTapped` event, `MapScreen._handleLocationTapped`:
    by whatever owns a lesson/event's lifecycle when it ends, restoring every
    location to its default.
 5. Navigates via `Navigator.push`/`popUntil`.
+
+### Avatar contract
+
+`RiveAvatar` in `lib/shared/widgets/rive_avatar.dart` renders one avatar by a
+public id (`LearnerProfile.defaultAvatarId` etc.). None of the avatar `.riv`
+files have any View Model/data binding (`viewModelCount` is `0`): each
+Artboard is fully self-contained, so Flutter only ever selects an Artboard by
+name (`ArtboardNamed`) and lets its default state machine run -- there is
+nothing to set or read.
+
+Two sources feed the public id space, both merged by
+`RiveAvatar.availableArtboardIds()` (what the Edit popup's avatar-tile grid
+reads, rather than a hardcoded count, so it grows automatically):
+
+- `avatar.riv` -- the original file. Its own Artboard names (currently just
+  `Ok_Color`) double as the public id directly, read via `File.artboardAt(i)`
+  in file order. More Artboards are expected to be added to this same file
+  later.
+- `RiveAvatar._extraSources` -- avatars that arrived as their own separate,
+  single-Artboard `.riv` files (`assets/images/avatar_2.riv` through
+  `avatar_8.riv`) instead of more Artboards inside `avatar.riv`, and can't be
+  re-exported/renamed. Each maps a public id (`avatar_2`, `avatar_3`, ...) to
+  that file's path plus its own internal Artboard name. **Some of those
+  internal Artboard names are offensive** (ethnic-stereotype/slur labels the
+  original export shipped with) -- they exist only as a private lookup key
+  inside `_resolve()`/`_extraSources` in `rive_avatar.dart` and must never be
+  surfaced in UI, semantics, logs, persisted learner data, or elsewhere in
+  this document. Every other part of the app only ever sees the public id.
+
+The decoded `rive.File` for each path is cached for the app's lifetime in a
+`Map<String, Future<rive.File?>>` inside `RiveAvatar` itself (same "shared,
+never disposed" pattern `MapRiveAsset` uses for the map file) -- loading a
+given file concurrently from multiple `RiveAvatar` instances (the learner
+card's preview plus the Edit popup's own preview and every grid tile)
+previously deadlocked the native backend before this was cached, so this is
+required, not just an optimization. Each `RiveAvatar` instance still creates
+and disposes its own `RiveWidgetController`/Artboard/StateMachine
+independently; only the decoded `File`s themselves are shared.
+
+Because the state machine's blink/pupil-follow loop animates continuously
+once loaded, any widget test that mounts a screen containing a `RiveAvatar`
+must use bounded `pump(duration)` calls, never `pumpAndSettle()` -- settling
+never finishes while the loop keeps requesting repaints (see
+`test/me_screen_test.dart` and `test/me_edit_dialog_test.dart`).
+
+### Avatar background contract
+
+`RiveAvatarBackground` in `lib/shared/widgets/rive_avatar_background.dart`
+renders a grade-specific looping background behind `RiveAvatar`, inside the
+same rounded rect (both wrapped in one shared `ClipRRect`), at the learner
+card (`MeLearnerCard`'s `_headerOverlays`) and the Edit popup
+(`MeEditDialog`'s avatar preview). Three files, one per grade (`grade` is
+always exactly `1`, `2`, or `3` -- `grade_selection_screen.dart`'s fixed
+3-choice carousel), each with exactly one Artboard and state machine named
+`Grade<N>_Background`/`Grade<N>_Background_StateMachine`. Same shape as
+`avatar.riv`: no View Model/data binding at all (`viewModelCount` is `0`) --
+an internal, self-contained diagonal-scroll ambient loop
+(`Diagonal_Scroll_Layer`); Flutter only selects the Artboard by name and lets
+its state machine run.
+
+Rendered with `Fit.cover` (not `RiveAvatar`'s own `Fit.contain`) since this is
+a background meant to fill the rect edge-to-edge with no letterboxing. Same
+"shared decoded `File` per path, never disposed" cache as `RiveAvatar`, for
+the same reason (both call sites can mount concurrently). Falls back to a
+flat `Color(0xFFFFE49A)` `DecoratedBox` -- the same flat cream this replaced
+-- while loading or if the asset/backend is unavailable. Because each
+`RiveAvatarBackground` instance persists across unrelated parent rebuilds
+(e.g. the Edit popup's name field being typed into), its controller is only
+created once and the loop is never restarted by those rebuilds.
 
 ## What Is Not Rive
 

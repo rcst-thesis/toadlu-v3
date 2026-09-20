@@ -107,7 +107,16 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _backgroundColor,
       body: SafeArea(
-        child: Center(
+        // Align(topCenter), not Center -- Center also centers *vertically*,
+        // and SingleChildScrollView shrink-wraps to its content's height
+        // when given loose constraints. With every panel collapsed (the
+        // shortest the content ever gets), that combination floated the
+        // whole column -- back button included -- toward the vertical
+        // middle of the screen instead of sitting at the top where it
+        // belongs. Horizontal centering (for wide windows) is all that was
+        // ever intended here.
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             // A plain scrolling column, not IntrinsicHeight+Spacer --
@@ -123,32 +132,35 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Same scale/inset math as AdaptiveBackButtonPlacement
-                  // (lib/shared/widgets/design_navigation_button.dart), but
-                  // driven by the actual screen size rather than this
-                  // column's own (narrower, padded) constraints -- so the
-                  // button matches onboarding's size and left inset exactly
-                  // while still scrolling away with the rest of the content
-                  // instead of floating as a fixed overlay. Kept outside
-                  // the rest of the content's horizontal padding below, or
-                  // that 18px would stack on top of this left inset.
-                  Builder(
-                    builder: (context) {
-                      final screenSize = MediaQuery.sizeOf(context);
-                      final widthScale = screenSize.width / 412;
-                      final heightScale = screenSize.height / 917;
+                  // Scrolls away with the rest of the content (like Me
+                  // screen's own settings button -- me_screen.dart), not a
+                  // fixed Stack overlay. The *width* half of the scale has
+                  // to come from *this* LayoutBuilder's own constrained
+                  // width, not raw MediaQuery -- this widget already lives
+                  // inside the ConstrainedBox(maxWidth: 420) above, so on
+                  // any window wider than 420 a MediaQuery-based width
+                  // scale would drift away from where the actual centered
+                  // content starts (exactly the "not glued" bug). Height
+                  // *is* unbounded inside a scroll view though, so that half
+                  // comes from MediaQuery's safe-area-adjusted height
+                  // instead, matching the min(widthScale, heightScale) that
+                  // AdaptiveBackButtonPlacement uses on the onboarding Name
+                  // screen -- keeping this button the same scale as that one.
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final mediaPadding = MediaQuery.paddingOf(context);
+                      final availableHeight =
+                          MediaQuery.sizeOf(context).height -
+                              mediaPadding.top -
+                              mediaPadding.bottom;
+                      final widthScale = constraints.maxWidth / 412;
+                      final heightScale = availableHeight / 917;
                       final scale =
                           widthScale < heightScale ? widthScale : heightScale;
-                      final left = (screenSize.width * 27 / 412).clamp(
-                        16.0,
-                        32.0,
-                      );
-                      final top = (screenSize.height * 51 / 917).clamp(
-                        16.0,
-                        32.0,
-                      );
+                      final left = (27 * scale).clamp(16.0, 32.0);
+                      final top = (51 * scale).clamp(16.0, 32.0);
                       return Padding(
-                        padding: EdgeInsets.only(left: left, top: top),
+                        padding: EdgeInsets.fromLTRB(left, top, 0, 40),
                         child: Align(
                           alignment: Alignment.topLeft,
                           child: SizedBox(
@@ -165,7 +177,6 @@ class SettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 18),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     child: Column(
@@ -204,7 +215,7 @@ class SettingsScreen extends StatelessWidget {
                           ),
                           insideLearnerProfile: insideLearnerProfile,
                         ),
-                        const SizedBox(height: 96),
+                        const SizedBox(height: 200),
                         const _AboutPanel(
                           key: Key('settings-category-about'),
                         ),

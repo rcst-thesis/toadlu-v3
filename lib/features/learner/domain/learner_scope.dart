@@ -137,6 +137,37 @@ class LearnerController extends ChangeNotifier {
     }
   }
 
+  /// Renames the current learner (Me screen's Edit popup) and best-effort
+  /// persists it. A no-op if there's no current learner yet.
+  Future<void> updateName(String name) async {
+    final current = _profile;
+    if (current == null) return;
+    final updated = current.copyWith(name: name);
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
+  /// Changes which `assets/images/avatar.riv` Artboard the current learner
+  /// has picked (Me screen's Edit popup) and best-effort persists it. A
+  /// no-op if there's no current learner yet.
+  Future<void> updateAvatar(String avatarId) async {
+    final current = _profile;
+    if (current == null) return;
+    final updated = current.copyWith(avatarId: avatarId);
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, same as createAndSave.
+    }
+  }
+
   /// Updates the current learner's energy level (10-100, in 10% steps --
   /// same range/step as onboarding's energy setter) and best-effort
   /// persists it. This is the "parent controlled" value the Learning &

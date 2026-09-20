@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:tudlo/shared/widgets/rive_avatar.dart';
+import 'package:tudlo/shared/widgets/rive_avatar_background.dart';
 import 'package:tudlo/shared/widgets/svg_text_overlay.dart';
 
 /// The learner card's three sections, each backed by its own exported
@@ -23,6 +25,7 @@ class MeLearnerCard extends StatelessWidget {
     required this.learnerName,
     required this.grade,
     required this.userCode,
+    required this.avatarId,
     required this.selectedTab,
     required this.onTabSelected,
     required this.createdAt,
@@ -35,6 +38,7 @@ class MeLearnerCard extends StatelessWidget {
   final String learnerName;
   final int grade;
   final String userCode;
+  final String avatarId;
   final MeCardTab selectedTab;
   final ValueChanged<MeCardTab> onTabSelected;
   final DateTime createdAt;
@@ -127,6 +131,37 @@ class MeLearnerCard extends StatelessWidget {
   // Identical across all three exported SVGs.
   List<Widget> _headerOverlays(double scale) {
     return [
+      // The baked SVG art already reserves this exact rounded rectangle
+      // (x:16, y:24, w:115, h:152 in the SVG's own 374-wide coordinate
+      // space -- see assets/images/me_learner_card.svg) as the avatar's own
+      // background/placeholder, so the live Rive avatar just draws directly
+      // on top of it -- no separate mask needed, unlike the baked-text
+      // overlays below.
+      Positioned(
+        key: const Key('me-learner-card-avatar'),
+        left: 16 * scale,
+        top: 24 * scale,
+        width: 115 * scale,
+        height: 152 * scale,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12 * scale),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              RiveAvatarBackground(grade: grade),
+              // `RiveAvatar` itself always fits its artboard with
+              // `Fit.contain` (shared with the Edit popup's
+              // preview/tiles, so not changed globally) -- scaled up here
+              // so it reads bigger in this box too; the ClipRRect above
+              // crops whatever spills past the rounded corners.
+              Transform.scale(
+                scale: 1.25,
+                child: RiveAvatar(artboardId: avatarId),
+              ),
+            ],
+          ),
+        ),
+      ),
       SvgTextMask(
         left: 146,
         top: 51,

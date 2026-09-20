@@ -106,8 +106,10 @@ This status is based only on current code and tests.
   `AppBottomTabNavigation` router. Map is a real screen (see above); Lessons,
   Translate, and Dictionary are still `PlaceholderScreen` shells pending real
   content; Me is a real screen shell showing real learner data where
-  loaded (Settings/Edit buttons functional; badge collection UI, edit flow
-  still incomplete).
+  loaded (Settings/Edit buttons functional; Edit opens a real popup that
+  renames the learner and picks a Koka avatar from `assets/images/avatar.riv`
+  -- persisted via `LearnerController.updateName`/`updateAvatar` -- badge
+  collection UI is still incomplete).
 - Voice-over callback UI exists without audio implementation.
 - Hardware sensor support exists but Welcome disables it in favor of touch.
 - Onboarding data now persists via the Learner Save System (above), but
@@ -130,7 +132,8 @@ This status is based only on current code and tests.
   completion incrementing a learner's `lessonsFinished`, specifically, is
   not wired -- the save system supports it, nothing calls it yet).
 - Real Translate, Dictionary, and Lessons content (still shells); Me's
-  badge collection UI and profile editing.
+  badge collection UI. (Me's name/avatar profile editing is now real -- see
+  Partial above.)
 - Production lesson model/content, speaker/favorite behavior, and final
   ambient polish.
 - Audio assets/service.

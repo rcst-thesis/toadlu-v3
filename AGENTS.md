@@ -199,7 +199,9 @@ without an approved architecture.
 - Home tabs are tappable but lack destinations in `HomeScreen`.
 - Continue uses temporary learner defaults and restores no save.
 - Save/load/delete are in-memory demo behavior.
-- Voice-over callbacks exist, but no audio package/assets/service is installed.
+- Voice-over callbacks exist but aren't wired to real audio. `flutter_soloud`
+  is installed and used for the Maral splash's logo sting and app-wide
+  looping background music (`lib/features/startup/presentation/startup_flow.dart`).
 - No lessons, backend/NMT, auth, persistence, or durable app state exists.
 - No real Rive runtime integration exists.
 - Platforms are portrait-only; landscape is unverified.

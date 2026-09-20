@@ -1,20 +1,22 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
+import 'package:tudlo/features/learner/domain/learner_profile.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_badge_collection.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_collections_header.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_content_footer.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_daily_streak_card.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_edit_button.dart';
+import 'package:tudlo/features/me/presentation/widgets/me_edit_dialog.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_learner_card.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_section_wave_divider.dart';
 import 'package:tudlo/features/main_menu/presentation/main_menu_screen.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_settings_button.dart';
-import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 import 'package:tudlo/shared/widgets/rive_settings_button.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
@@ -70,6 +72,9 @@ class _MeScreenState extends State<MeScreen> {
       widget.grade ?? LearnerScope.of(context).profile?.grade ?? 1;
   String get _userCode =>
       widget.userCode ?? LearnerScope.of(context).profile?.id ?? '0000001';
+  String get _avatarId =>
+      LearnerScope.of(context).profile?.avatarId ??
+      LearnerProfile.defaultAvatarId;
   DateTime get _createdAt =>
       widget.createdAt ??
       LearnerScope.of(context).profile?.createdAt ??
@@ -99,16 +104,31 @@ class _MeScreenState extends State<MeScreen> {
     );
   }
 
-  void _openEdit(BuildContext context) {
-    Navigator.of(context).push(
-      FadePageRoute<void>(
-        page: const PlaceholderScreen(
-          title: 'Edit',
-          description: 'Temporary Edit profile shell',
-          icon: Icons.edit_rounded,
-        ),
+  Future<void> _openEdit(BuildContext context) async {
+    final result = await showGeneralDialog<MeEditResult>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Edit profile',
+      barrierColor: Colors.black45,
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (context, animation, secondaryAnimation) => MeEditDialog(
+        learnerName: _learnerName,
+        grade: _grade,
+        userCode: _userCode,
+        avatarId: _avatarId,
+      ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) =>
+          FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
       ),
     );
+    if (result == null || !context.mounted) return;
+    // Uses *this* screen's own context, not the dialog's -- see
+    // MeEditResult's doc for why the dialog can't safely do this itself.
+    final scope = LearnerScope.of(context);
+    if (result.name != _learnerName) await scope.updateName(result.name);
+    if (result.avatarId != _avatarId) await scope.updateAvatar(result.avatarId);
   }
 
   Future<void> _logOut(BuildContext context) async {
@@ -179,6 +199,7 @@ class _MeScreenState extends State<MeScreen> {
                                       learnerName: _learnerName,
                                       grade: _grade,
                                       userCode: _userCode,
+                                      avatarId: _avatarId,
                                       selectedTab: _selectedTab,
                                       onTabSelected: (tab) => setState(
                                         () => _selectedTab = tab,
@@ -223,7 +244,7 @@ class _MeScreenState extends State<MeScreen> {
                             child: FittedBox(
                               fit: BoxFit.contain,
                               child: MeEditButton(
-                                onPressed: () => _openEdit(context),
+                                onPressed: () => unawaited(_openEdit(context)),
                               ),
                             ),
                           ),

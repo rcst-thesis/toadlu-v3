@@ -24,8 +24,11 @@ class _LoadScreenState extends State<LoadScreen> {
 
   /// The one fixed, non-persisted sample save -- always present, never
   /// deletable, and loading it never touches [LearnerScope].
-  static const _demoSave =
-      SavePreview(name: 'demo koka', grade: GradeLevel.grade1);
+  static const _demoSave = SavePreview(
+    name: 'demo koka',
+    grade: GradeLevel.grade1,
+    avatarId: LearnerProfile.defaultAvatarId,
+  );
 
   var saves = const <SavePreview>[_demoSave];
   var _profiles = const <LearnerProfile>[];
@@ -75,7 +78,8 @@ class _LoadScreenState extends State<LoadScreen> {
           LoadConfirmationDialog(
         name: save.name,
         previewColor: save.previewColor,
-        previewAsset: save.assetPath,
+        grade: save.grade.number,
+        avatarId: save.avatarId,
         deleting: deleting,
       ),
     );
@@ -184,13 +188,14 @@ class _LoadScreenState extends State<LoadScreen> {
                                           height: 193,
                                           child: SaveCard(
                                             name: visibleSaves[index].name,
-                                            previewColor: visibleSaves[index]
-                                                .previewColor,
                                             previewShadowColor:
                                                 visibleSaves[index]
                                                     .previewShadowColor,
-                                            previewAsset:
-                                                visibleSaves[index].assetPath,
+                                            grade: visibleSaves[index]
+                                                .grade
+                                                .number,
+                                            avatarId:
+                                                visibleSaves[index].avatarId,
                                             onLoad: () => _confirm(
                                                 pageStart + index, false),
                                             onDelete: visibleSaves[index].isDemo

@@ -41,14 +41,32 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     unawaited(_loadLastUsedProfile());
   }
 
+  /// Resolves whoever's currently last-used on disk and sets [_lastUsedProfile]
+  /// to match exactly -- including back to `null` if storage now reports
+  /// nobody (e.g. that learner was deleted from the Load screen since this
+  /// was last resolved). Reused by both the initial mount resolve and
+  /// [_openLoad]'s post-return refresh below.
   Future<void> _loadLastUsedProfile() async {
     final profile = await LearnerScope.of(context).loadLastUsedProfile();
-    if (!mounted || profile == null) return;
+    if (!mounted) return;
     setState(() => _lastUsedProfile = profile);
   }
 
   void _open(BuildContext context, Widget screen) {
     Navigator.of(context).push(FadePageRoute<void>(page: screen));
+  }
+
+  /// Same as [_open] for the Load screen specifically, except it awaits the
+  /// pushed route's own `Future` (which a plain `push` would otherwise just
+  /// discard) so it knows exactly when the user has come back -- the one
+  /// moment [_lastUsedProfile] might have gone stale, since Load is the only
+  /// screen reachable from here that can delete the learner "continue" names.
+  Future<void> _openLoad(BuildContext context) async {
+    await Navigator.of(context).push(
+      FadePageRoute<void>(page: const LoadScreen()),
+    );
+    if (!mounted) return;
+    await _loadLastUsedProfile();
   }
 
   void _replaceWith(BuildContext context, Widget screen) {
@@ -71,13 +89,27 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     return 'continue as $shown';
   }
 
+  /// Whether "continue" has anyone to actually resume -- either an active
+  /// profile or a last-used one still on disk. Kept in lockstep with
+  /// [_continueLabel] since both read the same two sources, so the button's
+  /// enabled-state and its label can never disagree.
+  bool _canContinue(BuildContext context) =>
+      LearnerScope.of(context).profile != null || _lastUsedProfile != null;
+
   /// Resuming with nobody actively signed in (e.g. right after logging
   /// out) silently signs back into whoever "continue" named, so Home
   /// actually shows that learner instead of empty defaults.
+  ///
+  /// Always re-reads [LearnerController.loadLastUsedProfile] here rather
+  /// than trusting the cached [_lastUsedProfile] -- that cache is only
+  /// ever populated once per mount, so it goes stale (and would silently
+  /// resurrect a deleted profile via [LearnerController.switchTo]) if the
+  /// learner it names got deleted from the Load screen after this screen
+  /// was first built but before "continue" is tapped.
   Future<void> _continue(BuildContext context) async {
     final scope = LearnerScope.of(context);
     if (scope.profile == null) {
-      final resume = _lastUsedProfile ?? await scope.loadLastUsedProfile();
+      final resume = await scope.loadLastUsedProfile();
       if (resume != null) await scope.switchTo(resume);
     }
     if (!context.mounted) return;
@@ -153,6 +185,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     height: RiveLongButton.height,
                     child: RiveLongButton(
                       label: _continueLabel(context),
+                      enabled: _canContinue(context),
                       onPressed: () => unawaited(_continue(context)),
                     ),
                   ),
@@ -163,7 +196,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     height: RiveLongButton.height,
                     child: RiveLongButton(
                       label: 'load',
-                      onPressed: () => _open(context, const LoadScreen()),
+                      onPressed: () => unawaited(_openLoad(context)),
                     ),
                   ),
                 ],

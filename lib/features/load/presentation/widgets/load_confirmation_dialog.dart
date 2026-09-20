@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/shared/widgets/rive_avatar.dart';
+import 'package:tudlo/shared/widgets/rive_avatar_background.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
 class LoadConfirmationDialog extends StatelessWidget {
   const LoadConfirmationDialog({
     required this.name,
     required this.previewColor,
-    required this.previewAsset,
+    required this.grade,
+    required this.avatarId,
     required this.deleting,
     super.key,
   });
 
   final String name;
   final Color previewColor;
-  final String previewAsset;
+  final int grade;
+  final String avatarId;
   final bool deleting;
 
   @override
@@ -91,7 +95,8 @@ class LoadConfirmationDialog extends StatelessWidget {
                           child: _ConfirmationSavePreview(
                             name: name,
                             previewColor: previewColor,
-                            previewAsset: previewAsset,
+                            grade: grade,
+                            avatarId: avatarId,
                           ),
                         ),
                         Positioned(
@@ -132,12 +137,14 @@ class _ConfirmationSavePreview extends StatelessWidget {
   const _ConfirmationSavePreview({
     required this.name,
     required this.previewColor,
-    required this.previewAsset,
+    required this.grade,
+    required this.avatarId,
   });
 
   final String name;
   final Color previewColor;
-  final String previewAsset;
+  final int grade;
+  final String avatarId;
 
   @override
   Widget build(BuildContext context) {
@@ -185,22 +192,17 @@ class _ConfirmationSavePreview extends StatelessWidget {
               ),
               Positioned.fill(
                 bottom: 4,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: previewColor,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
-                    ),
-                    child: Image.asset(
-                      previewAsset,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
-                      gaplessPlayback: true,
-                    ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      RiveAvatarBackground(grade: grade),
+                      Transform.scale(
+                        scale: 1.5,
+                        child: RiveAvatar(artboardId: avatarId),
+                      ),
+                    ],
                   ),
                 ),
               ),

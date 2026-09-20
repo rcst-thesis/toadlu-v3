@@ -19,6 +19,10 @@ class RiveLongButton extends StatefulWidget {
   static const width = 352.295;
   static const height = 52.0;
   static const _assetPath = 'assets/images/longbtn.riv';
+  // Matches RiveLoadNavButton's own disabled-opacity contract
+  // (rive_load_nav_button.dart), so every disabled Rive button in the app
+  // dims the same amount.
+  static const _disabledOpacity = 0.35;
 
   final String label;
   final VoidCallback onPressed;
@@ -124,29 +128,32 @@ class _RiveLongButtonState extends State<RiveLongButton> {
   Widget build(BuildContext context) {
     final controller = _controller;
     final semanticsLabel = widget.semanticLabel ?? widget.label;
-    return SizedBox(
-      width: RiveLongButton.width,
-      height: RiveLongButton.height,
-      child: Semantics(
-        button: true,
-        enabled: widget.enabled,
-        label: semanticsLabel,
-        onTap: widget.enabled ? widget.onPressed : null,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: _handleTapDown,
-          onTapUp: _handleTapUp,
-          onTapCancel: _handleTapCancel,
+    return Opacity(
+      opacity: widget.enabled ? 1 : RiveLongButton._disabledOpacity,
+      child: SizedBox(
+        width: RiveLongButton.width,
+        height: RiveLongButton.height,
+        child: Semantics(
+          button: true,
+          enabled: widget.enabled,
+          label: semanticsLabel,
           onTap: widget.enabled ? widget.onPressed : null,
-          child: IgnorePointer(
-            ignoring: !widget.enabled,
-            child: controller == null
-                ? _LongButtonFallback(label: widget.label)
-                : rive.RiveWidget(
-                    controller: controller,
-                    fit: rive.Fit.contain,
-                    alignment: Alignment.center,
-                  ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: _handleTapDown,
+            onTapUp: _handleTapUp,
+            onTapCancel: _handleTapCancel,
+            onTap: widget.enabled ? widget.onPressed : null,
+            child: IgnorePointer(
+              ignoring: !widget.enabled,
+              child: controller == null
+                  ? _LongButtonFallback(label: widget.label)
+                  : rive.RiveWidget(
+                      controller: controller,
+                      fit: rive.Fit.contain,
+                      alignment: Alignment.center,
+                    ),
+            ),
           ),
         ),
       ),

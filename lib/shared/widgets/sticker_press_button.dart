@@ -89,7 +89,17 @@ class _StickerPressButtonState extends State<StickerPressButton> {
           // shorter than its own corner radius, warping the rounded
           // corners into a squashed pill shape instead of a normal
           // rounded rectangle.
-          Positioned(
+          //
+          // `AnimatedPositioned`, not plain `Positioned`: a caller can
+          // change `restLift` itself between builds (e.g. the Me screen's
+          // avatar tiles use a smaller rest lift once selected) -- if this
+          // layer snapped instantly while the front layer below animates
+          // toward the same new target, the two fall out of sync for the
+          // front layer's transition and this layer's top edge is briefly
+          // exposed above it.
+          AnimatedPositioned(
+            duration: _pressDuration,
+            curve: Curves.easeOut,
             left: 0,
             right: 0,
             top: widget.restLift,

@@ -4,6 +4,11 @@ import 'package:tudlo/features/me/presentation/screens/me_screen.dart';
 import 'package:tudlo/features/main_menu/presentation/main_menu_screen.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_learner_card.dart';
 
+// None of the testWidgets below use pumpAndSettle -- MeScreen's learner
+// card always shows a live avatar whose blink/pupil-follow state machine
+// animates continuously once loaded, so settling never actually finishes.
+// Bounded pumps only, throughout this file.
+
 void main() {
   testWidgets(
       'Log out shows a confirmation dialog; cancel stays, confirm returns '
@@ -14,7 +19,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MaterialApp(home: MeScreen()));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     final scrollable = find
         .descendant(
@@ -26,20 +32,25 @@ void main() {
     await tester.scrollUntilVisible(logoutButton, 500, scrollable: scrollable);
 
     await tester.tap(logoutButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.byKey(const Key('me-logout-dialog')), findsOneWidget);
 
     // Cancel: dialog closes, still on the Me screen.
     await tester.tap(find.byKey(const Key('me-logout-cancel-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.byKey(const Key('me-logout-dialog')), findsNothing);
     expect(find.byKey(const Key('me-screen')), findsOneWidget);
 
     // Confirm: navigates away to the name screen.
     await tester.tap(logoutButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.tap(find.byKey(const Key('me-logout-confirm-button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byKey(const Key('me-screen')), findsNothing);
     expect(find.byType(MainMenuScreen), findsOneWidget);
@@ -64,12 +75,14 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.byKey(const Key('me-details-age-value')), findsNothing);
 
     await tester.tap(find.byKey(const Key('me-tab-details')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('friendship'), findsOneWidget);
     expect(find.text('Abyan'), findsOneWidget);
@@ -78,7 +91,8 @@ void main() {
     expect(find.text('Josh'), findsNWidgets(2));
 
     await tester.tap(find.byKey(const Key('me-tab-about')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.byKey(const Key('me-details-age-value')), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -92,10 +106,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(MaterialApp(home: MeScreen()));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     await tester.tap(find.byKey(const Key('me-tab-progress')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('lesson finished'), findsOneWidget);
     expect(find.text('sticker earned'), findsOneWidget);
@@ -120,10 +136,12 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     await tester.tap(find.byKey(const Key('me-tab-progress')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('3'), findsOneWidget);
     expect(find.text('5'), findsOneWidget);
@@ -138,7 +156,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(MaterialApp(home: MeScreen(currentStreak: 5)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.byKey(const Key('me-daily-streak-card')), findsOneWidget);
     expect(find.text('5'), findsOneWidget);

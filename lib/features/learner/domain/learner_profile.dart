@@ -16,6 +16,7 @@ class LearnerProfile {
     required this.grade,
     required this.energy,
     required this.createdAt,
+    this.avatarId = defaultAvatarId,
     this.lessonsFinished = 0,
     this.stickersEarned = 0,
     this.badgesEarned = 0,
@@ -37,6 +38,14 @@ class LearnerProfile {
   final int grade;
   final int energy;
   final DateTime createdAt;
+
+  /// Which of `assets/images/avatar.riv`'s Artboards this learner has
+  /// picked (Me screen's Edit popup) -- stored as the Artboard's own name so
+  /// looking it up at render time is just `file.artboard(avatarId)`, no
+  /// separate index-to-name table to keep in sync. Defaults to the file's
+  /// only Artboard today; more will be added to the same file later.
+  final String avatarId;
+  static const defaultAvatarId = 'Ok_Color';
   final int lessonsFinished;
   final int stickersEarned;
   final int badgesEarned;
@@ -72,7 +81,9 @@ class LearnerProfile {
   final AppSettings settings;
 
   LearnerProfile copyWith({
+    String? name,
     int? energy,
+    String? avatarId,
     int? lessonsFinished,
     int? stickersEarned,
     int? badgesEarned,
@@ -90,10 +101,11 @@ class LearnerProfile {
   }) {
     return LearnerProfile(
       id: id,
-      name: name,
+      name: name ?? this.name,
       grade: grade,
       energy: energy ?? this.energy,
       createdAt: createdAt,
+      avatarId: avatarId ?? this.avatarId,
       lessonsFinished: lessonsFinished ?? this.lessonsFinished,
       stickersEarned: stickersEarned ?? this.stickersEarned,
       badgesEarned: badgesEarned ?? this.badgesEarned,
@@ -117,6 +129,7 @@ class LearnerProfile {
         'grade': grade,
         'energy': energy,
         'createdAt': createdAt.toIso8601String(),
+        'avatarId': avatarId,
         'lessonsFinished': lessonsFinished,
         'stickersEarned': stickersEarned,
         'badgesEarned': badgesEarned,
@@ -140,6 +153,7 @@ class LearnerProfile {
       grade: json['grade']! as int,
       energy: json['energy']! as int,
       createdAt: DateTime.parse(json['createdAt']! as String),
+      avatarId: json['avatarId'] as String? ?? defaultAvatarId,
       lessonsFinished: json['lessonsFinished'] as int? ?? 0,
       stickersEarned: json['stickersEarned'] as int? ?? 0,
       badgesEarned: json['badgesEarned'] as int? ?? 0,
