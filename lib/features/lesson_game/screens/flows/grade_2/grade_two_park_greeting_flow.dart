@@ -34,7 +34,7 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     extends State<_GradeTwoUnitTwoLessonOneParkGreetingFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _backgroundAsset =
-      'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg';
+      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
   static const _friendGirlOne =
       'assets/images/level_game/grade2/people/Tudlo_Park_Friend_Girl_1.svg';
   static const _friendBoy =
@@ -50,7 +50,6 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
   _G2ParkGreetingStep _step = _G2ParkGreetingStep.intro;
   bool _voicePlaying = false;
   bool _parkSelected = false;
-  bool _characterTapped = false;
   String? _selectedGreetingId;
   String? _wrongGreetingId;
   String? _activeMatchTimeId;
@@ -83,7 +82,6 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     unawaited(TudloVoiceButton.stop());
     setState(() {
       _step = step;
-      _characterTapped = false;
       _selectedGreetingId = null;
       _wrongGreetingId = null;
       _wrongMatchGreetingId = null;
@@ -157,14 +155,8 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
     if (mounted) _goToStep(_G2ParkGreetingStep.morningTeach);
   }
 
-  void _tapCharacter() {
-    if (_voicePlaying || _characterTapped) return;
-    unawaited(AppAudioService.instance.playTap());
-    setState(() => _characterTapped = true);
-  }
-
   Future<void> _chooseGreeting(String timeId, _G2FriendChoice choice) async {
-    if (_voicePlaying || !_characterTapped || _selectedGreetingId != null) {
+    if (_voicePlaying || _selectedGreetingId != null) {
       return;
     }
     final quizIndex = switch (timeId) {
@@ -293,13 +285,11 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
             time: _parkGreetingTimes[0],
             characterAsset: _friendGirlOne,
             completedTimes: _completedTimes,
-            characterTapped: _characterTapped,
             selectedId: _selectedGreetingId,
             wrongId: _wrongGreetingId,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
-            onTapCharacter: _tapCharacter,
             onChoose: (choice) => _chooseGreeting('morning', choice),
           ),
           _G2ParkGreetingStep.afternoonTeach => _G2ParkGreetingTeachStep(
@@ -318,13 +308,11 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
             time: _parkGreetingTimes[1],
             characterAsset: _friendBoy,
             completedTimes: _completedTimes,
-            characterTapped: _characterTapped,
             selectedId: _selectedGreetingId,
             wrongId: _wrongGreetingId,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
-            onTapCharacter: _tapCharacter,
             onChoose: (choice) => _chooseGreeting('afternoon', choice),
           ),
           _G2ParkGreetingStep.eveningTeach => _G2ParkGreetingTeachStep(
@@ -343,13 +331,11 @@ class _GradeTwoUnitTwoLessonOneParkGreetingFlowState
             time: _parkGreetingTimes[2],
             characterAsset: _friendGirlTwo,
             completedTimes: _completedTimes,
-            characterTapped: _characterTapped,
             selectedId: _selectedGreetingId,
             wrongId: _wrongGreetingId,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
-            onTapCharacter: _tapCharacter,
             onChoose: (choice) => _chooseGreeting('evening', choice),
           ),
           _G2ParkGreetingStep.review => _G2ParkGreetingReviewStep(
@@ -395,6 +381,7 @@ class _ParkGreetingTime {
   final String localLabel;
   final String greeting;
   final String backgroundAsset;
+  final String stickerAsset;
   final IconData icon;
   final Color color;
   final Color tint;
@@ -405,6 +392,7 @@ class _ParkGreetingTime {
     required this.localLabel,
     required this.greeting,
     required this.backgroundAsset,
+    required this.stickerAsset,
     required this.icon,
     required this.color,
     required this.tint,
@@ -419,6 +407,8 @@ const _parkGreetingTimes = [
     greeting: 'Good morning',
     backgroundAsset:
         'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Morning_Background.svg',
+    stickerAsset:
+        'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Morning_Sunrise_Sticker.svg',
     icon: Icons.wb_sunny_rounded,
     color: Color(0xFFFFC928),
     tint: Color(0x22FFD35C),
@@ -430,8 +420,10 @@ const _parkGreetingTimes = [
     greeting: 'Good afternoon',
     backgroundAsset:
         'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Afternoon_Background.svg',
+    stickerAsset:
+        'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Afternoon_High_Sun_Sticker.svg',
     icon: Icons.light_mode_rounded,
-    color: Color(0xFFFF8A28),
+    color: Color(0xFF1EA7FF),
     tint: Color(0x33FF9F43),
   ),
   _ParkGreetingTime(
@@ -441,8 +433,10 @@ const _parkGreetingTimes = [
     greeting: 'Good evening',
     backgroundAsset:
         'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Night_Background.svg',
+    stickerAsset:
+        'assets/images/level_game/grade2/lesson-game-assets/Tudlo_Evening_Sunset_Sticker.svg',
     icon: Icons.dark_mode_rounded,
-    color: Color(0xFF536DFE),
+    color: Color(0xFF7C4DFF),
     tint: Color(0x44304B9B),
   ),
 ];
@@ -453,9 +447,11 @@ const _parkGreetingChoices = [
   _G2FriendChoice('good_evening', 'Good evening'),
 ];
 
-String _parkGreetingLabel(String id) {
-  return _parkGreetingChoices.firstWhere((choice) => choice.id == id).label;
-}
+const _parkGreetingMatchChoices = [
+  _G2FriendChoice('good_evening', 'Good evening'),
+  _G2FriendChoice('good_morning', 'Good morning'),
+  _G2FriendChoice('good_afternoon', 'Good afternoon'),
+];
 
 class _G2ParkScene extends StatelessWidget {
   final double progress;
@@ -512,43 +508,78 @@ class _G2ParkGreetingIntroStep extends StatelessWidget {
       time: null,
       onExit: onExit,
       onReplay: onReplay,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .06,
-          view.height * .15,
-          view.width * .06,
-          view.height * .04,
-        ),
-        child: Column(
-          children: [
-            Row(
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: view.height * .24,
+            height: (view.width * .27).clamp(105.0, 144.0),
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                for (final time in _parkGreetingTimes)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: _ParkTimeCard(time: time, selected: false),
+                for (final entry in _parkGreetingTimes.indexed)
+                  Align(
+                    alignment: const [
+                      Alignment(-.78, 0),
+                      Alignment(0, 0),
+                      Alignment(.78, 0),
+                    ][entry.$1],
+                    child: SizedBox(
+                      width: (view.width * .27).clamp(105.0, 144.0),
+                      height: (view.width * .27).clamp(105.0, 144.0),
+                      child: _ParkIntroTimeSticker(time: entry.$2),
                     ),
                   ),
               ],
             ),
-            const Spacer(),
-            _LessonKokaMascot(
-              size: (view.width * .43).clamp(150.0, 230.0),
-              mood: KokaMood.idle,
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: view.height * .205,
+            child: Center(
+              child: _LessonKokaMascot(
+                size: (view.width * .78).clamp(295.0, 385.0),
+                mood: KokaMood.idle,
+              ),
             ),
-            const Spacer(),
-            const _LessonOneMessageCard(
-              message: 'Maglibot kita sa Park halin aga tubtob gab-i!',
+          ),
+          Positioned(
+            left: view.width * .06,
+            right: view.width * .06,
+            bottom: view.height * .04,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _LessonOneMessageCard(
+                  message: 'Maglibot kita sa Park halin aga tubtob gab-i!',
+                ),
+                SizedBox(height: view.height * .018),
+                _LessonOneBlueButton(
+                  label: 'Libot ta',
+                  onTap: inputReady ? onNext : null,
+                ),
+              ],
             ),
-            SizedBox(height: view.height * .018),
-            _LessonOneBlueButton(
-              label: 'Libot ta',
-              onTap: inputReady ? onNext : null,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _ParkIntroTimeSticker extends StatelessWidget {
+  final _ParkGreetingTime time;
+
+  const _ParkIntroTimeSticker({required this.time});
+
+  @override
+  Widget build(BuildContext context) {
+    return _LessonPictureAsset(
+      asset: time.stickerAsset,
+      fit: BoxFit.contain,
+      errorBuilder: (_) => Icon(time.icon, color: time.color, size: 58),
     );
   }
 }
@@ -654,13 +685,6 @@ class _G2ParkGreetingTeachStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                width: (view.width * .25).clamp(86.0, 116.0),
-                child: _ParkTimeCard(time: time, selected: true),
-              ),
-            ),
             Expanded(
               child: _ParkCharacterGreetingStage(
                 time: time,
@@ -690,13 +714,11 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
   final _ParkGreetingTime time;
   final String characterAsset;
   final Set<String> completedTimes;
-  final bool characterTapped;
   final String? selectedId;
   final String? wrongId;
   final bool inputReady;
   final VoidCallback onExit;
   final VoidCallback onReplay;
-  final VoidCallback onTapCharacter;
   final Future<void> Function(_G2FriendChoice choice) onChoose;
 
   const _G2ParkGreetingPracticeStep({
@@ -705,13 +727,11 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
     required this.time,
     required this.characterAsset,
     required this.completedTimes,
-    required this.characterTapped,
     required this.selectedId,
     required this.wrongId,
     required this.inputReady,
     required this.onExit,
     required this.onReplay,
-    required this.onTapCharacter,
     required this.onChoose,
   });
 
@@ -735,22 +755,13 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _LessonOneMessageCard(
-              message: characterTapped
-                  ? 'Pilia ang ${time.greeting}.'
-                  : 'I-tap ang karakter.',
-              compact: true,
-            ),
             Expanded(
-              child: GestureDetector(
-                onTap: inputReady ? onTapCharacter : null,
-                child: _ParkCharacterGreetingStage(
-                  time: time,
-                  characterAsset: characterAsset,
-                  greeting: time.greeting,
-                  showTapCue: !characterTapped,
-                  active: characterTapped,
-                ),
+              child: _ParkCharacterGreetingStage(
+                time: time,
+                characterAsset: characterAsset,
+                greeting: time.greeting,
+                showGreeting: selectedId == correctId,
+                active: selectedId == correctId,
               ),
             ),
             Column(
@@ -765,8 +776,7 @@ class _G2ParkGreetingPracticeStep extends StatelessWidget {
                         correct:
                             selectedId == choice.id && choice.id == correctId,
                         wrong: wrongId == choice.id,
-                        enabled:
-                            inputReady && characterTapped && selectedId == null,
+                        enabled: inputReady && selectedId == null,
                         onTap: () => onChoose(choice),
                       ),
                     ),
@@ -788,14 +798,14 @@ class _ParkCharacterGreetingStage extends StatelessWidget {
   final _ParkGreetingTime time;
   final String characterAsset;
   final String greeting;
-  final bool showTapCue;
+  final bool showGreeting;
   final bool active;
 
   const _ParkCharacterGreetingStage({
     required this.time,
     required this.characterAsset,
     required this.greeting,
-    this.showTapCue = false,
+    this.showGreeting = false,
     this.active = true,
   });
 
@@ -806,15 +816,19 @@ class _ParkCharacterGreetingStage extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         Positioned(
-          left: view.width * .01,
-          bottom: view.height * .03,
-          child: _LessonKokaMascot(
-            size: (view.width * .34).clamp(124.0, 176.0),
-            mood: KokaMood.idle,
+          left: 0,
+          bottom: view.height * .015,
+          width: view.width * .58,
+          height: view.height * .40,
+          child: Center(
+            child: _LessonKokaMascot(
+              size: (view.width * .80).clamp(300.0, 410.0),
+              mood: KokaMood.idle,
+            ),
           ),
         ),
         Positioned(
-          right: view.width * .02,
+          right: view.width * .03,
           bottom: view.height * .02,
           width: view.width * .42,
           height: view.height * .40,
@@ -834,28 +848,17 @@ class _ParkCharacterGreetingStage extends StatelessWidget {
                     size: view.width * .28,
                   ),
                 ),
-                if (showTapCue)
-                  Positioned(
-                    right: -view.width * .01,
-                    bottom: view.height * .045,
-                    child: const _FamilyTapCue(),
-                  ),
               ],
             ),
           ),
         ),
-        Positioned(
-          left: view.width * .25,
-          right: view.width * .25,
-          bottom: view.height * .19,
-          child: _ParkGreetingCard(
-            label: greeting,
-            correct: active,
-            wrong: false,
-            enabled: false,
-            onTap: () {},
+        if (showGreeting)
+          Positioned(
+            left: view.width * .12,
+            top: view.height * .055,
+            width: view.width * .40,
+            child: _LessonOneMessageCard(message: greeting, compact: true),
           ),
-        ),
       ],
     );
   }
@@ -928,7 +931,7 @@ class _G2ParkGreetingReviewStep extends StatelessWidget {
   }
 }
 
-class _G2ParkGreetingMatchStep extends StatelessWidget {
+class _G2ParkGreetingMatchStep extends StatefulWidget {
   final double progress;
   final String backgroundAsset;
   final String? activeTimeId;
@@ -956,15 +959,139 @@ class _G2ParkGreetingMatchStep extends StatelessWidget {
   });
 
   @override
+  State<_G2ParkGreetingMatchStep> createState() =>
+      _G2ParkGreetingMatchStepState();
+}
+
+class _G2ParkGreetingMatchStepState extends State<_G2ParkGreetingMatchStep> {
+  String? _dragTimeId;
+  String? _dragGreetingId;
+  Color? _dragColor;
+  Offset? _dragStart;
+  Offset? _dragEnd;
+
+  _ParkGreetingTime _timeForGreeting(String greetingId) {
+    final choice = _parkGreetingChoices.firstWhere(
+      (choice) => choice.id == greetingId,
+    );
+    return _parkGreetingTimes.firstWhere(
+      (time) => time.greeting == choice.label,
+    );
+  }
+
+  int? _cardIndexAt(Offset point, double cardHeight, double gap) {
+    for (var i = 0; i < _parkGreetingTimes.length; i++) {
+      final top = i * (cardHeight + gap);
+      if (point.dy >= top && point.dy <= top + cardHeight) return i;
+    }
+    return null;
+  }
+
+  void _startLine(
+    DragStartDetails details,
+    double boardWidth,
+    double cardHeight,
+    double gap,
+    double spacer,
+  ) {
+    if (!widget.inputReady) return;
+    final point = details.localPosition;
+    final columnWidth = (boardWidth - spacer) / 2;
+    final rightStart = columnWidth + spacer;
+    const stickerSize = 132.0;
+    final leftAnchorX = ((columnWidth + stickerSize) / 2).clamp(
+      0.0,
+      columnWidth,
+    );
+    final index = _cardIndexAt(point, cardHeight, gap);
+    if (index == null) return;
+
+    if (point.dx <= columnWidth) {
+      final time = _parkGreetingTimes[index];
+      if (widget.matchedGreetings.containsKey(time.id)) return;
+      setState(() {
+        _dragTimeId = time.id;
+        _dragGreetingId = null;
+        _dragColor = time.color;
+        _dragStart = Offset(
+          leftAnchorX,
+          index * (cardHeight + gap) + cardHeight / 2,
+        );
+        _dragEnd = point;
+      });
+      return;
+    }
+
+    if (point.dx < rightStart) return;
+    final choice = _parkGreetingMatchChoices[index];
+    if (widget.matchedGreetings.values.contains(choice.id)) return;
+    final time = _timeForGreeting(choice.id);
+    setState(() {
+      _dragTimeId = null;
+      _dragGreetingId = choice.id;
+      _dragColor = time.color;
+      _dragStart = Offset(
+        rightStart,
+        index * (cardHeight + gap) + cardHeight / 2,
+      );
+      _dragEnd = point;
+    });
+  }
+
+  void _updateLine(DragUpdateDetails details) {
+    if (_dragTimeId == null && _dragGreetingId == null) return;
+    setState(() => _dragEnd = details.localPosition);
+  }
+
+  void _finishLine(
+    DragEndDetails details,
+    double boardWidth,
+    double cardHeight,
+    double gap,
+    double spacer,
+  ) {
+    final timeId = _dragTimeId;
+    final greetingId = _dragGreetingId;
+    final end = _dragEnd;
+    setState(() {
+      _dragTimeId = null;
+      _dragGreetingId = null;
+      _dragColor = null;
+      _dragStart = null;
+      _dragEnd = null;
+    });
+    if (end == null || !widget.inputReady) return;
+    final columnWidth = (boardWidth - spacer) / 2;
+    final rightStart = columnWidth + spacer;
+    final index = _cardIndexAt(end, cardHeight, gap);
+    if (index == null) return;
+
+    if (timeId != null) {
+      if (end.dx < rightStart) return;
+      final choice = _parkGreetingMatchChoices[index];
+      if (widget.matchedGreetings.values.contains(choice.id)) return;
+      unawaited(widget.onMatch(choice.id, timeId));
+      return;
+    }
+
+    if (greetingId != null) {
+      if (end.dx > columnWidth) return;
+      final time = _parkGreetingTimes[index];
+      if (widget.matchedGreetings.containsKey(time.id)) return;
+      unawaited(widget.onMatch(greetingId, time.id));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
-    final usedGreetingIds = matchedGreetings.values.toSet();
+    final usedGreetingIds = widget.matchedGreetings.values.toSet();
     return _G2ParkScene(
-      progress: progress,
-      backgroundAsset: backgroundAsset,
+      progress: widget.progress,
+      backgroundAsset: widget.backgroundAsset,
       time: null,
-      onExit: onExit,
-      onReplay: onReplay,
+      onExit: widget.onExit,
+      onReplay: widget.onReplay,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .045,
@@ -980,54 +1107,223 @@ class _G2ParkGreetingMatchStep extends StatelessWidget {
             ),
             SizedBox(height: view.height * .018),
             Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (final time in _parkGreetingTimes) ...[
-                          _ParkTimeDropTarget(
-                            time: time,
-                            active: activeTimeId == time.id,
-                            greetingId: matchedGreetings[time.id],
-                            inputReady: inputReady,
-                            onSelect: () => onSelectTime(time.id),
-                            onAccept: (greetingId) =>
-                                onMatch(greetingId, time.id),
-                          ),
-                          SizedBox(height: view.height * .018),
-                        ],
-                      ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const cardHeight = 132.0;
+                  const stickerSize = 132.0;
+                  final gap = view.height * .012;
+                  final spacer = view.width * .15;
+                  final columnWidth = (constraints.maxWidth - spacer) / 2;
+                  final leftAnchorX = ((columnWidth + stickerSize) / 2).clamp(
+                    0.0,
+                    columnWidth,
+                  );
+                  final rightAnchorX = columnWidth + spacer;
+                  final boardHeight = (cardHeight * 3) + (gap * 2);
+                  return Center(
+                    child: SizedBox(
+                      height: boardHeight,
+                      child: LayoutBuilder(
+                        builder: (context, boardConstraints) {
+                          return GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onPanStart: (details) => _startLine(
+                              details,
+                              boardConstraints.maxWidth,
+                              cardHeight,
+                              gap,
+                              spacer,
+                            ),
+                            onPanUpdate: _updateLine,
+                            onPanEnd: (details) => _finishLine(
+                              details,
+                              boardConstraints.maxWidth,
+                              cardHeight,
+                              gap,
+                              spacer,
+                            ),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _ParkGreetingMatchLinePainter(
+                                      matchedGreetings: widget.matchedGreetings,
+                                      choices: _parkGreetingMatchChoices,
+                                      gap: gap,
+                                      cardHeight: cardHeight,
+                                      leftX: leftAnchorX,
+                                      rightX: rightAnchorX,
+                                      activeTimeId: _dragTimeId,
+                                      activeColor: _dragColor,
+                                      activeStart: _dragStart,
+                                      activeEnd: _dragEnd,
+                                    ),
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          for (final time
+                                              in _parkGreetingTimes) ...[
+                                            SizedBox(
+                                              height: cardHeight,
+                                              child: _ParkTimeMatchCard(
+                                                time: time,
+                                                active:
+                                                    _dragTimeId == time.id ||
+                                                    widget.activeTimeId ==
+                                                        time.id,
+                                                greetingId: widget
+                                                    .matchedGreetings[time.id],
+                                                inputReady: widget.inputReady,
+                                              ),
+                                            ),
+                                            if (time != _parkGreetingTimes.last)
+                                              SizedBox(height: gap),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: spacer),
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          for (final choice
+                                              in _parkGreetingMatchChoices) ...[
+                                            SizedBox(
+                                              height: cardHeight,
+                                              child: _StaticGreetingMatchCard(
+                                                choice: choice,
+                                                hidden: usedGreetingIds
+                                                    .contains(choice.id),
+                                                wrong:
+                                                    widget.wrongGreetingId ==
+                                                    choice.id,
+                                                enabled: widget.inputReady,
+                                                onTap: () => widget
+                                                    .onTapGreeting(choice.id),
+                                              ),
+                                            ),
+                                            if (choice !=
+                                                _parkGreetingMatchChoices.last)
+                                              SizedBox(height: gap),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  SizedBox(width: view.width * .035),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (final choice in _parkGreetingChoices) ...[
-                          _DraggableGreetingCard(
-                            choice: choice,
-                            hidden: usedGreetingIds.contains(choice.id),
-                            wrong: wrongGreetingId == choice.id,
-                            enabled: inputReady,
-                            onAcceptTime: (timeId) =>
-                                onMatch(choice.id, timeId),
-                            onTap: () => onTapGreeting(choice.id),
-                          ),
-                          SizedBox(height: view.height * .018),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _ParkGreetingMatchLinePainter extends CustomPainter {
+  final Map<String, String> matchedGreetings;
+  final List<_G2FriendChoice> choices;
+  final double gap;
+  final double cardHeight;
+  final double leftX;
+  final double rightX;
+  final String? activeTimeId;
+  final Color? activeColor;
+  final Offset? activeStart;
+  final Offset? activeEnd;
+
+  const _ParkGreetingMatchLinePainter({
+    required this.matchedGreetings,
+    required this.choices,
+    required this.gap,
+    required this.cardHeight,
+    required this.leftX,
+    required this.rightX,
+    this.activeTimeId,
+    this.activeColor,
+    this.activeStart,
+    this.activeEnd,
+  });
+
+  @override
+  void paint(Canvas canvas, Size canvasSize) {
+    final timeIndex = {
+      for (var i = 0; i < _parkGreetingTimes.length; i++)
+        _parkGreetingTimes[i].id: i,
+    };
+    final choiceIndex = {
+      for (var i = 0; i < choices.length; i++) choices[i].id: i,
+    };
+    final timeColor = {
+      for (final time in _parkGreetingTimes) time.id: time.color,
+    };
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 7;
+
+    for (final match in matchedGreetings.entries) {
+      final fromIndex = timeIndex[match.key];
+      final toIndex = choiceIndex[match.value];
+      if (fromIndex == null || toIndex == null) continue;
+      final fromY = (fromIndex * (cardHeight + gap)) + (cardHeight / 2);
+      final toY = (toIndex * (cardHeight + gap)) + (cardHeight / 2);
+      final color = timeColor[match.key] ?? TudloColors.blue;
+
+      paint.color = color.withValues(alpha: .2);
+      paint.strokeWidth = 13;
+      canvas.drawLine(Offset(leftX, fromY), Offset(rightX, toY), paint);
+      paint.color = color;
+      paint.strokeWidth = 7;
+      canvas.drawLine(Offset(leftX, fromY), Offset(rightX, toY), paint);
+
+      final dotPaint = Paint()..color = color;
+      canvas.drawCircle(Offset(leftX, fromY), 7, dotPaint);
+      canvas.drawCircle(Offset(rightX, toY), 7, dotPaint);
+    }
+
+    final activeStart = this.activeStart;
+    final activeEnd = this.activeEnd;
+    if (activeStart != null && activeEnd != null) {
+      final color = activeColor ?? timeColor[activeTimeId] ?? TudloColors.blue;
+      paint.color = color.withValues(alpha: .22);
+      paint.strokeWidth = 13;
+      canvas.drawLine(activeStart, activeEnd, paint);
+      paint.color = color;
+      paint.strokeWidth = 7;
+      canvas.drawLine(activeStart, activeEnd, paint);
+      final dotPaint = Paint()..color = color;
+      canvas.drawCircle(activeStart, 7, dotPaint);
+      canvas.drawCircle(activeEnd, 7, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ParkGreetingMatchLinePainter oldDelegate) {
+    return oldDelegate.matchedGreetings != matchedGreetings ||
+        oldDelegate.choices != choices ||
+        oldDelegate.gap != gap ||
+        oldDelegate.cardHeight != cardHeight ||
+        oldDelegate.leftX != leftX ||
+        oldDelegate.rightX != rightX ||
+        oldDelegate.activeTimeId != activeTimeId ||
+        oldDelegate.activeColor != activeColor ||
+        oldDelegate.activeStart != activeStart ||
+        oldDelegate.activeEnd != activeEnd;
   }
 }
 
@@ -1076,44 +1372,39 @@ class _ParkTimeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _FeedbackMotion(
-      correct: checked || selected,
-      wrong: false,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 82,
-            height: 82,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: time.color.withValues(alpha: .16),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: time.color, width: 3),
-            ),
-            child: Icon(time.icon, color: time.color, size: 50),
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 104,
+          height: 104,
+          child: _LessonPictureAsset(
+            asset: time.stickerAsset,
+            fit: BoxFit.contain,
+            errorBuilder: (_) => Icon(time.icon, color: time.color, size: 68),
           ),
-          if (checked)
-            Positioned(
-              right: -4,
-              bottom: -4,
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: TudloColors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
+        ),
+        if (checked)
+          Positioned(
+            right: 4,
+            bottom: 6,
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: TudloColors.green,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 19,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -1132,7 +1423,7 @@ class _ParkTimeReviewStrip extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: SizedBox(
-                height: 64,
+                height: 92,
                 child: _ParkTimeCard(
                   time: time,
                   selected: false,
@@ -1151,6 +1442,7 @@ class _ParkGreetingCard extends StatelessWidget {
   final bool correct;
   final bool wrong;
   final bool enabled;
+  final double height;
   final VoidCallback onTap;
 
   const _ParkGreetingCard({
@@ -1158,6 +1450,7 @@ class _ParkGreetingCard extends StatelessWidget {
     required this.correct,
     required this.wrong,
     required this.enabled,
+    this.height = 82,
     required this.onTap,
   });
 
@@ -1170,12 +1463,12 @@ class _ParkGreetingCard extends StatelessWidget {
         onTap: enabled ? onTap : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          height: 82,
+          height: height,
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: correct ? const Color(0xFFE8FFD8) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: correct
                   ? TudloColors.green
@@ -1200,7 +1493,7 @@ class _ParkGreetingCard extends StatelessWidget {
               maxLines: 2,
               style: GoogleFonts.nunito(
                 color: TudloColors.blue,
-                fontSize: 20,
+                fontSize: 23,
                 height: 1,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -1237,7 +1530,7 @@ class _ParkTimeGreetingRow extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 96,
+              width: 116,
               child: _ParkTimeCard(time: time, selected: reviewed),
             ),
             const SizedBox(width: 10),
@@ -1265,143 +1558,72 @@ class _ParkTimeGreetingRow extends StatelessWidget {
   }
 }
 
-class _ParkTimeDropTarget extends StatelessWidget {
+class _ParkTimeMatchCard extends StatelessWidget {
   final _ParkGreetingTime time;
   final bool active;
   final String? greetingId;
   final bool inputReady;
-  final VoidCallback onSelect;
-  final Future<void> Function(String greetingId) onAccept;
 
-  const _ParkTimeDropTarget({
+  const _ParkTimeMatchCard({
     required this.time,
     required this.active,
     required this.greetingId,
     required this.inputReady,
-    required this.onSelect,
-    required this.onAccept,
   });
 
   @override
   Widget build(BuildContext context) {
     final locked = greetingId != null;
-    final card = DragTarget<String>(
-      onWillAcceptWithDetails: (_) => inputReady && !locked,
-      onAcceptWithDetails: (details) {
-        unawaited(onAccept(details.data));
-      },
-      builder: (context, _, __) {
-        return GestureDetector(
-          onTap: inputReady && !locked ? onSelect : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            constraints: const BoxConstraints(minHeight: 98),
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: locked
-                  ? const Color(0xFFE8FFD8)
-                  : active
-                  ? const Color(0xFFFFF5C4)
-                  : Colors.white.withValues(alpha: .92),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: locked
-                    ? TudloColors.green
-                    : active
-                    ? TudloColors.gold
-                    : const Color(0xFFD8E8F6),
-                width: 3,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(time.icon, color: time.color, size: 30),
-                Text(
-                  time.localLabel,
-                  style: GoogleFonts.nunito(
-                    color: TudloColors.blue,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  greetingId == null ? '...' : _parkGreetingLabel(greetingId!),
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: locked ? TudloColors.green : TudloColors.blue,
-                    fontSize: 16,
-                    height: 1,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ],
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      opacity: locked ? .75 : 1,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 132,
+            height: 132,
+            child: _LessonPictureAsset(
+              asset: time.stickerAsset,
+              fit: BoxFit.contain,
+              errorBuilder: (_) => Icon(time.icon, color: time.color, size: 92),
             ),
           ),
-        );
-      },
-    );
-    if (locked || !inputReady) return card;
-    return Draggable<String>(
-      data: time.id,
-      feedback: Material(
-        color: Colors.transparent,
-        child: SizedBox(width: 120, child: card),
+        ],
       ),
-      childWhenDragging: Opacity(opacity: .36, child: card),
-      child: card,
     );
   }
 }
 
-class _DraggableGreetingCard extends StatelessWidget {
+class _StaticGreetingMatchCard extends StatelessWidget {
   final _G2FriendChoice choice;
   final bool hidden;
   final bool wrong;
   final bool enabled;
-  final Future<void> Function(String timeId) onAcceptTime;
   final VoidCallback onTap;
 
-  const _DraggableGreetingCard({
+  const _StaticGreetingMatchCard({
     required this.choice,
     required this.hidden,
     required this.wrong,
     required this.enabled,
-    required this.onAcceptTime,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final child = DragTarget<String>(
-      onWillAcceptWithDetails: (_) => enabled && !hidden,
-      onAcceptWithDetails: (details) {
-        unawaited(onAcceptTime(details.data));
-      },
-      builder: (context, _, __) => AnimatedOpacity(
-        duration: const Duration(milliseconds: 160),
-        opacity: hidden ? .22 : 1,
-        child: _ParkGreetingCard(
-          label: choice.label,
-          correct: hidden,
-          wrong: wrong,
-          enabled: enabled && !hidden,
-          onTap: onTap,
-        ),
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 160),
+      opacity: hidden ? .45 : 1,
+      child: _ParkGreetingCard(
+        label: choice.label,
+        correct: false,
+        wrong: wrong,
+        enabled: enabled && !hidden,
+        height: 132,
+        onTap: onTap,
       ),
-    );
-    if (hidden || !enabled) return child;
-    return Draggable<String>(
-      data: choice.id,
-      feedback: Material(
-        color: Colors.transparent,
-        child: SizedBox(width: 165, child: child),
-      ),
-      childWhenDragging: Opacity(opacity: .35, child: child),
-      child: child,
     );
   }
 }

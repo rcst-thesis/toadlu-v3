@@ -11,6 +11,7 @@ import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
+import 'package:tudloapp/features/lesson_game/widgets/reward_overlay.dart';
 
 const _bantayRoot =
     'assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets';
@@ -584,7 +585,7 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
             border: Border.all(
               color: _searched.contains(id)
                   ? Colors.green
-                  : Colors.lightGreenAccent,
+                  : const Color(0xFFFFD447),
               width: 3,
             ),
           ),
@@ -910,70 +911,30 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
           ),
       ],
       _BantayStage.reward => [
-        _at(
-          340,
-          ninety,
-          275,
-          240,
-          GestureDetector(
-            onTap: () => unawaited(_collect()),
-            child: _BantayPulse(
-              active: !_collected,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFD941).withValues(alpha: .24),
-                      blurRadius: 16,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: SvgPicture.asset(
-                    _rewardStickerAsset,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            ),
+        Positioned.fill(
+          child: GradeThreeStickerRewardOverlay(
+            stickerAsset: _rewardStickerAsset,
+            message: 'Maayo gid!\nNatapos mo ang Ang Nadula nga Ido.',
+            primaryLabel: 'PADAYUN KITA',
+            onPrimary: () async {
+              await _collect();
+              if (!mounted) return;
+              widget.onContinue();
+            },
+            secondaryLabel: 'MAG BALIK SA MAPA',
+            onSecondary: () async {
+              await _collect();
+              if (!mounted) return;
+              widget.onBackToMap();
+            },
           ),
         ),
-        _at(680, 225, 220, 195, _asset('animals/Bantay_Happy.svg')),
-        _at(
-          290,
-          330,
-          365,
-          80,
-          _panel(
-            _text('Maayo gid!\nNatapos mo ang Ang Nadula nga Ido.', size: 23),
-          ),
-        ),
-        _at(
-          300,
-          416,
-          600,
-          35,
-          _text('HOUSE OK -> SCHOOL OK -> MARKET OK -> FARM OK', size: 19),
-        ),
-        if (_collected)
-          _at(
-            280,
-            463,
-            305,
-            fifty,
-            _button('BALIK SA MAPA', widget.onBackToMap),
-          ),
-        if (_collected)
-          _at(610, 463, 305, fifty, _button('PADAYON', widget.onContinue)),
       ],
       _ => [],
     };
   }
 
-  static const double forty = 40, fifty = 50, ninety = 90;
+  static const double forty = 40;
 
   @override
   Widget build(BuildContext context) {
@@ -1141,11 +1102,11 @@ class _BantayPulseState extends State<_BantayPulse>
           boxShadow: widget.active && !widget.wiggle
               ? [
                   BoxShadow(
-                    color: Colors.lightGreenAccent.withValues(
-                      alpha: .2 + _controller.value * .25,
-                    ),
-                    blurRadius: 6,
-                    spreadRadius: 2,
+                    color: const Color(
+                      0xFFFFD447,
+                    ).withValues(alpha: .2 + _controller.value * .25),
+                    blurRadius: 24,
+                    spreadRadius: 7,
                   ),
                 ]
               : [],

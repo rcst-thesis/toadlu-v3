@@ -2060,7 +2060,7 @@ class _LessonOneMessageCard extends StatelessWidget {
         textAlign: TextAlign.center,
         style: GoogleFonts.nunito(
           color: TudloColors.ink,
-          fontSize: (width * (compact ? .052 : .062)).clamp(18.0, 30.0),
+          fontSize: (width * (compact ? .064 : .074)).clamp(22.0, 38.0),
           height: 1.12,
           fontWeight: FontWeight.w900,
           letterSpacing: 0,

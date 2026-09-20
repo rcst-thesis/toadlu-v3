@@ -1730,18 +1730,14 @@ class _NumberFruitContentState extends State<_NumberFruitContent>
     if (!mounted) return;
     await Future<void>.delayed(const Duration(milliseconds: 120));
     if (!mounted) return;
-    await TudloVoiceButton.speak(context, word, hiligaynon: true);
+    await playLessonNumberVoice(widget.number);
   }
 
   Future<void> _replayNumberVoice() async {
     await AppAudioService.instance.playTap();
     if (!mounted) return;
     setState(() => _showSpeakerHint = false);
-    await TudloVoiceButton.speak(
-      context,
-      _numberWordFor(widget.number),
-      hiligaynon: true,
-    );
+    await playLessonNumberVoice(widget.number);
   }
 
   @override
@@ -6466,7 +6462,7 @@ class _IntroLetterBounce extends StatelessWidget {
               boxShadow: glow
                   ? [
                       BoxShadow(
-                        color: TudloColors.green.withValues(alpha: .36),
+                        color: const Color(0xFFFFD447).withValues(alpha: .42),
                         blurRadius: 42,
                         spreadRadius: 14,
                       ),
@@ -10079,24 +10075,25 @@ class _PlaceArt extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: glow
-            ? [
-                BoxShadow(
-                  color: place.color.withValues(alpha: .34),
-                  blurRadius: 26,
-                  spreadRadius: 6,
-                ),
-              ]
-            : null,
-      ),
-      child: Image.asset(
-        place.asset,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (_, __, ___) =>
-            Icon(place.icon, color: place.color, size: size * .58),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (glow)
+            Positioned.fill(
+              child: LessonAssetGlow(
+                asset: place.asset,
+                fallbackIcon: place.icon,
+                fallbackSize: size * .58,
+              ),
+            ),
+          Image.asset(
+            place.asset,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, __, ___) =>
+                Icon(place.icon, color: place.color, size: size * .58),
+          ),
+        ],
       ),
     );
   }

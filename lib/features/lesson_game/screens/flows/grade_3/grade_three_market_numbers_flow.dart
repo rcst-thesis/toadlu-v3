@@ -7,9 +7,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tudloapp/core/services/app_audio_service.dart';
+import 'package:tudloapp/core/services/lesson_number_voice_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/lesson_asset_glow.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
+import 'package:tudloapp/features/lesson_game/widgets/reward_overlay.dart';
 
 const String _marketRoot =
     'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets';
@@ -261,6 +264,7 @@ class _GradeThreeMarketNumbersFlowState
       _busy = true;
     });
     await AppAudioService.instance.playTap();
+    await playLessonNumberVoice(number);
     await _save();
     if (mounted) setState(() => _busy = false);
   }
@@ -297,9 +301,10 @@ class _GradeThreeMarketNumbersFlowState
   }
 
   Future<void> _placeNumber(int number, int slot) async {
-    if (_busy || _lockedSlots.contains(slot)) return;
+    if (_busy || _lockedSlots.length == _targetOrder.length) return;
     final expected = _targetOrder[slot];
     if (number != expected) {
+      await playLessonNumberVoice(number);
       await _wrong(choice: number);
       return;
     }
@@ -307,10 +312,15 @@ class _GradeThreeMarketNumbersFlowState
       final previous = _orderSlots.indexOf(number);
       if (previous != -1) _orderSlots[previous] = null;
       _orderSlots[slot] = number;
-      _lockedSlots.add(slot);
+      if (_orderSlots.indexed.every(
+        (entry) => entry.$2 == _targetOrder[entry.$1],
+      )) {
+        _lockedSlots.addAll(List<int>.generate(_targetOrder.length, (i) => i));
+      }
       _selectedTile = null;
     });
     await AppAudioService.instance.playCorrect();
+    await playLessonNumberVoice(number);
     await _save();
     if (_lockedSlots.length == 5) {
       await _playClip(22);
@@ -470,7 +480,7 @@ class _GradeThreeMarketNumbersFlowState
           active: !_busy,
           child: GestureDetector(
             onTap: () => unawaited(_tapStall()),
-            child: _glowFrame(_asset(_fruitStall)),
+            child: _glowFrame(_fruitStall),
           ),
         ),
       ),
@@ -615,7 +625,7 @@ class _GradeThreeMarketNumbersFlowState
       ),
       _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
       _at(662, 112, 250, 335, _asset(_vendor)),
-      _at(315, 250, 410, 225, _basketWithApples(5, numbered: true)),
+      _at(285, 220, 480, 265, _basketWithApples(5, numbered: true)),
       _at(
         650,
         455,
@@ -672,7 +682,7 @@ class _GradeThreeMarketNumbersFlowState
       _at(118, 105, 310, 88, _speech('Husto! Ablihan ta\nang stall.')),
       _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
       _at(555, 126, 295, 270, _asset(_vendor)),
-      _at(310, 140, 390, 285, _glowFrame(_asset(_fruitStall), green: true)),
+      _at(310, 140, 390, 285, _glowFrame(_fruitStall)),
       _at(
         640,
         455,
@@ -685,27 +695,14 @@ class _GradeThreeMarketNumbersFlowState
 
   List<Widget> _rewardScene() {
     return [
-      _at(60, 105, 220, 275, const TudloMascot(size: 275, mood: KokaMood.hi)),
-      _at(635, 150, 235, 260, _asset(_vendor)),
-      _at(
-        330,
-        110,
-        300,
-        245,
-        GestureDetector(
-          onTap: () => unawaited(_collectReward()),
-          child: _pulse(active: !_rewardCollected, child: _sticker()),
+      Positioned.fill(
+        child: GradeThreeStickerRewardOverlay(
+          stickerAsset: _rewardStickerAsset,
+          message: 'Maayo gid!\nNatapos mo ang Numero sa Merkado.',
+          primaryLabel: 'OK',
+          onPrimary: () => unawaited(_collectReward()),
         ),
       ),
-      _at(
-        300,
-        355,
-        360,
-        80,
-        _panelText('Maayo gid!\nNatapos mo ang Numero sa Merkado.'),
-      ),
-      if (_rewardCollected)
-        _at(635, 455, 240, 54, _blueButton('PADAYON', widget.onLessonComplete)),
     ];
   }
 
@@ -807,9 +804,9 @@ class _GradeThreeMarketNumbersFlowState
 
   Widget _dropSlot(int index) {
     final value = _orderSlots[index];
+    final allCorrect = _lockedSlots.length == _targetOrder.length;
     return DragTarget<int>(
-      onWillAcceptWithDetails: (details) =>
-          !_busy && !_lockedSlots.contains(index),
+      onWillAcceptWithDetails: (details) => !_busy && !allCorrect,
       onAcceptWithDetails: (details) =>
           unawaited(_placeNumber(details.data, index)),
       builder: (context, candidates, rejected) {
@@ -819,16 +816,16 @@ class _GradeThreeMarketNumbersFlowState
             if (selected != null) unawaited(_placeNumber(selected, index));
           },
           child: _pulse(
-            active: candidates.isNotEmpty || _lockedSlots.contains(index),
+            active: candidates.isNotEmpty || allCorrect,
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: value == null ? Colors.white : const Color(0xFFE5FFD7),
+                color: value == null ? Colors.white : _numberTileColor(value),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: value == null
-                      ? const Color(0xFF82BFEF)
-                      : TudloColors.green,
+                  color: allCorrect && value != null
+                      ? TudloColors.green
+                      : const Color(0xFF82BFEF),
                   width: 3,
                 ),
               ),
@@ -904,31 +901,30 @@ class _GradeThreeMarketNumbersFlowState
       children: [
         for (var i = 0; i < count; i++)
           SizedBox(
-            width: 54,
-            height: 62,
+            width: numbered ? 68 : 54,
+            height: numbered ? 78 : 62,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 _asset(_apple),
                 if (numbered)
                   Positioned(
-                    bottom: 2,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        color: TudloColors.coral,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${i + 1}',
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 17,
-                          letterSpacing: 0,
-                        ),
+                    bottom: 9,
+                    child: Text(
+                      '${i + 1}',
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        height: 1,
+                        letterSpacing: 0,
+                        shadows: const [
+                          Shadow(
+                            color: TudloColors.ink,
+                            offset: Offset(0, 2),
+                            blurRadius: 3,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -945,10 +941,10 @@ class _GradeThreeMarketNumbersFlowState
       children: [
         Positioned.fill(child: _asset(_crate)),
         Positioned(
-          left: 38,
-          right: 38,
-          bottom: 42,
-          height: 72,
+          left: numbered ? 18 : 38,
+          right: numbered ? 18 : 38,
+          bottom: numbered ? 44 : 42,
+          height: numbered ? 92 : 72,
           child: _appleRow(count, numbered: numbered),
         ),
       ],
@@ -1035,24 +1031,12 @@ class _GradeThreeMarketNumbersFlowState
   }
 
   Widget _smallNumberTile(int number, {bool large = false}) {
-    final colors = [
-      const Color(0xFFFFB2B2),
-      const Color(0xFFFFC986),
-      const Color(0xFFFFF27D),
-      const Color(0xFF9BFF9C),
-      const Color(0xFF86EFA0),
-      const Color(0xFFAEEAFF),
-      const Color(0xFF9EC5FF),
-      const Color(0xFFC9A8FF),
-      const Color(0xFFE7A8FF),
-      const Color(0xFFFFA4CE),
-    ];
     return Container(
       width: large ? 92 : 58,
       height: large ? 72 : 70,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: colors[(number - 1).clamp(0, 9)],
+        color: _numberTileColor(number),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: TudloColors.blue, width: 2),
       ),
@@ -1060,24 +1044,20 @@ class _GradeThreeMarketNumbersFlowState
     );
   }
 
-  Widget _sticker() {
-    return Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFD941).withValues(alpha: .24),
-            blurRadius: 16,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: SvgPicture.asset(_rewardStickerAsset, fit: BoxFit.contain),
-      ),
-    );
+  Color _numberTileColor(int number) {
+    const colors = [
+      Color(0xFFFFB2B2),
+      Color(0xFFFFC986),
+      Color(0xFFFFF27D),
+      Color(0xFF9BFF9C),
+      Color(0xFF86EFA0),
+      Color(0xFFAEEAFF),
+      Color(0xFF9EC5FF),
+      Color(0xFFC9A8FF),
+      Color(0xFFE7A8FF),
+      Color(0xFFFFA4CE),
+    ];
+    return colors[(number - 1).clamp(0, 9)];
   }
 
   Widget _roundIcon(IconData icon, VoidCallback onTap) {
@@ -1172,37 +1152,20 @@ class _GradeThreeMarketNumbersFlowState
     );
   }
 
-  Widget _glowFrame(Widget child, {bool green = false}) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: green ? TudloColors.green : Colors.lightGreenAccent,
-          width: 5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (green ? TudloColors.green : Colors.lightGreenAccent)
-                .withValues(alpha: .55),
-            blurRadius: 16,
-            spreadRadius: 3,
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _panelText(String text) {
-    return Container(
+  Widget _glowFrame(String asset) {
+    return Stack(
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .95),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: _bigLabel(text, size: 24),
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: LessonAssetGlow(
+            asset: asset,
+            fallbackIcon: Icons.storefront_rounded,
+            fallbackSize: 170,
+          ),
+        ),
+        Padding(padding: const EdgeInsets.all(8), child: _asset(asset)),
+      ],
     );
   }
 

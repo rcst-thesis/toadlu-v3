@@ -804,7 +804,7 @@ class _GradeThreeMarketNumbersFlowState
 
   Future<void> _tapNumberOneTen(int number) async {
     setState(() => _heardNumbers.add(number));
-    await _playClip(6);
+    await playLessonNumberVoice(number);
   }
 
   Future<void> _tapSixToTen(int number) async {
@@ -820,6 +820,7 @@ class _GradeThreeMarketNumbersFlowState
       return;
     }
     setState(() => _tappedSixToTen.add(number));
+    await playLessonNumberVoice(number);
     if (_tappedSixToTen.length == 5) {
       await AppAudioService.instance.playCorrect();
       await _playClip(18);

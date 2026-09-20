@@ -294,8 +294,6 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
                 : _anaAsset,
             prompt: 'Hello!',
             showPrompt: _selectedChoiceId == 'hello',
-            kokaBubble: _selectedChoiceId == 'hello' ? 'Hello!' : null,
-            anaBubble: _selectedChoiceId == 'hello' ? 'Hello!' : null,
             choices: const [
               _G2FriendChoice('hello', 'Hello!'),
               _G2FriendChoice('goodbye', 'Goodbye!'),
@@ -314,9 +312,6 @@ class _GradeTwoUnitOneLessonOneNewFriendFlowState
             anaAsset: _anaAsset,
             prompt: 'What is your name?',
             showPrompt: _selectedChoiceId == 'what_name',
-            kokaBubble: _selectedChoiceId == 'what_name'
-                ? 'What is your name?'
-                : null,
             choices: const [
               _G2FriendChoice('what_name', 'What is your name?'),
               _G2FriendChoice('how_old', 'How old are you?'),
@@ -393,39 +388,42 @@ class _G2NewFriendIntroStep extends StatelessWidget {
       progress: progress,
       onExit: onExit,
       onReplay: onReplay,
-      backgroundAsset: 'assets/images/level_game/backgrounds/classroom.svg',
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .07,
-          view.height * .15,
-          view.width * .07,
-          view.height * .045,
-        ),
-        child: Column(
-          children: [
-            const Spacer(),
-            SizedBox(
-              width: view.width * .68,
-              height: view.height * .42,
-              child: _LessonPictureAsset(
-                asset: anaAsset,
-                fit: BoxFit.contain,
-                errorBuilder: (_) => Icon(
-                  Icons.face_3_rounded,
-                  color: TudloColors.blue,
-                  size: view.width * .28,
-                ),
+      backgroundAsset: _g2ClassroomWithoutAnaBackground,
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .16,
+            right: view.width * .16,
+            bottom: view.height * .125,
+            height: view.height * .66,
+            child: _LessonPictureAsset(
+              asset: anaAsset,
+              fit: BoxFit.contain,
+              errorBuilder: (_) => Icon(
+                Icons.face_3_rounded,
+                color: TudloColors.blue,
+                size: view.width * .36,
               ),
             ),
-            const Spacer(),
-            const _LessonOneMessageCard(message: 'May bag-o kita nga abyan.'),
-            SizedBox(height: view.height * .02),
-            _LessonOneBlueButton(
+          ),
+          Positioned(
+            left: view.width * .07,
+            right: view.width * .07,
+            bottom: view.height * .17,
+            child: const _LessonOneMessageCard(
+              message: 'May bag-o kita nga abyan.',
+            ),
+          ),
+          Positioned(
+            left: view.width * .07,
+            right: view.width * .07,
+            bottom: view.height * .045,
+            child: _LessonOneBlueButton(
               label: 'Sige',
               onTap: inputReady ? onNext : null,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -617,19 +615,12 @@ class _G2MeetAnaStep extends StatelessWidget {
                 children: [
                   if (!anaFound)
                     SizedBox(
-                      width: view.width * .42,
-                      height: view.height * .28,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          boxShadow: [
-                            BoxShadow(
-                              color: TudloColors.gold.withValues(alpha: .46),
-                              blurRadius: 24,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
+                      width: view.width * .52,
+                      height: view.height * .42,
+                      child: LessonAssetGlow(
+                        asset: anaAsset,
+                        fallbackIcon: Icons.face_3_rounded,
+                        fallbackSize: view.width * .28,
                       ),
                     ),
                   _LessonPictureAsset(
@@ -662,8 +653,6 @@ class _G2FriendChoiceStep extends StatelessWidget {
   final String anaAsset;
   final String prompt;
   final bool showPrompt;
-  final String? kokaBubble;
-  final String? anaBubble;
   final List<_G2FriendChoice> choices;
   final String correctId;
   final String? selectedId;
@@ -678,8 +667,6 @@ class _G2FriendChoiceStep extends StatelessWidget {
     required this.anaAsset,
     required this.prompt,
     this.showPrompt = true,
-    this.kokaBubble,
-    this.anaBubble,
     required this.choices,
     required this.correctId,
     required this.selectedId,
@@ -694,7 +681,6 @@ class _G2FriendChoiceStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final top = MediaQuery.paddingOf(context).top;
-    final correctSelected = selectedId == correctId;
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -746,24 +732,6 @@ class _G2FriendChoiceStep extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (correctSelected && kokaBubble != null)
-                    Positioned(
-                      left: view.width * .04,
-                      top: view.height * .015,
-                      child: _G2SmallSpeechBubble(
-                        text: kokaBubble!,
-                        large: true,
-                      ),
-                    ),
-                  if (correctSelected && anaBubble != null)
-                    Positioned(
-                      right: view.width * .08,
-                      top: view.height * .035,
-                      child: _G2SmallSpeechBubble(
-                        text: anaBubble!,
-                        large: true,
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -810,6 +778,7 @@ class _G2FriendChoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    final label = _g2FriendChoiceDisplayLabel(choice.label);
     return _FeedbackMotion(
       correct: correct,
       wrong: wrong,
@@ -841,17 +810,19 @@ class _G2FriendChoiceCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                choice.label,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                softWrap: true,
-                style: GoogleFonts.nunito(
-                  color: TudloColors.blue,
-                  fontSize: 24,
-                  height: 1.02,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  softWrap: false,
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.blue,
+                    fontSize: 24,
+                    height: 1.02,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
                 ),
               ),
             ],
@@ -860,6 +831,15 @@ class _G2FriendChoiceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _g2FriendChoiceDisplayLabel(String label) {
+  return switch (label) {
+    'How are you?' => 'How\nare\nyou?',
+    'What is your name?' => 'What is\nyour name?',
+    'How old are you?' => 'How old\nare you?',
+    _ => label,
+  };
 }
 
 class _G2AnaAnswerStep extends StatelessWidget {
@@ -1200,46 +1180,6 @@ class _G2NewFriendRewardStep extends StatelessWidget {
         fallback: const _FamilyReferenceBadge(label: 'ABYAN\n1'),
         message: 'Nakilala mo ang bag-o nga abyan!',
         onDone: onDone,
-      ),
-    );
-  }
-}
-
-class _G2SmallSpeechBubble extends StatelessWidget {
-  final String text;
-  final bool large;
-
-  const _G2SmallSpeechBubble({required this.text, this.large = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(maxWidth: large ? 168 : 128),
-      padding: EdgeInsets.symmetric(
-        horizontal: large ? 18 : 14,
-        vertical: large ? 13 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .12),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.nunito(
-          color: TudloColors.blue,
-          fontSize: large ? 23 : 18,
-          height: 1.05,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-        ),
       ),
     );
   }

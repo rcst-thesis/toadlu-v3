@@ -34,14 +34,15 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
       'assets/images/level_game/grade2/people/Tudlo_Ana_Full_Body_Character.svg';
   static const _anaCelebrateAsset =
       'assets/images/level_game/grade2/people/Tudlo_Ana_Celebrating_Age_Seven.svg';
-  static const _backgroundAsset =
-      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U1_L1.2_Birthday_Living_Room_Background.svg';
+  static const _introBackgroundAsset =
+      'assets/images/level_game/grade2/backgrounds/Tudlo_Birthday_Background_Ana_Holding_Cake.svg';
   static const _activityBackgroundAsset = _g2BirthdayWithoutAnaBackground;
   static const _answerOrder = ['i_am', 'seven_years_old'];
 
   _G2BirthdayStep _step = _G2BirthdayStep.invitation;
   bool _voicePlaying = false;
   bool _invitationOpened = false;
+  bool _questionHeard = false;
   final Set<int> _revealedBalloons = {};
   String? _selectedAgeId;
   String? _wrongAgeId;
@@ -75,6 +76,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
       _selectedAgeId = null;
       _wrongAgeId = null;
       _wrongTileId = null;
+      if (step == _G2BirthdayStep.balloons) _questionHeard = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _speakForStep();
@@ -95,10 +97,10 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
       _G2BirthdayStep.invitation => const [2],
       _G2BirthdayStep.map => const [3],
       _G2BirthdayStep.balloons => const [4],
-      _G2BirthdayStep.askAge => const [5, 6],
-      _G2BirthdayStep.seven => const [7],
-      _G2BirthdayStep.chooseSeven => const [8, 9],
-      _G2BirthdayStep.buildAnswer => const [12, 13],
+      _G2BirthdayStep.askAge => const [8],
+      _G2BirthdayStep.seven => const [9],
+      _G2BirthdayStep.chooseSeven => const [11, 12],
+      _G2BirthdayStep.buildAnswer => const [17],
       _G2BirthdayStep.reward => const [16],
     };
     setState(() => _voicePlaying = true);
@@ -114,7 +116,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
           _G2BirthdayStep.balloons => 'May mga balloon!',
           _G2BirthdayStep.askAge => 'How old are you?',
           _G2BirthdayStep.seven => 'Seven years old si Ana.',
-          _G2BirthdayStep.chooseSeven => 'Pilia ang 7.',
+          _G2BirthdayStep.chooseSeven => 'Pilia ang numbero seven.',
           _G2BirthdayStep.buildAnswer => 'Ihan-ay: I am seven years old.',
           _G2BirthdayStep.reward => 'Makasiling ka na sang imo edad!',
         },
@@ -139,16 +141,35 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
     if (_voicePlaying || _revealedBalloons.contains(number)) return;
     setState(() => _revealedBalloons.add(number));
     await AppAudioService.instance.playTap();
+    await playLessonNumberVoice(number);
     if (_revealedBalloons.length >= 4) {
       await Future<void>.delayed(const Duration(milliseconds: 500));
-      if (mounted) _goToStep(_G2BirthdayStep.askAge);
+      if (mounted) _goToStep(_G2BirthdayStep.chooseSeven);
     }
   }
 
   Future<void> _hearQuestion() async {
-    if (_voicePlaying) return;
-    await _playVoice(const [6]);
-    if (mounted) _goToStep(_G2BirthdayStep.seven);
+    if (_voicePlaying || _questionHeard) return;
+    setState(() => _voicePlaying = true);
+    try {
+      await _playVoice(const [5]);
+      if (!mounted) return;
+      setState(() => _questionHeard = true);
+      await _playVoice(const [10]);
+    } finally {
+      if (mounted) setState(() => _voicePlaying = false);
+    }
+  }
+
+  Future<void> _tapAnaForAge() async {
+    if (_voicePlaying || !_questionHeard) return;
+    setState(() => _voicePlaying = true);
+    try {
+      await _playVoice(const [9]);
+    } finally {
+      if (mounted) setState(() => _voicePlaying = false);
+    }
+    if (mounted) _goToStep(_G2BirthdayStep.askAge);
   }
 
   Future<void> _chooseAge(_G2FriendChoice choice) async {
@@ -159,6 +180,8 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
       _selectedAgeId = choice.id;
       _wrongAgeId = correct ? null : choice.id;
     });
+    final selectedNumber = int.tryParse(choice.label);
+    if (selectedNumber != null) await playLessonNumberVoice(selectedNumber);
     if (!correct) {
       await AppAudioService.instance.playWrong();
       await _playVoice(const [11]);
@@ -172,7 +195,6 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
     }
     widget.onQuizCorrect(0);
     await AppAudioService.instance.playCorrect();
-    await _playVoice(const [10]);
     await Future<void>.delayed(const Duration(milliseconds: 520));
     if (mounted) _goToStep(_G2BirthdayStep.buildAnswer);
   }
@@ -194,7 +216,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
       };
       setState(() => _wrongTileId = wrongIds.first);
       await AppAudioService.instance.playWrong();
-      await _playVoice(const [19]);
+      await _playVoice(const [20]);
       await Future<void>.delayed(const Duration(milliseconds: 450));
       if (!mounted) return;
       setState(() {
@@ -209,7 +231,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
     }
     widget.onQuizCorrect(1);
     await AppAudioService.instance.playCorrect();
-    await _playVoice(const [15, 17]);
+    await _playVoice(const [18, 19]);
     await Future<void>.delayed(_lessonCompletionHold);
     if (mounted) _goToStep(_G2BirthdayStep.reward);
   }
@@ -239,7 +261,7 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
         child: switch (_step) {
           _G2BirthdayStep.invitation => _G2BirthdayInvitationStep(
             progress: _progress,
-            backgroundAsset: _backgroundAsset,
+            backgroundAsset: _introBackgroundAsset,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
@@ -251,7 +273,18 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
             onReplay: _speakForStep,
             onNext: () => _goToStep(_G2BirthdayStep.balloons),
           ),
-          _G2BirthdayStep.balloons => _G2BirthdayBalloonsStep(
+          _G2BirthdayStep.balloons => _G2BirthdayAskAgeStep(
+            progress: _progress,
+            backgroundAsset: _activityBackgroundAsset,
+            anaAsset: _anaAsset,
+            questionHeard: _questionHeard,
+            inputReady: !_voicePlaying,
+            onExit: widget.onExit,
+            onReplay: _speakForStep,
+            onQuestion: _hearQuestion,
+            onTapAna: _tapAnaForAge,
+          ),
+          _G2BirthdayStep.askAge => _G2BirthdayBalloonsStep(
             progress: _progress,
             backgroundAsset: _activityBackgroundAsset,
             revealed: _revealedBalloons,
@@ -259,15 +292,6 @@ class _GradeTwoUnitOneLessonTwoBirthdayFlowState
             onExit: widget.onExit,
             onReplay: _speakForStep,
             onReveal: _revealBalloon,
-          ),
-          _G2BirthdayStep.askAge => _G2BirthdayAskAgeStep(
-            progress: _progress,
-            backgroundAsset: _activityBackgroundAsset,
-            anaAsset: _anaAsset,
-            inputReady: !_voicePlaying,
-            onExit: widget.onExit,
-            onReplay: _speakForStep,
-            onQuestion: _hearQuestion,
           ),
           _G2BirthdayStep.seven => _G2BirthdaySevenStep(
             progress: _progress,
@@ -339,42 +363,54 @@ class _G2BirthdayInvitationStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: backgroundAsset,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .07,
-          view.height * .15,
-          view.width * .07,
-          view.height * .045,
-        ),
-        child: Column(
-          children: [
-            const Spacer(),
-            _LessonKokaMascot(
-              size: (view.width * .48).clamp(170.0, 250.0),
-              mood: KokaMood.idle,
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .07,
+            right: view.width * .07,
+            bottom: view.height * .045,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _LessonOneMessageCard(
+                  message: 'May birthday invitation si Ana!',
+                ),
+                SizedBox(height: view.height * .02),
+                _LessonOneBlueButton(
+                  label: 'Sige',
+                  onTap: inputReady ? () => unawaited(onOpen()) : null,
+                ),
+              ],
             ),
-            SizedBox(height: view.height * .02),
-            GestureDetector(
+          ),
+          Positioned(
+            left: view.width * .21,
+            right: view.width * .21,
+            bottom: view.height * .245,
+            child: GestureDetector(
               onTap: inputReady ? () => unawaited(onOpen()) : null,
               child: Stack(
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: view.width * .58,
+                    width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 18,
+                      horizontal: 18,
+                      vertical: 13,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3B8),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: TudloColors.gold, width: 4),
+                      color: Colors.white.withValues(alpha: .95),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: const Color(0xFFFF8FC7),
+                        width: 3.5,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: TudloColors.gold.withValues(alpha: .35),
-                          blurRadius: 22,
-                          spreadRadius: 3,
+                          color: const Color(0xFFFF8FC7).withValues(alpha: .28),
+                          blurRadius: 18,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
@@ -382,8 +418,8 @@ class _G2BirthdayInvitationStep extends StatelessWidget {
                       'Happy Birthday\nAna!',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.nunito(
-                        color: TudloColors.blue,
-                        fontSize: (view.width * .075).clamp(26.0, 38.0),
+                        color: const Color(0xFFE8489B),
+                        fontSize: (view.width * .057).clamp(21.0, 30.0),
                         height: 1,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
@@ -399,17 +435,8 @@ class _G2BirthdayInvitationStep extends StatelessWidget {
                 ],
               ),
             ),
-            const Spacer(),
-            const _LessonOneMessageCard(
-              message: 'May birthday invitation si Ana!',
-            ),
-            SizedBox(height: view.height * .02),
-            _LessonOneBlueButton(
-              label: 'Sige',
-              onTap: inputReady ? () => unawaited(onOpen()) : null,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -567,7 +594,12 @@ class _G2BirthdayBalloonsStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
-    final balloons = [5, 6, 7, 8];
+    final balloons = [
+      (number: 5, alignment: const Alignment(-.62, -.52)),
+      (number: 6, alignment: const Alignment(.62, -.48)),
+      (number: 7, alignment: const Alignment(-.42, .26)),
+      (number: 8, alignment: const Alignment(.48, .24)),
+    ];
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -586,34 +618,32 @@ class _G2BirthdayBalloonsStep extends StatelessWidget {
               message: 'May mga balloon!',
               compact: true,
             ),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _LessonKokaMascot(
-                  size: (view.width * .34).clamp(125.0, 180.0),
-                  mood: KokaMood.idle,
-                ),
-                Expanded(
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: view.width * .025,
-                    runSpacing: view.height * .012,
-                    children: [
-                      for (final number in balloons)
-                        _BirthdayBalloonCard(
-                          number: number,
-                          revealed: revealed.contains(number),
-                          enabled: inputReady,
-                          onTap: () => onReveal(number),
-                        ),
-                    ],
+            Expanded(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: -view.width * .05,
+                    bottom: view.height * .005,
+                    child: _LessonKokaMascot(
+                      size: (view.width * .62).clamp(235.0, 330.0),
+                      mood: KokaMood.hi,
+                    ),
                   ),
-                ),
-              ],
+                  for (final balloon in balloons)
+                    Align(
+                      alignment: balloon.alignment,
+                      child: _BirthdayBalloonCard(
+                        number: balloon.number,
+                        revealed: revealed.contains(balloon.number),
+                        enabled: inputReady,
+                        onTap: () => onReveal(balloon.number),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            const Spacer(),
+            SizedBox(height: view.height * .02),
           ],
         ),
       ),
@@ -637,11 +667,13 @@ class _BirthdayBalloonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
+    final width = (view.width * .34).clamp(126.0, 180.0);
+    final height = (view.height * .29).clamp(198.0, 260.0);
     return GestureDetector(
       onTap: enabled && !revealed ? onTap : null,
       child: SizedBox(
-        width: view.width * .18,
-        height: view.height * .19,
+        width: width,
+        height: height,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -652,25 +684,35 @@ class _BirthdayBalloonCard extends StatelessWidget {
               errorBuilder: (_) => Icon(
                 Icons.circle_rounded,
                 color: TudloColors.coral,
-                size: view.width * .16,
+                size: width * .78,
               ),
             ),
-            Container(
-              width: view.width * .085,
-              height: view.width * .085,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: revealed ? .94 : .78),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                revealed ? '$number' : '?',
-                style: GoogleFonts.nunito(
-                  color: TudloColors.blue,
-                  fontSize: (view.width * .07).clamp(22.0, 34.0),
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
+            Positioned(
+              top: height * .26,
+              child: Container(
+                width: width * .42,
+                height: width * .42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: revealed ? .94 : .82),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: .10),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  revealed ? '$number' : '?',
+                  style: GoogleFonts.nunito(
+                    color: TudloColors.blue,
+                    fontSize: (width * .30).clamp(28.0, 42.0),
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
                 ),
               ),
             ),
@@ -685,19 +727,23 @@ class _G2BirthdayAskAgeStep extends StatelessWidget {
   final double progress;
   final String backgroundAsset;
   final String anaAsset;
+  final bool questionHeard;
   final bool inputReady;
   final VoidCallback onExit;
   final VoidCallback onReplay;
   final Future<void> Function() onQuestion;
+  final Future<void> Function() onTapAna;
 
   const _G2BirthdayAskAgeStep({
     required this.progress,
     required this.backgroundAsset,
     required this.anaAsset,
+    required this.questionHeard,
     required this.inputReady,
     required this.onExit,
     required this.onReplay,
     required this.onQuestion,
+    required this.onTapAna,
   });
 
   @override
@@ -708,16 +754,13 @@ class _G2BirthdayAskAgeStep extends StatelessWidget {
       onExit: onExit,
       onReplay: onReplay,
       backgroundAsset: backgroundAsset,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          view.width * .06,
-          view.height * .14,
-          view.width * .06,
-          view.height * .05,
-        ),
-        child: Column(
-          children: [
-            GestureDetector(
+      child: Stack(
+        children: [
+          Positioned(
+            left: view.width * .20,
+            right: view.width * .20,
+            top: view.height * .14,
+            child: GestureDetector(
               onTap: inputReady ? () => unawaited(onQuestion()) : null,
               child: Stack(
                 clipBehavior: Clip.none,
@@ -727,7 +770,7 @@ class _G2BirthdayAskAgeStep extends StatelessWidget {
                     message: 'How old are you?',
                     compact: true,
                   ),
-                  if (inputReady)
+                  if (inputReady && !questionHeard)
                     Positioned(
                       right: -view.width * .10,
                       bottom: -view.height * .02,
@@ -736,32 +779,67 @@ class _G2BirthdayAskAgeStep extends StatelessWidget {
                 ],
               ),
             ),
-            const Spacer(),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+          ),
+          Positioned(
+            left: view.width * .04,
+            right: view.width * .04,
+            bottom: view.height * .19,
+            height: view.height * .54,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              clipBehavior: Clip.none,
               children: [
-                _LessonKokaMascot(
-                  size: (view.width * .42).clamp(150.0, 220.0),
-                  mood: KokaMood.idle,
+                Positioned(
+                  left: -view.width * .03,
+                  bottom: 0,
+                  child: _LessonKokaMascot(
+                    size: (view.width * .62).clamp(235.0, 330.0),
+                    mood: KokaMood.idle,
+                  ),
                 ),
-                const Spacer(),
-                SizedBox(
-                  width: view.width * .36,
-                  height: view.height * .44,
-                  child: _LessonPictureAsset(
-                    asset: anaAsset,
-                    fit: BoxFit.contain,
+                Positioned(
+                  right: -view.width * .02,
+                  bottom: 0,
+                  width: view.width * .62,
+                  height: view.height * .54,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: inputReady && questionHeard
+                        ? () => unawaited(onTapAna())
+                        : null,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        _LessonPictureAsset(
+                          asset: anaAsset,
+                          fit: BoxFit.contain,
+                        ),
+                        if (inputReady && questionHeard)
+                          Positioned(
+                            right: view.width * .02,
+                            top: view.height * .04,
+                            child: const _FamilyTapCue(),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-            const Spacer(),
-            const _LessonOneMessageCard(
-              message: 'I-tap ang question bubble kag pamatii.',
+          ),
+          Positioned(
+            left: view.width * .06,
+            right: view.width * .06,
+            bottom: view.height * .05,
+            child: _LessonOneMessageCard(
+              message: questionHeard
+                  ? 'I-tap si Ana kag pamatii.'
+                  : 'I-tap ang question bubble kag pamatii.',
               compact: true,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -797,7 +875,7 @@ class _G2BirthdaySevenStep extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            left: view.width * .04,
+            right: -view.width * .02,
             top: view.height * .20,
             width: view.width * .72,
             height: view.height * .48,
@@ -807,7 +885,7 @@ class _G2BirthdaySevenStep extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: -view.width * .12,
+            left: -view.width * .03,
             top: view.height * .30,
             width: view.width * .72,
             height: view.height * .43,
@@ -866,6 +944,8 @@ class _G2BirthdayChooseSevenStep extends StatelessWidget {
       _G2FriendChoice('age_7', '7'),
       _G2FriendChoice('age_8', '8'),
     ];
+    const balloonCenters = [.125, .375, .625, .875];
+    final balloonSlotWidth = (view.width * .31).clamp(118.0, 156.0);
     return _LessonOneChrome(
       progress: progress,
       onExit: onExit,
@@ -878,32 +958,41 @@ class _G2BirthdayChooseSevenStep extends StatelessWidget {
             right: view.width * .22,
             top: view.height * .15,
             child: const _LessonOneMessageCard(
-              message: 'Pilia ang 7.',
+              message: 'Pilia ang numbero seven.',
               compact: true,
             ),
           ),
           Positioned(
-            left: view.width * .03,
-            bottom: view.height * .095,
+            left: -view.width * .08,
+            bottom: view.height * .045,
             child: _LessonKokaMascot(
-              size: (view.width * .34).clamp(112.0, 168.0),
-              mood: KokaMood.idle,
+              size: (view.width * .66).clamp(250.0, 350.0),
+              mood: KokaMood.hi,
             ),
           ),
           Positioned(
-            left: view.width * .16,
-            right: view.width * .08,
-            bottom: view.height * .15,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            left: 0,
+            right: 0,
+            bottom: view.height * .34,
+            height: view.height * .34,
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                for (final choice in choices)
-                  _BirthdayAgeChoiceBalloon(
-                    choice: choice,
-                    selected: selectedId == choice.id,
-                    wrong: wrongId == choice.id,
-                    enabled: inputReady && selectedId == null,
-                    onTap: () => onChoose(choice),
+                for (final entry in choices.indexed)
+                  Positioned(
+                    left:
+                        (view.width * balloonCenters[entry.$1]) -
+                        (balloonSlotWidth / 2),
+                    top: entry.$1.isEven ? view.height * .018 : 0,
+                    bottom: 0,
+                    width: balloonSlotWidth,
+                    child: _BirthdayAgeChoiceBalloon(
+                      choice: entry.$2,
+                      selected: selectedId == entry.$2.id,
+                      wrong: wrongId == entry.$2.id,
+                      enabled: inputReady && selectedId == null,
+                      onTap: () => onChoose(entry.$2),
+                    ),
                   ),
               ],
             ),
@@ -933,21 +1022,65 @@ class _BirthdayAgeChoiceBalloon extends StatelessWidget {
   Widget build(BuildContext context) {
     final number = choice.label;
     final view = MediaQuery.sizeOf(context);
+    final balloonWidth = (view.width * .31).clamp(118.0, 156.0);
+    final balloonHeight = (view.height * .33).clamp(225.0, 300.0);
+    final numberCardWidth = balloonWidth * .47;
+    final numberCardHeight = balloonWidth * .53;
     return _FeedbackMotion(
       correct: selected && choice.id == 'age_7',
       wrong: wrong,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: enabled ? onTap : null,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 160),
           scale: selected ? 1.12 : 1,
           child: SizedBox(
-            width: view.width * .17,
-            height: view.height * .18,
-            child: _LessonPictureAsset(
-              asset:
-                  'assets/images/level_game/lesson-game-assets/Tudlo_Birthday_Balloon_$number.svg',
-              fit: BoxFit.contain,
+            width: balloonWidth,
+            height: balloonHeight,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Transform.scale(
+                  scale: 2,
+                  child: _LessonPictureAsset(
+                    asset:
+                        'assets/images/level_game/lesson-game-assets/Tudlo_Birthday_Balloon_$number.svg',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                Positioned(
+                  top: balloonHeight * .23,
+                  child: Container(
+                    width: numberCardWidth,
+                    height: numberCardHeight,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .92),
+                      borderRadius: BorderRadius.circular(9),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: .12),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      number,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: TudloColors.blue,
+                        fontSize: balloonWidth * .33,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

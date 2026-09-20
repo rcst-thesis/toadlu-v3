@@ -11,10 +11,12 @@ import 'package:tudloapp/core/data/app_data.dart';
 import 'package:tudloapp/core/models/grade_level.dart';
 import 'package:tudloapp/core/models/lesson_score.dart';
 import 'package:tudloapp/core/services/app_audio_service.dart';
+import 'package:tudloapp/core/services/lesson_number_voice_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
+import 'package:tudloapp/core/widgets/lesson_asset_glow.dart';
 import 'package:tudloapp/core/widgets/mascot_widget.dart';
 import 'package:tudloapp/data/dictionary/dictionary_data.dart';
 import 'package:tudloapp/data/lesson_bank/lesson_bank.dart';
@@ -37,7 +39,7 @@ part 'flows/grade_3/grade_three_shop_flow.dart';
 part 'flows/grade_3/grade_three_story_flow.dart';
 
 const int _lessonQuizCount = 5;
-const Duration _lessonCompletionHold = Duration(seconds: 3);
+const Duration _lessonCompletionHold = Duration(seconds: 2);
 const String _lessonStickerAssetRoot = 'assets/images/stickers/rewards/home';
 const List<String> _lessonHomeStickerAssets = [
   '$_lessonStickerAssetRoot/farm-home-sticker.svg',

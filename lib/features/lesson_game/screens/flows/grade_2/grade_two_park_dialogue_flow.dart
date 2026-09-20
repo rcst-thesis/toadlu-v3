@@ -31,7 +31,7 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
     extends State<_GradeTwoUnitTwoLessonTwoParkDialogueFlow> {
   static const _voiceBase = 'audio/VO-final/grade2';
   static const _backgroundAsset =
-      'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg';
+      'assets/images/level_game/grade2/backgrounds/Tudlo_G2_U2_L2.1_Park_Intro_Background.svg';
   static const _anaAsset =
       'assets/images/level_game/grade2/people/Tudlo_Ana_Full_Body_Character_Facing_Left.svg';
   static const _anaSmileAsset =
@@ -43,7 +43,6 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
   _G2ParkDialogueStep _step = _G2ParkDialogueStep.intro;
   bool _voicePlaying = false;
   bool _benchFound = false;
-  bool _questionHeard = false;
   String? _selectedAnswerId;
   String? _wrongAnswerId;
   String? _wrongTileId;
@@ -76,7 +75,6 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
       _selectedAnswerId = null;
       _wrongAnswerId = null;
       _wrongTileId = null;
-      if (step == _G2ParkDialogueStep.question) _questionHeard = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _speakForStep();
@@ -94,11 +92,11 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
 
   Future<void> _speakForStep() async {
     final clips = switch (_step) {
-      _G2ParkDialogueStep.intro => const [2, 3],
-      _G2ParkDialogueStep.map => const [4, 5],
+      _G2ParkDialogueStep.intro => const [2],
+      _G2ParkDialogueStep.map => const [3],
       _G2ParkDialogueStep.findBench => const [4],
-      _G2ParkDialogueStep.question => const [6, 7],
-      _G2ParkDialogueStep.chooseAnswer => const [8, 9],
+      _G2ParkDialogueStep.question => const [5, 6, 7, 8],
+      _G2ParkDialogueStep.chooseAnswer => const [8],
       _G2ParkDialogueStep.model => const [10],
       _G2ParkDialogueStep.arrange => const [11, 12],
       _G2ParkDialogueStep.reward => const [20],
@@ -145,13 +143,6 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
     await AppAudioService.instance.playCorrect();
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (mounted) _goToStep(_G2ParkDialogueStep.question);
-  }
-
-  Future<void> _hearQuestion() async {
-    if (_voicePlaying) return;
-    setState(() => _questionHeard = true);
-    await _playVoice(const [6]);
-    if (mounted) _goToStep(_G2ParkDialogueStep.chooseAnswer);
   }
 
   Future<void> _chooseAnswer(_G2FriendChoice choice) async {
@@ -270,11 +261,12 @@ class _GradeTwoUnitTwoLessonTwoParkDialogueFlowState
             progress: _progress,
             backgroundAsset: _backgroundAsset,
             anaAsset: _anaAsset,
-            questionHeard: _questionHeard,
+            selectedId: _selectedAnswerId,
+            wrongId: _wrongAnswerId,
             inputReady: !_voicePlaying,
             onExit: widget.onExit,
             onReplay: _speakForStep,
-            onQuestion: _hearQuestion,
+            onChoose: _chooseAnswer,
           ),
           _G2ParkDialogueStep.chooseAnswer => _G2ParkAnswerChoiceStep(
             progress: _progress,
@@ -470,10 +462,17 @@ class _G2ParkFindAnaStep extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: view.width * .12,
-            right: view.width * .12,
-            bottom: view.height * .23,
-            height: view.height * .22,
+            right: view.width * .06,
+            bottom: view.height * .37,
+            width: view.width * .44,
+            height: view.height * .18,
+            child: _ParkBenchPicture(asset: benchAsset, mirrored: true),
+          ),
+          Positioned(
+            left: view.width * .06,
+            bottom: view.height * .37,
+            width: view.width * .44,
+            height: view.height * .18,
             child: GestureDetector(
               onTap: inputReady ? onFind : null,
               child: _FeedbackMotion(
@@ -484,25 +483,20 @@ class _G2ParkFindAnaStep extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: [
                     if (!benchFound)
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(40),
-                          boxShadow: [
-                            BoxShadow(
-                              color: TudloColors.gold.withValues(alpha: .65),
-                              blurRadius: 28,
-                              spreadRadius: 8,
-                            ),
-                          ],
+                      Positioned.fill(
+                        child: LessonAssetGlow(
+                          asset: benchAsset,
+                          fallbackIcon: Icons.weekend_rounded,
+                          fallbackSize: view.width * .24,
                         ),
                       ),
-                    _LessonPictureAsset(asset: benchAsset, fit: BoxFit.contain),
+                    _ParkBenchPicture(asset: benchAsset),
                     if (benchFound)
                       Positioned(
-                        right: view.width * .04,
-                        bottom: view.height * .08,
-                        width: view.width * .34,
-                        height: view.height * .34,
+                        right: -view.width * .02,
+                        bottom: view.height * .04,
+                        width: view.width * .30,
+                        height: view.height * .30,
                         child: _LessonPictureAsset(
                           asset: anaAsset,
                           fit: BoxFit.contain,
@@ -510,8 +504,8 @@ class _G2ParkFindAnaStep extends StatelessWidget {
                       ),
                     if (!benchFound)
                       Positioned(
-                        left: view.width * .08,
-                        bottom: view.height * .05,
+                        left: view.width * .10,
+                        bottom: -view.height * .005,
                         child: const _FamilyTapCue(),
                       ),
                   ],
@@ -525,30 +519,51 @@ class _G2ParkFindAnaStep extends StatelessWidget {
   }
 }
 
+class _ParkBenchPicture extends StatelessWidget {
+  final String asset;
+  final bool mirrored;
+
+  const _ParkBenchPicture({required this.asset, this.mirrored = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final bench = _LessonPictureAsset(asset: asset, fit: BoxFit.contain);
+    if (!mirrored) return bench;
+    return Transform.scale(scaleX: -1, child: bench);
+  }
+}
+
 class _G2ParkQuestionStep extends StatelessWidget {
   final double progress;
   final String backgroundAsset;
   final String anaAsset;
-  final bool questionHeard;
+  final String? selectedId;
+  final String? wrongId;
   final bool inputReady;
   final VoidCallback onExit;
   final VoidCallback onReplay;
-  final VoidCallback onQuestion;
+  final Future<void> Function(_G2FriendChoice choice) onChoose;
 
   const _G2ParkQuestionStep({
     required this.progress,
     required this.backgroundAsset,
     required this.anaAsset,
-    required this.questionHeard,
+    required this.selectedId,
+    required this.wrongId,
     required this.inputReady,
     required this.onExit,
     required this.onReplay,
-    required this.onQuestion,
+    required this.onChoose,
   });
 
   @override
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
+    const choices = [
+      _G2FriendChoice('fine_thank_you', "I'm fine, thank you."),
+      _G2FriendChoice('my_name_is_ana', 'My name is Ana.'),
+      _G2FriendChoice('good_evening', 'Good evening.'),
+    ];
     return _G2ParkScene(
       progress: progress,
       backgroundAsset: backgroundAsset,
@@ -558,42 +573,49 @@ class _G2ParkQuestionStep extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           view.width * .055,
-          view.height * .13,
+          view.height * .125,
           view.width * .055,
-          view.height * .04,
+          view.height * .035,
         ),
         child: Column(
           children: [
-            GestureDetector(
-              onTap: inputReady ? onQuestion : null,
-              child: _FeedbackMotion(
-                correct: questionHeard,
-                wrong: false,
-                child: const _LessonOneMessageCard(
-                  message: 'How are you?',
-                  compact: true,
-                ),
+            const _LessonOneMessageCard(message: 'How are you?', compact: true),
+            Expanded(
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned(
+                    left: -view.width * .02,
+                    bottom: view.height * .01,
+                    child: _LessonKokaMascot(
+                      size: (view.width * .46).clamp(168.0, 228.0),
+                      mood: KokaMood.idle,
+                    ),
+                  ),
+                  Positioned(
+                    right: view.width * .04,
+                    bottom: 0,
+                    width: view.width * .46,
+                    height: view.height * .44,
+                    child: _LessonPictureAsset(
+                      asset: anaAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const Spacer(),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _LessonKokaMascot(
-                  size: (view.width * .36).clamp(130.0, 190.0),
-                  mood: KokaMood.idle,
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: view.width * .38,
-                  height: view.height * .42,
-                  child: _LessonPictureAsset(
-                    asset: anaAsset,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ],
-            ),
+            for (final choice in choices) ...[
+              _ParkGreetingCard(
+                label: choice.label,
+                correct:
+                    selectedId == choice.id && choice.id == 'fine_thank_you',
+                wrong: wrongId == choice.id,
+                enabled: inputReady && selectedId == null,
+                onTap: () => onChoose(choice),
+              ),
+              SizedBox(height: view.height * .012),
+            ],
           ],
         ),
       ),

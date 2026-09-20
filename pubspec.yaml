@@ -111,6 +111,8 @@ flutter:
     - assets/audio/VO/
     - assets/audio/VO-final/grade1/
     - assets/audio/VO-final/grade2/
+    - assets/audio/VO-final/grade3/
+    - assets/audio/VO-final/numbers1-10/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
