@@ -2176,10 +2176,18 @@ String _lessonThumbnailForDashboard(int unitNumber, int lessonNumber) {
       'assets/images/level_game/grade2/backgrounds/Tudlo_Birthday_Background_Ana_Holding_Cake.svg',
     (GradeLevel.grade2, 2, _) =>
       'assets/images/level_game/grade2/backgrounds/Tudlo_Park_Intro_Background.svg',
+    (GradeLevel.grade3, 1, 1) =>
+      'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/MarketLandscape.svg',
+    (GradeLevel.grade3, 1, 3) =>
+      'assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/background/MarketLandscape.svg',
+    (GradeLevel.grade3, 2, 1) =>
+      'assets/images/level_game/backgrounds/grade3_landscape/FarmLandscape 1.svg',
+    (GradeLevel.grade3, 2, 2) =>
+      'assets/images/level_game/backgrounds/grade3_landscape/ClassroomLandscape 1.svg',
     (GradeLevel.grade3, 1, _) =>
-      'assets/images/level_game/backgrounds/classroom.svg',
+      'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/MarketLandscape.svg',
     (GradeLevel.grade3, 2, _) =>
-      'assets/images/level_game/backgrounds/house.svg',
+      'assets/images/level_game/backgrounds/grade3_landscape/FarmLandscape 1.svg',
     (GradeLevel.grade3, 3, _) =>
       'assets/images/level_game/backgrounds/garden.svg',
     (GradeLevel.grade3, 4, _) =>

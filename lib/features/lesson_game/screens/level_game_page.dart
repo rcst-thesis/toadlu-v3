@@ -1918,7 +1918,7 @@ class _StoryLessonSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          _StoryIllustration(imagePath: _storyImagePathForActiveGrade()),
+          _StoryIllustration(imagePath: _storyImagePathForContent(content)),
           const SizedBox(height: 18),
           Text(
             content.storyTitle,
@@ -1967,12 +1967,40 @@ class _StoryIllustration extends StatelessWidget {
   }
 }
 
-String _storyImagePathForActiveGrade() {
+const String _g3MarketNumbersLessonImage =
+    'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/MarketLandscape.svg';
+const String _g3MarketShoppingLessonImage =
+    'assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/background/MarketLandscape.svg';
+const String _g3LostDogLessonImage =
+    'assets/images/level_game/backgrounds/grade3_landscape/FarmLandscape 1.svg';
+const String _g3NewStudentLessonImage =
+    'assets/images/level_game/backgrounds/grade3_landscape/ClassroomLandscape 1.svg';
+
+String _storyImagePathForContent(LessonLevelContent content) {
+  return _storyImagePathForTitles(content.title, content.storyTitle);
+}
+
+String _storyImagePathForTitles(String title, String? storyTitle) {
+  if (AppData.selectedGradeLevel == GradeLevel.grade3) {
+    final searchable = '$title ${storyTitle ?? ''}'.toLowerCase();
+    if (searchable.contains('numero sa merkado')) {
+      return _g3MarketNumbersLessonImage;
+    }
+    if (searchable.contains('pagbakal') ||
+        searchable.contains('koka sa merkado')) {
+      return _g3MarketShoppingLessonImage;
+    }
+    if (searchable.contains('nadula nga ido')) {
+      return _g3LostDogLessonImage;
+    }
+    if (searchable.contains('bag-o nga estudyante')) {
+      return _g3NewStudentLessonImage;
+    }
+  }
   return switch (AppData.selectedGradeLevel) {
     GradeLevel.grade1 => 'assets/images/level_game/empty-poem-page.png',
     GradeLevel.grade2 => 'assets/images/level_game/classroom.png',
-    GradeLevel.grade3 =>
-      'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/MarketLandscape.svg',
+    GradeLevel.grade3 => _g3MarketNumbersLessonImage,
   };
 }
 

@@ -1858,10 +1858,15 @@ class _G3BuildSayPage extends StatelessWidget {
 }
 
 class _G3SentenceSlot extends StatelessWidget {
+  final int? index;
   final String? value;
   final ValueChanged<String> onAccept;
 
-  const _G3SentenceSlot({required this.value, required this.onAccept});
+  const _G3SentenceSlot({
+    this.index,
+    required this.value,
+    required this.onAccept,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1869,24 +1874,55 @@ class _G3SentenceSlot extends StatelessWidget {
       onWillAcceptWithDetails: (_) => value == null,
       onAcceptWithDetails: (details) => onAccept(details.data),
       builder: (context, candidate, rejected) {
-        return Container(
-          height: 62,
-          alignment: Alignment.center,
-          decoration: _g3SoftPanelDecoration(
-            borderColor: value == null
-                ? const Color(0xFFBBD9EA)
-                : TudloColors.green,
-          ),
-          child: Text(
-            value ?? '',
-            style: GoogleFonts.nunito(
-              color: TudloColors.blue,
-              fontSize: 23,
-              height: 1,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
+        return Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topCenter,
+          children: [
+            Container(
+              height: 76,
+              alignment: Alignment.center,
+              decoration: _g3SoftPanelDecoration(
+                fill: Colors.white.withValues(alpha: .94),
+                borderColor: value == null
+                    ? const Color(0xFF4AB7FF)
+                    : TudloColors.green,
+              ),
+              child: Text(
+                value ?? '',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  color: TudloColors.blue,
+                  fontSize: 23,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
             ),
-          ),
+            if (index != null)
+              Positioned(
+                top: -18,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: TudloColors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '$index',
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontSize: 22,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );
@@ -1895,20 +1931,25 @@ class _G3SentenceSlot extends StatelessWidget {
 
 class _G3SentenceTile extends StatelessWidget {
   final String label;
+  final bool selected;
 
-  const _G3SentenceTile({required this.label});
+  const _G3SentenceTile({required this.label, this.selected = false});
 
   @override
   Widget build(BuildContext context) {
     final tile = Container(
-      height: 58,
+      height: 66,
       alignment: Alignment.center,
-      decoration: _g3SoftPanelDecoration(borderColor: TudloColors.blue),
+      decoration: _g3SoftPanelDecoration(
+        fill: selected ? const Color(0xFFE9F7FF) : Colors.white,
+        borderColor: selected ? TudloColors.green : TudloColors.blue,
+      ),
       child: Text(
-        label,
+        label.toUpperCase(),
+        textAlign: TextAlign.center,
         style: GoogleFonts.nunito(
-          color: TudloColors.blue,
-          fontSize: 21,
+          color: TudloColors.ink,
+          fontSize: 22,
           height: 1,
           fontWeight: FontWeight.w900,
           letterSpacing: 0,
@@ -1919,7 +1960,7 @@ class _G3SentenceTile extends StatelessWidget {
       data: label,
       feedback: Material(
         color: Colors.transparent,
-        child: SizedBox(width: 140, child: tile),
+        child: SizedBox(width: 170, child: tile),
       ),
       childWhenDragging: Opacity(opacity: .35, child: tile),
       child: tile,
@@ -2053,11 +2094,13 @@ class _G3MarketContentFrame extends StatelessWidget {
   final String prompt;
   final Widget child;
   final Widget footer;
+  final bool showContentPanel;
 
   const _G3MarketContentFrame({
     required this.prompt,
     required this.child,
     required this.footer,
+    this.showContentPanel = true,
   });
 
   @override
@@ -2072,20 +2115,28 @@ class _G3MarketContentFrame extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _LessonOneMessageCard(message: prompt, compact: true),
+          Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: view.width * .78,
+              child: _LessonOneMessageCard(message: prompt, compact: true),
+            ),
+          ),
           const SizedBox(height: 10),
           Expanded(
             child: SingleChildScrollView(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .76),
-                  borderRadius: BorderRadius.circular(26),
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: child,
-              ),
+              child: showContentPanel
+                  ? Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .76),
+                        borderRadius: BorderRadius.circular(26),
+                        border: Border.all(color: Colors.white, width: 3),
+                      ),
+                      child: child,
+                    )
+                  : child,
             ),
           ),
           const SizedBox(height: 10),
@@ -3116,7 +3167,7 @@ class _Grade3PageDots extends StatelessWidget {
 List<_Grade3StoryPageData> _grade3StoryPagesFor(LevelContent content) {
   final imagePath = content.storyImageAsset?.trim().isNotEmpty == true
       ? content.storyImageAsset!.trim()
-      : _storyImagePathForActiveGrade();
+      : _storyImagePathForTitles(content.title, content.storyTitle);
   final sentences = _grade3SentencesFor(content);
   final pages = <_Grade3StoryPageData>[];
   for (var index = 0; index < sentences.length; index += 2) {
@@ -3136,7 +3187,7 @@ _Grade3StoryPageData _grade3FallbackStoryPage(LevelContent content, int index) {
     id: '${content.id}-fallback-$index',
     imagePath: content.storyImageAsset?.trim().isNotEmpty == true
         ? content.storyImageAsset!.trim()
-        : _storyImagePathForActiveGrade(),
+        : _storyImagePathForTitles(content.title, content.storyTitle),
     sentences: [_grade3CleanTitle(content.title)],
   );
 }

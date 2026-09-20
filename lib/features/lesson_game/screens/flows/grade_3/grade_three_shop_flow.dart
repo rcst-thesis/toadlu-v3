@@ -2,8 +2,7 @@ part of '../../level_game_page.dart';
 
 const String _g3ShopRoot =
     'assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets';
-const String _g3ShopBg =
-    'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/G3_U1_L1_3_intro.png';
+const String _g3ShopBg = '$_g3ShopRoot/background/MarketLandscape.svg';
 const String _g3ShopNanayList = '$_g3ShopRoot/people/Nanay_Shopping_List.svg';
 const String _g3ShopNanayBasket =
     '$_g3ShopRoot/people/Nanay_Shopping_Basket.svg';
@@ -14,6 +13,8 @@ const String _g3ShopVendor = '$_g3ShopRoot/people/Vendor_General_Male.svg';
 const String _g3ShopFruitStall = '$_g3ShopRoot/stalls/Stall_Fruit_Empty.svg';
 const String _g3ShopFishStall = '$_g3ShopRoot/stalls/Stall_Fish_Empty.svg';
 const String _g3ShopFlowerStall = '$_g3ShopRoot/stalls/Stall_Flower_Empty.svg';
+const String _g3ShopBananaStall =
+    '$_g3ShopRoot/stalls/Stall_Flower_With_Bananas.svg';
 const String _g3ShopInventoryStall =
     '$_g3ShopRoot/stalls/Stall_Inventory_Empty.svg';
 const String _g3ShopCounter = '$_g3ShopRoot/stalls/Market_Counter.svg';
@@ -24,6 +25,8 @@ const String _g3ShopSpoon = '$_g3ShopRoot/products/Spoon.svg';
 const String _g3ShopChair = '$_g3ShopRoot/products/Chair.svg';
 const String _g3ShopCandle = '$_g3ShopRoot/products/Birthday_Candle.svg';
 const String _g3ShopBanana = '$_g3ShopRoot/products/Banana_Single.svg';
+const String _g3ShopBananasBunch =
+    'assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/inventory/Bananas_Bunch.svg';
 const String _g3ShopEgg = '$_g3ShopRoot/products/Egg.svg';
 const String _g3ShopCup = '$_g3ShopRoot/shopping_props/Cup_Blue.svg';
 const String _g3ShopTray = '$_g3ShopRoot/shopping_props/Display_Tray_Empty.svg';
@@ -34,6 +37,10 @@ const String _g3ShopList =
 const String _g3ShopTag = '$_g3ShopRoot/shopping_props/Price_Tag_Blank.svg';
 const String _g3ShopCoin = '$_g3ShopRoot/shopping_props/Peso_Coin.svg';
 const String _g3ShopBill = '$_g3ShopRoot/shopping_props/Play_Money_Bill.svg';
+const String _g3ShopPointFinger =
+    'assets/images/level_game/lesson-game-assets/point-finger.png';
+const String _g3ShopAgeBoy =
+    'assets/images/level_game/grade3/G3_U2_L2.2_Ang_Bag-o_nga_Estudyante/ChatGPT Image Sep 19, 2026, 04_23_03 PM.png';
 
 bool _isGrade3ShoppingLesson(LevelContent content) {
   return content.gradeLevel == 3 &&
@@ -278,6 +285,8 @@ class _G3ShoppingChrome extends StatelessWidget {
 
 Object? get _g3ShoppingLegacyReferenceSink => (
   _g3ShopFishVendor,
+  _g3ShopFruitVendor,
+  _g3ShopFruitStall,
   _g3ShopFishStall,
   _g3ShopFlowerStall,
   _g3ShopInventoryStall,
@@ -358,6 +367,7 @@ class _G3ShopListIntroPage extends StatelessWidget {
       prompt: opened
           ? 'Bukas ang shopping list. Saging ang unahon ta.'
           : 'May listahan ako sang baklon. Buligi ako gamit ang numero.',
+      showContentPanel: false,
       footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
       child: SizedBox(
         height: view.height * .54,
@@ -383,38 +393,47 @@ class _G3ShopListIntroPage extends StatelessWidget {
             ),
             Positioned(
               left: view.width * .30,
-              right: 8,
-              top: 8,
+              right: view.width * .02,
+              top: 0,
+              bottom: 4,
               child: GestureDetector(
                 onTap: onOpen,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.all(14),
-                  decoration: _g3SoftPanelDecoration(
-                    fill: opened ? const Color(0xFFE3FFD8) : Colors.white,
-                    borderColor: opened ? TudloColors.green : TudloColors.blue,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(
-                        height: 110,
-                        child: _LessonPictureAsset(asset: _g3ShopList),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        opened ? 'saging\nP10' : 'I-tap ang listahan',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.nunito(
-                          color: TudloColors.ink,
-                          fontSize: 22,
-                          height: 1.05,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const _LessonPictureAsset(
+                      asset: _g3ShopList,
+                      fit: BoxFit.contain,
+                    ),
+                    if (opened)
+                      Positioned(
+                        top: view.height * .105,
+                        left: view.width * .055,
+                        right: view.width * .055,
+                        child: Text(
+                          'saging\nP10',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.nunito(
+                            color: TudloColors.ink,
+                            fontSize: 24,
+                            height: 1.05,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      )
+                    else
+                      Positioned(
+                        top: view.height * .10,
+                        child: SizedBox(
+                          width: (view.width * .12).clamp(54.0, 86.0),
+                          child: const _LessonPictureAsset(
+                            asset: _g3ShopPointFinger,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -477,23 +496,67 @@ class _G3ShopBananaStallPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
     return _G3MarketContentFrame(
       prompt: prompt,
+      showContentPanel: false,
       footer: const SizedBox(height: 64),
-      child: GestureDetector(
-        onTap: onTapStall,
-        child: Column(
+      child: SizedBox(
+        height: view.height * .54,
+        child: Stack(
           children: [
-            const _G3MarketSceneLayer(
-              stallAsset: _g3ShopFruitStall,
-              vendorAsset: _g3ShopFruitVendor,
+            Positioned(
+              left: 0,
+              bottom: 2,
+              child: _LessonKokaMascot(
+                size: (view.width * .34).clamp(130.0, 190.0),
+                mood: KokaMood.hi,
+              ),
             ),
-            const SizedBox(height: 10),
-            _G3ObjectTray(
-              baseAsset: _g3ShopTray,
-              objectAssets: [
-                for (var index = 0; index < 5; index++) _g3ShopBanana,
-              ],
+            Positioned(
+              left: view.width * .02,
+              top: 0,
+              width: (view.width * .18).clamp(76.0, 118.0),
+              height: (view.height * .24).clamp(118.0, 168.0),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const _LessonPictureAsset(
+                    asset: _g3ShopList,
+                    fit: BoxFit.contain,
+                  ),
+                  Positioned(
+                    top: 42,
+                    left: 10,
+                    right: 10,
+                    child: Text(
+                      'SAGING\nPresyo: --',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: TudloColors.ink,
+                        fontSize: 14,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              right: view.width * .02,
+              bottom: 0,
+              width: (view.width * .52).clamp(260.0, 430.0),
+              height: (view.height * .42).clamp(220.0, 330.0),
+              child: GestureDetector(
+                onTap: onTapStall,
+                behavior: HitTestBehavior.opaque,
+                child: const _LessonPictureAsset(
+                  asset: _g3ShopBananaStall,
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ],
         ),
@@ -509,20 +572,60 @@ class _G3ShopBananaPriceDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
     return _G3MarketContentFrame(
       prompt: 'Ang saging nagabalor ten pesos.',
       footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          _G3ObjectTray(
-            baseAsset: _g3ShopTray,
-            objectAssets: [
-              for (var index = 0; index < 4; index++) _g3ShopBanana,
-            ],
-          ),
-          const Positioned(right: 18, top: 12, child: _G3PriceTag(price: 10)),
-        ],
+      showContentPanel: false,
+      child: SizedBox(
+        height: view.height * .54,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              bottom: 4,
+              child: _LessonKokaMascot(
+                size: (view.width * .34).clamp(130.0, 190.0),
+                mood: KokaMood.hi,
+              ),
+            ),
+            Positioned(
+              right: -view.width * .015,
+              bottom: 0,
+              width: (view.width * .56).clamp(280.0, 450.0),
+              height: (view.height * .44).clamp(235.0, 350.0),
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: (view.height * .25).clamp(132.0, 206.0),
+                    child: const _LessonPictureAsset(
+                      asset: _g3ShopCounter,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: view.width * .03,
+                    right: view.width * .02,
+                    height: (view.height * .22).clamp(120.0, 176.0),
+                    child: const _LessonPictureAsset(
+                      asset: _g3ShopBananasBunch,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: (view.height * .035).clamp(18.0, 32.0),
+                    child: const _G3PriceTag(price: 10),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -545,36 +648,76 @@ class _G3ShopPriceChoicePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
     return _G3MarketContentFrame(
       prompt: 'Tan-awa ang tatlo ka price tag kag pilia ang ten pesos.',
       footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
-      child: Column(
-        children: [
-          _G3ObjectTray(
-            baseAsset: _g3ShopTray,
-            objectAssets: [
-              for (var index = 0; index < 4; index++) _g3ShopBanana,
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final price in const [5, 10, 20])
-                _FeedbackMotion(
-                  key: ValueKey('g3-shop-price-$price-$wrongPulse-$correctId'),
-                  correct: correctId == '$price',
-                  wrong: wrongId == '$price',
-                  child: GestureDetector(
-                    onTap: correctId == null ? () => onChoose('$price') : null,
-                    child: _G3PriceTag(price: price),
+      showContentPanel: false,
+      child: SizedBox(
+        height: view.height * .54,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              bottom: 0,
+              width: (view.width * .76).clamp(420.0, 650.0),
+              height: (view.height * .47).clamp(250.0, 370.0),
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: (view.height * .27).clamp(145.0, 215.0),
+                    child: const _LessonPictureAsset(
+                      asset: _g3ShopCounter,
+                      fit: BoxFit.contain,
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ],
+                  Positioned(
+                    top: 0,
+                    left: view.width * .10,
+                    right: view.width * .10,
+                    height: (view.height * .23).clamp(126.0, 184.0),
+                    child: const _LessonPictureAsset(
+                      asset: _g3ShopBananasBunch,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    left: view.width * .02,
+                    right: view.width * .02,
+                    bottom: (view.height * .03).clamp(16.0, 28.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        for (final price in const [8, 12, 10])
+                          _FeedbackMotion(
+                            key: ValueKey(
+                              'g3-shop-price-$price-$wrongPulse-$correctId',
+                            ),
+                            correct: correctId == '$price',
+                            wrong: wrongId == '$price',
+                            child: GestureDetector(
+                              onTap: correctId == null
+                                  ? () => onChoose('$price')
+                                  : null,
+                              child: _G3PriceChoiceTag(
+                                price: price,
+                                correct: correctId == '$price',
+                                wrong: wrongId == '$price',
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -639,29 +782,148 @@ class _G3ShopAgeChoicePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
     return _G3MarketContentFrame(
       prompt: 'Pilia ang sabat nga I am nine years old.',
       footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
-      child: Column(
-        children: [
-          const SizedBox(
-            height: 130,
-            child: _LessonPictureAsset(asset: _g3ShopBoy),
-          ),
-          const SizedBox(height: 12),
-          _G3TextChoiceWrap(
-            choices: const [
-              'It costs ten pesos.',
-              'I am nine years old.',
-              'I have ten bananas.',
-            ],
-            wrongId: wrongId,
-            correctId: correctId,
-            wrongPulse: wrongPulse,
-            onChoose: onChoose,
-          ),
-        ],
+      showContentPanel: false,
+      child: SizedBox(
+        height: view.height * .54,
+        child: Stack(
+          children: [
+            Positioned(
+              left: -view.width * .015,
+              bottom: 0,
+              child: _LessonKokaMascot(
+                size: (view.width * .24).clamp(104.0, 150.0),
+                mood: KokaMood.hi,
+              ),
+            ),
+            Positioned(
+              left: view.width * .08,
+              bottom: 0,
+              width: (view.width * .22).clamp(118.0, 180.0),
+              height: (view.height * .43).clamp(230.0, 340.0),
+              child: const _LessonPictureAsset(
+                asset: _g3ShopAgeBoy,
+                fit: BoxFit.contain,
+              ),
+            ),
+            Positioned(
+              left: view.width * .31,
+              right: 0,
+              top: view.height * .08,
+              bottom: view.height * .05,
+              child: Row(
+                children: [
+                  for (final choice in const [
+                    'I am eight years old.',
+                    'I am ten years old.',
+                    'I am nine years old.',
+                  ]) ...[
+                    Expanded(
+                      child: _FeedbackMotion(
+                        key: ValueKey(
+                          'shop-age-choice-$choice-$wrongPulse-$correctId',
+                        ),
+                        correct: correctId == choice,
+                        wrong: wrongId == choice,
+                        child: GestureDetector(
+                          onTap: correctId == null
+                              ? () => onChoose(choice)
+                              : null,
+                          child: _G3AgeChoiceCard(
+                            label: choice,
+                            correct: correctId == choice,
+                            wrong: wrongId == choice,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (choice != 'I am nine years old.')
+                      SizedBox(width: view.width * .015),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _G3AgeChoiceCard extends StatelessWidget {
+  final String label;
+  final bool correct;
+  final bool wrong;
+
+  const _G3AgeChoiceCard({
+    required this.label,
+    required this.correct,
+    required this.wrong,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final glowColor = correct
+        ? TudloColors.green
+        : wrong
+        ? TudloColors.coral
+        : null;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (glowColor != null)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: glowColor.withValues(alpha: .68),
+                    blurRadius: 18,
+                    spreadRadius: 5,
+                  ),
+                  BoxShadow(
+                    color: glowColor.withValues(alpha: .34),
+                    blurRadius: 34,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(
+            horizontal: (view.width * .012).clamp(8.0, 14.0),
+            vertical: 10,
+          ),
+          decoration: _g3SoftPanelDecoration(
+            fill: Colors.white,
+            borderColor: correct
+                ? TudloColors.green
+                : wrong
+                ? TudloColors.coral
+                : TudloColors.blue,
+          ),
+          child: Text(
+            label.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              color: TudloColors.ink,
+              fontSize: (view.width * .027).clamp(17.0, 26.0),
+              height: .98,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1172,6 +1434,67 @@ class _G3PriceTag extends StatelessWidget {
   }
 }
 
+class _G3PriceChoiceTag extends StatelessWidget {
+  final int price;
+  final bool correct;
+  final bool wrong;
+
+  const _G3PriceChoiceTag({
+    required this.price,
+    this.correct = false,
+    this.wrong = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
+    final glowColor = correct
+        ? TudloColors.green
+        : wrong
+        ? TudloColors.coral
+        : null;
+    return SizedBox(
+      width: (view.width * .20).clamp(104.0, 154.0),
+      height: (view.height * .12).clamp(66.0, 92.0),
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          if (glowColor != null)
+            Positioned.fill(
+              child: Transform.scale(
+                scale: 1.04,
+                child: LessonAssetGlow(
+                  asset: _g3ShopTag,
+                  fallbackIcon: Icons.local_offer_rounded,
+                  fallbackSize: (view.width * .13).clamp(68.0, 100.0),
+                  color: glowColor,
+                ),
+              ),
+            ),
+          const Positioned.fill(
+            child: _LessonPictureAsset(asset: _g3ShopTag, fit: BoxFit.fill),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+            child: Text(
+              '$price\nPESOS',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                color: TudloColors.ink,
+                fontSize: (view.width * .032).clamp(18.0, 28.0),
+                height: .86,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _G3ShopSentencePage extends StatelessWidget {
   final List<String?> slots;
   final String? selectedTile;
@@ -1193,45 +1516,77 @@ class _G3ShopSentencePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final view = MediaQuery.sizeOf(context);
     const tiles = ['ten pesos.', 'It costs'];
     final placed = slots.whereType<String>().toSet();
     return _G3MarketContentFrame(
       prompt: 'Ihan-ay ang It costs kag ten pesos.',
       footer: _LessonOneBlueButton(label: 'Sunod', onTap: onNext),
-      child: Column(
-        children: [
-          const SizedBox(height: 82, child: _G3PriceTag(price: 10)),
-          Row(
-            children: [
-              for (var index = 0; index < slots.length; index++) ...[
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => onTapSlot(index),
-                    child: _G3SentenceSlot(
-                      value: slots[index],
-                      onAccept: (tile) => onPlace(tile, index),
+      showContentPanel: false,
+      child: SizedBox(
+        height: view.height * .54,
+        child: Stack(
+          children: [
+            Positioned(
+              left: -view.width * .02,
+              bottom: 0,
+              child: _LessonKokaMascot(
+                size: (view.width * .34).clamp(136.0, 206.0),
+                mood: KokaMood.hi,
+              ),
+            ),
+            Positioned(
+              left: view.width * .28,
+              right: view.width * .02,
+              top: view.height * .075,
+              child: Row(
+                children: [
+                  for (var index = 0; index < slots.length; index++) ...[
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onTapSlot(index),
+                        child: _G3SentenceSlot(
+                          index: index + 1,
+                          value: slots[index],
+                          onAccept: (tile) => onPlace(tile, index),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                if (index < slots.length - 1) const SizedBox(width: 6),
-              ],
-            ],
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final tile in tiles)
-                if (!placed.contains(tile))
-                  GestureDetector(
-                    onTap: () => onSelectTile(tile),
-                    child: _G3SentenceTile(label: tile),
-                  ),
-            ],
-          ),
-        ],
+                    if (index < slots.length - 1)
+                      SizedBox(width: view.width * .025),
+                  ],
+                ],
+              ),
+            ),
+            Positioned(
+              left: view.width * .31,
+              right: view.width * .03,
+              top: view.height * .255,
+              child: Row(
+                children: [
+                  for (final tile in tiles)
+                    Expanded(
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 160),
+                        opacity: placed.contains(tile) ? 0 : 1,
+                        child: IgnorePointer(
+                          ignoring: placed.contains(tile),
+                          child: GestureDetector(
+                            onTap: () => onSelectTile(tile),
+                            child: _G3SentenceTile(
+                              label: tile,
+                              selected: selectedTile == tile,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  SizedBox(width: view.width * .025),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
