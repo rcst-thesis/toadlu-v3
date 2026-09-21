@@ -23,8 +23,10 @@ import 'package:tudlo/features/lesson/presentation/devg_canonical/data/lesson_ba
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/widgets/word_tooltip.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/features/energy/widgets/energy_indicator.dart';
 import 'package:tudlo/features/lesson/presentation/devg_lesson_host_scope.dart';
+import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/map/domain/map_location.dart' as tudlo_map;
-import 'package:tudlo/features/map/presentation/widgets/rive_map_scene.dart'
+import 'package:tudlo/features/map/domain/map_route_resolver.dart' as tudlo_map;
+import 'package:tudlo/features/map/presentation/screens/map_screen.dart'
     as tudlo_map;
 
 import 'flows/grade_3/grade_three_bantay_flow.dart';

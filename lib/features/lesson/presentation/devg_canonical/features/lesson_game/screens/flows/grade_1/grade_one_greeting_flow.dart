@@ -374,56 +374,46 @@ class _BeachMapStep extends StatefulWidget {
 }
 
 class _BeachMapStepState extends State<_BeachMapStep> {
-  // Reuses MapScreen's real map (toadlu_map.riv) and its own default
-  // portrait framing constants (Koka's house) -- this is not a second/fake
-  // map, just this lesson's narrow "go to Beach" beat on the one real Rive
-  // map, per the migration guide: keep Tudlo's existing Rive map, drive it
-  // only through semantic hasEvent/isUnlocked.
+  // Pushes Tudlo's one real Map screen -- the same MapScreen the Map tab
+  // uses -- instead of rebuilding a second map widget around the bare Rive
+  // scene. Its own standalone MapEventOverrides (not MapProgressScope's
+  // shared instance) glows only Beach for the length of this push and pops
+  // back into this lesson step once Beach is tapped; every other location
+  // keeps its real unlocked/locked behavior untouched.
   // Mirrors _LessonOneMapStep in grade_one_letter_flow.dart (which targets
   // School instead of Beach).
-  static const _mapWidth = tudlo_map.RiveMapScene.artboardWidth;
-  static const _mapHeight = tudlo_map.RiveMapScene.artboardHeight;
-  static const _houseCenterX = 2085.0;
-  static const _houseCenterY = 1064.5;
-  static const _cropWidth = 420.0;
-  static const _verticalAnchor = 0.42;
-
-  final _transformationController = TransformationController();
-  final _riveMapController = tudlo_map.RiveMapSceneController();
-  Size? _viewportSize;
+  final _overrides = tudlo_map.MapEventOverrides()
+    ..setOverride(
+      tudlo_map.MapLocation.beach,
+      const tudlo_map.PopMapRouteAction(),
+    );
+  var _opened = false;
 
   @override
-  void dispose() {
-    _transformationController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openMap());
   }
 
-  // Nothing is glowing until this beat's own Rive scene finishes loading --
-  // the beach event exists only for this lesson step, never set early and
-  // never visible anywhere else on the real map.
-  void _onMapReady() {
-    _riveMapController.setUnlocked(tudlo_map.MapLocation.beach, true);
-    _riveMapController.setHasEvent(tudlo_map.MapLocation.beach, true);
-  }
-
-  Future<void> _handleLocationTapped(tudlo_map.MapLocation location) async {
-    if (location != tudlo_map.MapLocation.beach) return;
+  Future<void> _openMap() async {
+    if (_opened || !mounted) return;
+    _opened = true;
+    await _showMapBeatInstructionDialog(
+      context,
+      message: 'I-tap ang Beach sa mapa.',
+    );
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      FadePageRoute<void>(
+        page: tudlo_map.MapScreen(
+          eventOverrides: _overrides,
+          temporaryUnlockedLocations: const {tudlo_map.MapLocation.beach},
+        ),
+      ),
+    );
+    if (!mounted) return;
     await AppAudioService.instance.playCorrect();
     widget.onNext();
-  }
-
-  Matrix4 _framedOnHouse(Size viewport) {
-    final scale = viewport.width / _cropWidth;
-    final cropHeight = viewport.height / scale;
-    final cropLeft = (_houseCenterX - _cropWidth / 2)
-        .clamp(0.0, math.max(0.0, _mapWidth - _cropWidth))
-        .toDouble();
-    final cropTop = (_houseCenterY - cropHeight * _verticalAnchor)
-        .clamp(0.0, math.max(0.0, _mapHeight - cropHeight))
-        .toDouble();
-    return Matrix4.identity()
-      ..scaleByDouble(scale, scale, scale, 1)
-      ..translateByDouble(-cropLeft, -cropTop, 0, 1);
   }
 
   @override
@@ -432,41 +422,7 @@ class _BeachMapStepState extends State<_BeachMapStep> {
       progress: widget.progress,
       onExit: widget.onExit,
       onReplay: widget.onReplay,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final viewport = Size(constraints.maxWidth, constraints.maxHeight);
-          final hasValidViewport = viewport.width.isFinite &&
-              viewport.height.isFinite &&
-              viewport.width > 0 &&
-              viewport.height > 0;
-          if (_viewportSize != viewport && hasValidViewport) {
-            _viewportSize = viewport;
-            _transformationController.value = _framedOnHouse(viewport);
-          }
-          final minScale = !hasValidViewport
-              ? 1.0
-              : viewport.width / _mapWidth > viewport.height / _mapHeight
-                  ? viewport.width / _mapWidth
-                  : viewport.height / _mapHeight;
-          final initialScale =
-              hasValidViewport ? viewport.width / _cropWidth : 1.0;
-          final maxScale = math.max(minScale, initialScale * 3);
-          return InteractiveViewer(
-            transformationController: _transformationController,
-            constrained: false,
-            boundaryMargin: EdgeInsets.zero,
-            minScale: minScale,
-            maxScale: maxScale,
-            child: RepaintBoundary(
-              child: tudlo_map.RiveMapScene(
-                controller: _riveMapController,
-                onLocationTapped: _handleLocationTapped,
-                onReady: _onMapReady,
-              ),
-            ),
-          );
-        },
-      ),
+      child: const SizedBox.shrink(),
     );
   }
 }

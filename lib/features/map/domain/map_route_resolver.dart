@@ -43,6 +43,17 @@ class PushScreenRouteAction extends MapRouteAction {
   final WidgetBuilder builder;
 }
 
+/// Pops the current [MapScreen] route instead of navigating onward.
+///
+/// Used when a lesson step pushes the real [MapScreen] as a one-off,
+/// in-lesson "tap the map" beat (its own standalone [MapEventOverrides]
+/// instance, not the app's shared one) rather than the persistent Map tab:
+/// tapping the target location should resume the lesson step that pushed
+/// it, not open a new lesson/catalog/screen.
+class PopMapRouteAction extends MapRouteAction {
+  const PopMapRouteAction();
+}
+
 /// Flutter-owned default destination for each map location. Lesson-mapped
 /// locations share the catalog used by the Lessons tab; unrelated locations
 /// keep their existing temporary shells.
