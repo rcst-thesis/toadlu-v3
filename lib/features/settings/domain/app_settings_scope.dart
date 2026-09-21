@@ -15,6 +15,36 @@ AppSettings effectiveAppSettings(BuildContext context) =>
     LearnerScope.of(context).profile?.settings ??
     AppSettingsScope.of(context).settings;
 
+/// Whether ambient/decorative motion should currently animate: off if the
+/// OS's own "reduce motion" is on, the learner's "Ambient Animations"
+/// toggle is off, or their performance-quality preset is Battery Saver
+/// (which always strips ambient motion, independent of the toggle -- that
+/// override is the whole point of the preset).
+///
+/// Consumed by every widget that runs a purely decorative, non-essential
+/// animation loop (glow borders, ambient parallax/tilt, idle hint cues) --
+/// see each call site for what it gates.
+bool effectiveAmbientMotionEnabled(BuildContext context) {
+  if (MediaQuery.disableAnimationsOf(context)) return false;
+  final settings = effectiveAppSettings(context);
+  if (settings.performanceQuality == PerformanceQuality.batterySaver) {
+    return false;
+  }
+  return settings.ambientAnimationsEnabled;
+}
+
+/// A stricter gate for the heaviest ambient effect specifically: the
+/// continuously-looping native Rive state machine behind
+/// `RiveAvatarBackground`. Only High Quality keeps that engine loop
+/// running; Balanced already swaps to its cheaper flat-color fallback to
+/// save the loop while every other ambient effect
+/// ([effectiveAmbientMotionEnabled]) stays on.
+bool effectiveHeavyAmbientMotionEnabled(BuildContext context) {
+  if (!effectiveAmbientMotionEnabled(context)) return false;
+  return effectiveAppSettings(context).performanceQuality ==
+      PerformanceQuality.high;
+}
+
 /// The app's one device-wide [AppSettings] -- in effect whenever nobody is
 /// signed in (the main menu), and what a brand new learner's own settings
 /// are seeded from at creation (see `LearnerController.createAndSave`'s

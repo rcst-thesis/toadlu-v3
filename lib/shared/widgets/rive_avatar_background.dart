@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
+
 /// Renders the looping ambient background behind a learner's [RiveAvatar] --
 /// one of three grade-specific `.riv` files (`assets/images/
 /// avatar_bg_grade1.riv`/`_grade2.riv`/`_grade3.riv`), selected by
@@ -12,6 +14,14 @@ import 'package:rive/rive.dart' as rive;
 /// itself -- just one self-contained Artboard with an ambient
 /// diagonal-scroll loop that runs on its own once its state machine starts,
 /// so this never calls `dataBind` and never sets/reads any input.
+///
+/// This native Rive loop is the heaviest ambient effect in the app (a
+/// continuously-running engine state machine, not just a cheap Flutter
+/// `AnimationController`), so it's the one effect gated by
+/// [effectiveHeavyAmbientMotionEnabled] specifically -- only High Quality
+/// keeps it loaded/running; every other tier (or the toggle/reduce-motion
+/// falling through [effectiveAmbientMotionEnabled]) shows [_BackgroundFallback]
+/// instead, same flat-cream visual already used while the file loads.
 class RiveAvatarBackground extends StatefulWidget {
   const RiveAvatarBackground({required this.grade, super.key});
 
@@ -43,11 +53,28 @@ class RiveAvatarBackground extends StatefulWidget {
 
 class _RiveAvatarBackgroundState extends State<RiveAvatarBackground> {
   rive.RiveWidgetController? _controller;
+  var _heavyAmbientEnabled = false;
+  var _loading = false;
 
   @override
-  void initState() {
-    super.initState();
-    unawaited(_load());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Also covers the very first resolution after `initState` (guaranteed
+    // to run once before the first build) -- there's no separate
+    // `initState`-triggered load here, since `effectiveHeavyAmbientMotionEnabled`
+    // needs an inherited-widget lookup that isn't safe in `initState` yet.
+    final heavyAmbientEnabled = effectiveHeavyAmbientMotionEnabled(context);
+    if (_heavyAmbientEnabled == heavyAmbientEnabled) return;
+    _heavyAmbientEnabled = heavyAmbientEnabled;
+    if (!heavyAmbientEnabled) {
+      // Swaps to `_BackgroundFallback` below -- same flat-cream visual
+      // already shown while the file loads, just as a deliberate "lighter
+      // tier" choice here rather than a loading state.
+      _controller?.dispose();
+      setState(() => _controller = null);
+    } else if (_controller == null && !_loading) {
+      unawaited(_load());
+    }
   }
 
   @override
@@ -61,10 +88,12 @@ class _RiveAvatarBackgroundState extends State<RiveAvatarBackground> {
   }
 
   Future<void> _load() async {
+    if (!_heavyAmbientEnabled) return;
+    _loading = true;
     try {
       final assetPath = RiveAvatarBackground._assetPathFor(widget.grade);
       final file = await RiveAvatarBackground._loadFile(assetPath);
-      if (file == null || !mounted) return;
+      if (file == null || !mounted || !_heavyAmbientEnabled) return;
 
       final controller = rive.RiveWidgetController(
         file,
@@ -77,6 +106,8 @@ class _RiveAvatarBackgroundState extends State<RiveAvatarBackground> {
       // Best-effort -- a missing asset, an unrecognized grade, or no
       // native backend (e.g. some widget tests) falls back to the plain
       // placeholder below rather than crashing.
+    } finally {
+      _loading = false;
     }
   }
 

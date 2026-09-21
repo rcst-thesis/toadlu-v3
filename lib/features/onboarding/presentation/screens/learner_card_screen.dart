@@ -78,7 +78,7 @@ class _LearnerCardScreenState extends State<LearnerCardScreen> {
         2 => 'assets/images/koka_blue.png',
         3 => 'assets/images/koka_red.png',
         _ => 'assets/images/koka_green.png',
-  };
+      };
 
   void _finish(BuildContext context) {
     unawaited(_stopVoiceOver());
@@ -238,7 +238,7 @@ class _InteractiveFloatingCardState extends State<_InteractiveFloatingCard>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    _reduceMotion = !effectiveAmbientMotionEnabled(context);
     if (_reduceMotion) {
       _floatController
         ..stop()
@@ -926,7 +926,7 @@ class _HolofoilOverlayState extends State<_HolofoilOverlay>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    _reduceMotion = !effectiveAmbientMotionEnabled(context);
     if (_reduceMotion) {
       _controller
         ..stop()
@@ -1203,8 +1203,7 @@ class _RotatingRaysState extends State<_RotatingRays>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion = !effectiveAmbientMotionEnabled(context);
     if (reduceMotion) {
       _controller.stop();
     } else if (!_controller.isAnimating) {

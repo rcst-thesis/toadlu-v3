@@ -5,6 +5,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_graphics/vector_graphics_compat.dart'
     show RenderingStrategy;
 
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
+
 class AnimatedHomeWindow extends StatefulWidget {
   const AnimatedHomeWindow({super.key});
 
@@ -23,8 +25,7 @@ class _AnimatedHomeWindowState extends State<AnimatedHomeWindow>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion = !effectiveAmbientMotionEnabled(context);
     if (_reduceMotion == reduceMotion && _ambientController.isAnimating) return;
     _reduceMotion = reduceMotion;
     if (_reduceMotion) {

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
+
 class HomeBookshelf extends StatefulWidget {
   const HomeBookshelf({required this.onTap, super.key});
 
@@ -43,7 +45,7 @@ class _HomeBookshelfState extends State<HomeBookshelf>
     // A covered route has its ticker disabled. Reset the cue while Home is
     // hidden so it restarts after the door's cue when the user returns.
     _reduceMotion =
-        MediaQuery.disableAnimationsOf(context) || !TickerMode.of(context);
+        !effectiveAmbientMotionEnabled(context) || !TickerMode.of(context);
     if (_reduceMotion) {
       _initialHintTimer?.cancel();
       _initialHintTimer = null;

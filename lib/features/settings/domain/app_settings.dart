@@ -12,6 +12,11 @@ enum PerformanceQuality { high, balanced, batterySaver }
 /// learner-only, gated behind the parent gate) and the app-wide animation
 /// on/off flag (`AppAnimationController`, already a real, long-lived
 /// controller with no per-learner concept).
+///
+/// [ambientAnimationsEnabled] and [performanceQuality] are consumed via
+/// `effectiveAmbientMotionEnabled`/`effectiveHeavyAmbientMotionEnabled`
+/// (`app_settings_scope.dart`), not read directly -- see those for the
+/// actual on/off rules each ambient effect follows.
 class AppSettings {
   const AppSettings({
     required this.language,

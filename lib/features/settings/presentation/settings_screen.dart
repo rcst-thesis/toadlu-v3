@@ -1573,7 +1573,16 @@ class _StepButton extends StatelessWidget {
 /// deliberately untouched by the [_readSettings]/[_writeSettings] split
 /// below, since it's already a real, long-lived, device-wide control with
 /// no per-learner concept. "Ambient Animations" and the quality tier
-/// picker do go through [_readSettings]/[_writeSettings] so they persist.
+/// picker go through [_readSettings]/[_writeSettings] to persist, *and*
+/// are real: every purely-decorative animation loop in the app (glow
+/// borders, ambient parallax/tilt, idle hint cues, the learner card's
+/// holofoil/rotating-rays, and the Rive avatar background) reads them
+/// back via `effectiveAmbientMotionEnabled`/
+/// `effectiveHeavyAmbientMotionEnabled` (`app_settings_scope.dart`) --
+/// Battery Saver always turns them off, Balanced additionally swaps the
+/// Rive avatar background (the one continuously-looping native engine
+/// state machine among them) to its flat-color fallback, and the toggle
+/// is a manual master switch independent of tier.
 class _DisplayPerformancePanel extends StatefulWidget {
   const _DisplayPerformancePanel({
     required this.insideLearnerProfile,

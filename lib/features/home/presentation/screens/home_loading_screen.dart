@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
 import 'package:tudlo/features/welcome/presentation/screens/welcome_aboard_screen.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
@@ -292,8 +293,7 @@ class _WaveLoadingLabelState extends State<_WaveLoadingLabel>
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion = !effectiveAmbientMotionEnabled(context);
     final label = widget.labels[_labelIndex];
     final metrics = TextPainter(
       text: TextSpan(text: label, style: _WaveLabelPainter.textStyle),

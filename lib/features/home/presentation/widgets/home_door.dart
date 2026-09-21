@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
 import 'package:tudlo/shared/audio/audio_assets.dart';
 import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 
@@ -52,7 +53,7 @@ class _HomeDoorState extends State<HomeDoor>
     // A covered route has its ticker disabled. Reset the cue while Home is
     // hidden so it restarts in its intended sequence when the user returns.
     _reduceMotion =
-        MediaQuery.disableAnimationsOf(context) || !TickerMode.of(context);
+        !effectiveAmbientMotionEnabled(context) || !TickerMode.of(context);
     if (_reduceMotion) {
       _initialHintTimer?.cancel();
       _initialHintTimer = null;

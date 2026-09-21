@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
+
 /// A reusable rounded border with a continuously travelling gradient glow.
 class AnimatedGlowBorder extends StatefulWidget {
   const AnimatedGlowBorder({
@@ -39,7 +41,7 @@ class _AnimatedGlowBorderState extends State<AnimatedGlowBorder>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (!effectiveAmbientMotionEnabled(context)) {
       _controller
         ..stop()
         ..value = 0;
@@ -53,7 +55,7 @@ class _AnimatedGlowBorderState extends State<AnimatedGlowBorder>
     super.didUpdateWidget(oldWidget);
     if (widget.duration == oldWidget.duration) return;
     _controller.duration = widget.duration;
-    if (!MediaQuery.disableAnimationsOf(context) && !_controller.isAnimating) {
+    if (effectiveAmbientMotionEnabled(context) && !_controller.isAnimating) {
       _controller.repeat();
     }
   }

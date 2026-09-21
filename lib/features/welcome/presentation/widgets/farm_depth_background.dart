@@ -8,6 +8,8 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:vector_graphics/vector_graphics_compat.dart'
     show RenderingStrategy;
 
+import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
+
 /// A restrained 2.5D presentation layer for the Welcome Aboard farm artwork.
 ///
 /// The source SVG is exported as a single visual group, so this component uses
@@ -68,7 +70,7 @@ class _FarmDepthBackgroundState extends State<FarmDepthBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    _reduceMotion = !effectiveAmbientMotionEnabled(context);
     if (_reduceMotion) {
       _ambientController
         ..stop()
