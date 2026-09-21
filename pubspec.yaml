@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   flutter_soloud: ^3.1.7
   flutter_svg: ^2.3.0
+  google_fonts: ^6.3.3
   rive: ^0.14.10
   sensors_plus: ^7.1.0
   shared_preferences: ^2.5.5
@@ -24,8 +25,61 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/data/
     - assets/images/
     - assets/audio/
+    - assets/audio/VO/
+    - assets/audio/VO-final/
+    - assets/audio/VO-final/grade1/
+    - assets/audio/VO-final/grade2/
+    - assets/audio/VO-final/grade3/
+    - assets/audio/VO-final/numbers1-10/
+    - assets/audio/effects/
+    - assets/images/dialogue/
+    - assets/images/game_map/
+    - assets/images/lesson/
+    - assets/images/lesson/rewards/
+    - assets/images/lesson/rewards/home/
+    - assets/images/level_game/
+    - assets/images/level_game/animals/
+    - assets/images/level_game/backgrounds/
+    - assets/images/level_game/backgrounds/grade3_landscape/
+    - assets/images/level_game/grade1/
+    - assets/images/level_game/grade1/backgrounds/
+    - assets/images/level_game/grade1/people/
+    - assets/images/level_game/grade2/
+    - assets/images/level_game/grade2/backgrounds/
+    - assets/images/level_game/grade2/lesson-game-assets/
+    - assets/images/level_game/grade2/people/
+    - assets/images/level_game/grade3/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/counting_objects/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/inventory/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/people/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/shells/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/stalls/
+    - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/
+    - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/background/
+    - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/people/
+    - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/products/
+    - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/shopping_props/
+    - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/stalls/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/animals/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/clues/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/map/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/people/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/props/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/reward/
+    - assets/images/level_game/grade3/G3_U2_L2.2_Ang_Bag-o_nga_Estudyante/
+    - assets/images/level_game/lesson-game-assets/
+    - assets/images/level_game/letters/
+    - assets/images/level_game/numbers/
+    - assets/images/level_game/people/
+    - assets/images/stickers/
+    - assets/images/stickers/rewards/
+    - assets/images/stickers/rewards/home/
   fonts:
     - family: ComicRelief
       fonts:

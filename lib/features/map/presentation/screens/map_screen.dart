@@ -8,9 +8,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tudlo/core/navigation/app_bottom_tab_navigation.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
+import 'package:tudlo/features/lesson/presentation/lesson_catalog_screen.dart';
+import 'package:tudlo/features/lesson/presentation/lesson_intro_screen.dart';
 import 'package:tudlo/features/map/domain/map_location.dart';
 import 'package:tudlo/features/map/domain/map_progress.dart';
 import 'package:tudlo/features/map/domain/map_route_resolver.dart';
+import 'package:tudlo/features/map/domain/map_tap_policy.dart';
+import 'package:tudlo/features/map/presentation/widgets/house_destination_chooser.dart';
 import 'package:tudlo/features/map/presentation/widgets/map_exit_landscape_button.dart';
 import 'package:tudlo/features/map/presentation/widgets/map_expand_button.dart';
 import 'package:tudlo/features/map/presentation/widgets/map_locked_toast.dart';
@@ -116,9 +120,9 @@ class _MapScreenState extends State<MapScreen> {
     final audio = TudloAudioScope.of(context);
     if (!identical(_audio, audio)) {
       _audio = audio;
-      audio
-        ..preloadSoundEffect(TudloAudioAssets.mapLockedSoundEffect)
-        ..preloadSoundEffect(TudloAudioAssets.mapUnlockedSoundEffect);
+      audio..preloadSoundEffect(
+          TudloAudioAssets.mapLockedSoundEffect)..preloadSoundEffect(
+          TudloAudioAssets.mapUnlockedSoundEffect);
     }
     if (_dependenciesResolved) return;
     _mapProgress = MapProgressScope.of(context);
@@ -139,14 +143,11 @@ class _MapScreenState extends State<MapScreen> {
   // Keeps two Flutter-owned, Rive-visible booleans in sync: `hasEvent`
   // (golden/bouncy visual hint) follows whether each location currently has
   // an event override exactly, on while the override is set and off once
-  // it's cleared. `isUnlocked` only ever moves one direction here for a
-  // given location -- forced true the first time it gets an override (and
-  // recorded in `_mapProgress.unlockedLocations`, then persisted onto the
-  // current learner via `_learnerController.unlockMapLocation`), left true
-  // afterwards even once that override clears. An event permanently unlocks
-  // a location it touches; it never re-locks one. House is always unlocked,
-  // permanently, from the start of a new game -- not conditional on
-  // progression like every other location.
+  // it's cleared. `isUnlocked` is an independent permanent reward state:
+  // scheduling an event may create a temporary glowing lesson entrance but
+  // must never unlock the physical location. Only a claimed lesson updates
+  // the learner-owned unlocked-location set. House stays the intentional
+  // permanent Home destination from a new game.
   //
   // Unlike the previous map asset, `isUnlocked` isn't partially Rive-owned
   // here -- Flutter is the sole source of truth for it now, so every
@@ -173,11 +174,6 @@ class _MapScreenState extends State<MapScreen> {
     for (final location in MapLocation.values) {
       final hasOverride = _eventOverrides.overrideFor(location) != null;
       _riveMapController.setHasEvent(location, hasOverride);
-      if (hasOverride) {
-        _riveMapController.setUnlocked(location, true);
-        _mapProgress.unlock(location);
-        unawaited(_learnerController.unlockMapLocation(location.persistedId));
-      }
     }
   }
 
@@ -223,18 +219,18 @@ class _MapScreenState extends State<MapScreen> {
   Matrix4 _defaultFramingFor(Size viewport) {
     return _isFullscreen
         ? _framedOn(
-            viewport: viewport,
-            cropWidth: _fullscreenCropWidth,
-            centerX: _fullscreenCenterX,
-            centerY: _fullscreenCenterY,
-          )
+      viewport: viewport,
+      cropWidth: _fullscreenCropWidth,
+      centerX: _fullscreenCenterX,
+      centerY: _fullscreenCenterY,
+    )
         : _framedOn(
-            viewport: viewport,
-            cropWidth: _portraitCropWidth,
-            centerX: _houseCenterX,
-            centerY: _houseCenterY,
-            verticalAnchor: _portraitVerticalAnchor,
-          );
+      viewport: viewport,
+      cropWidth: _portraitCropWidth,
+      centerX: _houseCenterX,
+      centerY: _houseCenterY,
+      verticalAnchor: _portraitVerticalAnchor,
+    );
   }
 
   // Rive detects the tap itself and fires `locationTapped` -- for every tap
@@ -245,7 +241,14 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _handleLocationTapped(MapLocation location) async {
     if (_isHandlingTap) return;
 
-    if (!_riveMapController.isUnlocked(location)) {
+    // A glowing active event is a temporary lesson entrance, not a permanent
+    // location unlock. Rive still owns its locked/pressed feedback; Flutter
+    // permits only this documented event override through to the lesson.
+    final action = _eventOverrides.resolve(location);
+    if (!MapTapPolicy.canOpen(
+      isUnlocked: _riveMapController.isUnlocked(location),
+      action: action,
+    )) {
       unawaited(
         _audio?.playSoundEffect(TudloAudioAssets.mapLockedSoundEffect) ??
             Future<void>.value(),
@@ -270,15 +273,55 @@ class _MapScreenState extends State<MapScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     if (!mounted) return;
 
-    switch (_eventOverrides.resolve(location)) {
+    // A lesson/catalog must not inherit the map's immersive landscape frame.
+    // Grade 3's lesson route will request its own landscape session after its
+    // intro; every other destination returns to the normal portrait policy.
+    if (_isFullscreen && action is! GoHomeRouteAction) {
+      _exitFullscreen();
+      await Future<void>.delayed(const Duration(milliseconds: 180));
+      if (!mounted) return;
+    }
+
+    switch (action) {
       case GoHomeRouteAction():
         Navigator.of(context).popUntil((route) => route.isFirst);
+      case ShowHouseChoiceRouteAction():
+        await _showHouseDestinationChooser();
+      case OpenLessonCatalogRouteAction(:final location):
+        Navigator.of(context).push(
+          FadePageRoute<void>(
+            page: LessonCatalogScreen(
+              location: location,
+              showBottomNavigation: false,
+            ),
+          ),
+        );
+      case OpenActiveLessonRouteAction(:final lessonId):
+        Navigator.of(context).push(
+          FadePageRoute<void>(page: LessonIntroScreen(lessonId: lessonId)),
+        );
       case PushScreenRouteAction(:final builder):
         Navigator.of(context)
             .push(FadePageRoute<void>(page: Builder(builder: builder)));
     }
 
     _isHandlingTap = false;
+  }
+
+  Future<void> _showHouseDestinationChooser() async {
+    await showHouseDestinationChooser(
+      context,
+      onGoHome: () => Navigator.of(context).popUntil((route) => route.isFirst),
+      onOpenLessons: () =>
+          Navigator.of(context).push(
+            FadePageRoute<void>(
+              page: const LessonCatalogScreen(
+                location: MapLocation.house,
+                showBottomNavigation: false,
+              ),
+            ),
+          ),
+    );
   }
 
   static const _locationNames = {
@@ -320,13 +363,15 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.paddingOf(context).top;
+    final topInset = MediaQuery
+        .paddingOf(context)
+        .top;
 
     return Scaffold(
       key: const Key('map-screen'),
       backgroundColor: const Color(0xFFB9DDA0),
       bottomNavigationBar:
-          _isFullscreen ? null : const AppBottomTabNavigation(currentIndex: 3),
+      _isFullscreen ? null : const AppBottomTabNavigation(currentIndex: 3),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final viewport = Size(constraints.maxWidth, constraints.maxHeight);
@@ -350,7 +395,7 @@ class _MapScreenState extends State<MapScreen> {
             _transformationController.value = _defaultFramingFor(viewport);
           }
           final cropWidth =
-              _isFullscreen ? _fullscreenCropWidth : _portraitCropWidth;
+          _isFullscreen ? _fullscreenCropWidth : _portraitCropWidth;
           // Same invalid-viewport case as above would otherwise produce a
           // zero/non-finite minScale here, which InteractiveViewer asserts
           // must be > 0 -- fall back to a harmless placeholder for this one
@@ -363,10 +408,10 @@ class _MapScreenState extends State<MapScreen> {
           final minScale = !hasValidViewport
               ? 1.0
               : viewport.width / _mapWidth > viewport.height / _mapHeight
-                  ? viewport.width / _mapWidth
-                  : viewport.height / _mapHeight;
+              ? viewport.width / _mapWidth
+              : viewport.height / _mapHeight;
           final initialScale =
-              hasValidViewport ? viewport.width / cropWidth : 1.0;
+          hasValidViewport ? viewport.width / cropWidth : 1.0;
           // Normally initialScale * 3 comfortably exceeds minScale, but a
           // transient frame with a valid yet extreme aspect ratio (e.g. a
           // very narrow, nonzero width mid orientation-change) can push
@@ -403,7 +448,7 @@ class _MapScreenState extends State<MapScreen> {
                   child: SizedBox(
                     width: _isFullscreen ? _fullscreenLabelWidth : _labelWidth,
                     height:
-                        _isFullscreen ? _fullscreenLabelHeight : _labelHeight,
+                    _isFullscreen ? _fullscreenLabelHeight : _labelHeight,
                     child: SvgPicture.asset(
                       'assets/images/map_barangay_koka_label.svg',
                     ),

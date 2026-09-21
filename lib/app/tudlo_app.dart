@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:tudlo/core/motion/app_animation_controller.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
+import 'package:tudlo/features/lesson/domain/lesson_progress_controller.dart';
 import 'package:tudlo/features/map/domain/map_progress.dart';
 import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
 import 'package:tudlo/features/startup/presentation/startup_flow.dart';
@@ -18,21 +19,37 @@ class TudloApp extends StatefulWidget {
   State<TudloApp> createState() => _TudloAppState();
 }
 
-class _TudloAppState extends State<TudloApp> {
+class _TudloAppState extends State<TudloApp> with WidgetsBindingObserver {
   late final AppAnimationController _animationController =
       AppAnimationController();
   final _mapProgress = MapProgressController();
   final _learnerController = LearnerController();
   final _appSettingsController = AppSettingsController();
   final _audioController = TudloAudioController();
+  late final _lessonProgressController = LessonProgressController(
+    learnerController: _learnerController,
+    mapProgress: _mapProgress,
+  );
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _learnerController.addListener(_syncEffectiveAudioSettings);
     _appSettingsController.addListener(_syncEffectiveAudioSettings);
     unawaited(_learnerController.loadSaved());
     unawaited(_appSettingsController.loadSaved());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // A device-level stall (emulator hang, OS backgrounding) can silently
+    // kill the native audio session while cached handles still look valid
+    // to Dart -- see TudloAudioController.recoverAfterInterruption. Coming
+    // back to the foreground is the one reliable signal to check.
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_audioController.recoverAfterInterruption());
+    }
   }
 
   void _syncEffectiveAudioSettings() {
@@ -45,9 +62,11 @@ class _TudloAppState extends State<TudloApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _learnerController.removeListener(_syncEffectiveAudioSettings);
     _appSettingsController.removeListener(_syncEffectiveAudioSettings);
     _animationController.dispose();
+    _lessonProgressController.dispose();
     _learnerController.dispose();
     _appSettingsController.dispose();
     _audioController.dispose();
@@ -65,29 +84,33 @@ class _TudloAppState extends State<TudloApp> {
           child: TudloAudioScope(
             controller: _audioController,
             child: MapProgressScope(
-            controller: _mapProgress,
-            child: MaterialApp(
-                title: 'Tudlo',
-                debugShowCheckedModeBanner: false,
-                theme: ThemeData(
-                  fontFamily: 'ComicRelief',
-                  colorScheme: ColorScheme.fromSeed(seedColor: AppColors.green),
-                  scaffoldBackgroundColor: AppColors.mint,
-                  useMaterial3: true,
+              controller: _mapProgress,
+              child: LessonProgressScope(
+                controller: _lessonProgressController,
+                child: MaterialApp(
+                  title: 'Tudlo',
+                  debugShowCheckedModeBanner: false,
+                  theme: ThemeData(
+                    fontFamily: 'ComicRelief',
+                    colorScheme:
+                        ColorScheme.fromSeed(seedColor: AppColors.green),
+                    scaffoldBackgroundColor: AppColors.mint,
+                    useMaterial3: true,
+                  ),
+                  builder: (context, child) {
+                    final animationsEnabled =
+                        AppAnimationScope.of(context).isEnabled;
+                    final mediaQuery = MediaQuery.of(context);
+                    return MediaQuery(
+                      data: mediaQuery.copyWith(
+                        disableAnimations:
+                            mediaQuery.disableAnimations || !animationsEnabled,
+                      ),
+                      child: child ?? const SizedBox.shrink(),
+                    );
+                  },
+                  home: const StartupFlow(),
                 ),
-                builder: (context, child) {
-                  final animationsEnabled =
-                      AppAnimationScope.of(context).isEnabled;
-                  final mediaQuery = MediaQuery.of(context);
-                  return MediaQuery(
-                    data: mediaQuery.copyWith(
-                      disableAnimations:
-                          mediaQuery.disableAnimations || !animationsEnabled,
-                    ),
-                    child: child ?? const SizedBox.shrink(),
-                  );
-                },
-                home: const StartupFlow(),
               ),
             ),
           ),

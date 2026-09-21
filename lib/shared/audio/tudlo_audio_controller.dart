@@ -139,6 +139,22 @@ class TudloAudioController extends ChangeNotifier {
     return _music.stop();
   }
 
+  /// Forces every cached playback handle to be dropped and, if music is
+  /// still requested, replayed from scratch.
+  ///
+  /// A device-level stall (OS audio-session teardown during an emulator
+  /// hang, a long GC/frame-lag spike, or the app being backgrounded and
+  /// resumed) can silently invalidate SoLoud's native handles while they
+  /// still look valid to Dart: `fadeVolume`/`play` return normally, so
+  /// [_LoopingAudio._reconcile] never falls into its reload path and the
+  /// app is left believing music is playing when the native engine has
+  /// gone dead. Call this after such an interruption is detected (e.g.
+  /// `AppLifecycleState.resumed`) to recover without needing a restart.
+  Future<void> recoverAfterInterruption() {
+    if (_disposed) return Future<void>.value();
+    return _music.forceRestart(_settings);
+  }
+
   _OneShotAudio _voiceOverFor(String assetPath) =>
       _voiceOvers.putIfAbsent(
         assetPath,
@@ -377,6 +393,17 @@ class _LoopingAudio {
   Future<void> setVoiceOverActive(bool active) {
     _voiceOverActive = active;
     return _enqueue(_reconcile);
+  }
+
+  /// Drops the current handle unconditionally, then reconciles -- unlike
+  /// [_reconcile] alone, this never trusts a cached handle that still looks
+  /// valid, so it also recovers a native session that died silently.
+  Future<void> forceRestart(AppSettings settings) {
+    _settings = settings;
+    return _enqueue(() async {
+      await _stopCurrent();
+      await _reconcile();
+    });
   }
 
   Future<void> dispose() => stop();

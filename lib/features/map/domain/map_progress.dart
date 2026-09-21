@@ -6,21 +6,28 @@ import 'package:tudlo/features/map/domain/map_route_resolver.dart';
 /// The app's one long-lived source of Map progress: its shared
 /// [MapEventOverrides] (so active-event routing survives leaving and
 /// returning to the Map tab, since [MapScreen] itself is rebuilt fresh each
-/// time), and every location an event has ever permanently unlocked this
+/// time), and every location a claimed lesson has permanently unlocked this
 /// session.
 ///
-/// This is an in-memory stand-in for a real per-learner save system, which
-/// this project does not have yet (see `docs/MAP_GUIDE.md`). When one
-/// exists, [unlockedLocations] is exactly what it should back with
-/// persistent, per-learner storage instead -- keep this class's shape, swap
-/// its internals.
+/// This remains a short-lived visual projection, not persistence. The
+/// learner-owned lesson progression restores it through
+/// `LessonProgressController`; `MapScreen` is still the sole Rive bridge.
+/// Keep this type free of learner and Rive dependencies.
 class MapProgressController {
   final eventOverrides = MapEventOverrides();
   final unlockedLocations = <MapLocation>{};
 
-  /// Records [location] as permanently unlocked. Idempotent -- safe to call
-  /// every time an event touches a location, not just the first time.
+  /// Records [location] as permanently unlocked. This is projected from
+  /// learner state after a lesson reward is claimed; an event alone does not
+  /// unlock a real map location.
   void unlock(MapLocation location) => unlockedLocations.add(location);
+
+  /// Rebuilds the in-memory projection when a learner is restored or changed.
+  void replaceUnlocked(Iterable<MapLocation> locations) {
+    unlockedLocations
+      ..clear()
+      ..addAll(locations);
+  }
 }
 
 /// Makes the app's one [MapProgressController] available to every screen,

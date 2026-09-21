@@ -1,9 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:tudlo/features/map/domain/map_location.dart';
+import 'package:tudlo/features/map/domain/map_route_resolver.dart';
+import 'package:tudlo/features/map/domain/map_tap_policy.dart';
 import 'package:tudlo/features/map/presentation/screens/map_screen.dart';
 
 void main() {
+  test('only an active lesson event can temporarily open a locked location',
+      () {
+    expect(
+      MapTapPolicy.canOpen(
+        isUnlocked: false,
+        action: MapDefaultRoutes.actionFor(MapLocation.school),
+      ),
+      isFalse,
+    );
+    expect(
+      MapTapPolicy.canOpen(
+        isUnlocked: false,
+        action: const OpenActiveLessonRouteAction('g1_u1_l1'),
+      ),
+      isTrue,
+    );
+    expect(
+      MapTapPolicy.canOpen(
+        isUnlocked: true,
+        action: MapDefaultRoutes.actionFor(MapLocation.school),
+      ),
+      isTrue,
+    );
+  });
+
   // These deliberately never call tester.pumpAndSettle(): MapScreen loads a
   // real Rive asset in the background (unawaited, fire-and-forget from
   // initState -- see RiveMapScene/MapRiveAsset), which never resolves under

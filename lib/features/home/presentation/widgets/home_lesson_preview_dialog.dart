@@ -169,11 +169,11 @@ class _HomeLessonPreviewDialogState extends State<_HomeLessonPreviewDialog> {
                         padding: const EdgeInsets.fromLTRB(15, 8, 12, 9),
                         child: Stack(
                           children: [
-                            Align(
+                            const Align(
                               alignment: Alignment.topRight,
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const [
+                                children: [
                                   Text(
                                     '10',
                                     style: TextStyle(
@@ -215,9 +215,9 @@ class _HomeLessonPreviewDialogState extends State<_HomeLessonPreviewDialog> {
                                       ),
                                     ),
                                     const SizedBox(height: 3),
-                                    Text(
+                                    const Text(
                                       'lesson mo subong nga adlaw',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Color(0xFF55575A),
                                         fontFamily: 'ComicRelief',
                                         fontSize: 11,

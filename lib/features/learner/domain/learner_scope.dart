@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'package:tudlo/features/learner/domain/learner_profile.dart';
 import 'package:tudlo/features/learner/domain/learner_repository.dart';
+import 'package:tudlo/features/lesson/domain/lesson_progress.dart';
 import 'package:tudlo/features/settings/domain/app_settings.dart';
 
 /// The app's one current [LearnerProfile], if any, and the single place
@@ -225,6 +226,107 @@ class LearnerController extends ChangeNotifier {
       // Best-effort, same as createAndSave.
     }
   }
+
+  /// Seeds a backward-compatible profile with its grade's first active
+  /// lesson. This is the one allowed pre-completion persistence write: old
+  /// saves need an initial event after their first launch. Existing lesson
+  /// progress is never overwritten.
+  Future<void> seedLessonProgress({
+    required String activeLessonId,
+  }) async {
+    final current = _profile;
+    if (current == null || current.lessonProgress.initialized) return;
+    final updated = current.copyWith(
+      lessonProgress: LessonProgress(
+        version: LessonProgress.currentVersion,
+        initialized: true,
+        activeLessonId: activeLessonId,
+        completions: current.lessonProgress.completions,
+        lastFirstCompletionDate: current.lessonProgress.lastFirstCompletionDate,
+      ),
+      // An active event is visible to map logic, but it does not make the
+      // physical location available. Completion is the permanent unlock.
+      unlockedMapLocations: current.unlockedMapLocations,
+    );
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Best-effort, consistent with the rest of learner persistence.
+    }
+  }
+
+  /// Stores a completed/claimed lesson result and any progression it causes.
+  ///
+  /// A replay may replace a result only when it is genuinely better (higher
+  /// accuracy, then fewer mistakes, then a higher score). It never increments
+  /// finished lessons, stickers, or the daily streak a second time.
+  Future<void> recordLessonCompletion({
+    required LessonCompletion completion,
+    required String? nextLessonId,
+    required Set<String> unlockedLocationIds,
+  }) async {
+    final current = _profile;
+    if (current == null) return;
+
+    final existing = current.lessonProgress.completions[completion.lessonId];
+    final firstCompletion = existing == null;
+    final shouldReplace = existing == null || _isBetter(completion, existing);
+    final completions = Map<String, LessonCompletion>.from(
+      current.lessonProgress.completions,
+    );
+    if (shouldReplace) completions[completion.lessonId] = completion;
+
+    final today = _dateOnly(completion.completedAt);
+    final lastDate = current.lessonProgress.lastFirstCompletionDate;
+    final countsForStreak = firstCompletion && !_sameDate(lastDate, today);
+    final progress = LessonProgress(
+      version: LessonProgress.currentVersion,
+      initialized: true,
+      activeLessonId: nextLessonId,
+      completions: Map.unmodifiable(completions),
+      lastFirstCompletionDate: countsForStreak
+          ? today
+          : current.lessonProgress.lastFirstCompletionDate,
+    );
+    final updated = current.copyWith(
+      lessonsFinished: current.lessonsFinished + (firstCompletion ? 1 : 0),
+      stickersEarned: current.stickersEarned + (firstCompletion ? 1 : 0),
+      currentStreak: current.currentStreak + (countsForStreak ? 1 : 0),
+      lessonProgress: progress,
+      unlockedMapLocations: {
+        ...current.unlockedMapLocations,
+        ...unlockedLocationIds,
+      },
+    );
+    _profile = updated;
+    notifyListeners();
+    try {
+      await _repository.save(updated);
+    } catch (_) {
+      // Completion remains visible this run if storage is unavailable.
+    }
+  }
+
+  static bool _isBetter(LessonCompletion candidate, LessonCompletion existing) {
+    if (candidate.accuracy != existing.accuracy) {
+      return candidate.accuracy > existing.accuracy;
+    }
+    if (candidate.mistakes != existing.mistakes) {
+      return candidate.mistakes < existing.mistakes;
+    }
+    return candidate.score > existing.score;
+  }
+
+  static DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  static bool _sameDate(DateTime? left, DateTime right) =>
+      left != null &&
+      left.year == right.year &&
+      left.month == right.month &&
+      left.day == right.day;
 
   /// Toggles [wordId] (a `DictionaryEntry.id`) in the current learner's
   /// favorited words and best-effort persists it. A no-op if there's no

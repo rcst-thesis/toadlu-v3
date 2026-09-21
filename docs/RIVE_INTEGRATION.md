@@ -132,11 +132,10 @@ returns `'park'` for `MapLocation.plaza` specifically, see
   currently has an event override, `false` once it's cleared -- independent
   of `isUnlocked` (see `RiveMapSceneController.setHasEvent`).
 - `<location>/locationTapped` -- **Rive-owned, Flutter listens.** Fires for
-  every tap Rive detects on that location, locked or unlocked -- Flutter
-  decides what to do based on the `isUnlocked` value it last set (see
-  `RiveMapSceneController.isUnlocked`): navigate if unlocked, show a
-  child-friendly locked explanation (a `SnackBar`, not a dialog interrupt) if
-  not.
+  every tap Rive detects on that location, locked or unlocked. Flutter shows
+  a child-friendly locked explanation for a normal locked tap, navigates an
+  unlocked tap, and permits the one active lesson event as a temporary direct
+  entrance even when its visual location remains locked.
 - `<location>/pressTrigger` -- **internal to Rive's own press-feedback
   animation.** Flutter must never set or read this.
 
@@ -164,10 +163,22 @@ persistence must not break if a future art export renames a Rive-side
 property again. See [`LEARNER_GUIDE.md`](LEARNER_GUIDE.md) for how that
 system works and how to extend it.
 
+### Lesson progression boundary
+
+`LessonProgressController` (`lib/features/lesson/domain/`) restores the
+learner's active lesson and represents it only as an
+`OpenActiveLessonRouteAction` in `MapEventOverrides`. It never holds a Rive
+controller. `MapScreen._syncEventVisuals` remains the only place that writes
+`<location>/isUnlocked` or `<location>/hasEvent`, and it still only listens to
+`<location>/locationTapped`. Do not add a lesson write/read for
+`pressTrigger`; it remains internal Rive plumbing.
+
 On a `locationTapped` event, `MapScreen._handleLocationTapped`:
 
-1. If the location isn't currently unlocked, shows a brief locked-explanation
-   `SnackBar` and stops -- no navigation.
+1. If the location isn't currently unlocked **and** it has no
+   `OpenActiveLessonRouteAction`, shows a brief locked-explanation `SnackBar`
+   and stops -- no navigation. The active event exception remains temporary;
+   it does not change `isUnlocked`.
 2. Otherwise, ignores the tap if a previous one is still being handled
    (`_isHandlingTap`), preventing double taps.
 3. Waits ~150ms (so Rive's own press animation, already playing by this
@@ -175,9 +186,10 @@ On a `locationTapped` event, `MapScreen._handleLocationTapped`:
 4. Resolves the destination through `MapEventOverrides.resolve`
    (`lib/features/map/domain/map_route_resolver.dart`): an active
    lesson/event's override for that location if one is set, otherwise its
-   entry in `MapDefaultRoutes`. House's default is "go home"
-   (`GoHomeRouteAction`, same as the Home tab); every other location's
-   default currently opens a temporary `PlaceholderScreen` shell, matching
+   entry in `MapDefaultRoutes`. House's default is a Flutter-owned
+   Home-or-House-lessons chooser; School, Park, and Market open the shared
+   filtered lesson catalog; the remaining locations currently open a
+   temporary `PlaceholderScreen` shell, matching
    the other not-yet-built bottom-tab destinations, until those screens
    exist. `MapEventOverrides` starts empty (no active event) and is cleared
    by whatever owns a lesson/event's lifecycle when it ends, restoring every

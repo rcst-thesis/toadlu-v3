@@ -117,7 +117,7 @@ class HomeStickerGrid extends StatelessWidget {
                           excludeFromSemantics: true,
                         ),
                         if (!sticker.isEarned)
-                          ColoredBox(
+                          const ColoredBox(
                             color: _unearnedOverlayColor,
                           ),
                       ],

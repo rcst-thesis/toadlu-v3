@@ -45,7 +45,8 @@ class _HomeBookshelfState extends State<HomeBookshelf>
     // A covered route has its ticker disabled. Reset the cue while Home is
     // hidden so it restarts after the door's cue when the user returns.
     _reduceMotion =
-        !effectiveAmbientMotionEnabled(context) || !TickerMode.of(context);
+        !effectiveAmbientMotionEnabled(context) ||
+        !TickerMode.valuesOf(context).enabled;
     if (_reduceMotion) {
       _initialHintTimer?.cancel();
       _initialHintTimer = null;

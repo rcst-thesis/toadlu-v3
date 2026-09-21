@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -8,39 +7,26 @@ import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/dictionary/domain/dictionary_entry.dart';
 import 'package:tudlo/features/dictionary/domain/dictionary_words.dart';
 import 'package:tudlo/features/dictionary/domain/word_of_the_day.dart';
-import 'package:tudlo/features/home/presentation/widgets/animated_home_window.dart';
-import 'package:tudlo/features/home/presentation/widgets/animated_glow_border.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_bookshelf.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_couch.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_content_footer.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_door.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_dev_panel_content.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_dev_panel_label.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_dev_panel_frame.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_drawer.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_energy_indicator.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_lily_mat.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_koka_mascot.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lesson_preview_dialog.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_settings_button.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_sticker_container.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_standing_lamp.dart';
-import 'package:tudlo/features/home/presentation/widgets/home_word_of_the_day.dart';
-import 'package:tudlo/features/home/presentation/widgets/interactive_home_lamp.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_scene.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
+import 'package:tudlo/features/lesson/domain/lesson_definition.dart';
+import 'package:tudlo/features/lesson/domain/lesson_progress_controller.dart';
+import 'package:tudlo/features/lesson/presentation/lesson_intro_screen.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 import 'package:tudlo/shared/audio/audio_assets.dart';
 import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 
+/// Home owns learner-aware data and navigation; [HomeScene] owns the measured,
+/// responsive visual composition. This keeps state changes cheap and lets the
+/// illustration tree stay independently testable.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({this.learnerName, this.energy, super.key});
 
-  /// Explicit overrides -- mainly for tests. Real app code shouldn't need
-  /// these: when omitted, they fall back to the current learner from
-  /// [LearnerScope], then to the original hardcoded defaults ('' / 60) if
-  /// no learner is loaded either.
+  /// Explicit overrides are kept for tests. App use falls back to the current
+  /// learner, then the original empty-name/60-energy presentation defaults.
   final String? learnerName;
   final int? energy;
 
@@ -49,12 +35,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _upperNavigationMaxOpacity = .84;
-  static const _upperNavigationRevealStartFraction = .45;
-
   final _scrollController = ScrollController();
   bool _lessonsCollapsed = false;
-
   DictionaryEntry? _wordOfTheDay;
   var _resolvedWordOfTheDay = false;
 
@@ -71,25 +53,15 @@ class _HomeScreenState extends State<HomeScreen> {
       audio.preloadSoundEffect(TudloAudioAssets.homeLampSwitchSoundEffect);
       audio.preloadSoundEffect(TudloAudioAssets.homeDoorSoundEffect);
     }
-    // Only resolve once per mount -- didChangeDependencies can fire again
-    // for unrelated inherited-widget changes. Same word-of-the-day
-    // resolution the Dictionary tab uses (reads/writes the same profile
-    // fields through the one shared LearnerController), so whichever
-    // screen is opened first picks the word for the day and the other
-    // just reads it back.
     if (_resolvedWordOfTheDay) return;
     _resolvedWordOfTheDay = true;
-
-    // Home has actually appeared -- starts the same background-music track
-    // fresh again (stopped by MainMenuScreen/LoadScreen right before the
-    // loading transition that led here), at this signed-in learner's own
-    // effective settings.
     unawaited(TudloAudioScope.of(context).startBackgroundMusic());
 
     final controller = LearnerScope.of(context);
     final profile = controller.profile;
-    final pool =
-        DictionaryWords.all.where((e) => e.frontCardImage != null).toList();
+    final pool = DictionaryWords.all
+        .where((entry) => entry.frontCardImage != null)
+        .toList();
     final selection = resolveWordOfTheDay(
       pool: pool.isNotEmpty ? pool : DictionaryWords.all,
       storedId: profile?.wordOfTheDayId,
@@ -98,9 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     _wordOfTheDay = selection.entry;
     if (selection.isNew) {
-      // Defer the actual persistence (which calls notifyListeners) past
-      // this build/dependency-resolution phase to avoid a reentrant-build
-      // assertion.
+      // Learner persistence notifies listeners, so defer it until after this
+      // inherited-widget resolution pass to avoid a reentrant build.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         unawaited(
@@ -120,48 +91,66 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _openSettings(BuildContext context) {
-    Navigator.of(context).push(
-      FadePageRoute<void>(
-        page: const SettingsScreen(insideLearnerProfile: true),
+  void _openSettings() => Navigator.of(context).push(
+    FadePageRoute<void>(page: const SettingsScreen(insideLearnerProfile: true)),
+  );
+
+  void _openMap() => Navigator.of(context).push(
+    FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(3)),
+  );
+
+  void _openLessons() => Navigator.of(context).push(
+    FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(2)),
+  );
+
+  void _openLessonIntro(String lessonId) => Navigator.of(context).push(
+    FadePageRoute<void>(page: LessonIntroScreen(lessonId: lessonId)),
+  );
+
+  void _openStickerScreen() => Navigator.of(context).push(
+    FadePageRoute<void>(
+      page: const PlaceholderScreen(
+        title: 'Stickers',
+        description: 'Temporary sticker screen shell',
+        icon: Icons.style_rounded,
       ),
-    );
-  }
+    ),
+  );
 
-  void _openMap(BuildContext context) {
-    Navigator.of(context).push(
-      FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(3)),
-    );
-  }
-
-  void _openLessons(BuildContext context) {
-    Navigator.of(context).push(
-      FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(2)),
-    );
-  }
-
-  void _openStickerScreen(BuildContext context) {
-    Navigator.of(context).push(
-      FadePageRoute<void>(
-        page: const PlaceholderScreen(
-          title: 'Stickers',
-          description: 'Temporary sticker screen shell',
-          icon: Icons.style_rounded,
-        ),
+  void _openAbout() => Navigator.of(context).push(
+    FadePageRoute<void>(
+      page: const PlaceholderScreen(
+        title: 'About',
+        description: 'Temporary About screen shell',
+        icon: Icons.info_outline_rounded,
       ),
-    );
-  }
+    ),
+  );
 
-  void _openAbout(BuildContext context) {
-    Navigator.of(context).push(
-      FadePageRoute<void>(
-        page: const PlaceholderScreen(
-          title: 'About',
-          description: 'Temporary About screen shell',
-          icon: Icons.info_outline_rounded,
-        ),
-      ),
-    );
+  List<HomeLessonPreview> _homeLessonPreviews() {
+    final grade = LearnerScope.of(context).profile?.grade ?? 1;
+    final progress = LessonProgressScope.of(context);
+    final definitions = LessonCatalog.forGrade(grade)
+      ..sort((left, right) {
+        final leftActive = left.id == progress.activeLesson?.id;
+        final rightActive = right.id == progress.activeLesson?.id;
+        if (leftActive != rightActive) return leftActive ? -1 : 1;
+        return 0;
+      });
+    return definitions
+        .map(
+          (definition) => HomeLessonPreview(
+            lessonId: definition.id,
+            unitTitle: definition.unitLabel.toLowerCase(),
+            category: definition.title.toUpperCase(),
+            status: progress.isComplete(definition)
+                ? HomeLessonStatus.completed
+                : progress.isUnlocked(definition)
+                ? HomeLessonStatus.available
+                : HomeLessonStatus.locked,
+          ),
+        )
+        .toList(growable: false);
   }
 
   Future<void> _showLessonPreview(
@@ -174,573 +163,50 @@ class _HomeScreenState extends State<HomeScreen> {
       originRect: originRect,
       onRetry: () {
         Navigator.of(context).pop();
-        _openLessons(context);
+        final id = lesson.lessonId;
+        id == null ? _openLessons() : _openLessonIntro(id);
       },
       onStart: () {
         Navigator.of(context).pop();
-        _openLessons(context);
+        final id = lesson.lessonId;
+        if (id != null && lesson.status != HomeLessonStatus.locked) {
+          _openLessonIntro(id);
+        } else {
+          _openLessons();
+        }
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final wordId = _wordOfTheDay?.id;
+    final profile = LearnerScope.of(context).profile;
     return Scaffold(
       key: const Key('home-screen'),
       backgroundColor: const Color(0xFFEADF99),
       bottomNavigationBar: const AppBottomTabNavigation(currentIndex: 0),
-      body: LayoutBuilder(
-        builder: (context, viewport) {
-          final canvasWidth = math.min(viewport.maxWidth, 720.0);
-          final canvasSideInset = (viewport.maxWidth - canvasWidth) / 2;
-          final topControlScale = (canvasWidth / 460).clamp(.82, 1.12);
-          final sceneScale = canvasWidth / _HomeSceneLayout.designWidth;
-          final lessonPanelHeight = HomeLessonPanel.designHeightForEnergy(
-            _energy,
-            isCollapsed: _lessonsCollapsed,
-          );
-          final stickerContainerTop =
-              _HomeSceneLayout.stickerContainerTopFor(lessonPanelHeight);
-          final devPanelLabelTop =
-              _HomeSceneLayout.devPanelLabelTopFor(lessonPanelHeight);
-          final devPanelFrameTop =
-              _HomeSceneLayout.devPanelFrameTopFor(lessonPanelHeight);
-          final contentEndSceneHeight =
-              _HomeSceneLayout.footerBottomFor(lessonPanelHeight) * sceneScale;
-          final minimumScrollableSceneHeight = viewport.maxHeight;
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: SingleChildScrollView(
-                  key: const Key('home-content-scroll-view'),
-                  controller: _scrollController,
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 720),
-                      child: SizedBox(
-                        height: math.max(
-                          minimumScrollableSceneHeight,
-                          contentEndSceneHeight,
-                        ),
-                        width: double.infinity,
-                        child: LayoutBuilder(
-                          builder: (context, scene) {
-                            final sceneScale =
-                                scene.maxWidth / _HomeSceneLayout.designWidth;
-                            return Stack(
-                              children: [
-                                const Positioned.fill(
-                                  child: _HomeWallBackground(),
-                                ),
-                                Positioned(
-                                  top: _HomeSceneLayout.creamFloorBorderTop *
-                                      sceneScale,
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  child: const ColoredBox(
-                                    key: Key('home-cream-wall'),
-                                    color: Color(0xFFFBF3E4),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: _HomeSceneLayout.floorTop * sceneScale,
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  child: const ColoredBox(
-                                    key: Key('home-floor'),
-                                    color: Color(0xFFB88956),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.lilyMat.left *
-                                      sceneScale,
-                                  top:
-                                      _HomeSceneLayout.lilyMat.top * sceneScale,
-                                  width: _HomeSceneLayout.lilyMat.width *
-                                      sceneScale,
-                                  height: _HomeSceneLayout.lilyMat.height *
-                                      sceneScale,
-                                  child: const HomeLilyMat(),
-                                ),
-                                const Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  height: 424,
-                                  child: InteractiveHomeLamp(),
-                                ),
-                                Positioned(
-                                  left:
-                                      _HomeSceneLayout.window.left * sceneScale,
-                                  top: _HomeSceneLayout.window.top * sceneScale,
-                                  width: _HomeSceneLayout.window.width *
-                                      sceneScale,
-                                  height: _HomeSceneLayout.window.height *
-                                      sceneScale,
-                                  child: const AnimatedHomeWindow(
-                                    key: Key('home-animated-window'),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.bookshelf.left *
-                                      sceneScale,
-                                  top: _HomeSceneLayout.bookshelf.top *
-                                      sceneScale,
-                                  width: _HomeSceneLayout.bookshelf.width *
-                                      sceneScale,
-                                  height: _HomeSceneLayout.bookshelf.height *
-                                      sceneScale,
-                                  child: HomeBookshelf(
-                                    onTap: () => _openLessons(context),
-                                  ),
-                                ),
-                                Positioned(
-                                  left:
-                                      _HomeSceneLayout.couch.left * sceneScale,
-                                  top: _HomeSceneLayout.couch.top * sceneScale,
-                                  width:
-                                      _HomeSceneLayout.couch.width * sceneScale,
-                                  height: _HomeSceneLayout.couch.height *
-                                      sceneScale,
-                                  child: const HomeCouch(),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.standingLamp.left *
-                                      sceneScale,
-                                  top: _HomeSceneLayout.standingLamp.top *
-                                      sceneScale,
-                                  width: _HomeSceneLayout.standingLamp.width *
-                                      sceneScale,
-                                  height: _HomeSceneLayout.standingLamp.height *
-                                      sceneScale,
-                                  child: const HomeStandingLamp(),
-                                ),
-                                Positioned(
-                                  left:
-                                      _HomeSceneLayout.drawer.left * sceneScale,
-                                  top: _HomeSceneLayout.drawer.top * sceneScale,
-                                  width: _HomeSceneLayout.drawer.width *
-                                      sceneScale,
-                                  height: _HomeSceneLayout.drawer.height *
-                                      sceneScale,
-                                  child: const HomeDrawer(),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.kokaMascot.left *
-                                      sceneScale,
-                                  top: _HomeSceneLayout.kokaMascot.top *
-                                      sceneScale,
-                                  width: _HomeSceneLayout.kokaMascot.width *
-                                      sceneScale,
-                                  height: _HomeSceneLayout.kokaMascot.height *
-                                      sceneScale,
-                                  child: HomeKokaMascot(
-                                    key: const Key('home-koka-mascot'),
-                                    learnerName: _learnerName,
-                                  ),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.door.left * sceneScale,
-                                  top: _HomeSceneLayout.door.top * sceneScale,
-                                  width:
-                                      _HomeSceneLayout.door.width * sceneScale,
-                                  height:
-                                      _HomeSceneLayout.door.height * sceneScale,
-                                  child: HomeDoor(
-                                    key: const Key('home-door'),
-                                    onTap: () => _openMap(context),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.wordOfTheDay.left *
-                                      sceneScale,
-                                  top: _HomeSceneLayout.wordOfTheDay.top *
-                                      sceneScale,
-                                  width: _HomeSceneLayout.wordOfTheDay.width *
-                                      sceneScale,
-                                  height: _HomeSceneLayout.wordOfTheDay.height *
-                                      sceneScale,
-                                  child: HomeWordOfTheDay(
-                                    word: _wordOfTheDay?.word ?? 'balay',
-                                    example: _wordOfTheDay?.example ??
-                                        'naga istar ako sa akong balay',
-                                    isFavorited: _wordOfTheDay != null &&
-                                        (LearnerScope.of(context)
-                                                .profile
-                                                ?.favoritedWords
-                                                .contains(_wordOfTheDay!.id) ??
-                                            false),
-                                    onFavoriteChanged: (_) {
-                                      final id = _wordOfTheDay?.id;
-                                      if (id != null) {
-                                        LearnerScope.of(context)
-                                            .toggleFavoriteWord(id);
-                                      }
-                                    },
-                                  ),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.lessonPanel.left *
-                                      sceneScale,
-                                  top: _HomeSceneLayout.lessonPanel.top *
-                                      sceneScale,
-                                  width: _HomeSceneLayout.lessonPanel.width *
-                                      sceneScale,
-                                  height: lessonPanelHeight * sceneScale,
-                                  child: HomeLessonPanel(
-                                    key: const Key('home-lesson-panel'),
-                                    energy: _energy,
-                                    onLessonTap: _showLessonPreview,
-                                    onCollapsedChanged: (isCollapsed) {
-                                      setState(() {
-                                        _lessonsCollapsed = isCollapsed;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.stickerContainer.left *
-                                      sceneScale,
-                                  top: stickerContainerTop * sceneScale,
-                                  width:
-                                      _HomeSceneLayout.stickerContainer.width *
-                                          sceneScale,
-                                  height: HomeStickerContainer.designHeight *
-                                      sceneScale,
-                                  child: HomeStickerContainer(
-                                    onOpenStickers: () =>
-                                        _openStickerScreen(context),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.devPanelLabel.left *
-                                      sceneScale,
-                                  top: devPanelLabelTop * sceneScale,
-                                  width: _HomeSceneLayout.devPanelLabel.width *
-                                      sceneScale,
-                                  height:
-                                      _HomeSceneLayout.devPanelLabel.height *
-                                          sceneScale,
-                                  child: const HomeDevPanelLabel(),
-                                ),
-                                Positioned(
-                                  left: _HomeSceneLayout.devPanelFrame.left *
-                                      sceneScale,
-                                  top: devPanelFrameTop * sceneScale,
-                                  width: _HomeSceneLayout.devPanelFrame.width *
-                                      sceneScale,
-                                  height:
-                                      _HomeSceneLayout.devPanelFrame.height *
-                                          sceneScale,
-                                  child: AnimatedGlowBorder(
-                                    strokeWidth: 1.5 * sceneScale,
-                                    borderRadius: 11 * sceneScale,
-                                    duration: const Duration(seconds: 4),
-                                    gradientColors: const [
-                                      Color(0xFFF9C1CB),
-                                      Color(0xFFCBEAFA),
-                                      Color(0xFF98EF6F),
-                                    ],
-                                    child: Semantics(
-                                      button: true,
-                                      label: 'Open about Tudlo',
-                                      child: GestureDetector(
-                                        key: const Key(
-                                          'home-dev-panel-button',
-                                        ),
-                                        behavior: HitTestBehavior.opaque,
-                                        onTap: () => _openAbout(context),
-                                        child: const Stack(
-                                          children: [
-                                            Positioned.fill(
-                                              child: HomeDevPanelFrame(),
-                                            ),
-                                            Positioned.fill(
-                                              child: HomeDevPanelContent(),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  height: _HomeSceneLayout.footerHeight *
-                                      sceneScale,
-                                  child: const HomeContentFooter(),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 108 * topControlScale,
-                child: IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _scrollController,
-                    builder: (context, child) {
-                      final floorScrollOffset = _HomeSceneLayout.floorTop *
-                          (canvasWidth / _HomeSceneLayout.designWidth);
-                      final revealStart = floorScrollOffset *
-                          _upperNavigationRevealStartFraction;
-                      final revealRange = floorScrollOffset - revealStart;
-                      final scrollOffset = _scrollController.hasClients
-                          ? _scrollController.offset
-                          : 0.0;
-                      final progress =
-                          ((scrollOffset - revealStart) / revealRange)
-                              .clamp(0.0, 1.0);
-                      return Opacity(
-                        key: const Key('home-upper-navigation-bar'),
-                        opacity: progress * _upperNavigationMaxOpacity,
-                        child: const ColoredBox(
-                          color: Color(0xFFB88956),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 51 * topControlScale,
-                right: canvasSideInset + (30 * topControlScale),
-                width: 47 * topControlScale,
-                height: 49 * topControlScale,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: HomeSettingsButton(
-                    onTap: () => _openSettings(context),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 47 * topControlScale,
-                left: canvasSideInset + (30 * topControlScale),
-                width: 78 * topControlScale,
-                height: 52 * topControlScale,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: HomeEnergyIndicator(energy: _energy),
-                ),
-              ),
-            ],
-          );
+      body: HomeScene(
+        scrollController: _scrollController,
+        learnerName: _learnerName,
+        energy: _energy,
+        wordOfTheDay: _wordOfTheDay,
+        isWordOfTheDayFavorited:
+            wordId != null && (profile?.favoritedWords.contains(wordId) ?? false),
+        lessonPreviews: _homeLessonPreviews(),
+        lessonsCollapsed: _lessonsCollapsed,
+        onOpenSettings: _openSettings,
+        onOpenMap: _openMap,
+        onOpenLessons: _openLessons,
+        onOpenStickers: _openStickerScreen,
+        onOpenAbout: _openAbout,
+        onWordFavoriteChanged: (_) {
+          if (wordId != null) LearnerScope.of(context).toggleFavoriteWord(wordId);
         },
-      ),
-    );
-  }
-}
-
-/// Editable positions measured from the original 412-wide Figma artboard.
-abstract final class _HomeSceneLayout {
-  static const double designWidth = 412;
-
-  static const window = _HomeSceneItemLayout(
-    left: 206,
-    top: 143,
-    width: 128,
-    height: 128,
-  );
-
-  static const door = _HomeSceneItemLayout(
-    left: 326,
-    top: 230,
-    width: 73,
-    height: 121,
-  );
-
-  // Furniture on the wall. Change bookshelfWidth to resize the bookshelf.
-  // Its height follows the original 160 x 37 SVG ratio automatically.
-  static const double bookshelfWidth = 160;
-  static const double _bookshelfAspectRatio = 37 / 160;
-
-  static const bookshelf = _HomeSceneItemLayout(
-    left: 7,
-    top: 215,
-    width: bookshelfWidth,
-    height: bookshelfWidth * _bookshelfAspectRatio,
-  );
-
-  // Furniture on the floor. Change standingLampHeight to resize the lamp;
-  // its width follows the supplied 145 x 504 PNG ratio automatically.
-  static const double standingLampHeight = 126;
-  static const double _standingLampAspectRatio = 145 / 504;
-
-  static const standingLamp = _HomeSceneItemLayout(
-    left: 25,
-    top: 245,
-    width: standingLampHeight * _standingLampAspectRatio,
-    height: standingLampHeight,
-  );
-
-  // Furniture on the floor. Change drawerWidth to resize the drawer; its
-  // height follows the supplied 52 x 41 SVG ratio automatically.
-  static const double drawerWidth = 52;
-  static const double _drawerAspectRatio = 41 / 52;
-
-  static const drawer = _HomeSceneItemLayout(
-    left: 53,
-    top: 325,
-    width: drawerWidth,
-    height: drawerWidth * _drawerAspectRatio,
-  );
-
-  // Furniture on the floor. Change couchWidth to resize the couch; its height
-  // follows the supplied 152 x 79 SVG ratio automatically.
-  static const double couchWidth = 152;
-  static const double _couchAspectRatio = 79 / 152;
-
-  static const couch = _HomeSceneItemLayout(
-    left: 110,
-    top: 287,
-    width: couchWidth,
-    height: couchWidth * _couchAspectRatio,
-  );
-
-  // Floor mat. Change lilyMatWidth to resize the mat; its height follows the
-  // supplied 361 x 88 SVG ratio automatically.
-  static const double lilyMatWidth = 361;
-  static const double _lilyMatAspectRatio = 88 / 361;
-
-  static const lilyMat = _HomeSceneItemLayout(
-    left: 5,
-    top: 359,
-    width: lilyMatWidth,
-    height: lilyMatWidth * _lilyMatAspectRatio,
-  );
-
-  // Koka uses the supplied 312 x 573 Rive artboard ratio. Change only
-  // kokaMascotHeight to resize the mascot without distortion.
-  static const double kokaMascotHeight = 140;
-  static const double _kokaMascotAspectRatio = 312 / 573;
-
-  static const kokaMascot = _HomeSceneItemLayout(
-    left: 160,
-    top: 260,
-    width: kokaMascotHeight * _kokaMascotAspectRatio,
-    height: kokaMascotHeight,
-  );
-
-  // Word of the Day card. Change wordOfTheDayWidth to resize the card; its
-  // height follows the supplied 378 x 216 SVG ratio automatically.
-  static const double wordOfTheDayWidth = 378;
-  static const double _wordOfTheDayAspectRatio = 216 / 378;
-
-  static const wordOfTheDay = _HomeSceneItemLayout(
-    left: 17,
-    top: 480,
-    width: wordOfTheDayWidth,
-    height: wordOfTheDayWidth * _wordOfTheDayAspectRatio,
-  );
-
-  // Availability heading and lesson preview directly below Word of the Day.
-  static const lessonPanel = _HomeSceneItemLayout(
-    left: 17,
-    top: 716,
-    width: 378,
-    height: 130,
-  );
-
-  // The sticker container begins after the lesson panel's dynamic card area.
-  static const stickerContainer = _HomeSceneItemLayout(
-    left: 17,
-    top: 0,
-    width: HomeStickerContainer.designWidth,
-    height: HomeStickerContainer.designHeight,
-  );
-
-  static const double stickerContainerTopGap = 20;
-
-  // Developer panel shell. Its logo and copy are intentionally added later.
-  static const devPanelLabel = _HomeSceneItemLayout(
-    left: 17,
-    top: 0,
-    width: HomeDevPanelLabel.designWidth,
-    height: HomeDevPanelLabel.designHeight,
-  );
-  static const double devPanelLabelTopGap = 28;
-  static const devPanelFrame = _HomeSceneItemLayout(
-    left: 17,
-    top: 0,
-    width: HomeDevPanelFrame.designWidth,
-    height: HomeDevPanelFrame.designHeight,
-  );
-  static const double devPanelFrameTopGap = 12;
-  static const double devPanelFrameBottomGap = 8;
-
-  static double stickerContainerTopFor(double lessonPanelHeight) =>
-      lessonPanel.top + lessonPanelHeight + stickerContainerTopGap;
-
-  static double devPanelLabelTopFor(double lessonPanelHeight) =>
-      stickerContainerTopFor(lessonPanelHeight) +
-      stickerContainer.height +
-      devPanelLabelTopGap;
-
-  static double devPanelFrameTopFor(double lessonPanelHeight) =>
-      devPanelLabelTopFor(lessonPanelHeight) +
-      devPanelLabel.height +
-      devPanelFrameTopGap;
-
-  // The scrollable Home footer uses its own width-relative painted wave.
-  static const double footerHeight = 48;
-
-  // Update contentBottom when a new Home item extends below this section.
-  // The scroll scene will then automatically grow to fit it and the footer.
-  static double footerBottomFor(double lessonPanelHeight) =>
-      stickerContainerTopFor(lessonPanelHeight) +
-      stickerContainer.height +
-      devPanelLabelTopGap +
-      devPanelLabel.height +
-      devPanelFrameTopGap +
-      devPanelFrame.height +
-      devPanelFrameBottomGap +
-      footerHeight;
-
-  static const double creamFloorBorderTop = 346;
-  static const double floorTop = 350;
-}
-
-/// One item's editable Figma coordinates and native size.
-class _HomeSceneItemLayout {
-  const _HomeSceneItemLayout({
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.height,
-  });
-
-  final double left;
-  final double top;
-  final double width;
-  final double height;
-}
-
-class _HomeWallBackground extends StatelessWidget {
-  const _HomeWallBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: Color(0xFFEADF99),
-      child: Column(
-        children: [
-          SizedBox(key: Key('home-content-top'), height: 1),
-          Spacer(),
-          SizedBox(key: Key('home-content-bottom'), height: 1),
-        ],
+        onLessonTap: _showLessonPreview,
+        onLessonsCollapsedChanged: (isCollapsed) {
+          setState(() => _lessonsCollapsed = isCollapsed);
+        },
       ),
     );
   }

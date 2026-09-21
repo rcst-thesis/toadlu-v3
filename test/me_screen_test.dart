@@ -105,7 +105,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(home: MeScreen()));
+    await tester.pumpWidget(const MaterialApp(home: MeScreen()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
 
@@ -127,7 +127,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: MeScreen(
           lessonsFinished: 3,
           stickersEarned: 5,
@@ -155,7 +155,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(home: MeScreen(currentStreak: 5)));
+    await tester.pumpWidget(const MaterialApp(home: MeScreen(currentStreak: 5)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
 

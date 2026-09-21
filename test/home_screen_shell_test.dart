@@ -451,7 +451,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home bookshelf books open the temporary Lessons destination',
+  testWidgets('Home bookshelf books open the lesson catalog destination',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.pump();
@@ -461,7 +461,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Temporary Lessons shell'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-catalog-screen')), findsOneWidget);
     final lessonsTile = tester.widget<Material>(
       find.byKey(const Key('home-nav-tile-lessons')),
     );
@@ -494,7 +494,7 @@ void main() {
     await tester.tap(find.byKey(const Key('home-nav-lessons')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Temporary Lessons shell'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-catalog-screen')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('home-nav-map')));
     await tester.pump();
@@ -505,7 +505,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('home-screen')), findsOneWidget);
-    expect(find.text('Temporary Lessons shell'), findsNothing);
+    expect(find.byKey(const Key('lesson-catalog-screen')), findsNothing);
     expect(find.byKey(const Key('map-screen')), findsNothing);
     expect(tester.takeException(), isNull);
   });

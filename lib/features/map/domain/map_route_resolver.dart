@@ -4,8 +4,8 @@ import 'package:tudlo/features/map/domain/map_location.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 
 /// What happens when a map location's tap resolves. Most locations push a
-/// screen; House's default action instead returns to Home (mirroring the
-/// bottom tab's Home behavior), so it's modeled separately from a push.
+/// screen; House's default action displays a destination chooser, so it is
+/// modeled separately from a push.
 sealed class MapRouteAction {
   const MapRouteAction();
 }
@@ -15,6 +15,27 @@ class GoHomeRouteAction extends MapRouteAction {
   const GoHomeRouteAction();
 }
 
+/// Displays House's two child-friendly destinations: Home or House lessons.
+/// Active lesson events bypass this route and use [OpenActiveLessonRouteAction].
+class ShowHouseChoiceRouteAction extends MapRouteAction {
+  const ShowHouseChoiceRouteAction();
+}
+
+/// Opens the grade-aware lessons catalog filtered to [location].
+class OpenLessonCatalogRouteAction extends MapRouteAction {
+  const OpenLessonCatalogRouteAction(this.location);
+
+  final MapLocation location;
+}
+
+/// Opens the active lesson identified by a stable Flutter catalog ID.
+/// The ID is never read from or written to Rive.
+class OpenActiveLessonRouteAction extends MapRouteAction {
+  const OpenActiveLessonRouteAction(this.lessonId);
+
+  final String lessonId;
+}
+
 /// Pushes the screen built by [builder].
 class PushScreenRouteAction extends MapRouteAction {
   const PushScreenRouteAction(this.builder);
@@ -22,20 +43,17 @@ class PushScreenRouteAction extends MapRouteAction {
   final WidgetBuilder builder;
 }
 
-/// Flutter-owned default destination for each map location. These are the
-/// project's real screens where they exist (only Home, via
-/// [GoHomeRouteAction] for House); every other location has no built screen
-/// yet, so it opens a temporary shell consistent with the other
-/// not-yet-built bottom-tab destinations (Translate/Lessons/Dictionary) --
-/// see `AppBottomTabNavigation.destinationFor`.
+/// Flutter-owned default destination for each map location. Lesson-mapped
+/// locations share the catalog used by the Lessons tab; unrelated locations
+/// keep their existing temporary shells.
 class MapDefaultRoutes {
   const MapDefaultRoutes._();
 
   static const Map<MapLocation, MapRouteAction> _actions = {
-    MapLocation.house: GoHomeRouteAction(),
-    MapLocation.school: PushScreenRouteAction(_school),
-    MapLocation.plaza: PushScreenRouteAction(_plaza),
-    MapLocation.market: PushScreenRouteAction(_market),
+    MapLocation.house: ShowHouseChoiceRouteAction(),
+    MapLocation.school: OpenLessonCatalogRouteAction(MapLocation.school),
+    MapLocation.plaza: OpenLessonCatalogRouteAction(MapLocation.plaza),
+    MapLocation.market: OpenLessonCatalogRouteAction(MapLocation.market),
     MapLocation.farm: PushScreenRouteAction(_farm),
     MapLocation.beach: PushScreenRouteAction(_beach),
     MapLocation.church: PushScreenRouteAction(_church),
@@ -44,24 +62,6 @@ class MapDefaultRoutes {
 
   static MapRouteAction actionFor(MapLocation location) =>
       _actions[location] ?? const GoHomeRouteAction();
-
-  static Widget _school(BuildContext context) => const PlaceholderScreen(
-        title: 'School',
-        description: 'Temporary School shell',
-        icon: Icons.school_rounded,
-      );
-
-  static Widget _plaza(BuildContext context) => const PlaceholderScreen(
-        title: 'Plaza',
-        description: 'Temporary Plaza shell',
-        icon: Icons.park_rounded,
-      );
-
-  static Widget _market(BuildContext context) => const PlaceholderScreen(
-        title: 'Market',
-        description: 'Temporary Market shell',
-        icon: Icons.storefront_rounded,
-      );
 
   static Widget _farm(BuildContext context) => const PlaceholderScreen(
         title: 'Farm',

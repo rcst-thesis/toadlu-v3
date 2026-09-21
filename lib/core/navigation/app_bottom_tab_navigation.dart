@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/dictionary/presentation/screens/dictionary_screen.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_bottom_navigation.dart';
+import 'package:tudlo/features/lesson/presentation/lesson_catalog_screen.dart';
 import 'package:tudlo/features/map/presentation/screens/map_screen.dart';
 import 'package:tudlo/features/me/presentation/screens/me_screen.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
@@ -87,18 +88,13 @@ class AppBottomTabNavigation extends StatelessWidget {
           bottomNavigationBar: AppBottomTabNavigation(currentIndex: 1),
         );
       case 2:
-        return const PlaceholderScreen(
-          title: 'Lessons',
-          description: 'Temporary Lessons shell',
-          icon: Icons.menu_book_rounded,
-          bottomNavigationBar: AppBottomTabNavigation(currentIndex: 2),
-        );
+        return const LessonCatalogScreen();
       case 3:
         return const MapScreen();
       case 4:
         return const DictionaryScreen();
       case 5:
-        return MeScreen();
+        return const MeScreen();
       default:
         throw ArgumentError.value(index, 'index', 'Unsupported tab index');
     }

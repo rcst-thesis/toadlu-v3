@@ -53,7 +53,8 @@ class _HomeDoorState extends State<HomeDoor>
     // A covered route has its ticker disabled. Reset the cue while Home is
     // hidden so it restarts in its intended sequence when the user returns.
     _reduceMotion =
-        !effectiveAmbientMotionEnabled(context) || !TickerMode.of(context);
+        !effectiveAmbientMotionEnabled(context) ||
+        !TickerMode.valuesOf(context).enabled;
     if (_reduceMotion) {
       _initialHintTimer?.cancel();
       _initialHintTimer = null;

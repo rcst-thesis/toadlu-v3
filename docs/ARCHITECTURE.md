@@ -24,8 +24,9 @@ main()
             └── AppSettingsScope (device settings outside a learner profile)
                 └── TudloAudioScope (one app-owned audio controller)
                     └── MapProgressScope (map event overrides + unlocked locations)
-                        └── MaterialApp (Material 3, ComicRelief, green/mint theme)
-                            └── StartupFlow
+                        └── LessonProgressScope (learner-owned lesson state + event scheduling)
+                            └── MaterialApp (Material 3, ComicRelief, green/mint theme)
+                                └── StartupFlow
 ```
 
 App-wide state that needs to be reachable from anywhere without
@@ -33,7 +34,7 @@ prop-drilling follows one consistent pattern -- a `ChangeNotifier` (or
 `InheritedNotifier`-compatible controller) plus an `InheritedWidget`/
 `InheritedNotifier` "Scope" with a static `.of(context)`. The current
 examples (`AppAnimationScope`, `LearnerScope`, `AppSettingsScope`,
-`TudloAudioScope`, and `MapProgressScope`) are
+`TudloAudioScope`, `MapProgressScope`, and `LessonProgressScope`) are
 wired once in `TudloApp` and follow this exact shape; add a new one the
 same way rather than introducing a different state-management approach.
 
@@ -57,6 +58,9 @@ same way rather than introducing a different state-management approach.
   completion event is missed, music duck-and-restore behavior, and shutdown.
   Screens send audio intents through `TudloAudioScope`; they never store native
   sources or handles.
+- `LessonProgressController`: derives one active lesson event from saved
+  learner progression, creates semantic map overrides, and records a result
+  only after reward claim. It never writes Rive values.
 - Welcome/Home widgets: local interaction and animation controllers.
 - `HomeScreen`/`MeScreen`: explicit constructor overrides (mainly for
   tests), falling back to the current learner via `LearnerScope` otherwise.
@@ -100,8 +104,9 @@ owns the push-away-from-Home / replace-between-siblings / pop-to-Home
 decision and each tab's destination widget, so every screen that shows the
 bar (`HomeScreen`, `MapScreen`, the Lessons/Translate/Dictionary shells,
 `MeScreen`) supplies only its own `currentIndex` instead of re-deriving
-routing. Lessons, Translate, and Dictionary are `PlaceholderScreen` shells
-pending real content; Map is a real interactive screen (`docs/MAP_GUIDE.md`);
+router. Translate and Dictionary are `PlaceholderScreen` shells pending real
+content; Lessons is the grade-aware lesson catalog and Map is a real
+interactive screen (`docs/MAP_GUIDE.md`);
 Me is a real (incomplete) screen showing real learner data where loaded.
 Sibling tabs replace each other to avoid stacking routes; any tab's Home
 action pops to the root Home route.
@@ -136,9 +141,10 @@ StartupFlow
 Home
 ├── Settings → Settings screen (animation preference)
 ├── Map tab and door → MapScreen (real interactive Rive barangay map --
-│   see docs/MAP_GUIDE.md; tap-gated by availability, event overrides
-│   can redirect a location's destination and permanently unlock it)
-├── Lessons tab and bookshelf → temporary shell
+│   see docs/MAP_GUIDE.md; tap-gated by availability, active events open an
+│   exact lesson and mapped defaults open a filtered catalog)
+├── Lessons tab and bookshelf → source-faithful grade-aware catalogue →
+│   original DevG intro → original DevG activity host
 ├── Translate/Dictionary tabs → temporary shells
 └── Me tab → Me screen (Settings/Edit buttons; shows the real current
     learner via LearnerScope where loaded, see docs/LEARNER_GUIDE.md --
@@ -188,6 +194,16 @@ own fades.
   only when it limits repaint work without breaking compositing or memory
   behavior. It is a paint optimization, not a substitute for correct rebuild
   boundaries.
+- Keep Tudlo-authored source files in the Home, Lesson, and Map features at
+  500 lines or fewer, excluding intentionally machine-readable data assets.
+  Split by lifecycle/route ownership, persistent domain logic, visual
+  composition, or reusable card/control—not arbitrary line ranges. The
+  imported `lesson/presentation/devg_canonical/` source-preservation bridge is
+  a visible temporary exception while its 12 canonical flows are extracted
+  without changing their child-facing behaviour; it must not be extended with
+  new Tudlo architecture. Concise comments should explain contracts,
+  non-obvious ownership, and why a safeguard exists rather than narrating
+  obvious widget syntax.
 
 ## Testing
 

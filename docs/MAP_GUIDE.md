@@ -21,6 +21,25 @@ lib/features/map/
 
 Asset: `assets/images/toadlu_map.riv`.
 
+## Current lesson integration
+
+The app now owns one `LessonProgressController`, wired beside
+`MapProgressScope` in `TudloApp`. It restores a learner's active lesson as
+exactly one `OpenActiveLessonRouteAction`; it does not access a Rive
+controller. `MapScreen` remains the only layer that writes the map's
+`isUnlocked`/`hasEvent` values.
+
+- School, Park (`MapLocation.plaza`), and Market defaults push the same
+  grade-aware catalog used by the Lessons bottom tab, filtered to that place.
+- House's default opens a two-icon popup: Home or its filtered catalog.
+- An active event at any of those places, including House, bypasses the
+  default and opens its matching lesson intro directly.
+- A completion clears the old event before scheduling the one next lesson.
+  Closing an intro/session without claiming its reward does not alter it.
+
+Lesson code must use `LessonProgressController.completeAndClaim`; do not call
+`MapEventOverrides.setOverride` directly for normal curriculum progression.
+
 ## How a tap becomes a navigation
 
 1. `RiveMapScene` doesn't detect taps itself -- **this Rive file does**, via
@@ -42,9 +61,9 @@ Asset: `assets/images/toadlu_map.riv`.
 
 ## Adding a real screen for a location
 
-Right now every location except House opens a temporary `PlaceholderScreen`
-(same pattern as the not-yet-built Translate/Lessons/Dictionary bottom
-tabs). To wire up a real screen, edit `MapDefaultRoutes` in
+School, Park, and Market already use the lesson catalog. Farm, Beach, Church,
+and Hospital still use their temporary `PlaceholderScreen`. To wire one of
+those remaining locations to a real screen, edit `MapDefaultRoutes` in
 `lib/features/map/domain/map_route_resolver.dart`:
 
 ```dart
@@ -55,10 +74,10 @@ Just replace the `PlaceholderScreen(...)` body of that location's static
 builder method with your real screen. Nothing else needs to change — the
 tap-handling flow in `MapScreen` and the availability gating stay the same.
 
-House is different: its default isn't a pushed screen, it's
-`GoHomeRouteAction()`, which pops back to the app's root (same as tapping
-the Home tab). Only change that if House itself should open a real screen
-someday.
+House is different: its default is `ShowHouseChoiceRouteAction()`, which opens
+the Home-or-House-lessons dialog. Keep an active lesson as an override rather
+than changing this default -- that is what makes the event correctly bypass
+the dialog.
 
 ## The event/lesson override system
 
@@ -85,9 +104,9 @@ eventOverrides.setOverride(
   PushScreenRouteAction((context) => const HouseLessonScreen()),
 );
 
-// When the lesson ends (completed, skipped, whatever):
+// When a one-off custom event ends:
 eventOverrides.clearOverride(MapLocation.house);
-// House automatically goes back to GoHomeRouteAction() -- its default.
+// House automatically goes back to its Home-or-House-lessons chooser.
 ```
 
 ### Example: a multi-stop event (e.g. "find the dog")
@@ -114,62 +133,38 @@ void endDogFindingEvent(MapEventOverrides overrides) {
 Every location not explicitly overridden keeps working normally the whole
 time — you only ever touch the locations the event actually affects.
 
-### The visual side: hasEvent, and permanently unlocking on first activation
+### The visual side: `hasEvent` is temporary; `isUnlocked` is earned
 
-Setting an override doesn't just change where a tap goes — it also:
-
-1. makes Rive render that location with its **golden event glow**, distinct
-   from its normal idle look, so the player can see at a glance where the
-   event's stop is — **only while the override is set**, same as the
-   tap-redirect itself;
-2. **permanently unlocks it**, the first time it gets an override, even if
-   it wasn't normally available yet — an event shouldn't be unreachable just
-   because the player hasn't progressed far enough to unlock that location
-   the normal way. Unlike the golden visual, this does **not** revert when
-   the override clears: once an event has touched a location, it stays
-   tappable for good, not just for that event's duration.
-
-Both are wired automatically by `MapScreen._syncEventVisuals`, which runs on
-every `MapEventOverrides` change (and once more when the Rive scene finishes
-loading, to catch overrides set before the map was even on screen). Every
-location's `isUnlocked` is also explicitly (re)written on every sync pass
-from `MapProgressController.unlockedLocations` -- not just newly-overridden
-ones -- since Flutter is the sole owner of that boolean now (see
-[`RIVE_INTEGRATION.md`](RIVE_INTEGRATION.md#barangay-map-contract)):
+An override makes Rive render the location with its golden event glow while
+that override exists. It does **not** permanently unlock the location. On
+each synchronization pass `MapScreen` writes only the documented contract:
 
 ```
-setUnlocked(house, true)  // always, unconditionally
+setUnlocked(house, true) // intentional Home destination
 for every other location:
   setUnlocked(location, mapProgress.unlockedLocations.contains(location))
 for every location:
-  hasOverride = overrides.overrideFor(location) != null
-  setHasEvent(location, hasOverride)          // follows it exactly, on and off
-  if hasOverride: setUnlocked(location, true) // one-way -- never set back to false
+  setHasEvent(location, overrides.overrideFor(location) != null)
 ```
 
-**No active event, nothing overridden → every location's `hasEvent` is
-`false`**, and `isUnlocked` is exactly `MapProgressController.unlockedLocations`
-(always `true` for House). This only ever changes for locations an event
-explicitly targets, or that get unlocked through normal progression.
+The lesson controller creates an `OpenActiveLessonRouteAction` for the one
+active lesson. `MapScreen` permits that one action to open even if the visual
+location remains locked, so a glowing lesson entrance is reachable. A normal
+tap on a locked location remains non-navigating. The permanent unlock happens
+only when the learner claims a completed lesson reward; the learner save then
+updates `unlockedMapLocations`, which is projected to `isUnlocked` on the
+next sync.
 
-**Persistence: real, and per-learner.** `MapProgressController.unlockedLocations`
-(`lib/features/map/domain/map_progress.dart`) is still just an in-memory
-`Set` -- it's what drives the visuals -- but `MapScreen` keeps it in sync
-with the real, persisted source of truth: the current learner's
-`LearnerProfile.unlockedMapLocations`, via `LearnerScope`. Full details,
-including how to add new persisted learner data, are in
-[`LEARNER_GUIDE.md`](LEARNER_GUIDE.md). Short version: don't write to
-`MapProgressController.unlockedLocations` from anywhere except
-`MapScreen`'s existing `_syncEventVisuals` -- it's not the thing that
-actually persists.
+When no event is active, every `hasEvent` value is `false`; `isUnlocked` is
+exactly the learner-owned location set (plus the intentional always-available
+House). An unlocked mapped location opens its filtered lesson catalogue and
+completed lessons there can be replayed.
 
-You don't call any of this yourself — just call `setOverride`/
-`clearOverride` as shown above and both the golden glow and the permanent
-unlock follow automatically, for every location you touch. This also means:
-don't call `setHasEvent`/`setUnlocked` on the Rive scene directly from your
-own code, and don't set an override "just for the visual" without meaning
-to also redirect and permanently unlock that location — all three are the
-same signal by design.
+`MapProgressController.unlockedLocations` is an in-memory projection for the
+map. `LearnerProfile.unlockedMapLocations` is the persisted source of truth.
+`LessonProgressController.completeAndClaim` is the only lesson path allowed
+to add a permanent location unlock. Do not call `setHasEvent` or
+`setUnlocked` on `RiveMapScene` from feature code.
 
 ### Wiring it up — already done, here's how
 
@@ -221,8 +216,8 @@ the shared one). Real app code shouldn't need it.
   decides what each boolean means and when to set it. Route resolution is
   100% Flutter's job, via `MapEventOverrides`.
 - Don't forget to clear an override when its event ends. A forgotten
-  override permanently hijacks that location's tap *and* leaves it stuck
-  glowing until the app restarts.
+  override keeps hijacking that location's tap and leaves it glowing; it does
+  not, however, grant a permanent unlock.
 - Don't hand-roll a second "is there an active event" check elsewhere —
   `MapEventOverrides.resolve()` is the single source of truth Map already
   consults on every tap, and `overrideFor()` is what drives the visual.
@@ -234,19 +229,18 @@ Each location's unlocked state is **entirely Flutter-owned** data now
 instances) — Rive only renders it (gray/locked vs. full-color/accessible)
 and reads it to decide whether a tap plays the locked-shake or the normal
 press feedback. Unlike the previous map asset, there's no Rive-side unlock
-logic to defer to: whatever unlocks a location (finishing a prior lesson,
-reaching some milestone, etc.) needs to add it to
-`MapProgressController.unlockedLocations` (and persist it via
-`LearnerController.unlockMapLocation`) so the next `_syncEventVisuals` pass
-writes `true` for it.
+logic to defer to: a completion/milestone must update the learner-owned
+location set through its owning controller so the next `_syncEventVisuals`
+pass writes `true` for it. Lesson completion specifically goes through
+`LessonProgressController.completeAndClaim`, not directly through the map.
 
 House is the one location whose `isUnlocked` never depends on progression —
 `MapScreen._syncEventVisuals` writes `true` for it unconditionally, every
 time, from the start of a new game.
 
-The active-event override system described above is the only *other* place
-Flutter permanently sets `isUnlocked` to `true` outside of normal
-progression. Don't add a second place that does.
+Active-event overrides never permanently set `isUnlocked`. They set only
+`hasEvent`; claiming the lesson is the normal-progression action that earns
+the location. Don't add a second permanent-unlock path.
 
 For **local testing only**, you can force a location unlocked by adding it
 to `MapProgressController.unlockedLocations` directly, or by setting its

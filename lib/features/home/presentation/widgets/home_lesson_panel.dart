@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Responsive Home lesson preview using the supplied PNG artwork.
-typedef HomeLessonTapCallback = Future<void> Function(
-  HomeLessonPreview lesson,
-  Rect originRect,
-);
+import 'package:tudlo/features/home/presentation/widgets/home_lesson_card.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel_layout.dart';
+import 'package:tudlo/features/home/presentation/widgets/home_lesson_preview.dart';
 
+export 'home_lesson_preview.dart';
+
+/// Responsive Home lesson panel. It renders visual availability only: learner
+/// progress decides each preview's status and energy remains a display cap.
 class HomeLessonPanel extends StatefulWidget {
   const HomeLessonPanel({
     required this.energy,
@@ -27,32 +29,30 @@ class HomeLessonPanel extends StatefulWidget {
   final HomeLessonTapCallback? onLessonTap;
   final ValueChanged<bool>? onCollapsedChanged;
 
-  /// The Home scene uses this to reserve enough scroll height for every lesson
-  /// Energy currently makes available.
+  /// HomeScene uses this before layout so its scroll extent matches the
+  /// currently rendered cards. It must stay in step with [_LessonDeck].
   static double designHeightForEnergy(
     int energy, {
     required bool isCollapsed,
   }) {
     final lessonCount = (energy.clamp(0, 60) ~/ 10).clamp(0, 6);
     if (isCollapsed && lessonCount > 1) {
-      // Matches _HomeLessonPanelState's stackDepth calc: as many peeking
-      // layers as there are lessons behind the front card, capped at 3.
       final stackDepth = lessonCount.clamp(1, 3);
-      return _HomeLessonPanelLayout.headingIconSize +
-          _HomeLessonPanelLayout.headingToSectionGap +
-          _HomeLessonPanelLayout.cardHeight +
-          (stackDepth - 1) * _HomeLessonPanelLayout.deckVerticalOffset;
+      return HomeLessonPanelLayout.headingIconSize +
+          HomeLessonPanelLayout.headingToSectionGap +
+          HomeLessonPanelLayout.cardHeight +
+          (stackDepth - 1) * HomeLessonPanelLayout.deckVerticalOffset;
     }
     final sectionHeight = lessonCount > 1
-        ? _HomeLessonPanelLayout.headingToSectionGap +
-            _HomeLessonPanelLayout.sectionChevronSize +
-            _HomeLessonPanelLayout.sectionToCardGap
-        : _HomeLessonPanelLayout.headingToSectionGap;
-    final cardsHeight = lessonCount * _HomeLessonPanelLayout.cardHeight;
+        ? HomeLessonPanelLayout.headingToSectionGap +
+            HomeLessonPanelLayout.sectionChevronSize +
+            HomeLessonPanelLayout.sectionToCardGap
+        : HomeLessonPanelLayout.headingToSectionGap;
+    final cardsHeight = lessonCount * HomeLessonPanelLayout.cardHeight;
     final gapsHeight = lessonCount > 1
-        ? (lessonCount - 1) * _HomeLessonPanelLayout.lessonCardGap
+        ? (lessonCount - 1) * HomeLessonPanelLayout.lessonCardGap
         : 0.0;
-    return _HomeLessonPanelLayout.headingIconSize +
+    return HomeLessonPanelLayout.headingIconSize +
         sectionHeight +
         cardsHeight +
         gapsHeight;
@@ -71,21 +71,18 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
     final configuredLessons = [widget.lesson, ...widget.additionalLessons];
     return List.generate(_availableLessons, (index) {
       if (index < configuredLessons.length) return configuredLessons[index];
+      // A visual slot never invents playable curriculum: it opens catalog.
       return HomeLessonPreview(
         unitTitle: 'yunit ${index + 1}',
         category: widget.lesson.category,
-        status: HomeLessonStatus.available,
+        status: HomeLessonStatus.locked,
       );
     });
   }
 
-  /// Collapse is based on lesson panels currently made available by Energy.
   bool get _canCollapse => _visibleLessons.length > 1;
-
-  String get _summaryCategories {
-    final categories = _visibleLessons.map((lesson) => lesson.category).toSet();
-    return categories.join(', ');
-  }
+  String get _summaryCategories =>
+      _visibleLessons.map((lesson) => lesson.category).toSet().join(', ');
 
   void _setExpanded(bool expanded) {
     if (_isExpanded == expanded) return;
@@ -98,7 +95,7 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
     final lessonLabel = _availableLessons == 1 ? 'lesson' : 'lessons';
     return LayoutBuilder(
       builder: (context, constraints) {
-        final scale = constraints.maxWidth / _HomeLessonPanelLayout.designWidth;
+        final scale = constraints.maxWidth / HomeLessonPanelLayout.designWidth;
         return AnimatedSize(
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
@@ -106,115 +103,18 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: EdgeInsets.only(
-                  left: _HomeLessonPanelLayout.headingLeftInset * scale,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/images/home_bookshelf_outline_white.png',
-                      width: _HomeLessonPanelLayout.headingIconSize * scale,
-                      height: _HomeLessonPanelLayout.headingIconSize * scale,
-                      fit: BoxFit.contain,
-                      semanticLabel: 'Available lessons',
-                    ),
-                    SizedBox(width: _HomeLessonPanelLayout.headingGap * scale),
-                    Flexible(
-                      child: Text(
-                        '$_availableLessons $lessonLabel subong nga adlaw!',
-                        key: const Key('home-lesson-availability'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'ComicRelief',
-                          fontSize:
-                              _HomeLessonPanelLayout.headingFontSize * scale,
-                          fontWeight: FontWeight.w700,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _AvailabilityHeading(
+                availableLessons: _availableLessons,
+                lessonLabel: lessonLabel,
+                scale: scale,
               ),
-              if (_isExpanded && _canCollapse) ...[
-                SizedBox(
-                  height: _HomeLessonPanelLayout.headingToSectionGap * scale,
-                ),
-                Row(
-                  children: [
-                    Semantics(
-                      button: true,
-                      label: 'Collapse lessons',
-                      child: InkResponse(
-                        key: const Key('home-lesson-collapse-toggle'),
-                        onTap: () => _setExpanded(false),
-                        radius: 14 * scale,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'umpisahan ta subong adlaw',
-                              key: const Key('home-lesson-section-label'),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'ComicRelief',
-                                fontSize: _HomeLessonPanelLayout
-                                        .sectionLabelFontSize *
-                                    scale,
-                                fontWeight: FontWeight.w400,
-                                height: 1,
-                              ),
-                            ),
-                            SizedBox(
-                              width: _HomeLessonPanelLayout.sectionChevronSize *
-                                  scale,
-                              height:
-                                  _HomeLessonPanelLayout.sectionChevronSize *
-                                      scale,
-                              child: Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                color: Colors.white,
-                                size:
-                                    _HomeLessonPanelLayout.sectionChevronSize *
-                                        scale,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width:
-                          _HomeLessonPanelLayout.sectionLabelToLineGap * scale,
-                    ),
-                    Expanded(
-                      child: SvgPicture.asset(
-                        'assets/images/home_lesson_divider.svg',
-                        height: _HomeLessonPanelLayout.dividerHeight * scale,
-                        fit: BoxFit.fill,
-                        excludeFromSemantics: true,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: _HomeLessonPanelLayout.sectionToCardGap * scale,
-                ),
-              ] else
-                SizedBox(
-                  height: _HomeLessonPanelLayout.headingToSectionGap * scale,
-                ),
+              _SectionHeading(
+                isExpanded: _isExpanded,
+                canCollapse: _canCollapse,
+                scale: scale,
+                onCollapse: () => _setExpanded(false),
+              ),
               if (_visibleLessons.isEmpty)
-                // No lessons currently available (Energy has dropped below
-                // 10) -- nothing to show. Guards against `.first` on an
-                // empty list below: Energy can drop after the panel was
-                // already left collapsed (from an earlier, higher-Energy
-                // moment), so an empty list here is a real, reachable state,
-                // not just a theoretical one.
                 const SizedBox.shrink()
               else if (_isExpanded)
                 _LessonList(
@@ -226,10 +126,6 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
                 _LessonDeck(
                   lesson: _visibleLessons.first,
                   summaryCategories: _summaryCategories,
-                  // iOS notification-stack style: the number of peeking
-                  // layers behind the front card reflects how many lessons
-                  // are actually behind it, capped at 3 (a 4th+ sliver
-                  // would be too thin to read as a card at all).
                   stackDepth:
                       _canCollapse ? _visibleLessons.length.clamp(1, 3) : 1,
                   scale: scale,
@@ -243,7 +139,127 @@ class _HomeLessonPanelState extends State<HomeLessonPanel> {
   }
 }
 
-/// Shows every currently available lesson while the section is expanded.
+class _AvailabilityHeading extends StatelessWidget {
+  const _AvailabilityHeading({
+    required this.availableLessons,
+    required this.lessonLabel,
+    required this.scale,
+  });
+
+  final int availableLessons;
+  final String lessonLabel;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: HomeLessonPanelLayout.headingLeftInset * scale),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/home_bookshelf_outline_white.png',
+            width: HomeLessonPanelLayout.headingIconSize * scale,
+            height: HomeLessonPanelLayout.headingIconSize * scale,
+            fit: BoxFit.contain,
+            semanticLabel: 'Available lessons',
+          ),
+          SizedBox(width: HomeLessonPanelLayout.headingGap * scale),
+          Flexible(
+            child: Text(
+              '$availableLessons $lessonLabel subong nga adlaw!',
+              key: const Key('home-lesson-availability'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'ComicRelief',
+                fontSize: HomeLessonPanelLayout.headingFontSize * scale,
+                fontWeight: FontWeight.w700,
+                height: 1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({
+    required this.isExpanded,
+    required this.canCollapse,
+    required this.scale,
+    required this.onCollapse,
+  });
+
+  final bool isExpanded;
+  final bool canCollapse;
+  final double scale;
+  final VoidCallback onCollapse;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isExpanded || !canCollapse) {
+      return SizedBox(height: HomeLessonPanelLayout.headingToSectionGap * scale);
+    }
+    return Column(
+      children: [
+        SizedBox(height: HomeLessonPanelLayout.headingToSectionGap * scale),
+        Row(
+          children: [
+            Semantics(
+              button: true,
+              label: 'Collapse lessons',
+              child: InkResponse(
+                key: const Key('home-lesson-collapse-toggle'),
+                onTap: onCollapse,
+                radius: 14 * scale,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'umpisahan ta subong adlaw',
+                      key: const Key('home-lesson-section-label'),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'ComicRelief',
+                        fontSize: HomeLessonPanelLayout.sectionLabelFontSize * scale,
+                        fontWeight: FontWeight.w400,
+                        height: 1,
+                      ),
+                    ),
+                    SizedBox(
+                      width: HomeLessonPanelLayout.sectionChevronSize * scale,
+                      height: HomeLessonPanelLayout.sectionChevronSize * scale,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Colors.white,
+                        size: HomeLessonPanelLayout.sectionChevronSize * scale,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(width: HomeLessonPanelLayout.sectionLabelToLineGap * scale),
+            Expanded(
+              child: SvgPicture.asset(
+                'assets/images/home_lesson_divider.svg',
+                height: HomeLessonPanelLayout.dividerHeight * scale,
+                fit: BoxFit.fill,
+                excludeFromSemantics: true,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: HomeLessonPanelLayout.sectionToCardGap * scale),
+      ],
+    );
+  }
+}
+
 class _LessonList extends StatefulWidget {
   const _LessonList({
     required this.lessons,
@@ -262,19 +278,12 @@ class _LessonList extends StatefulWidget {
 class _LessonListState extends State<_LessonList> {
   int? _openingLessonIndex;
 
-  Future<void> _openLesson(
-    int index,
-    BuildContext cardContext,
-  ) async {
+  Future<void> _openLesson(int index, BuildContext cardContext) async {
     final callback = widget.onLessonTap;
     if (callback == null || _openingLessonIndex != null) return;
-
     final box = cardContext.findRenderObject()! as RenderBox;
-    final origin = box.localToGlobal(Offset.zero) & box.size;
     setState(() => _openingLessonIndex = index);
-
-    // Hide the tapped Home card while its matching overlay card takes over.
-    await callback(widget.lessons[index], origin);
+    await callback(widget.lessons[index], box.localToGlobal(Offset.zero) & box.size);
     if (mounted) setState(() => _openingLessonIndex = null);
   }
 
@@ -284,7 +293,7 @@ class _LessonListState extends State<_LessonList> {
       children: [
         for (var index = 0; index < widget.lessons.length; index++) ...[
           SizedBox(
-            height: _HomeLessonPanelLayout.cardHeight * widget.scale,
+            height: HomeLessonPanelLayout.cardHeight * widget.scale,
             width: double.infinity,
             child: Builder(
               builder: (cardContext) => Opacity(
@@ -295,22 +304,19 @@ class _LessonListState extends State<_LessonList> {
                       ? null
                       : () => _openLesson(index, cardContext),
                   behavior: HitTestBehavior.opaque,
-                  child: _LessonPreviewCard(lesson: widget.lessons[index]),
+                  child: HomeLessonCard(lesson: widget.lessons[index]),
                 ),
               ),
             ),
           ),
           if (index < widget.lessons.length - 1)
-            SizedBox(
-              height: _HomeLessonPanelLayout.lessonCardGap * widget.scale,
-            ),
+            SizedBox(height: HomeLessonPanelLayout.lessonCardGap * widget.scale),
         ],
       ],
     );
   }
 }
 
-/// Keeps the collapsed summary readable while one soft card peeks beneath it.
 class _LessonDeck extends StatelessWidget {
   const _LessonDeck({
     required this.lesson,
@@ -328,21 +334,17 @@ class _LessonDeck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardHeight = _HomeLessonPanelLayout.cardHeight * scale;
-    final peekOffset = _HomeLessonPanelLayout.deckVerticalOffset * scale;
-    final backCardHeight = _HomeLessonPanelLayout.deckCardHeight * scale;
-    final deckHeight = cardHeight + ((stackDepth - 1) * peekOffset);
+    final cardHeight = HomeLessonPanelLayout.cardHeight * scale;
+    final peekOffset = HomeLessonPanelLayout.deckVerticalOffset * scale;
     return Semantics(
       button: onTap != null,
       label: onTap == null ? null : 'Expand lessons',
       child: GestureDetector(
-        key: onTap == null
-            ? null
-            : const Key('home-lesson-collapsed-deck-toggle'),
+        key: onTap == null ? null : const Key('home-lesson-collapsed-deck-toggle'),
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
-          height: deckHeight,
+          height: cardHeight + ((stackDepth - 1) * peekOffset),
           width: double.infinity,
           child: Stack(
             clipBehavior: Clip.none,
@@ -350,25 +352,25 @@ class _LessonDeck extends StatelessWidget {
               for (var layer = stackDepth - 1; layer >= 1; layer--)
                 Positioned(
                   top: layer * peekOffset,
-                  left: (layer * _HomeLessonPanelLayout.deckSideInset +
-                          _HomeLessonPanelLayout.deckHorizontalOffset) *
+                  left: (layer * HomeLessonPanelLayout.deckSideInset +
+                          HomeLessonPanelLayout.deckHorizontalOffset) *
                       scale,
-                  right: (layer * _HomeLessonPanelLayout.deckSideInset -
-                          _HomeLessonPanelLayout.deckHorizontalOffset) *
+                  right: (layer * HomeLessonPanelLayout.deckSideInset -
+                          HomeLessonPanelLayout.deckHorizontalOffset) *
                       scale,
-                  height: backCardHeight,
+                  height: HomeLessonPanelLayout.deckCardHeight * scale,
                   child: DecoratedBox(
                     key: Key('home-lesson-deck-layer-$layer'),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8F8F8),
                       borderRadius: BorderRadius.circular(
-                        _HomeLessonPanelLayout.cardRadius * scale,
+                        HomeLessonPanelLayout.cardRadius * scale,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0x22000000),
-                          offset: Offset(0, 1 * scale),
-                          blurRadius: 1 * scale,
+                          offset: Offset(0, scale),
+                          blurRadius: scale,
                         ),
                       ],
                     ),
@@ -379,7 +381,7 @@ class _LessonDeck extends StatelessWidget {
                 right: 0,
                 top: 0,
                 height: cardHeight,
-                child: _LessonPreviewCard(
+                child: HomeLessonCard(
                   key: const Key('home-lesson-card'),
                   lesson: lesson,
                   isElevated: stackDepth > 1,
@@ -393,321 +395,4 @@ class _LessonDeck extends StatelessWidget {
       ),
     );
   }
-}
-
-class HomeLessonPreview {
-  const HomeLessonPreview({
-    required this.unitTitle,
-    required this.category,
-    required this.status,
-  });
-
-  final String unitTitle;
-  final String category;
-  final HomeLessonStatus status;
-}
-
-enum HomeLessonStatus { completed, available, locked }
-
-class _LessonPreviewCard extends StatelessWidget {
-  const _LessonPreviewCard({
-    required this.lesson,
-    this.isElevated = false,
-    this.isSummary = false,
-    this.summaryCategories,
-    super.key,
-  });
-
-  final HomeLessonPreview lesson;
-  final bool isElevated;
-  final bool isSummary;
-  final String? summaryCategories;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scale = constraints.maxWidth / _HomeLessonPanelLayout.designWidth;
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(
-              _HomeLessonPanelLayout.cardRadius * scale,
-            ),
-            boxShadow: isElevated
-                ? [
-                    BoxShadow(
-                      color: const Color(0x16000000),
-                      offset: Offset(0, 2 * scale),
-                      blurRadius: 7 * scale,
-                    ),
-                  ]
-                : null,
-          ),
-          child: isSummary
-              ? _CollapsedLessonSummaryContent(
-                  categories: summaryCategories ?? lesson.category,
-                  scale: scale,
-                )
-              : Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal:
-                        _HomeLessonPanelLayout.cardHorizontalPadding * scale,
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: _HomeLessonPanelLayout.dotsWidth * scale,
-                        height: _HomeLessonPanelLayout.dotsHeight * scale,
-                        child: Transform.translate(
-                          offset: Offset(
-                            _HomeLessonPanelLayout.dotsOffsetX * scale,
-                            _HomeLessonPanelLayout.dotsOffsetY * scale,
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/images/home_lesson_more_dots.svg',
-                            fit: BoxFit.contain,
-                            semanticsLabel: 'Lesson options',
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                          width: _HomeLessonPanelLayout.dotsToIconGap * scale),
-                      Image.asset(
-                        'assets/images/home_lesson_category.png',
-                        width: _HomeLessonPanelLayout.categoryIconSize * scale,
-                        height: _HomeLessonPanelLayout.categoryIconSize * scale,
-                        fit: BoxFit.contain,
-                        semanticLabel: 'Alphabeto kag numero',
-                      ),
-                      SizedBox(
-                        width: _HomeLessonPanelLayout.categoryToTextGap * scale,
-                      ),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width:
-                                  _HomeLessonPanelLayout.unitTextWidth * scale,
-                              child: FittedBox(
-                                alignment: Alignment.centerLeft,
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  lesson.unitTitle,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    color: const Color(0xFF151515),
-                                    fontFamily: 'ComicRelief',
-                                    fontSize:
-                                        _HomeLessonPanelLayout.unitFontSize *
-                                            scale,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width:
-                                  _HomeLessonPanelLayout.textColumnsGap * scale,
-                            ),
-                            Expanded(
-                              child: Text(
-                                lesson.category,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: const Color(0xFF151515),
-                                  fontFamily: 'ComicRelief',
-                                  fontSize:
-                                      _HomeLessonPanelLayout.categoryFontSize *
-                                          scale,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.05,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: _HomeLessonPanelLayout.statusGap * scale),
-                      _LessonStatusIndicator(
-                          status: lesson.status, scale: scale),
-                    ],
-                  ),
-                ),
-        );
-      },
-    );
-  }
-}
-
-/// The collapsed panel describes the day's lessons instead of repeating the
-/// first lesson's options and completion state.
-class _CollapsedLessonSummaryContent extends StatelessWidget {
-  const _CollapsedLessonSummaryContent({
-    required this.categories,
-    required this.scale,
-  });
-
-  final String categories;
-  final double scale;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: _HomeLessonPanelLayout.cardHorizontalPadding * scale,
-      ),
-      child: Row(
-        children: [
-          Image.asset(
-            'assets/images/home_lesson_category.png',
-            width: _HomeLessonPanelLayout.categoryIconSize * scale,
-            height: _HomeLessonPanelLayout.categoryIconSize * scale,
-            fit: BoxFit.contain,
-            semanticLabel: 'Lessons for today',
-          ),
-          SizedBox(width: _HomeLessonPanelLayout.summaryIconToTextGap * scale),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'mga lesson ta subong nga adlaw',
-                  key: const Key('home-lesson-summary-title'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: const Color(0xFF151515),
-                    fontFamily: 'ComicRelief',
-                    fontSize:
-                        _HomeLessonPanelLayout.summaryTitleFontSize * scale,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-                SizedBox(height: _HomeLessonPanelLayout.summaryTextGap * scale),
-                Text(
-                  categories,
-                  key: const Key('home-lesson-summary-categories'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: const Color(0xFF515151),
-                    fontFamily: 'ComicRelief',
-                    fontSize:
-                        _HomeLessonPanelLayout.summaryCategoryFontSize * scale,
-                    fontWeight: FontWeight.w400,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LessonStatusIndicator extends StatelessWidget {
-  const _LessonStatusIndicator({required this.status, required this.scale});
-
-  final HomeLessonStatus status;
-  final double scale;
-
-  @override
-  Widget build(BuildContext context) {
-    final (background, icon, iconColor) = switch (status) {
-      HomeLessonStatus.completed => (
-          const Color(0xFFEBEAEA),
-          Icons.check_rounded,
-          const Color(0xFF56C84D),
-        ),
-      HomeLessonStatus.available => (
-          const Color(0xFFFFE7A1),
-          Icons.play_arrow_rounded,
-          const Color(0xFFB87926),
-        ),
-      HomeLessonStatus.locked => (
-          const Color(0xFFEBEAEA),
-          Icons.lock_rounded,
-          const Color(0xFFB7B4B4),
-        ),
-    };
-
-    return Semantics(
-      label: 'Lesson ${status.name}',
-      child: Container(
-        width: _HomeLessonPanelLayout.statusWidth * scale,
-        height: _HomeLessonPanelLayout.statusHeight * scale,
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(
-            _HomeLessonPanelLayout.statusRadius * scale,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFB7B4B4),
-              offset: Offset(0, _HomeLessonPanelLayout.statusDepth * scale),
-              blurRadius: 0,
-            ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          color: iconColor,
-          size: _HomeLessonPanelLayout.statusIconSize * scale,
-        ),
-      ),
-    );
-  }
-}
-
-/// Editable measurements from the original 378-wide lesson-panel artwork.
-abstract final class _HomeLessonPanelLayout {
-  static const double designWidth = 378;
-  static const double headingLeftInset = 2;
-  static const double headingIconSize = 20;
-  static const double headingGap = 6;
-  static const double headingFontSize = 13;
-  static const double headingToSectionGap = 6;
-  static const double sectionLabelFontSize = 11;
-  static const double sectionLabelToLineGap = 12;
-  static const double sectionChevronSize = 16;
-  static const double dividerHeight = 1;
-  static const double sectionToCardGap = 8;
-  // Collapsed deck tuning. Edit these four values to position or resize only
-  // the quiet lower card behind the lesson panel.
-  static const double deckVerticalOffset = 9;
-  static const double deckHorizontalOffset = 0;
-  static const double deckSideInset = 10;
-  static const double deckCardHeight = 63;
-  static const double cardHeight = 63;
-  static const double lessonCardGap = 8;
-  static const double cardRadius = 11;
-  static const double cardHorizontalPadding = 16;
-  static const double dotsWidth = 10;
-  static const double dotsHeight = 17;
-  static const double dotsOffsetX = -10;
-  static const double dotsOffsetY = 0;
-  static const double dotsToIconGap = 4;
-  static const double categoryIconSize = 46;
-  static const double summaryIconToTextGap = 10;
-  static const double summaryTitleFontSize = 17;
-  static const double summaryCategoryFontSize = 11;
-  static const double summaryTextGap = 5;
-  static const double categoryToTextGap = 10;
-  static const double unitTextWidth = 100;
-  static const double textColumnsGap = 10;
-  static const double unitFontSize = 30;
-  static const double categoryFontSize = 14;
-  static const double statusGap = 8;
-  static const double statusWidth = 24;
-  static const double statusHeight = 22.4;
-  static const double statusRadius = 5;
-  static const double statusDepth = 1.6;
-  static const double statusIconSize = 18;
 }

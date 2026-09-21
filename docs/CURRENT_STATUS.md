@@ -68,14 +68,13 @@ This status is based only on current code and tests.
   house by default, fullscreen landscape toggle.
 - Rive-side tap detection (this asset has its own internal Listener
   components per location, unlike the previous map asset); Flutter reacts to
-  `locationTapped`, gated by each location's Flutter-owned `isUnlocked` --
-  shows a locked explanation instead of navigating when not unlocked,
-  otherwise debounces double taps, resolves destination, navigates.
+  `locationTapped`. A normal locked tap shows an explanation instead of
+  navigating; the one active lesson event is a temporary direct entrance;
+  unlocked locations resolve their normal destination.
 - Active-event system: an event can temporarily override a location's
   destination (`MapEventOverrides`) and marks it `hasEvent` (golden glow
-  visual) for the override's duration; the first time an event touches a
-  location it also permanently force-unlocks it (`isUnlocked`), which does
-  not revert when the override clears.
+  visual) for the override's duration. A claimed lesson completion—not an
+  event—permanently earns its location's `isUnlocked` state.
 - Full details, including how to trigger an event and add a real screen for
   a location: `docs/MAP_GUIDE.md`. Rive asset contract: `docs/RIVE_INTEGRATION.md`.
 
@@ -91,6 +90,23 @@ This status is based only on current code and tests.
 - Local-only, single active learner at a time; no cloud sync, no
   profile-switcher UI yet (storage already supports multiple profiles by
   id). Full details: `docs/LEARNER_GUIDE.md`.
+
+### Lessons
+
+- Twelve authorized DevG lesson definitions and the grade-guided sequence are
+  available through the Lessons tab, Home cards, and mapped Map locations.
+- `LessonProgressController` restores a legacy learner's first event, keeps
+  exactly one active map event, persists claimed completions/results, unlocks
+  the completed lesson's location only after reward claim, and prevents
+  replayed stickers/lesson counts.
+- The source Hiligaynon dataset is imported through an audited manifest.
+  The complete canonical DevG production lesson visual, reward, sound-effect,
+  and final voice-over asset set is staged under `assets/` (see
+  `assets/data/lesson_asset_manifest.md`). The preserved DevG card page,
+  intro, and activity flows now run behind Tudlo-owned progress/navigation/
+  audio adapters. The raw source-preservation bridge still needs its planned
+  sub-500-line extraction and complete interactive verification; do not call
+  this final modular parity yet.
 
 ### Home Increment
 
@@ -115,9 +131,9 @@ This status is based only on current code and tests.
   same as before this constructor-carried default existed -- see Learner
   Save System above.
 - All six bottom-navigation tabs now reach a destination via the centralized
-  `AppBottomTabNavigation` router. Map is a real screen (see above); Lessons,
-  Translate, and Dictionary are still `PlaceholderScreen` shells pending real
-  content; Me is a real screen shell showing real learner data where
+  `AppBottomTabNavigation` router. Map and Lessons are real screens (see
+  above); Translate and Dictionary are still `PlaceholderScreen` shells;
+  Me is a real screen shell showing real learner data where
   loaded (Settings/Edit buttons functional; Edit opens a real popup that
   renames the learner and picks a Koka avatar from `assets/images/avatar.riv`
   -- persisted via `LearnerController.updateName`/`updateAvatar` -- badge
@@ -144,16 +160,16 @@ This status is based only on current code and tests.
   by id; there's no screen to create/switch between them).
 - Backend, NMT, APIs, auth, synchronization, or offline/cloud storage --
   the Learner Save System is local-only, on-device.
-- Lesson models/repository/content/progression/completion (lesson
-  completion incrementing a learner's `lessonsFinished`, specifically, is
-  not wired -- the save system supports it, nothing calls it yet).
-- Real Translate, Dictionary, and Lessons content (still shells); Me's
+- Real Translate and Dictionary content (still shells); Me's
   badge collection UI. (Me's name/avatar profile editing is now real -- see
   Partial above.)
-- Production lesson model/content, speaker/favorite behavior, and final
-  ambient polish.
-- Additional production voice-over scripts/assets and final accessibility
-  policy for audio (captions, replay affordances, and interruption behavior).
+- The canonical DevG activity source is currently retained through a
+  source-preservation bridge behind Tudlo adapters. It is not yet split into
+  its final sub-500-line renderer modules, and complete manual interaction
+  verification of every flow remains required before this can be called a
+  finished migration.
+- Final accessibility policy for lesson narration (captions and replay
+  affordances).
 - Release identity/signing: Android is `com.maralmt.tudlo_prototype` and release
   currently uses debug signing.
 
@@ -171,13 +187,20 @@ This status is based only on current code and tests.
   escalating interaction behavior.
 - `test/me_screen_test.dart`: Me screen's tabs, progress counts, and daily
   streak card.
+- `test/map_screen_test.dart`: map viewport safety and the locked versus
+  active-event tap policy.
+- `test/lesson_progress_test.dart`: 12-definition catalog, location filtering,
+  old-save migration, claim/replay accounting, event restoration, and the
+  preserved source card host.
+- `test/devg_lesson_flow_render_test.dart`: initial mount of all 12 preserved
+  DevG activity entries under Tudlo adapters.
+- `test/feature_source_file_budget_test.dart`: 500-line budget for
+  Tudlo-authored Home, Lesson, and Map code; the documented raw source bridge
+  is excluded until its planned extraction.
 
-There is no dedicated map or learner-save test file yet -- coverage for
-both exists only as ad hoc verification during development (see
-`docs/MAP_GUIDE.md`/`docs/LEARNER_GUIDE.md`), not as committed tests.
-
-Standard checks are `flutter analyze` and `flutter test`. This documentation
-task changes no Dart behavior; release work should still run the full suite.
+Standard checks are `flutter analyze` and `flutter test`; release work should
+also include manual source-flow interaction checks at the supported portrait
+and Grade 3 landscape sizes.
 
 ## Repository and Platform Limitations
 
@@ -185,19 +208,19 @@ task changes no Dart behavior; release work should still run the full suite.
   metadata and fail. Open a real clone/repository root in standalone Codex.
 - `sources/` and `tool/` are empty at this audit.
 - `.magicpath/` is reference/generated content, not Flutter runtime.
-- Portrait locks mean landscape is unverified and currently disabled.
+- The application baseline is portrait; the Map fullscreen view and Grade 3
+  lesson session use their documented, temporary landscape paths.
 - Web metadata still has generic prototype name/description/colors.
 
 ## NEEDS PROJECT CONTEXT
 
-1. Final Settings, tutorial, Translate, Lessons, and Dictionary routes; the
-   real screens each Map location should open (currently `PlaceholderScreen`
-   shells via `MapDefaultRoutes` -- see `docs/MAP_GUIDE.md`).
+1. Final Settings, tutorial, Translate, and Dictionary routes; unmapped Map
+   locations still use `PlaceholderScreen` shells via `MapDefaultRoutes`.
 2. Multi-learner profile switching / Load screen reconciling with the real
    Learner Save System (schema and single-learner persistence already exist
    -- see `docs/LEARNER_GUIDE.md`); Continue selection among saves.
-3. Lesson/curriculum/progression/energy rules, and wiring lesson completion
-   to `LearnerController` (supported, nothing calls it yet).
+3. Approval order for extracting the preserved DevG flows into their final
+   per-activity renderer modules without changing visuals, mechanics, or VO.
 4. Backend/NMT/API/auth/offline contracts.
 5. Production `.riv` files and exact runtime contracts.
 6. Audio files/scripts/service and accessibility behavior.

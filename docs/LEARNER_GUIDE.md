@@ -26,8 +26,9 @@ await LearnerScope.of(context).unlockMapLocation('market');
 lib/features/learner/domain/
   learner_profile.dart    -- LearnerProfile: the data itself (name, grade, energy,
                               lessonsFinished, stickersEarned, badgesEarned,
-                              currentStreak, unlockedMapLocations). Plain,
-                              JSON-serializable, no Flutter/widget dependency.
+                              currentStreak, unlockedMapLocations, and versioned
+                              lessonProgress). Plain and JSON-serializable;
+                              it has no Flutter/widget dependency.
   learner_repository.dart -- LearnerRepository: the on-device storage (shared_preferences).
                               Nothing else in the app should touch shared_preferences
                               for learner data directly -- go through the controller.
@@ -73,12 +74,13 @@ class LearnerProfile {
   final int badgesEarned;
   final int currentStreak;
   final Set<String> unlockedMapLocations; // raw location ids (see Map integration below)
+  final LessonProgress lessonProgress;    // active lesson + claimed results
 }
 ```
 
 It's immutable — there's a `copyWith` for the fields that change over time
 (`lessonsFinished`, `stickersEarned`, `badgesEarned`, `currentStreak`,
-`unlockedMapLocations`). `id`, `name`, `grade`, `energy`, `createdAt` are set
+`unlockedMapLocations`, and `lessonProgress`). `id`, `name`, `grade`, `energy`, `createdAt` are set
 once at creation and don't change through `copyWith` (grade/name changes,
 if ever needed, aren't wired up yet -- ask before adding them, there's no
 edit-profile flow today).
@@ -159,6 +161,18 @@ Don't add a second, parallel way to persist progress data (a new
 `LearnerController` instead, so there's exactly one place that knows what a
 learner's saved state looks like.
 
+## Lesson progression
+
+Lesson-specific coordination lives in
+`lib/features/lesson/domain/lesson_progress_controller.dart`, but persistence
+still goes through `LearnerController`. A backward-compatible profile with no
+`lessonProgress` field receives a grade's first active lesson when
+`LessonProgressController` starts. `recordLessonCompletion` is the only
+normal completion write: it updates a stored result, first-completion counters,
+one-per-local-day streak progress, the next active lesson, and affected map
+location ids in one learner save. A replay may improve a result but never
+duplicates lesson or sticker counts.
+
 ## Error handling: storage can fail, and that's fine
 
 Every read/write in `LearnerController` is wrapped so a storage failure
@@ -173,7 +187,7 @@ errors. This matters concretely: this project's tests don't mock
 `MissingPluginException` in that environment -- without this pattern, adding
 a learner-data write to a screen's real code path will break its tests.
 
-## Map integration (the "event forces availability" system)
+## Map integration (earned unlocks and temporary lesson events)
 
 `lib/features/map/domain/map_progress.dart`'s `MapProgressController` holds
 an app-wide, in-memory *view* of which locations are unlocked
@@ -183,10 +197,11 @@ truth in `LearnerProfile.unlockedMapLocations`:
 
 - On load, it seeds `MapProgressController` from
   `LearnerScope.of(context).profile?.unlockedMapLocations`.
-- Whenever a location gets newly unlocked (via an active lesson/event --
-  see `MAP_GUIDE.md`), it calls both `MapProgressController.unlock()` (the
-  in-memory/visual side) *and* `LearnerScope.of(context).unlockMapLocation()`
-  (the persisted side).
+- A scheduled active lesson only supplies a temporary `hasEvent` glow and a
+  direct lesson entrance. It never writes a permanent unlock.
+- `LessonProgressController.completeAndClaim()` owns the permanent lesson
+  effect: it records the claimed completion and writes that lesson's location
+  into the learner profile. The controller then rebuilds the map projection.
 
 The two are deliberately separate types (`MapLocation` enum vs. raw
 `String` ids in `LearnerProfile`) so `map`'s domain and `learner`'s domain

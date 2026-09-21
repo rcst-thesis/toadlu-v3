@@ -1,8 +1,9 @@
+import 'package:tudlo/features/lesson/domain/lesson_progress.dart';
 import 'package:tudlo/features/settings/domain/app_settings.dart';
 
 /// A saved learner: everything onboarding collects, plus progression data
 /// that accumulates afterward (lessons, stickers, badges, streak, and which
-/// map locations an event has permanently unlocked).
+/// map locations earned by claimed lesson completions or other milestones).
 ///
 /// Deliberately holds no dependency on any other feature's domain types --
 /// [unlockedMapLocations] stores raw location ids (`MapLocation.persistedId`
@@ -22,6 +23,7 @@ class LearnerProfile {
     this.badgesEarned = 0,
     this.currentStreak = 1,
     this.unlockedMapLocations = const {},
+    this.lessonProgress = const LessonProgress.uninitialized(),
     this.favoritedWords = const {},
     this.wordOfTheDayId,
     this.wordOfTheDayDate,
@@ -51,6 +53,11 @@ class LearnerProfile {
   final int badgesEarned;
   final int currentStreak;
   final Set<String> unlockedMapLocations;
+
+  /// Versioned completion results and the one currently scheduled lesson.
+  /// Keeping this immutable value in the existing learner save means lesson
+  /// state remains learner-owned, restart-safe, and independent of Rive.
+  final LessonProgress lessonProgress;
   final Set<String> favoritedWords;
 
   /// The currently-selected word-of-the-day entry's id (a
@@ -89,6 +96,7 @@ class LearnerProfile {
     int? badgesEarned,
     int? currentStreak,
     Set<String>? unlockedMapLocations,
+    LessonProgress? lessonProgress,
     Set<String>? favoritedWords,
     String? wordOfTheDayId,
     DateTime? wordOfTheDayDate,
@@ -111,6 +119,7 @@ class LearnerProfile {
       badgesEarned: badgesEarned ?? this.badgesEarned,
       currentStreak: currentStreak ?? this.currentStreak,
       unlockedMapLocations: unlockedMapLocations ?? this.unlockedMapLocations,
+      lessonProgress: lessonProgress ?? this.lessonProgress,
       favoritedWords: favoritedWords ?? this.favoritedWords,
       wordOfTheDayId: wordOfTheDayId ?? this.wordOfTheDayId,
       wordOfTheDayDate: wordOfTheDayDate ?? this.wordOfTheDayDate,
@@ -135,6 +144,7 @@ class LearnerProfile {
         'badgesEarned': badgesEarned,
         'currentStreak': currentStreak,
         'unlockedMapLocations': unlockedMapLocations.toList(),
+        'lessonProgress': lessonProgress.toJson(),
         'favoritedWords': favoritedWords.toList(),
         'wordOfTheDayId': wordOfTheDayId,
         'wordOfTheDayDate': wordOfTheDayDate?.toIso8601String(),
@@ -162,6 +172,7 @@ class LearnerProfile {
           (json['unlockedMapLocations'] as List<Object?>? ?? const [])
               .cast<String>()
               .toSet(),
+      lessonProgress: LessonProgress.fromJson(json['lessonProgress']),
       favoritedWords: (json['favoritedWords'] as List<Object?>? ?? const [])
           .cast<String>()
           .toSet(),

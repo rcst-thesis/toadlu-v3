@@ -4,8 +4,9 @@
 
 Tudlo is a Flutter learning application prototype for Grade 1–3 children. It
 currently covers an illustrated startup/onboarding experience, learner
-identity/grade/energy selection, save-slot presentation, a welcome scene, and a
-room-like Home scene with an incremental lesson-preview experience.
+identity/grade/energy selection, save-slot presentation, a welcome scene, a
+room-like Home scene, the real Rive barangay map, and a DevG-source lesson
+migration behind Tudlo-owned application boundaries.
 
 This document reports only repository evidence. It does not claim persistence,
 curriculum, translation, backend, or audio systems exist beyond what code and
@@ -13,8 +14,10 @@ assets demonstrate.
 
 ## Platforms and Dependencies
 
-The project contains Android, iOS, web, and Windows runners. Runtime orientation
-is restricted in `lib/main.dart`; Android and iOS also specify portrait behavior.
+The project contains Android, iOS, web, and Windows runners. The app baseline
+is portrait in `lib/main.dart`; the preserved Grade 3 lesson session requests
+landscape only while it is active and restores portrait on exit. Android and
+iOS also specify portrait behavior outside that session.
 
 Direct dependencies in `pubspec.yaml`:
 
@@ -26,7 +29,8 @@ Direct dependencies in `pubspec.yaml`:
   (`lib/features/learner/`, `docs/LEARNER_GUIDE.md`). The only storage
   dependency; nothing else in the app should read/write it directly.
 
-The project also uses `rive` for its approved button and mascot components; its
+The project also uses `google_fonts` for preserved DevG lesson typography and
+`rive` for its approved button and mascot components; its
 documented runtime contracts are in `docs/RIVE_INTEGRATION.md`. `flutter_soloud`
 is the app's native audio runtime, owned only by `TudloAudioController` through
 the scoped audio architecture described in `docs/ARCHITECTURE.md`.
@@ -115,7 +119,8 @@ shows a SnackBar but does not alter or persist data.
 - Scroll-bound circular window with rotating sun/drifting clouds.
 - Stationary six-item navigation with Home selected.
 
-Room contents and lesson features remain unfinished.
+The Home room remains incremental. Its lesson cards route into the same
+preserved DevG lesson intro/activity host used by the map and Lessons tab.
 
 ## Major Directories
 
@@ -130,6 +135,7 @@ Room contents and lesson features remain unfinished.
 | `lib/features/load/` | Save previews/dialogs (still demo data, unconnected to `learner/`) |
 | `lib/features/welcome/` | Welcome scene and motion |
 | `lib/features/home/` | Loading 3/4 and Home |
+| `lib/features/lesson/` | Tudlo lesson definitions/progress plus the preserved DevG lesson bridge — `docs/LESSON_GUIDE.md` |
 | `lib/features/map/` | Interactive barangay map -- `docs/MAP_GUIDE.md` |
 | `lib/features/me/` | Learner profile screen |
 | `lib/features/placeholder/` | Explicit unfinished destinations |
@@ -144,18 +150,16 @@ Room contents and lesson features remain unfinished.
 Implemented in code with widget-test coverage: timed startup, menu hit targets,
 new-learner UI flow, energy bounds, Loading 2/3/4 transitions, learner-card
 interactions, save grid and dialogs, Welcome motion, reusable Rive controls,
-Home Koka interaction, and the incremental Home room/lesson-preview UI.
-Implemented without dedicated tests yet (ad hoc verification only): the
-interactive barangay map (`docs/MAP_GUIDE.md`) and the learner save system
-(`docs/LEARNER_GUIDE.md`) -- the current learner now genuinely persists
-on-device across restarts, name through progression data.
+Home Koka interaction, map safety/tap policy, learner lesson persistence, and
+the initial mount of all twelve preserved DevG lesson entries.
 
 Partial or placeholder: Settings beyond its animation switch, tutorial,
-Translate/Dictionary/Lessons content (bottom-navigation routing to all six
-tabs is complete; Me shows real learner data but its badge collection UI and
-profile editing remain shells), additional voice-over coverage, multi-learner
+Translate/Dictionary content, Me's badge collection UI, multi-learner
 switching, the Load screen's save browser (still demo data, unconnected to
-the real save system), and production lesson content/progression.
+the real save system), and final lesson extraction/interactive verification.
+The lesson migration currently preserves DevG's card page, intros, activity
+flows, assets, and voice call sites through a documented source bridge; it is
+not yet the final sub-500-line renderer architecture.
 
 See `docs/CURRENT_STATUS.md` for a detailed inventory.
 
