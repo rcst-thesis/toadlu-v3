@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
+
 class HomeBottomNavigation extends StatelessWidget {
   const HomeBottomNavigation({
     this.onItemTapped,
@@ -170,7 +172,10 @@ class _NavigationButton extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               key: Key('home-nav-${item.label}'),
-              onTap: onTap,
+              onTap: () {
+                TudloAudioScope.maybeOf(context)?.playButtonTapSound();
+                onTap();
+              },
               borderRadius: BorderRadius.circular(12),
               child: Semantics(
                 button: true,

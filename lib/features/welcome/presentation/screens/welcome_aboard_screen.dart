@@ -7,6 +7,9 @@ import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/features/home/presentation/screens/home_screen.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/welcome/presentation/widgets/farm_depth_background.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
 
 class WelcomeAboardScreen extends StatefulWidget {
@@ -14,12 +17,14 @@ class WelcomeAboardScreen extends StatefulWidget {
     this.learnerName = '',
     this.onNext,
     this.onSkip,
+    this.voiceOverPlayer,
     super.key,
   });
 
   final String learnerName;
   final VoidCallback? onNext;
   final VoidCallback? onSkip;
+  final Future<void> Function()? voiceOverPlayer;
 
   @override
   State<WelcomeAboardScreen> createState() => _WelcomeAboardScreenState();
@@ -30,10 +35,38 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
   Timer? _recenterTimer;
   bool _openingTutorial = false;
   bool _openingHome = false;
+  TudloAudioController? _audio;
+  var _initialVoiceOverScheduled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final audio = TudloAudioScope.of(context);
+    if (identical(_audio, audio)) return;
+    _audio = audio;
+    audio.preloadVoiceOver(TudloAudioAssets.welcomeAboardVoiceOver);
+    if (_initialVoiceOverScheduled) return;
+    _initialVoiceOverScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_playVoiceOver());
+    });
+  }
+
+  Future<void> _playVoiceOver() {
+    return widget.voiceOverPlayer?.call() ??
+        _audio?.playVoiceOver(TudloAudioAssets.welcomeAboardVoiceOver) ??
+        Future<void>.value();
+  }
+
+  Future<void> _stopVoiceOver() {
+    return _audio?.stopVoiceOver(TudloAudioAssets.welcomeAboardVoiceOver) ??
+        Future<void>.value();
+  }
 
   Future<void> _openTutorialPlaceholder() async {
     if (_openingTutorial) return;
     _openingTutorial = true;
+    unawaited(_stopVoiceOver());
     await Navigator.of(context).push(
       FadePageRoute<void>(
         page: const PlaceholderScreen(
@@ -49,11 +82,30 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
   Future<void> _openHome() async {
     if (_openingHome) return;
     _openingHome = true;
+    unawaited(_stopVoiceOver());
     unawaited(
       Navigator.of(context).pushReplacement(
         FadePageRoute<void>(page: HomeScreen(learnerName: widget.learnerName)),
       ),
     );
+  }
+
+  void _handleNext() {
+    if (widget.onNext case final callback?) {
+      unawaited(_stopVoiceOver());
+      callback();
+      return;
+    }
+    unawaited(_openTutorialPlaceholder());
+  }
+
+  void _handleSkip() {
+    if (widget.onSkip case final callback?) {
+      unawaited(_stopVoiceOver());
+      callback();
+      return;
+    }
+    unawaited(_openHome());
   }
 
   void _tiltFarm(PointerEvent event, Size size) {
@@ -77,6 +129,7 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
   @override
   void dispose() {
     _recenterTimer?.cancel();
+    unawaited(_stopVoiceOver());
     super.dispose();
   }
 
@@ -245,9 +298,8 @@ class _WelcomeAboardScreenState extends State<WelcomeAboardScreen> {
                             primaryLabel: 'next',
                             secondaryLabel: 'skip',
                             primaryStyle: OnboardingPrimaryButtonStyle.white,
-                            onPrimaryPressed:
-                                widget.onNext ?? _openTutorialPlaceholder,
-                            onSecondaryPressed: widget.onSkip ?? _openHome,
+                            onPrimaryPressed: _handleNext,
+                            onSecondaryPressed: _handleSkip,
                           ),
                         ),
                       ),

@@ -33,6 +33,7 @@ class MeEditDialog extends StatefulWidget {
     required this.grade,
     required this.userCode,
     required this.avatarId,
+    this.onAvatarSelected,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class MeEditDialog extends StatefulWidget {
   final int grade;
   final String userCode;
   final String avatarId;
+  final ValueChanged<String>? onAvatarSelected;
 
   @override
   State<MeEditDialog> createState() => _MeEditDialogState();
@@ -279,8 +281,10 @@ class _MeEditDialogState extends State<MeEditDialog> {
                                   key: const Key('me-edit-avatar-grid'),
                                   avatarIds: _avatarIds,
                                   selectedAvatarId: _draftAvatarId,
-                                  onSelected: (avatarId) =>
-                                      setState(() => _draftAvatarId = avatarId),
+                                  onSelected: (avatarId) {
+                                    setState(() => _draftAvatarId = avatarId);
+                                    widget.onAvatarSelected?.call(avatarId);
+                                  },
                                 ),
                                 const SizedBox(height: 20),
                                 // Fixed 164-wide, centered -- per Figma,
@@ -298,7 +302,7 @@ class _MeEditDialogState extends State<MeEditDialog> {
                                       height: 41,
                                       restLift: 4,
                                       borderRadius: 13,
-                                      fontSize: 24,
+                                      fontSize: 18,
                                       onPressed: () => _save(context),
                                     ),
                                   ),
@@ -451,6 +455,7 @@ class _AvatarTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(outerRadius),
           child: StickerPressButton(
             onPressed: onTap,
+            playButtonSound: false,
             frontColor: const Color(0xFFFFE49A),
             depthColor: _depth,
             // Figma's own tile spec has a 3px lift at rest (much shallower

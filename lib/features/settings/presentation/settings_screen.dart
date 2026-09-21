@@ -251,7 +251,7 @@ class _GeneralSettingsPanel extends StatefulWidget {
 class _GeneralSettingsPanelState extends State<_GeneralSettingsPanel> {
   static const _depthColor = Color(0xFF9DBE93);
   static const _restLift = 4.0;
-  static const _radius = 18.0;
+  static const _radius = 13.0;
 
   final _panelKey = GlobalKey();
   var _expanded = false;
@@ -287,7 +287,7 @@ class _GeneralSettingsPanelState extends State<_GeneralSettingsPanel> {
                   alpha: 0.06,
                 ),
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 11, horizontal: 16),
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Column(
                     children: [
                       Text(
@@ -296,7 +296,7 @@ class _GeneralSettingsPanelState extends State<_GeneralSettingsPanel> {
                         style: TextStyle(
                           color: Color(0xFF448759),
                           fontFamily: 'ComicRelief',
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -307,7 +307,7 @@ class _GeneralSettingsPanelState extends State<_GeneralSettingsPanel> {
                         style: TextStyle(
                           color: Color(0xFF6B9B6D),
                           fontFamily: 'ComicRelief',
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                     ],
@@ -443,10 +443,9 @@ class _LanguageSegment extends StatelessWidget {
 }
 
 /// Sound & Voice expands in place to reveal a master volume slider plus a
-/// mute toggle + volume slider per audio channel. There's no audio-mixing
-/// engine to actually apply these to yet, but the values themselves read/
-/// write [_readSettings]/[_writeSettings] (device-wide from the main menu,
-/// per-learner once signed in) so at least they persist.
+/// mute toggle + volume slider per audio channel. The shared audio controller
+/// applies music and narration values, gates native button clicks, and the
+/// values persist through [_readSettings]/[_writeSettings].
 class _SoundVoicePanel extends StatefulWidget {
   const _SoundVoicePanel({required this.insideLearnerProfile, super.key});
 
@@ -459,7 +458,7 @@ class _SoundVoicePanel extends StatefulWidget {
 class _SoundVoicePanelState extends State<_SoundVoicePanel> {
   static const _depthColor = Color(0xFF9DBE93);
   static const _restLift = 4.0;
-  static const _radius = 18.0;
+  static const _radius = 13.0;
 
   final _panelKey = GlobalKey();
   var _expanded = false;
@@ -493,7 +492,7 @@ class _SoundVoicePanelState extends State<_SoundVoicePanel> {
                   alpha: 0.06,
                 ),
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 11, horizontal: 16),
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Column(
                     children: [
                       Text(
@@ -502,7 +501,7 @@ class _SoundVoicePanelState extends State<_SoundVoicePanel> {
                         style: TextStyle(
                           color: Color(0xFFAD6B30),
                           fontFamily: 'ComicRelief',
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -513,7 +512,7 @@ class _SoundVoicePanelState extends State<_SoundVoicePanel> {
                         style: TextStyle(
                           color: Color(0xFF9E7F4F),
                           fontFamily: 'ComicRelief',
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                     ],
@@ -606,6 +605,7 @@ class _SoundVoicePanelState extends State<_SoundVoicePanel> {
                 write(settings.copyWith(sfxEnabled: value)),
             onVolumeChanged: (value) =>
                 write(settings.copyWith(sfxVolume: value)),
+            hint: 'Button clicks use the app sound-effect level.',
           ),
           const SizedBox(height: 16),
           _AudioChannelRow(
@@ -632,6 +632,7 @@ class _AudioChannelRow extends StatelessWidget {
     required this.volume,
     required this.onEnabledChanged,
     required this.onVolumeChanged,
+    this.hint,
     this.toggleKey,
     super.key,
   });
@@ -641,6 +642,7 @@ class _AudioChannelRow extends StatelessWidget {
   final double volume;
   final ValueChanged<bool> onEnabledChanged;
   final ValueChanged<double> onVolumeChanged;
+  final String? hint;
 
   /// Key on the actual mute toggle, not this whole row -- the row's own
   /// bounds also cover the label and the volume slider below it.
@@ -684,6 +686,17 @@ class _AudioChannelRow extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         _VolumeSlider(value: volume, onChanged: onVolumeChanged),
+        if (hint case final text?) ...[
+          const SizedBox(height: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF8E774F),
+              fontFamily: 'ComicRelief',
+              fontSize: 11,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -863,7 +876,7 @@ class _LearningEnergyPanel extends StatefulWidget {
 class _LearningEnergyPanelState extends State<_LearningEnergyPanel> {
   static const _depthColor = Color(0xFF9DBE93);
   static const _restLift = 4.0;
-  static const _radius = 18.0;
+  static const _radius = 13.0;
 
   final _panelKey = GlobalKey();
   var _expanded = false;
@@ -951,7 +964,7 @@ class _LearningEnergyPanelState extends State<_LearningEnergyPanel> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      vertical: 11,
+                      vertical: 8,
                       horizontal: 16,
                     ),
                     child: Column(
@@ -962,7 +975,7 @@ class _LearningEnergyPanelState extends State<_LearningEnergyPanel> {
                           style: TextStyle(
                             color: Color(0xFF609347),
                             fontFamily: 'ComicRelief',
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -975,7 +988,7 @@ class _LearningEnergyPanelState extends State<_LearningEnergyPanel> {
                           style: const TextStyle(
                             color: Color(0xFF779B5B),
                             fontFamily: 'ComicRelief',
-                            fontSize: 11,
+                            fontSize: 10,
                           ),
                         ),
                       ],
@@ -1577,7 +1590,7 @@ class _DisplayPerformancePanel extends StatefulWidget {
 class _DisplayPerformancePanelState extends State<_DisplayPerformancePanel> {
   static const _depthColor = Color(0xFF9DBE93);
   static const _restLift = 4.0;
-  static const _radius = 18.0;
+  static const _radius = 13.0;
 
   final _panelKey = GlobalKey();
   var _expanded = false;
@@ -1611,7 +1624,7 @@ class _DisplayPerformancePanelState extends State<_DisplayPerformancePanel> {
                   alpha: 0.06,
                 ),
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 11, horizontal: 16),
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Column(
                     children: [
                       Text(
@@ -1620,7 +1633,7 @@ class _DisplayPerformancePanelState extends State<_DisplayPerformancePanel> {
                         style: TextStyle(
                           color: Color(0xFF548E9E),
                           fontFamily: 'ComicRelief',
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1631,7 +1644,7 @@ class _DisplayPerformancePanelState extends State<_DisplayPerformancePanel> {
                         style: TextStyle(
                           color: Color(0xFF6DA0AA),
                           fontFamily: 'ComicRelief',
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                     ],
@@ -1881,7 +1894,7 @@ class _AboutPanel extends StatefulWidget {
 class _AboutPanelState extends State<_AboutPanel> {
   static const _depthColor = Color(0xFF9DBE93);
   static const _restLift = 4.0;
-  static const _radius = 18.0;
+  static const _radius = 13.0;
   static const _titleColor = Color(0xFF966344);
 
   final _panelKey = GlobalKey();
@@ -1926,7 +1939,7 @@ class _AboutPanelState extends State<_AboutPanel> {
                 splashFactory: NoSplash.splashFactory,
                 highlightColor: _titleColor.withValues(alpha: 0.06),
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 11, horizontal: 16),
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Column(
                     children: [
                       Text(
@@ -1935,7 +1948,7 @@ class _AboutPanelState extends State<_AboutPanel> {
                         style: TextStyle(
                           color: _titleColor,
                           fontFamily: 'ComicRelief',
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1946,7 +1959,7 @@ class _AboutPanelState extends State<_AboutPanel> {
                         style: TextStyle(
                           color: Color(0xFFA87C5E),
                           fontFamily: 'ComicRelief',
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                     ],

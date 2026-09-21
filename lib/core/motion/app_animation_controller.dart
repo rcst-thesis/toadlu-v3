@@ -25,8 +25,8 @@ class AppAnimationScope extends InheritedNotifier<AppAnimationController> {
   }) : super(notifier: controller);
 
   static AppAnimationController of(BuildContext context) {
-    final scope = context
-        .dependOnInheritedWidgetOfExactType<AppAnimationScope>();
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<AppAnimationScope>();
     assert(scope != null, 'AppAnimationScope is missing above this context.');
     return scope!.notifier!;
   }

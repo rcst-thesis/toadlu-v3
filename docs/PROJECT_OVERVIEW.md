@@ -27,11 +27,13 @@ Direct dependencies in `pubspec.yaml`:
   dependency; nothing else in the app should read/write it directly.
 
 The project also uses `rive` for its approved button and mascot components; its
-documented runtime contracts are in `docs/RIVE_INTEGRATION.md`.
+documented runtime contracts are in `docs/RIVE_INTEGRATION.md`. `flutter_soloud`
+is the app's native audio runtime, owned only by `TudloAudioController` through
+the scoped audio architecture described in `docs/ARCHITECTURE.md`.
 
 Development dependencies are `flutter_test` and `flutter_lints`. Dart is
 constrained to `>=3.3.0 <4.0.0`. The app uses Material 3 and bundled Comic Relief.
-There is no networking, audio, or router package. State management stays
+There is no networking or router package. State management stays
 local/`ChangeNotifier`-based (no Provider/Riverpod/BLoC) -- see
 `docs/ARCHITECTURE.md`'s Composition Root for the app-wide
 Controller+Scope pattern this project uses instead.
@@ -151,7 +153,7 @@ on-device across restarts, name through progression data.
 Partial or placeholder: Settings beyond its animation switch, tutorial,
 Translate/Dictionary/Lessons content (bottom-navigation routing to all six
 tabs is complete; Me shows real learner data but its badge collection UI and
-profile editing remain shells), voice-over playback, multi-learner
+profile editing remain shells), additional voice-over coverage, multi-learner
 switching, the Load screen's save browser (still demo data, unconnected to
 the real save system), and production lesson content/progression.
 

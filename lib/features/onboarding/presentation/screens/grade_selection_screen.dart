@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,9 @@ import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/energy_setter_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/widgets/onboarding_koka_greeting.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
@@ -26,6 +30,8 @@ class GradeSelectionScreen extends StatefulWidget {
 }
 
 class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
+  static const _cardArrivalDuration = Duration(milliseconds: 460);
+
   static const _grades = <_GradeChoice>[
     _GradeChoice(
       number: 1,
@@ -64,15 +70,30 @@ class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
 
   int _selectedIndex = 0;
   bool _voiceOverPlaying = false;
+  TudloAudioController? _audio;
+  Timer? _frontCardVoiceOverTimer;
+  var _initialCardVoiceOverScheduled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final audio = TudloAudioScope.of(context);
+    if (identical(_audio, audio)) return;
+    _audio = audio;
+    for (final assetPath in _gradeVoiceOverAssets) {
+      audio.preloadVoiceOver(assetPath);
+    }
+
+    if (_initialCardVoiceOverScheduled) return;
+    _initialCardVoiceOverScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_playInitialGradeVoiceOvers());
+    });
+  }
 
   Future<void> _playVoiceOver(Future<void> Function()? player) async {
     if (_voiceOverPlaying) return;
-    if (player == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('VO audio file is not installed yet')),
-      );
-      return;
-    }
+    if (player == null) return;
     setState(() => _voiceOverPlaying = true);
     try {
       await player();
@@ -86,9 +107,14 @@ class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
       _selectedIndex = (_selectedIndex + direction) % _grades.length;
       if (_selectedIndex < 0) _selectedIndex += _grades.length;
     });
+    // A card that has left the front must not keep narrating while another
+    // card is moving into place.
+    unawaited(_stopGradeVoiceOvers());
+    _scheduleFrontCardVoiceOver();
   }
 
   void _continue() {
+    unawaited(_stopGradeVoiceOvers());
     Navigator.of(context).push(
       FadePageRoute<void>(
         page: EnergySetterScreen(
@@ -97,6 +123,62 @@ class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _playIntroVoiceOver() {
+    return _playVoiceOver(
+      widget.introVoiceOverPlayer ?? _playDefaultIntroVoiceOver,
+    );
+  }
+
+  Future<void> _playSelectedGradeVoiceOver() {
+    final grade = _grades[_selectedIndex].number;
+    return _playVoiceOver(
+      widget.gradeVoiceOverPlayer == null
+          ? () => _playDefaultGradeVoiceOver(grade)
+          : () => widget.gradeVoiceOverPlayer!(grade),
+    );
+  }
+
+  Future<void> _playDefaultIntroVoiceOver() async {
+    await _stopGradeVoiceOvers();
+    await (_audio?.playVoiceOverAndWait(
+          TudloAudioAssets.gradeLevelIntroVoiceOver,
+        ) ??
+        Future<void>.value());
+  }
+
+  Future<void> _playDefaultGradeVoiceOver(int grade) async {
+    await _stopGradeVoiceOvers();
+    await (_audio?.playVoiceOverAndWait(_gradeVoiceOverAssetFor(grade)) ??
+        Future<void>.value());
+  }
+
+  Future<void> _playInitialGradeVoiceOvers() async {
+    await _playIntroVoiceOver();
+    if (mounted) _scheduleFrontCardVoiceOver();
+  }
+
+  void _scheduleFrontCardVoiceOver() {
+    _frontCardVoiceOverTimer?.cancel();
+    final selectedGrade = _grades[_selectedIndex].number;
+    _frontCardVoiceOverTimer = Timer(_cardArrivalDuration, () {
+      if (!mounted || _grades[_selectedIndex].number != selectedGrade) return;
+      unawaited(_playSelectedGradeVoiceOver());
+    });
+  }
+
+  Future<void> _stopGradeVoiceOvers() async {
+    final audio = _audio;
+    if (audio == null) return;
+    await Future.wait<void>(
+      _gradeVoiceOverAssets.map(audio.stopVoiceOver),
+    );
+  }
+
+  void _leaveGradeScreen() {
+    unawaited(_stopGradeVoiceOvers());
+    Navigator.of(context).pop();
   }
 
   _CarouselSlot _slotFor(int gradeIndex) {
@@ -185,9 +267,7 @@ class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
                                       size: 48,
                                       iconSize: 24,
                                       playing: _voiceOverPlaying,
-                                      onPressed: () => _playVoiceOver(
-                                        widget.introVoiceOverPlayer,
-                                      ),
+                                      onPressed: _playIntroVoiceOver,
                                     ),
                                   ),
                                 ],
@@ -241,18 +321,7 @@ class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
                                       size: 40,
                                       iconSize: 16,
                                       playing: _voiceOverPlaying,
-                                      onPressed: () {
-                                        final grade =
-                                            _grades[_selectedIndex].number;
-                                        _playVoiceOver(
-                                          widget.gradeVoiceOverPlayer == null
-                                              ? null
-                                              : () =>
-                                                  widget.gradeVoiceOverPlayer!(
-                                                    grade,
-                                                  ),
-                                        );
-                                      },
+                                      onPressed: _playSelectedGradeVoiceOver,
                                     ),
                                   ),
                                 ],
@@ -322,13 +391,36 @@ class _GradeSelectionScreenState extends State<GradeSelectionScreen> {
           ),
           SafeArea(
             child: AdaptiveBackButtonPlacement(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: _leaveGradeScreen,
             ),
           ),
         ],
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _frontCardVoiceOverTimer?.cancel();
+    unawaited(_stopGradeVoiceOvers());
+    super.dispose();
+  }
+}
+
+const _gradeVoiceOverAssets = <String>[
+  TudloAudioAssets.gradeLevelIntroVoiceOver,
+  TudloAudioAssets.grade1CardVoiceOver,
+  TudloAudioAssets.grade2CardVoiceOver,
+  TudloAudioAssets.grade3CardVoiceOver,
+];
+
+String _gradeVoiceOverAssetFor(int grade) {
+  return switch (grade) {
+    1 => TudloAudioAssets.grade1CardVoiceOver,
+    2 => TudloAudioAssets.grade2CardVoiceOver,
+    3 => TudloAudioAssets.grade3CardVoiceOver,
+    _ => throw ArgumentError.value(grade, 'grade', 'Expected 1, 2, or 3.'),
+  };
 }
 
 enum _CarouselSlot { left, center, right }

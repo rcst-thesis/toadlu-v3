@@ -449,7 +449,7 @@ class MeLearnerCard extends StatelessWidget {
           width: _progressColumns[i].width,
           height: 20,
           scale: scale,
-          fontSize: 14,
+          fontSize: 12,
           color: _labelMuted,
           fontWeight: FontWeight.w400,
           alignment: Alignment.center,

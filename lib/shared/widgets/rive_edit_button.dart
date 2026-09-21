@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
+
 /// Reusable runtime bridge for Tudlo's animated Rive edit button.
 ///
 /// Rive owns the pressed/released visual via the `down` boolean on its
@@ -81,6 +83,12 @@ class _RiveEditButtonState extends State<RiveEditButton> {
     _downProperty?.value = value;
   }
 
+  void _handleTap() {
+    if (!widget.enabled) return;
+    TudloAudioScope.maybeOf(context)?.playButtonTapSound();
+    widget.onPressed();
+  }
+
   @override
   void dispose() {
     _downProperty?.value = false;
@@ -100,13 +108,13 @@ class _RiveEditButtonState extends State<RiveEditButton> {
         button: true,
         enabled: widget.enabled,
         label: 'Edit',
-        onTap: widget.enabled ? widget.onPressed : null,
+        onTap: widget.enabled ? _handleTap : null,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapDown: (_) => _setDown(true),
           onTapUp: (_) => _setDown(false),
           onTapCancel: () => _setDown(false),
-          onTap: widget.enabled ? widget.onPressed : null,
+          onTap: widget.enabled ? _handleTap : null,
           child: IgnorePointer(
             ignoring: !widget.enabled,
             child: controller == null

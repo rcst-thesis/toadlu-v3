@@ -157,7 +157,8 @@ class _FarmDepthBackgroundState extends State<FarmDepthBackground>
       if (!_reduceMotion && !_ambientController.isAnimating) {
         _ambientController.repeat();
       }
-      if (!_reduceMotion && _supportsHardwareTilt &&
+      if (!_reduceMotion &&
+          _supportsHardwareTilt &&
           !_sensorController.isAnimating) {
         _sensorController.repeat();
       }

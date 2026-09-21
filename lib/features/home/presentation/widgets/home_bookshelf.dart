@@ -134,22 +134,22 @@ class _HomeBookshelfState extends State<HomeBookshelf>
           builder: (context, constraints) => Stack(
             fit: StackFit.expand,
             children: [
-            SvgPicture.asset(
-              'assets/images/home_bookshelf.svg',
-              key: const Key('home-bookshelf'),
-              fit: BoxFit.contain,
-              excludeFromSemantics: true,
-            ),
-            // Hide the static book pixels. _BookshelfBooksArtwork redraws the
-            // same original SVG region above this layer and is the only part
-            // that receives the tiny nudge.
-            Positioned(
-              left: constraints.maxWidth * (96 / 160),
-              top: constraints.maxHeight * (9 / 37),
-              width: constraints.maxWidth * (51 / 160),
-              height: constraints.maxHeight * (24.2 / 37),
-              child: const ColoredBox(color: Color(0xFFEADF99)),
-            ),
+              SvgPicture.asset(
+                'assets/images/home_bookshelf.svg',
+                key: const Key('home-bookshelf'),
+                fit: BoxFit.contain,
+                excludeFromSemantics: true,
+              ),
+              // Hide the static book pixels. _BookshelfBooksArtwork redraws the
+              // same original SVG region above this layer and is the only part
+              // that receives the tiny nudge.
+              Positioned(
+                left: constraints.maxWidth * (96 / 160),
+                top: constraints.maxHeight * (9 / 37),
+                width: constraints.maxWidth * (51 / 160),
+                height: constraints.maxHeight * (24.2 / 37),
+                child: const ColoredBox(color: Color(0xFFEADF99)),
+              ),
               // This maps to the existing SVG "books" group (x: 103–141,
               // y: 12–33 in its 160 x 37 viewBox), with a small tap padding.
               Positioned(

@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
+
 class HomeDoor extends StatefulWidget {
   const HomeDoor({required this.onTap, super.key});
 
@@ -33,6 +36,14 @@ class _HomeDoorState extends State<HomeDoor>
       _hintPhraseIndex = (_hintPhraseIndex + 1) % _hintPhrases.length;
     });
     _hintController.forward(from: 0);
+  }
+
+  void _handleTap() {
+    final audio = TudloAudioScope.maybeOf(context);
+    if (audio != null) {
+      unawaited(audio.playSoundEffect(TudloAudioAssets.homeDoorSoundEffect));
+    }
+    widget.onTap();
   }
 
   @override
@@ -129,7 +140,7 @@ class _HomeDoorState extends State<HomeDoor>
           color: Colors.transparent,
           child: InkResponse(
             key: const Key('home-door-button'),
-            onTap: widget.onTap,
+            onTap: _handleTap,
             radius: 48,
             splashFactory: NoSplash.splashFactory,
             highlightColor: Colors.transparent,

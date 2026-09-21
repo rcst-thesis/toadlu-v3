@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 
 class InteractiveHomeLamp extends StatefulWidget {
   const InteractiveHomeLamp({
@@ -20,6 +25,12 @@ class _InteractiveHomeLampState extends State<InteractiveHomeLamp> {
 
   void _toggle() {
     setState(() => _isOn = !_isOn);
+    final audio = TudloAudioScope.maybeOf(context);
+    if (audio != null) {
+      unawaited(
+        audio.playSoundEffect(TudloAudioAssets.homeLampSwitchSoundEffect),
+      );
+    }
     widget.onChanged?.call(_isOn);
   }
 

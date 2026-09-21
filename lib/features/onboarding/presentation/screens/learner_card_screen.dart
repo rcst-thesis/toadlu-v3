@@ -9,10 +9,13 @@ import 'package:tudlo/features/home/presentation/screens/home_loading_screen.dar
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/features/settings/domain/app_settings_scope.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/onboarding_bottom_actions.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
-class LearnerCardScreen extends StatelessWidget {
+class LearnerCardScreen extends StatefulWidget {
   const LearnerCardScreen({
     required this.learnerName,
     required this.grade,
@@ -20,6 +23,7 @@ class LearnerCardScreen extends StatelessWidget {
     this.earnedBadgeCount = 0,
     this.onContinue,
     this.precacheWelcomeVectors,
+    this.voiceOverPlayer,
     super.key,
   });
 
@@ -29,21 +33,56 @@ class LearnerCardScreen extends StatelessWidget {
   final int earnedBadgeCount;
   final VoidCallback? onContinue;
   final Future<void> Function(BuildContext context)? precacheWelcomeVectors;
+  final Future<void> Function()? voiceOverPlayer;
 
-  Color get _gradeColor => switch (grade) {
+  @override
+  State<LearnerCardScreen> createState() => _LearnerCardScreenState();
+}
+
+class _LearnerCardScreenState extends State<LearnerCardScreen> {
+  TudloAudioController? _audio;
+  var _initialVoiceOverScheduled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final audio = TudloAudioScope.of(context);
+    if (identical(_audio, audio)) return;
+    _audio = audio;
+    audio.preloadVoiceOver(TudloAudioAssets.learnerCardVoiceOver);
+    if (_initialVoiceOverScheduled) return;
+    _initialVoiceOverScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_playVoiceOver());
+    });
+  }
+
+  Future<void> _playVoiceOver() {
+    return widget.voiceOverPlayer?.call() ??
+        _audio?.playVoiceOver(TudloAudioAssets.learnerCardVoiceOver) ??
+        Future<void>.value();
+  }
+
+  Future<void> _stopVoiceOver() {
+    return _audio?.stopVoiceOver(TudloAudioAssets.learnerCardVoiceOver) ??
+        Future<void>.value();
+  }
+
+  Color get _gradeColor => switch (widget.grade) {
         2 => const Color(0xFF3E75A6),
         3 => const Color(0xFFB04444),
         _ => AppColors.green,
       };
 
-  String get _kokaAsset => switch (grade) {
+  String get _kokaAsset => switch (widget.grade) {
         2 => 'assets/images/koka_blue.png',
         3 => 'assets/images/koka_red.png',
         _ => 'assets/images/koka_green.png',
-      };
+  };
 
   void _finish(BuildContext context) {
-    if (onContinue case final callback?) {
+    unawaited(_stopVoiceOver());
+    if (widget.onContinue case final callback?) {
       callback();
       return;
     }
@@ -53,19 +92,19 @@ class LearnerCardScreen extends StatelessWidget {
     // to block leaving this screen on the save completing.
     unawaited(
       LearnerScope.of(context).createAndSave(
-        name: learnerName,
-        grade: grade,
-        energy: energy,
+        name: widget.learnerName,
+        grade: widget.grade,
+        energy: widget.energy,
         initialSettings: AppSettingsScope.of(context).settings,
       ),
     );
     Navigator.of(context).pushAndRemoveUntil(
       FadePageRoute<void>(
         page: HomeLoadingScreen(
-          learnerName: learnerName,
-          grade: grade,
-          energy: energy,
-          precacheWelcomeVectors: precacheWelcomeVectors,
+          learnerName: widget.learnerName,
+          grade: widget.grade,
+          energy: widget.energy,
+          precacheWelcomeVectors: widget.precacheWelcomeVectors,
         ),
       ),
       (route) => false,
@@ -88,10 +127,17 @@ class LearnerCardScreen extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
+    unawaited(_stopVoiceOver());
     Navigator.of(context).pushAndRemoveUntil(
       FadePageRoute<void>(page: const NameScreen()),
       (route) => route.isFirst,
     );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_stopVoiceOver());
+    super.dispose();
   }
 
   @override
@@ -132,10 +178,10 @@ class LearnerCardScreen extends StatelessWidget {
                       top: 219,
                       child: _InteractiveFloatingCard(
                         child: _LearnerCard(
-                          learnerName: learnerName,
-                          grade: grade,
-                          energy: energy,
-                          earnedBadgeCount: earnedBadgeCount,
+                          learnerName: widget.learnerName,
+                          grade: widget.grade,
+                          energy: widget.energy,
+                          earnedBadgeCount: widget.earnedBadgeCount,
                           gradeColor: _gradeColor,
                           kokaAsset: _kokaAsset,
                         ),

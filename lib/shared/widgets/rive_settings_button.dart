@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:rive/rive.dart' as rive;
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
+
 /// Reusable runtime bridge for Tudlo's animated Rive Settings button.
 ///
 /// Rive owns the raised/down motion and the rotating gear. Flutter owns the
@@ -88,6 +90,12 @@ class _RiveSettingsButtonState extends State<RiveSettingsButton> {
     _pressInput?.value = value;
   }
 
+  void _handleTap() {
+    if (!widget.enabled) return;
+    TudloAudioScope.maybeOf(context)?.playButtonTapSound();
+    widget.onPressed();
+  }
+
   @override
   void dispose() {
     // ignore: deprecated_member_use
@@ -108,13 +116,13 @@ class _RiveSettingsButtonState extends State<RiveSettingsButton> {
         button: true,
         enabled: widget.enabled,
         label: 'Settings',
-        onTap: widget.enabled ? widget.onPressed : null,
+        onTap: widget.enabled ? _handleTap : null,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapDown: (_) => _setPressed(true),
           onTapUp: (_) => _setPressed(false),
           onTapCancel: () => _setPressed(false),
-          onTap: widget.enabled ? widget.onPressed : null,
+          onTap: widget.enabled ? _handleTap : null,
           child: IgnorePointer(
             ignoring: !widget.enabled,
             child: controller == null

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 
 /// Reusable runtime bridge for Tudlo's animated Rive back button.
@@ -84,6 +85,12 @@ class _RiveBackButtonState extends State<RiveBackButton> {
     _pressedProperty?.value = value;
   }
 
+  void _handleTap() {
+    if (!widget.enabled) return;
+    TudloAudioScope.maybeOf(context)?.playButtonTapSound();
+    widget.onPressed();
+  }
+
   @override
   void dispose() {
     _pressedProperty?.value = false;
@@ -103,13 +110,13 @@ class _RiveBackButtonState extends State<RiveBackButton> {
         button: true,
         enabled: widget.enabled,
         label: 'Back',
-        onTap: widget.enabled ? widget.onPressed : null,
+        onTap: widget.enabled ? _handleTap : null,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapDown: (_) => _setPressed(true),
           onTapUp: (_) => _setPressed(false),
           onTapCancel: () => _setPressed(false),
-          onTap: widget.enabled ? widget.onPressed : null,
+          onTap: widget.enabled ? _handleTap : null,
           child: IgnorePointer(
             ignoring: !widget.enabled,
             child: controller == null

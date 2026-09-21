@@ -15,9 +15,9 @@ class AnimatedGlowBorder extends StatefulWidget {
     this.duration = const Duration(seconds: 4),
     this.borderRadius = 11,
     super.key,
-  }) : assert(strokeWidth > 0),
-       assert(gradientColors.length > 0),
-       assert(borderRadius >= 0);
+  })  : assert(strokeWidth > 0),
+        assert(gradientColors.length > 0),
+        assert(borderRadius >= 0);
 
   final Widget child;
   final double strokeWidth;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
@@ -9,11 +11,20 @@ import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/load/domain/save_preview.dart';
 import 'package:tudlo/features/load/presentation/widgets/load_confirmation_dialog.dart';
 import 'package:tudlo/features/load/presentation/widgets/save_card.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 import 'package:tudlo/shared/widgets/rive_load_nav_button.dart';
 
 class LoadScreen extends StatefulWidget {
-  const LoadScreen({super.key});
+  const LoadScreen({this.introVoiceOverPlayer, super.key});
+
+  /// Overridable for tests, same convention as `StartupFlow`'s
+  /// `logoAudioPlayer`/`backgroundMusicPlayer` -- defaults to actually
+  /// playing `assets/audio/vo_load_screen.wav` via `flutter_soloud` once,
+  /// when this screen opens.
+  final Future<void> Function()? introVoiceOverPlayer;
 
   @override
   State<LoadScreen> createState() => _LoadScreenState();
@@ -35,14 +46,39 @@ class _LoadScreenState extends State<LoadScreen> {
   var _resolvedSaves = false;
   int _currentPage = 0;
 
+  var _playedIntroVo = false;
+  TudloAudioController? _audio;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final audio = TudloAudioScope.of(context);
+    _audio = audio;
+    audio.preloadSoundEffect(TudloAudioAssets.mapUnlockedSoundEffect);
     // Only resolve once per mount -- didChangeDependencies can fire again
     // for unrelated inherited-widget changes.
     if (_resolvedSaves) return;
     _resolvedSaves = true;
     _refreshSaves();
+    audio.preloadVoiceOver(TudloAudioAssets.loadScreenVoiceOver);
+
+    if (!_playedIntroVo) {
+      _playedIntroVo = true;
+      unawaited(
+        (widget.introVoiceOverPlayer ??
+            () => audio.playVoiceOver(TudloAudioAssets.loadScreenVoiceOver))(),
+      );
+    }
+  }
+
+  Future<void> _stopIntroVoiceOver() {
+    return _audio?.stopVoiceOver(TudloAudioAssets.loadScreenVoiceOver) ??
+        Future<void>.value();
+  }
+
+  void _leaveLoadScreen() {
+    unawaited(_stopIntroVoiceOver());
+    Navigator.of(context).pop();
   }
 
   Future<void> _refreshSaves() async {
@@ -66,7 +102,17 @@ class _LoadScreenState extends State<LoadScreen> {
 
   Future<void> _confirm(int index, bool deleting) async {
     final save = saves[index];
-    final accepted = await showGeneralDialog<bool>(
+    final confirmationVoiceOver = deleting
+        ? TudloAudioAssets.deleteConfirmationVoiceOver
+        : TudloAudioAssets.loadConfirmationVoiceOver;
+    final audio = TudloAudioScope.of(context);
+
+    // A confirmation prompt owns the spoken focus. Do not let the initial
+    // Load-screen introduction overlap it.
+    unawaited(_stopIntroVoiceOver());
+    audio.preloadVoiceOver(confirmationVoiceOver);
+
+    final confirmation = showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
       barrierLabel: deleting ? 'Delete confirmation' : 'Load confirmation',
@@ -83,6 +129,19 @@ class _LoadScreenState extends State<LoadScreen> {
         deleting: deleting,
       ),
     );
+    // The dialog route is pushed synchronously, but its first visible frame
+    // arrives next. Starting here guarantees the matching VO belongs to the
+    // pop-up the learner can actually see.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(audio.playVoiceOver(confirmationVoiceOver));
+      }
+    });
+
+    final accepted = await confirmation;
+    // The confirmation's words must never continue underneath Load or the
+    // following loading/home route after the dialog is dismissed.
+    unawaited(audio.stopVoiceOver(confirmationVoiceOver));
     if (!mounted || accepted != true) return;
 
     if (deleting) {
@@ -100,6 +159,11 @@ class _LoadScreenState extends State<LoadScreen> {
       // A mere pushReplacement would leave the main menu route stranded
       // beneath Home, so tapping the bottom nav's Home tab would pop past
       // Home and land back on the main menu instead of staying on Home.
+      //
+      // Goes silent through the loading transition; HomeScreen starts it
+      // fresh again once it actually appears.
+      unawaited(_stopIntroVoiceOver());
+      unawaited(TudloAudioScope.of(context).stopBackgroundMusic());
       Navigator.of(context).pushAndRemoveUntil(
         FadePageRoute<void>(
           page: FourthLoadingScreen(
@@ -118,6 +182,8 @@ class _LoadScreenState extends State<LoadScreen> {
     await LearnerScope.of(context).switchTo(profile);
     if (!mounted) return;
     // Same reasoning as the demo branch above.
+    unawaited(_stopIntroVoiceOver());
+    unawaited(TudloAudioScope.of(context).stopBackgroundMusic());
     Navigator.of(context).pushAndRemoveUntil(
       FadePageRoute<void>(page: const FourthLoadingScreen()),
       (route) => false,
@@ -220,7 +286,7 @@ class _LoadScreenState extends State<LoadScreen> {
           ),
           SafeArea(
             child: AdaptiveBackButtonPlacement(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: _leaveLoadScreen,
             ),
           ),
           SafeArea(
@@ -232,7 +298,7 @@ class _LoadScreenState extends State<LoadScreen> {
                     26 * scale,
                     0,
                     26 * scale,
-                    16 * scale,
+                    30 * scale,
                   ),
                   child: Align(
                     alignment: Alignment.bottomCenter,
@@ -300,6 +366,14 @@ class _LoadScreenState extends State<LoadScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // Covers system back and external route removal in addition to the
+    // explicit navigation paths above.
+    unawaited(_stopIntroVoiceOver());
+    super.dispose();
   }
 }
 

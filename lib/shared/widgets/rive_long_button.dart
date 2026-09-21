@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
+
 /// Tudlo's reusable Rive long-button runtime bridge.
 ///
 /// The Rive component owns the press motion and visible label. Flutter owns
@@ -13,6 +15,7 @@ class RiveLongButton extends StatefulWidget {
     required this.onPressed,
     this.semanticLabel,
     this.enabled = true,
+    this.soundEffectAsset,
     super.key,
   });
 
@@ -28,6 +31,9 @@ class RiveLongButton extends StatefulWidget {
   final VoidCallback onPressed;
   final String? semanticLabel;
   final bool enabled;
+
+  /// Overrides the shared tap cue for a specific action.
+  final String? soundEffectAsset;
 
   @override
   State<RiveLongButton> createState() => _RiveLongButtonState();
@@ -114,6 +120,14 @@ class _RiveLongButtonState extends State<RiveLongButton> {
     _pressInput?.value = false;
   }
 
+  void _handleTap() {
+    if (!widget.enabled) return;
+    TudloAudioScope.maybeOf(context)?.playButtonTapSound(
+      soundEffectAsset: widget.soundEffectAsset,
+    );
+    widget.onPressed();
+  }
+
   @override
   void dispose() {
     // ignore: deprecated_member_use
@@ -137,13 +151,13 @@ class _RiveLongButtonState extends State<RiveLongButton> {
           button: true,
           enabled: widget.enabled,
           label: semanticsLabel,
-          onTap: widget.enabled ? widget.onPressed : null,
+          onTap: widget.enabled ? _handleTap : null,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapDown: _handleTapDown,
             onTapUp: _handleTapUp,
             onTapCancel: _handleTapCancel,
-            onTap: widget.enabled ? widget.onPressed : null,
+            onTap: widget.enabled ? _handleTap : null,
             child: IgnorePointer(
               ignoring: !widget.enabled,
               child: controller == null

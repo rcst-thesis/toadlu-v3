@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/theme/app_colors.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
 import 'package:tudlo/shared/widgets/rive_avatar.dart';
 import 'package:tudlo/shared/widgets/rive_avatar_background.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
@@ -114,6 +115,9 @@ class LoadConfirmationDialog extends StatelessWidget {
                           child: _ConfirmationButton(
                             key: const Key('confirmation-yes-button'),
                             label: 'yes',
+                            soundEffectAsset: deleting
+                                ? null
+                                : TudloAudioAssets.mapUnlockedSoundEffect,
                             labelColor: deleting
                                 ? const Color(0xFFF13B4B)
                                 : Colors.white,
@@ -237,11 +241,13 @@ class _ConfirmationButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.labelColor = Colors.white,
+    this.soundEffectAsset,
     super.key,
   });
 
   final String label;
   final Color labelColor;
+  final String? soundEffectAsset;
   final VoidCallback onPressed;
 
   @override
@@ -258,6 +264,7 @@ class _ConfirmationButton extends StatelessWidget {
         height: 54,
         restLift: 5,
         fontSize: 30,
+        soundEffectAsset: soundEffectAsset,
       ),
     );
   }

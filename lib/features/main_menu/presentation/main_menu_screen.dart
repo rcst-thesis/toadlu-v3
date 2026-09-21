@@ -10,6 +10,8 @@ import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/load/presentation/load_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/rive_long_button.dart';
 import 'package:tudlo/shared/widgets/rive_settings_button.dart';
 
@@ -32,6 +34,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    TudloAudioScope.of(
+      context,
+    ).preloadSoundEffect(TudloAudioAssets.mapUnlockedSoundEffect);
     // Only resolve once per mount -- didChangeDependencies can fire again
     // for unrelated inherited-widget changes. No need to fetch anything if
     // someone's already actively signed in.
@@ -113,6 +118,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
       if (resume != null) await scope.switchTo(resume);
     }
     if (!context.mounted) return;
+    // Goes silent through the loading transition; HomeScreen starts it
+    // fresh again once it actually appears.
+    unawaited(TudloAudioScope.of(context).stopBackgroundMusic());
     _replaceWith(context, const FourthLoadingScreen());
   }
 
@@ -186,6 +194,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     child: RiveLongButton(
                       label: _continueLabel(context),
                       enabled: _canContinue(context),
+                      soundEffectAsset:
+                          TudloAudioAssets.mapUnlockedSoundEffect,
                       onPressed: () => unawaited(_continue(context)),
                     ),
                   ),

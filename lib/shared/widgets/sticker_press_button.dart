@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
+
 /// The app's standard interactive button: a chunky "sticker" that
 /// physically presses down, not just a static 3D-looking bevel. A solid
 /// front layer sits on top of a darker depth layer (faking a hard offset
@@ -29,6 +31,8 @@ class StickerPressButton extends StatefulWidget {
     this.borderRadius = 8,
     this.fontSize = 15,
     this.enabled = true,
+    this.playButtonSound = true,
+    this.soundEffectAsset,
     super.key,
   }) : assert(label != null || child != null);
 
@@ -51,6 +55,12 @@ class StickerPressButton extends StatefulWidget {
   /// widget.
   final bool enabled;
 
+  /// Set false only for controls with their own supplied sound effect.
+  final bool playButtonSound;
+
+  /// Overrides the shared tap cue for a specific action.
+  final String? soundEffectAsset;
+
   @override
   State<StickerPressButton> createState() => _StickerPressButtonState();
 }
@@ -63,6 +73,15 @@ class _StickerPressButtonState extends State<StickerPressButton> {
   void _setPressed(bool pressed) {
     if (_pressed == pressed) return;
     setState(() => _pressed = pressed);
+  }
+
+  void _handleTap() {
+    if (widget.playButtonSound) {
+      TudloAudioScope.maybeOf(context)?.playButtonTapSound(
+        soundEffectAsset: widget.soundEffectAsset,
+      );
+    }
+    widget.onPressed();
   }
 
   @override
@@ -123,7 +142,7 @@ class _StickerPressButtonState extends State<StickerPressButton> {
               onTapDown: widget.enabled ? (_) => _setPressed(true) : null,
               onTapCancel: widget.enabled ? () => _setPressed(false) : null,
               onTapUp: widget.enabled ? (_) => _setPressed(false) : null,
-              onTap: widget.enabled ? widget.onPressed : null,
+              onTap: widget.enabled ? _handleTap : null,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: frontColor,

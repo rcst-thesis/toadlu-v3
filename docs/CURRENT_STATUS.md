@@ -23,7 +23,19 @@ This status is based only on current code and tests.
 - Required trimmed name.
 - Animated three-grade wraparound carousel and active-card continuation.
 - Energy in 10% steps, bounded 10–100%.
-- Voice-over callback seams and busy protection.
+- Voice-over callback seams and busy protection; the bundled Load-screen,
+  load-confirmation, and delete-confirmation voice-overs play only while
+  their owning route/dialog is visible and temporarily duck the non-muted
+  background music through the shared audio controller.
+- Shared app buttons use the supplied button-press sound. Sound Effects can
+  enable/disable it (and a zero Master or Sound Effects value mutes it); the
+  Sound Effects slider controls its loudness.
+- The main-menu Continue button and the Yes button in a load confirmation
+  use the supplied map-unlock cue instead.
+- The Me edit avatar tiles and map location taps use their supplied custom
+  effects instead: one tile cue plus distinct locked and unlocked map cues.
+- Tapping the Home ceiling lamp plays its supplied light-switch cue.
+- Tapping the Home door plays its supplied door cue before opening the Map.
 - Loading 2 minimum duration/learner-card preload.
 - Learner card with learner data, progress/counters, badges, touch tilt,
   rays/holofoil motion, reset confirmation, and reduced motion.
@@ -110,7 +122,11 @@ This status is based only on current code and tests.
   renames the learner and picks a Koka avatar from `assets/images/avatar.riv`
   -- persisted via `LearnerController.updateName`/`updateAvatar` -- badge
   collection UI is still incomplete).
-- Voice-over callback UI exists without audio implementation.
+- The Name, Grade, Energy, Learner Card, and Welcome Aboard introductions
+  auto-play their bundled production clips once on screen entry; existing
+  speaker buttons replay the Name, Grade, and Energy clips. Grade card clips
+  play as each card reaches the front; Energy, Learner Card, and Welcome Aboard
+  retain callback seams for isolated widget tests.
 - Hardware sensor support exists but Welcome disables it in favor of touch.
 - Onboarding data now persists via the Learner Save System (above), but
   only the current learner -- no profile switching, no cloud sync.
@@ -136,7 +152,8 @@ This status is based only on current code and tests.
   Partial above.)
 - Production lesson model/content, speaker/favorite behavior, and final
   ambient polish.
-- Audio assets/service.
+- Additional production voice-over scripts/assets and final accessibility
+  policy for audio (captions, replay affordances, and interruption behavior).
 - Release identity/signing: Android is `com.maralmt.tudlo_prototype` and release
   currently uses debug signing.
 

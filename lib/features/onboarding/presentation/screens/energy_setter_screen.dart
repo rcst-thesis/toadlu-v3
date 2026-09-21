@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/second_loading_screen.dart';
 import 'package:tudlo/features/onboarding/presentation/widgets/onboarding_koka_greeting.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 import 'package:tudlo/shared/widgets/rive_long_button.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
@@ -29,11 +34,27 @@ class EnergySetterScreen extends StatefulWidget {
 class _EnergySetterScreenState extends State<EnergySetterScreen> {
   late int _energy;
   bool _voiceOverPlaying = false;
+  TudloAudioController? _audio;
+  var _initialVoiceOverScheduled = false;
 
   @override
   void initState() {
     super.initState();
     _energy = (widget.initialEnergy / 10).round() * 10;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final audio = TudloAudioScope.of(context);
+    if (identical(_audio, audio)) return;
+    _audio = audio;
+    audio.preloadVoiceOver(TudloAudioAssets.energySetterVoiceOver);
+    if (_initialVoiceOverScheduled) return;
+    _initialVoiceOverScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_playVoiceOver());
+    });
   }
 
   void _changeEnergy(int amount) {
@@ -42,13 +63,11 @@ class _EnergySetterScreenState extends State<EnergySetterScreen> {
 
   Future<void> _playVoiceOver() async {
     if (_voiceOverPlaying) return;
-    final player = widget.voiceOverPlayer;
-    if (player == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('VO audio file is not installed yet')),
-      );
-      return;
-    }
+    final player = widget.voiceOverPlayer ??
+        () => _audio?.playVoiceOverAndWait(
+              TudloAudioAssets.energySetterVoiceOver,
+            ) ??
+            Future<void>.value();
     setState(() => _voiceOverPlaying = true);
     try {
       await player();
@@ -58,6 +77,7 @@ class _EnergySetterScreenState extends State<EnergySetterScreen> {
   }
 
   void _continue() {
+    unawaited(_stopVoiceOver());
     Navigator.of(context).push(
       FadePageRoute<void>(
         page: SecondLoadingScreen(
@@ -67,6 +87,22 @@ class _EnergySetterScreenState extends State<EnergySetterScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _stopVoiceOver() {
+    return _audio?.stopVoiceOver(TudloAudioAssets.energySetterVoiceOver) ??
+        Future<void>.value();
+  }
+
+  void _leaveEnergyScreen() {
+    unawaited(_stopVoiceOver());
+    Navigator.of(context).pop();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_stopVoiceOver());
+    super.dispose();
   }
 
   @override
@@ -203,7 +239,7 @@ class _EnergySetterScreenState extends State<EnergySetterScreen> {
           ),
           SafeArea(
             child: AdaptiveBackButtonPlacement(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: _leaveEnergyScreen,
             ),
           ),
         ],

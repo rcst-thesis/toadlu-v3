@@ -15,6 +15,9 @@ import 'package:tudlo/features/map/presentation/widgets/map_exit_landscape_butto
 import 'package:tudlo/features/map/presentation/widgets/map_expand_button.dart';
 import 'package:tudlo/features/map/presentation/widgets/map_locked_toast.dart';
 import 'package:tudlo/features/map/presentation/widgets/rive_map_scene.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 
 /// Pannable/zoomable barangay map, framed on Koka's house by default. The
 /// map art lives inside the Rive scene; this screen frames/pans/zooms it and
@@ -93,6 +96,7 @@ class _MapScreenState extends State<MapScreen> {
   late final MapProgressController _mapProgress;
   late final LearnerController _learnerController;
   var _dependenciesResolved = false;
+  TudloAudioController? _audio;
 
   Size? _viewportSize;
   var _isFullscreen = false;
@@ -109,6 +113,13 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final audio = TudloAudioScope.of(context);
+    if (!identical(_audio, audio)) {
+      _audio = audio;
+      audio
+        ..preloadSoundEffect(TudloAudioAssets.mapLockedSoundEffect)
+        ..preloadSoundEffect(TudloAudioAssets.mapUnlockedSoundEffect);
+    }
     if (_dependenciesResolved) return;
     _mapProgress = MapProgressScope.of(context);
     _eventOverrides = widget.eventOverrides ?? _mapProgress.eventOverrides;
@@ -235,6 +246,10 @@ class _MapScreenState extends State<MapScreen> {
     if (_isHandlingTap) return;
 
     if (!_riveMapController.isUnlocked(location)) {
+      unawaited(
+        _audio?.playSoundEffect(TudloAudioAssets.mapLockedSoundEffect) ??
+            Future<void>.value(),
+      );
       final now = DateTime.now();
       final lastShown = _lastLockedMessageAt[location];
       if (lastShown == null ||
@@ -246,6 +261,10 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     _isHandlingTap = true;
+    unawaited(
+      _audio?.playSoundEffect(TudloAudioAssets.mapUnlockedSoundEffect) ??
+          Future<void>.value(),
+    );
     // A short beat so Rive's own press feedback is visible before the
     // screen navigates away.
     await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -348,6 +367,13 @@ class _MapScreenState extends State<MapScreen> {
                   : viewport.height / _mapHeight;
           final initialScale =
               hasValidViewport ? viewport.width / cropWidth : 1.0;
+          // Normally initialScale * 3 comfortably exceeds minScale, but a
+          // transient frame with a valid yet extreme aspect ratio (e.g. a
+          // very narrow, nonzero width mid orientation-change) can push
+          // minScale above it -- InteractiveViewer asserts maxScale >=
+          // minScale, so floor it defensively rather than let that one
+          // frame crash the build.
+          final maxScale = math.max(minScale, initialScale * 3);
 
           return Stack(
             key: const Key('map-content-stack'),
@@ -359,7 +385,7 @@ class _MapScreenState extends State<MapScreen> {
                   constrained: false,
                   boundaryMargin: EdgeInsets.zero,
                   minScale: minScale,
-                  maxScale: initialScale * 3,
+                  maxScale: maxScale,
                   child: RepaintBoundary(
                     child: RiveMapScene(
                       controller: _riveMapController,

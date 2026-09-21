@@ -21,16 +21,19 @@ main()
 └── TudloApp
     └── AppAnimationScope (app-wide motion on/off)
         └── LearnerScope (current learner profile -- see LEARNER_GUIDE.md)
-            └── MapProgressScope (map event overrides + unlocked locations)
-                └── MaterialApp (Material 3, ComicRelief, green/mint theme)
-                    └── StartupFlow
+            └── AppSettingsScope (device settings outside a learner profile)
+                └── TudloAudioScope (one app-owned audio controller)
+                    └── MapProgressScope (map event overrides + unlocked locations)
+                        └── MaterialApp (Material 3, ComicRelief, green/mint theme)
+                            └── StartupFlow
 ```
 
 App-wide state that needs to be reachable from anywhere without
 prop-drilling follows one consistent pattern -- a `ChangeNotifier` (or
 `InheritedNotifier`-compatible controller) plus an `InheritedWidget`/
-`InheritedNotifier` "Scope" with a static `.of(context)`. All three current
-examples (`AppAnimationScope`, `LearnerScope`, `MapProgressScope`) are
+`InheritedNotifier` "Scope" with a static `.of(context)`. The current
+examples (`AppAnimationScope`, `LearnerScope`, `AppSettingsScope`,
+`TudloAudioScope`, and `MapProgressScope`) are
 wired once in `TudloApp` and follow this exact shape; add a new one the
 same way rather than introducing a different state-management approach.
 
@@ -47,6 +50,13 @@ same way rather than introducing a different state-management approach.
 - `LoadScreen`: constant demo saves and local current page (this is the
   save *browser* UI shell -- unrelated to the real learner save system;
   its saves are still just demo data, see `docs/CURRENT_STATUS.md`).
+- `TudloAudioController`: app-lifetime owner of the SoLoud engine, cached
+  one-shot assets, the single background-music handle, audio channel volume
+  rules, native button-click gating, supplied feature-effect playback,
+  voice-over completion/cancellation, duration fallback when a native
+  completion event is missed, music duck-and-restore behavior, and shutdown.
+  Screens send audio intents through `TudloAudioScope`; they never store native
+  sources or handles.
 - Welcome/Home widgets: local interaction and animation controllers.
 - `HomeScreen`/`MeScreen`: explicit constructor overrides (mainly for
   tests), falling back to the current learner via `LearnerScope` otherwise.
@@ -182,8 +192,10 @@ own fades.
 ## Testing
 
 Tests import public API through `lib/tudlo.dart` or focused widgets directly.
-Configurable durations/callbacks avoid real audio and long waits. Stable keys and
-semantics support interaction and geometry assertions.
+Configurable durations/callbacks avoid real audio and long waits. The audio
+controller additionally accepts a small fakeable backend, so its loading,
+volume, mute/restart, and stop/start ordering rules have no native-plugin test
+dependency. Stable keys and semantics support interaction and geometry assertions.
 
 Coverage emphasizes route boundaries, loading/preparation, form logic, fixed vs
 scrolling Home content, portrait overflow, Figma placement, animation timing,

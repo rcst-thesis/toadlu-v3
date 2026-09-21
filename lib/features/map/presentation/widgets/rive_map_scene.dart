@@ -207,6 +207,21 @@ class _RiveMapSceneState extends State<RiveMapScene> {
               controller: controller,
               fit: rive.Fit.contain,
               alignment: Alignment.center,
+              // Default is `opaque`, which claims every pointer straight
+              // away regardless of whether it lands on a listener -- once
+              // claimed, Flutter keeps routing every PointerMoveEvent for
+              // that whole gesture to Rive, so a drag started on empty map
+              // background still dispatches a native state-machine
+              // pointerMove hit-test on every frame of the pan (this is
+              // what was causing the pan/zoom lag: MapScreen's
+              // InteractiveViewer sits *around* this widget and pans
+              // regardless, so none of that dispatching was ever needed for
+              // panning itself). `translucent` only claims a pointer when
+              // it actually starts on a location's hit region, so a
+              // location tap still fires `locationTapped` exactly as
+              // before, but a pan starting on open map art never enters
+              // Rive's hit-test/dispatch path at all.
+              hitTestBehavior: rive.RiveHitTestBehavior.translucent,
             ),
     );
   }

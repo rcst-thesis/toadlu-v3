@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/rive_long_button.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
@@ -66,7 +67,10 @@ class OnboardingBottomActions extends StatelessWidget {
             height: 44,
             child: TextButton(
               key: secondaryKey,
-              onPressed: onSecondaryPressed,
+              onPressed: () {
+                TudloAudioScope.maybeOf(context)?.playButtonTapSound();
+                onSecondaryPressed();
+              },
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xB3000000),
                 padding: EdgeInsets.zero,

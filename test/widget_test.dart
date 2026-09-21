@@ -98,6 +98,19 @@ void main() {
         find.text('New learner tutorial will be built here.'), findsOneWidget);
   });
 
+  testWidgets('welcome aboard automatically plays its voice-over',
+      (tester) async {
+    var plays = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WelcomeAboardScreen(voiceOverPlayer: () async => plays++),
+      ),
+    );
+
+    await tester.pump();
+    expect(plays, 1);
+  });
+
   testWidgets('startup shows both timed splashes then the menu',
       (tester) async {
     await tester.pumpWidget(
@@ -109,6 +122,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
     expect(find.bySemanticsLabel('Maral MT splash screen'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 1));
@@ -125,7 +139,8 @@ void main() {
   });
 
   testWidgets(
-      'The Maral splash plays its logo audio 2 seconds in, not before, '
+      'The Maral splash honors a delayed logo-audio cue after the logo renders, '
+      'not before, '
       'and not once the Tudlo splash has taken over', (tester) async {
     var playCount = 0;
 
@@ -135,6 +150,7 @@ void main() {
           splashDuration: const Duration(seconds: 5),
           splashWarmup: () async {},
           assetWarmup: () async {},
+          logoAudioDelay: const Duration(seconds: 2),
           logoAudioPlayer: () async {
             playCount++;
           },
@@ -173,6 +189,7 @@ void main() {
           splashDuration: const Duration(milliseconds: 500),
           splashWarmup: () async {},
           assetWarmup: () async {},
+          logoAudioDelay: const Duration(seconds: 2),
           logoAudioPlayer: () async {
             playCount++;
           },
@@ -534,6 +551,8 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+    expect(introPlays, 1);
 
     expect(
       find.text('gusto ni koka ma bal an\nsa ano nga grade kana subong'),
@@ -555,10 +574,11 @@ void main() {
     expect(headingBottom, lessThan(introBubbleTop));
     await tester.tap(find.byKey(const Key('grade-intro-voice-button')));
     await tester.pump();
-    expect(introPlays, 1);
+    expect(introPlays, 2);
 
     await tester.tap(find.byKey(const Key('grade-next-button')));
     await tester.pump(const Duration(milliseconds: 500));
+    expect(spokenGrade, 2);
     await tester.tap(find.byKey(const Key('grade-selection-voice-button')));
     await tester.pump();
     expect(spokenGrade, 2);
@@ -625,9 +645,11 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const Key('energy-voice-button')));
     await tester.pump();
     expect(plays, 1);
+    await tester.tap(find.byKey(const Key('energy-voice-button')));
+    await tester.pump();
+    expect(plays, 2);
   });
 
   testWidgets('energy next opens the second loading stage', (tester) async {
@@ -855,6 +877,24 @@ void main() {
     expect(find.text('hop. hop. hop. lets gooo'), findsOneWidget);
     expect(find.text('yeheyy!'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('learner card automatically plays its supplied voice-over',
+      (tester) async {
+    var plays = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LearnerCardScreen(
+          learnerName: 'Maya',
+          grade: 2,
+          energy: 80,
+          voiceOverPlayer: () async => plays++,
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(plays, 1);
   });
 
   testWidgets(
@@ -1093,11 +1133,13 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 500));
 
+    expect(playCount, 1);
+
     expect(find.textContaining('gusto ni koka ma bal an'), findsOneWidget);
     expect(find.textContaining('hey, hey, hey! abyan'), findsOneWidget);
     await tester.tap(find.byKey(const Key('name-voice-over-button')));
     await tester.pump();
-    expect(playCount, 1);
+    expect(playCount, 2);
   });
 
   testWidgets(

@@ -18,6 +18,9 @@ import 'package:tudlo/features/me/presentation/widgets/me_section_wave_divider.d
 import 'package:tudlo/features/main_menu/presentation/main_menu_screen.dart';
 import 'package:tudlo/features/me/presentation/widgets/me_settings_button.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/rive_settings_button.dart';
 import 'package:tudlo/shared/widgets/sticker_press_button.dart';
 
@@ -65,6 +68,16 @@ class MeScreen extends StatefulWidget {
 
 class _MeScreenState extends State<MeScreen> {
   var _selectedTab = MeCardTab.about;
+  TudloAudioController? _audio;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final audio = TudloAudioScope.of(context);
+    if (identical(_audio, audio)) return;
+    _audio = audio;
+    audio.preloadSoundEffect(TudloAudioAssets.meAvatarTileSoundEffect);
+  }
 
   String get _learnerName =>
       widget.learnerName ?? LearnerScope.of(context).profile?.name ?? 'Koka';
@@ -105,6 +118,7 @@ class _MeScreenState extends State<MeScreen> {
   }
 
   Future<void> _openEdit(BuildContext context) async {
+    final audio = _audio;
     final result = await showGeneralDialog<MeEditResult>(
       context: context,
       barrierDismissible: true,
@@ -116,6 +130,10 @@ class _MeScreenState extends State<MeScreen> {
         grade: _grade,
         userCode: _userCode,
         avatarId: _avatarId,
+        onAvatarSelected: (_) => unawaited(
+          audio?.playSoundEffect(TudloAudioAssets.meAvatarTileSoundEffect) ??
+              Future<void>.value(),
+        ),
       ),
       transitionBuilder: (context, animation, secondaryAnimation, child) =>
           FadeTransition(
@@ -149,6 +167,12 @@ class _MeScreenState extends State<MeScreen> {
     if (confirmed != true || !context.mounted) return;
     await LearnerScope.of(context).logOut();
     if (!context.mounted) return;
+    // Signed-in learner's own settings no longer apply once logged out --
+    // start fresh against the device-wide copy (nothing else restarts
+    // playback on this particular path, unlike MainMenuScreen->Home, which
+    // stops it on the way in and HomeScreen starts it fresh on the way
+    // back).
+    unawaited(TudloAudioScope.of(context).startBackgroundMusic());
     Navigator.of(context).pushAndRemoveUntil(
       FadePageRoute<void>(page: const MainMenuScreen()),
       (route) => false,

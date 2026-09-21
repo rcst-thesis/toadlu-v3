@@ -31,6 +31,8 @@ import 'package:tudlo/features/home/presentation/widgets/interactive_home_lamp.d
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
+import 'package:tudlo/shared/audio/audio_assets.dart';
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({this.learnerName, this.energy, super.key});
@@ -64,6 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final audio = TudloAudioScope.maybeOf(context);
+    if (audio != null) {
+      audio.preloadSoundEffect(TudloAudioAssets.homeLampSwitchSoundEffect);
+      audio.preloadSoundEffect(TudloAudioAssets.homeDoorSoundEffect);
+    }
     // Only resolve once per mount -- didChangeDependencies can fire again
     // for unrelated inherited-widget changes. Same word-of-the-day
     // resolution the Dictionary tab uses (reads/writes the same profile
@@ -72,6 +79,12 @@ class _HomeScreenState extends State<HomeScreen> {
     // just reads it back.
     if (_resolvedWordOfTheDay) return;
     _resolvedWordOfTheDay = true;
+
+    // Home has actually appeared -- starts the same background-music track
+    // fresh again (stopped by MainMenuScreen/LoadScreen right before the
+    // loading transition that led here), at this signed-in learner's own
+    // effective settings.
+    unawaited(TudloAudioScope.of(context).startBackgroundMusic());
 
     final controller = LearnerScope.of(context);
     final profile = controller.profile;

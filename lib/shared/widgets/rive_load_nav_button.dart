@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
+import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
 import 'package:tudlo/shared/widgets/design_navigation_button.dart';
 
 /// Reusable runtime bridge for the Load screen's Rive previous/next
@@ -88,6 +89,12 @@ class _RiveLoadNavButtonState extends State<RiveLoadNavButton> {
     _pressedProperty?.value = value;
   }
 
+  void _handleTap() {
+    if (!widget.enabled) return;
+    TudloAudioScope.maybeOf(context)?.playButtonTapSound();
+    widget.onPressed();
+  }
+
   @override
   void dispose() {
     _pressedProperty?.value = false;
@@ -109,7 +116,7 @@ class _RiveLoadNavButtonState extends State<RiveLoadNavButton> {
           button: true,
           enabled: widget.enabled,
           label: widget.fallbackLabel,
-          onTap: widget.enabled ? widget.onPressed : null,
+          onTap: widget.enabled ? _handleTap : null,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapDown: (_) => _setPressed(true),
