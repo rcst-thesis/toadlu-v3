@@ -14,6 +14,7 @@ import 'package:tudloapp/core/services/app_audio_service.dart';
 import 'package:tudloapp/core/services/lesson_number_voice_service.dart';
 import 'package:tudloapp/core/state/app_state.dart';
 import 'package:tudloapp/core/theme/app_theme.dart';
+import 'package:tudloapp/core/widgets/animated_point_finger.dart';
 import 'package:tudloapp/core/widgets/dialogue_assets.dart';
 import 'package:tudloapp/core/widgets/language_toggle.dart';
 import 'package:tudloapp/core/widgets/lesson_asset_glow.dart';
@@ -255,7 +256,7 @@ class _LessonKokaMascotState extends State<_LessonKokaMascot> {
         onTap: _wave,
         child: TudloMascot(
           size: widget.size,
-          mood: _waving ? KokaMood.hi : widget.mood,
+          mood: _waving ? KokaMood.idle : widget.mood,
         ),
       ),
     );

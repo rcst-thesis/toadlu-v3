@@ -2987,15 +2987,9 @@ class _NumberMatchGestureHint extends StatelessWidget {
               ],
             );
           },
-          child: Transform.rotate(
-            angle: -.55,
-            child: Image.asset(
-              '$_assetBase/point-finger.png',
-              width: size,
-              height: size,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-            ),
+          child: AnimatedPointFinger(
+            asset: '$_assetBase/point-finger.png',
+            size: size,
           ),
         ),
       ),
@@ -3653,11 +3647,10 @@ class _DragLetterTutorialHint extends StatelessWidget {
                 ],
               );
             },
-            child: Image.asset(
-              '$_assetBase/point-finger.png',
-              width: (MediaQuery.sizeOf(context).width * .18).clamp(64.0, 92.0),
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
+            child: AnimatedPointFinger(
+              asset: '$_assetBase/point-finger.png',
+              size: (MediaQuery.sizeOf(context).width * .18).clamp(64.0, 92.0),
+              angle: 0,
             ),
           );
         },
@@ -5955,15 +5948,10 @@ class _PresentationSpeakerHint extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Transform.rotate(
+                  child: AnimatedPointFinger(
+                    asset: '$_assetBase/point-finger.png',
+                    size: size * .56,
                     angle: -.35,
-                    child: Image.asset(
-                      '$_assetBase/point-finger.png',
-                      width: size * .56,
-                      height: size * .56,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
-                    ),
                   ),
                 ),
               ),

@@ -627,7 +627,7 @@ class _G2BirthdayBalloonsStep extends StatelessWidget {
                     bottom: view.height * .005,
                     child: _LessonKokaMascot(
                       size: (view.width * .62).clamp(235.0, 330.0),
-                      mood: KokaMood.hi,
+                      mood: KokaMood.idle,
                     ),
                   ),
                   for (final balloon in balloons)
@@ -967,7 +967,7 @@ class _G2BirthdayChooseSevenStep extends StatelessWidget {
             bottom: view.height * .045,
             child: _LessonKokaMascot(
               size: (view.width * .66).clamp(250.0, 350.0),
-              mood: KokaMood.hi,
+              mood: KokaMood.idle,
             ),
           ),
           Positioned(

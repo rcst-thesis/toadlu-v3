@@ -423,8 +423,8 @@ class _GradeThreeMarketNumbersFlowState
 
   List<Widget> _introScene({required String speech, required bool showButton}) {
     return [
-      _at(105, 102, 300, 150, _speech(speech)),
-      _at(36, 228, 205, 245, const TudloMascot(size: 245, mood: KokaMood.hi)),
+      _at(105, 102, 300, 150, _speech(speech, size: 22)),
+      _at(36, 228, 205, 245, const TudloMascot(size: 245, mood: KokaMood.idle)),
       _at(350, 130, 285, 285, _asset(_crate)),
       _at(540, 128, 380, 315, _asset(_vendor)),
       _at(224, 145, 340, 185, _asset(_fruitStall)),
@@ -469,7 +469,7 @@ class _GradeThreeMarketNumbersFlowState
   List<Widget> _stallScene() {
     return [
       _at(106, 112, 285, 92, _speech('Pangitaa kag i-tap\nang fruit stall.')),
-      _at(38, 252, 205, 230, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(38, 252, 205, 230, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(555, 155, 330, 255, _asset(_vendor)),
       _at(
         372,
@@ -497,7 +497,7 @@ class _GradeThreeMarketNumbersFlowState
         92,
         _speech('Paminawa ug ihinumdom\nang mga numero\n1 hangtod 10.'),
       ),
-      _at(28, 255, 205, 225, const TudloMascot(size: 230, mood: KokaMood.hi)),
+      _at(28, 255, 205, 225, const TudloMascot(size: 230, mood: KokaMood.idle)),
       _at(200, 160, 650, 240, _numberBoard(interactive: false)),
       _at(
         650,
@@ -518,7 +518,7 @@ class _GradeThreeMarketNumbersFlowState
         105,
         _speech('I-tap ang number strip\npara mabatian ang\n1 tubtob 10.'),
       ),
-      _at(28, 250, 205, 230, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(28, 250, 205, 230, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(200, 235, 650, 200, _numberBoard(interactive: true)),
       if (_heardNumbers.length >= 10)
         _at(
@@ -534,7 +534,7 @@ class _GradeThreeMarketNumbersFlowState
   List<Widget> _appleModelScene() {
     return [
       _at(120, 105, 280, 95, _speech('Isa ka mansanas\nuna.')),
-      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(662, 112, 250, 335, _asset(_vendor)),
       _at(245, 305, 270, 125, _appleShelf(4)),
       _at(468, 268, 310, 205, _basketDropTarget()),
@@ -564,7 +564,7 @@ class _GradeThreeMarketNumbersFlowState
         100,
         _speech('Ibutang ang\nsunod nga mansanas\nsa basket.'),
       ),
-      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(662, 112, 250, 335, _asset(_vendor)),
       _at(425, 258, 330, 215, _basketDropTarget()),
       _at(250, 330, 210, 118, _remainingApples()),
@@ -575,7 +575,7 @@ class _GradeThreeMarketNumbersFlowState
   List<Widget> _countCheckScene() {
     return [
       _at(118, 108, 292, 88, _speech('Lima ka mansanas\nsa basket!')),
-      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(662, 112, 250, 335, _asset(_vendor)),
       _at(350, 258, 380, 215, _basketWithApples(5, numbered: true)),
       _at(585, 115, 100, 125, _counterCard(5, '5/5')),
@@ -623,7 +623,7 @@ class _GradeThreeMarketNumbersFlowState
         88,
         _speech('Husto ang imo pag-isip!\nMaka-open na ang stall.'),
       ),
-      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(662, 112, 250, 335, _asset(_vendor)),
       _at(285, 220, 480, 265, _basketWithApples(5, numbered: true)),
       _at(
@@ -639,7 +639,7 @@ class _GradeThreeMarketNumbersFlowState
   List<Widget> _setupOrderScene() {
     return [
       _at(110, 106, 310, 82, _speech('Ihan-ay ang six\npakadto ten.')),
-      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(265, 205, 570, 125, _numberStrip(_orderTray)),
       _at(
         650,
@@ -680,7 +680,7 @@ class _GradeThreeMarketNumbersFlowState
   List<Widget> _openStallScene() {
     return [
       _at(118, 105, 310, 88, _speech('Husto! Ablihan ta\nang stall.')),
-      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.hi)),
+      _at(35, 245, 200, 235, const TudloMascot(size: 235, mood: KokaMood.idle)),
       _at(555, 126, 295, 270, _asset(_vendor)),
       _at(310, 140, 390, 285, _glowFrame(_fruitStall)),
       _at(
@@ -1107,7 +1107,7 @@ class _GradeThreeMarketNumbersFlowState
     );
   }
 
-  Widget _speech(String text) {
+  Widget _speech(String text, {double size = 25}) {
     return Container(
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -1123,7 +1123,7 @@ class _GradeThreeMarketNumbersFlowState
           ),
         ],
       ),
-      child: _bigLabel(text, size: 25),
+      child: _bigLabel(text, size: size),
     );
   }
 

@@ -2033,8 +2033,13 @@ class _StickerRewardAsset extends StatelessWidget {
 class _LessonOneMessageCard extends StatelessWidget {
   final String message;
   final bool compact;
+  final double? fontSize;
 
-  const _LessonOneMessageCard({required this.message, this.compact = false});
+  const _LessonOneMessageCard({
+    required this.message,
+    this.compact = false,
+    this.fontSize,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2060,7 +2065,8 @@ class _LessonOneMessageCard extends StatelessWidget {
         textAlign: TextAlign.center,
         style: GoogleFonts.nunito(
           color: TudloColors.ink,
-          fontSize: (width * (compact ? .064 : .074)).clamp(22.0, 38.0),
+          fontSize:
+              fontSize ?? (width * (compact ? .064 : .074)).clamp(22.0, 38.0),
           height: 1.12,
           fontWeight: FontWeight.w900,
           letterSpacing: 0,

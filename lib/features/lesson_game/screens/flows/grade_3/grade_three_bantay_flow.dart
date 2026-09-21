@@ -979,7 +979,7 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
                         size: 300,
                         mood: _busy
                             ? KokaMood.talking
-                            : (_found ? KokaMood.hi : KokaMood.curious),
+                            : (_found ? KokaMood.idle : KokaMood.curious),
                       ),
                     ),
                     ..._scene(),
