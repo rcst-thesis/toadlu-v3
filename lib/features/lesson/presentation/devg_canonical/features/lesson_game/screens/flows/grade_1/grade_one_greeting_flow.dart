@@ -375,11 +375,12 @@ class _BeachMapStep extends StatefulWidget {
 
 class _BeachMapStepState extends State<_BeachMapStep> {
   // Reuses MapScreen's real map (toadlu_map.riv) and its own default
-  // portrait framing constants (Koka's house, where School sits nearby) --
-  // this is not a second/fake map, just this lesson's narrow "go to School"
-  // beat on the one real Rive map, per the migration guide: keep Tudlo's
-  // existing Rive map, drive it only through semantic hasEvent/isUnlocked.
-  // Mirrors _LessonOneMapStep in grade_one_letter_flow.dart.
+  // portrait framing constants (Koka's house) -- this is not a second/fake
+  // map, just this lesson's narrow "go to Beach" beat on the one real Rive
+  // map, per the migration guide: keep Tudlo's existing Rive map, drive it
+  // only through semantic hasEvent/isUnlocked.
+  // Mirrors _LessonOneMapStep in grade_one_letter_flow.dart (which targets
+  // School instead of Beach).
   static const _mapWidth = tudlo_map.RiveMapScene.artboardWidth;
   static const _mapHeight = tudlo_map.RiveMapScene.artboardHeight;
   static const _houseCenterX = 2085.0;
@@ -398,15 +399,15 @@ class _BeachMapStepState extends State<_BeachMapStep> {
   }
 
   // Nothing is glowing until this beat's own Rive scene finishes loading --
-  // the school event exists only for this lesson step, never set early and
+  // the beach event exists only for this lesson step, never set early and
   // never visible anywhere else on the real map.
   void _onMapReady() {
-    _riveMapController.setUnlocked(tudlo_map.MapLocation.school, true);
-    _riveMapController.setHasEvent(tudlo_map.MapLocation.school, true);
+    _riveMapController.setUnlocked(tudlo_map.MapLocation.beach, true);
+    _riveMapController.setHasEvent(tudlo_map.MapLocation.beach, true);
   }
 
   Future<void> _handleLocationTapped(tudlo_map.MapLocation location) async {
-    if (location != tudlo_map.MapLocation.school) return;
+    if (location != tudlo_map.MapLocation.beach) return;
     await AppAudioService.instance.playCorrect();
     widget.onNext();
   }

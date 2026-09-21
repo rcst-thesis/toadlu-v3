@@ -55,6 +55,10 @@ one `OpenActiveLessonRouteAction`. `MapScreen` alone projects the result to
 the Rive map's documented `isUnlocked` and `hasEvent` values. The controller
 never imports a Rive widget or touches `pressTrigger`.
 
+A lesson's own mid-activity "tap X on the map" beat is a separate concern
+from this permanent unlock -- see `LESSON_MAP_STEP_FIX.md` for the fake-pin
+issue found across most `devg_canonical` flows and the real-map fix pattern.
+
 Mapped default destinations are School, House, Park/`plaza`, and Market. A
 normally locked location stays non-navigating. An active lesson event may be
 opened directly even while its location is still physically locked; it is the
