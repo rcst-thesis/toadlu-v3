@@ -40,8 +40,17 @@ class _InteractiveHomeLampState extends State<InteractiveHomeLamp> {
       alignment: Alignment.topCenter,
       clipBehavior: Clip.none,
       children: [
+        // `left`/`right: 0` (not a fixed width) -- so the beam's own
+        // container fills however wide this whole widget is given (the
+        // full home scene width, per home_screen.dart's `Positioned(left:
+        // 0, right: 0, ...)` around InteractiveHomeLamp), and the fraction-
+        // based `_LampBeamClipper` shape below flares out to reach both
+        // edges of the screen while staying centered/narrow right under
+        // the bulb, at any screen width.
         Positioned(
           top: 94,
+          left: 0,
+          right: 0,
           child: IgnorePointer(
             child: AnimatedOpacity(
               key: const Key('home-lamp-light-effect'),
@@ -51,15 +60,14 @@ class _InteractiveHomeLampState extends State<InteractiveHomeLamp> {
               child: ClipPath(
                 clipper: _LampBeamClipper(),
                 child: Container(
-                  width: 290,
                   height: 330,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Color(0x55FFF4B8),
-                        Color(0x24FFF1AD),
+                        Color(0x99FFF4B8),
+                        Color(0x4DFFF1AD),
                         Color(0x00FFF1AD),
                       ],
                       stops: [0, .62, 1],
