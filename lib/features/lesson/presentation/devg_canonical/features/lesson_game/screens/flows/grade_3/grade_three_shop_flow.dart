@@ -566,6 +566,7 @@ class _G3ShopMapPageState extends State<_G3ShopMapPage> {
         page: tudlo_map.MapScreen(
           eventOverrides: _overrides,
           temporaryUnlockedLocations: const {tudlo_map.MapLocation.market},
+          initialFocusLocation: tudlo_map.MapLocation.market,
         ),
       ),
     );
@@ -576,10 +577,10 @@ class _G3ShopMapPageState extends State<_G3ShopMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    return _G3MarketContentFrame(
+    return const _G3MarketContentFrame(
       prompt: 'Ginapangita ang Market sa mapa...',
-      footer: const SizedBox(height: 64),
-      child: const SizedBox(height: 360),
+      footer: SizedBox(height: 64),
+      child: SizedBox(height: 360),
     );
   }
 }
@@ -817,10 +818,11 @@ class _G3ShopAgeChoicePage extends StatelessWidget {
                         ),
                         correct: correctId == choice,
                         wrong: wrongId == choice,
-                        child: GestureDetector(
+                        child: GradeThreePressable(
                           onTap: ready && correctId == null
                               ? () => onChoose(choice)
                               : null,
+                          borderRadius: 22,
                           child: _G3AgeChoiceCard(
                             label: choice,
                             correct: correctId == choice,
@@ -1338,8 +1340,9 @@ class _G3TextChoiceWrap extends StatelessWidget {
             key: ValueKey('shop-choice-$choice-$wrongPulse-$correctId'),
             correct: correctId == choice,
             wrong: wrongId == choice,
-            child: GestureDetector(
+            child: GradeThreePressable(
               onTap: correctId == null ? () => onChoose(choice) : null,
+              borderRadius: 20,
               child: Container(
                 constraints: const BoxConstraints(minWidth: 132, minHeight: 58),
                 alignment: Alignment.center,

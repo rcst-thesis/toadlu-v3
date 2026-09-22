@@ -215,6 +215,28 @@ void main() {
     expect(AppData.isLevelUnlocked(7), isFalse);
   });
 
+  test('Grade 3 catalogue helpers always expose the four approved lessons', () {
+    AppData.configure(
+      grade: 3,
+      energy: 60,
+      unlockedLevels: const [1],
+      completed: const <int>[],
+      stickers: const <int, String>{},
+      catalogLevels: const [1],
+    );
+
+    expect(AppData.catalogUnits.map((unit) => unit.number), [1, 2]);
+    expect(
+      AppData.catalogLevelsForUnit(AppData.unitForNumber(1)),
+      [1, 3],
+    );
+    expect(
+      AppData.catalogLevelsForUnit(AppData.unitForNumber(2)),
+      [4, 5],
+    );
+    expect(AppData.catalogLevelCount, 4);
+  });
+
   testWidgets('a real-map location opens the preserved filtered card page',
       (tester) async {
     final learner = LearnerController();
@@ -245,6 +267,44 @@ void main() {
       AppData.catalogLevelsForUnit(AppData.unitForNumber(1)),
       [1, 7],
     );
+  });
+
+  testWidgets('a Grade 3 map catalog still shows all approved Grade 3 lessons',
+      (tester) async {
+    final learner = LearnerController();
+    await learner.createAndSave(name: 'Koka', grade: 3, energy: 60);
+    await learner.seedLessonProgress(activeLessonId: 'g3_u1_l1');
+    final controller = LessonProgressController(
+      learnerController: learner,
+      mapProgress: MapProgressController(),
+    );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LearnerScope(
+          controller: learner,
+          child: LessonProgressScope(
+            controller: controller,
+            child: const DevGLessonCatalogHost(location: MapLocation.school),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(LessonsScreen), findsOneWidget);
+    expect(AppData.selectedGradeLevel, GradeLevel.grade3);
+    expect(AppData.catalogUnits.map((unit) => unit.number), [1, 2]);
+    expect(
+      AppData.catalogLevelsForUnit(AppData.unitForNumber(1)),
+      [1, 3],
+    );
+    expect(
+      AppData.catalogLevelsForUnit(AppData.unitForNumber(2)),
+      [4, 5],
+    );
+    expect(AppData.catalogLevelCount, 4);
   });
 
   testWidgets('a Grade 3 learner opens the Grade 3 lesson catalogue',

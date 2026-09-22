@@ -31,6 +31,7 @@ import 'package:tudlo/features/map/domain/map_route_resolver.dart' as tudlo_map;
 import 'package:tudlo/features/map/presentation/screens/map_screen.dart'
     as tudlo_map;
 
+import 'flows/grade_3/grade_three_pressable.dart';
 import 'flows/grade_3/grade_three_bantay_flow.dart';
 import 'flows/grade_3/grade_three_market_numbers_flow.dart';
 import 'flows/grade_3/grade_three_new_student_flow.dart';
@@ -378,6 +379,7 @@ class _GradeThreeSchoolMapThenLessonFlowState
         page: tudlo_map.MapScreen(
           eventOverrides: _overrides,
           temporaryUnlockedLocations: const {tudlo_map.MapLocation.school},
+          initialFocusLocation: tudlo_map.MapLocation.school,
         ),
       ),
     );

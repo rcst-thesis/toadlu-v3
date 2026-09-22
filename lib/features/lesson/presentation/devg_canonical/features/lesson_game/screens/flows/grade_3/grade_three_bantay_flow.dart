@@ -13,6 +13,7 @@ import 'package:tudlo/features/lesson/presentation/devg_canonical/core/theme/app
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/widgets/animated_point_finger.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/widgets/language_toggle.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/widgets/mascot_widget.dart';
+import 'package:tudlo/features/lesson/presentation/devg_canonical/features/lesson_game/screens/flows/grade_3/grade_three_pressable.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/features/lesson_game/widgets/reward_overlay.dart';
 import 'package:tudlo/features/map/domain/map_location.dart' as tudlo_map;
 import 'package:tudlo/features/map/domain/map_route_resolver.dart' as tudlo_map;
@@ -391,6 +392,7 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
         page: tudlo_map.MapScreen(
           eventOverrides: overrides,
           temporaryUnlockedLocations: {location},
+          initialFocusLocation: location,
         ),
       ),
     );
@@ -659,27 +661,35 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
         ),
       );
 
-  Widget _button(String label, VoidCallback action) => ElevatedButton(
-        onPressed: _busy ? null : action,
-        style: ElevatedButton.styleFrom(
-          elevation: 4,
-          shadowColor: Colors.black.withValues(alpha: .2),
-          backgroundColor: const Color(0xFF1BA7F2),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor:
-              const Color(0xFF1BA7F2).withValues(alpha: .65),
-          disabledForegroundColor: Colors.white.withValues(alpha: .75),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: Colors.white, width: 4),
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Baloo2',
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
+  Widget _button(String label, VoidCallback action) => GradeThreePressable(
+        enabled: !_busy,
+        onTap: _busy ? null : action,
+        borderRadius: 18,
+        child: Opacity(
+          opacity: _busy ? .65 : 1,
+          child: Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1BA7F2),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white, width: 4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'Baloo2',
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       );
@@ -875,12 +885,12 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
               362,
               82,
               82,
-              IgnorePointer(
+              const IgnorePointer(
                 child: AnimatedPointFinger(
                   asset: _bantayPointFinger,
                   size: 74,
                   angle: -.14,
-                  tapOffset: const Offset(8, -4),
+                  tapOffset: Offset(8, -4),
                 ),
               ),
             ),
@@ -921,12 +931,12 @@ class _GradeThreeBantayFlowState extends State<GradeThreeBantayFlow>
               444,
               88,
               88,
-              IgnorePointer(
+              const IgnorePointer(
                 child: AnimatedPointFinger(
                   asset: _bantayPointFinger,
                   size: 82,
                   angle: -.16,
-                  tapOffset: const Offset(0, -8),
+                  tapOffset: Offset(0, -8),
                 ),
               ),
             ),

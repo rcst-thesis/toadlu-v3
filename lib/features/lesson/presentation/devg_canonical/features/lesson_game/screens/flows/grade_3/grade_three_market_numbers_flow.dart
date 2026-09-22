@@ -13,6 +13,7 @@ import 'package:tudlo/features/lesson/presentation/devg_canonical/core/state/app
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/theme/app_theme.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/widgets/animated_point_finger.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/widgets/mascot_widget.dart';
+import 'package:tudlo/features/lesson/presentation/devg_canonical/features/lesson_game/screens/flows/grade_3/grade_three_pressable.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/features/lesson_game/widgets/reward_overlay.dart';
 import 'package:tudlo/features/map/domain/map_location.dart' as tudlo_map;
 import 'package:tudlo/features/map/domain/map_route_resolver.dart' as tudlo_map;
@@ -294,6 +295,7 @@ class _GradeThreeMarketNumbersFlowState
         page: tudlo_map.MapScreen(
           eventOverrides: overrides,
           temporaryUnlockedLocations: const {tudlo_map.MapLocation.market},
+          initialFocusLocation: tudlo_map.MapLocation.market,
         ),
       ),
     );
@@ -711,10 +713,12 @@ class _GradeThreeMarketNumbersFlowState
               for (var number = 1; number <= 10; number++)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: GestureDetector(
+                  child: GradeThreePressable(
+                    enabled: interactive,
                     onTap: interactive
                         ? () => unawaited(_tapNumber(number))
                         : null,
+                    borderRadius: 12,
                     child: _FeedbackMotionLite(
                       active: _heardNumbers.contains(number),
                       child: _smallNumberTile(number),
@@ -779,8 +783,9 @@ class _GradeThreeMarketNumbersFlowState
   }
 
   Widget _numberTile(int number, {required bool draggable}) {
-    final tile = GestureDetector(
+    final tile = GradeThreePressable(
       onTap: () => setState(() => _selectedTile = number),
+      borderRadius: 12,
       child: _FeedbackMotionLite(
         active: _selectedTile == number,
         wrong: _wrongChoice == number,
@@ -802,8 +807,10 @@ class _GradeThreeMarketNumbersFlowState
 
   Widget _answerCard(int value) {
     final labels = {4: 'Four', 5: 'Five', 6: 'Six'};
-    return GestureDetector(
-      onTap: () => unawaited(_chooseAnswer(value)),
+    return GradeThreePressable(
+      onTap:
+          _correctChoice == null ? () => unawaited(_chooseAnswer(value)) : null,
+      borderRadius: 14,
       child: _FeedbackMotionLite(
         active: _correctChoice == value,
         wrong: _wrongChoice == value,
@@ -1035,8 +1042,10 @@ class _GradeThreeMarketNumbersFlowState
   }
 
   Widget _blueButton(String label, VoidCallback? onTap) {
-    return GestureDetector(
+    return GradeThreePressable(
       onTap: onTap,
+      enabled: onTap != null,
+      borderRadius: 24,
       child: Opacity(
         opacity: onTap == null ? .55 : 1,
         child: Container(

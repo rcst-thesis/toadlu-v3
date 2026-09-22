@@ -30,7 +30,15 @@ class AppData {
   static List<AppUnit> get units => _units[selectedGradeLevel]!;
   static int get maxLevel => units.last.endLevel;
   static int get completedLevelCount => completedLevels.length;
-  static int get catalogLevelCount => _catalogLevels.length;
+  static int get catalogLevelCount {
+    if (selectedGradeLevel == GradeLevel.grade3) {
+      return catalogUnits.fold<int>(
+        0,
+        (count, unit) => count + catalogLevelsForUnit(unit).length,
+      );
+    }
+    return _catalogLevels.length;
+  }
 
   /// Units with one or more cards allowed in the current Tudlo entry point.
   /// The original dashboard can therefore remain visually intact while a
@@ -75,9 +83,12 @@ class AppData {
   static bool isCatalogLevel(int level) => _catalogLevels.contains(level);
 
   static List<int> catalogLevelsForUnit(AppUnit unit) => [
-    for (var level = unit.startLevel; level <= unit.endLevel; level++)
-      if (isCatalogLevel(level)) level,
-  ];
+        for (var level = unit.startLevel; level <= unit.endLevel; level++)
+          if (selectedGradeLevel == GradeLevel.grade3
+              ? isProductionLessonAvailable(level)
+              : isCatalogLevel(level))
+            level,
+      ];
 
   /// Chooses a sensible first card for a filtered catalogue. Prefer an active
   /// incomplete card, then any card so a child can see locked future lessons.
@@ -177,10 +188,7 @@ class AppData {
     ],
     GradeLevel.grade3: [
       AppUnit(number: 1, startLevel: 1, lessonCount: 3, title: 'NUMBERS'),
-      AppUnit(number: 2, startLevel: 4, lessonCount: 3, title: 'STORIES'),
-      AppUnit(number: 3, startLevel: 7, lessonCount: 3, title: 'FABLES'),
-      AppUnit(number: 4, startLevel: 10, lessonCount: 3, title: 'STORY DETECTIVES'),
-      AppUnit(number: 5, startLevel: 13, lessonCount: 3, title: 'WORD POWER'),
+      AppUnit(number: 2, startLevel: 4, lessonCount: 2, title: 'STORIES'),
     ],
   };
 }

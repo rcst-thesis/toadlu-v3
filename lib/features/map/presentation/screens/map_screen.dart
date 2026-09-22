@@ -59,11 +59,13 @@ class MapScreen extends StatefulWidget {
   const MapScreen({
     this.eventOverrides,
     this.temporaryUnlockedLocations = const {},
+    this.initialFocusLocation,
     super.key,
   });
 
   final MapEventOverrides? eventOverrides;
   final Set<MapLocation> temporaryUnlockedLocations;
+  final MapLocation? initialFocusLocation;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -79,6 +81,15 @@ class _MapScreenState extends State<MapScreen> {
   static const _houseCenterY = 1064.5;
   static const _portraitCropWidth = 420.0;
   static const _portraitVerticalAnchor = 0.42;
+
+  static const _lessonFocusCropWidth = 520.0;
+  static const _lessonFocusVerticalAnchor = 0.48;
+  static const _focusCenters = <MapLocation, Offset>{
+    MapLocation.house: Offset(_houseCenterX, _houseCenterY),
+    MapLocation.school: Offset(1280, 1160),
+    MapLocation.market: Offset(1990, 455),
+    MapLocation.farm: Offset(2170, 930),
+  };
 
   // Fullscreen/landscape zooms out to show nearly the whole map instead.
   static const _fullscreenCropWidth = _mapWidth * 0.96;
@@ -117,6 +128,8 @@ class _MapScreenState extends State<MapScreen> {
   TudloAudioController? _audio;
 
   Size? _viewportSize;
+  MapLocation? _appliedFocusLocation;
+  bool? _appliedFullscreenState;
   var _isFullscreen = false;
   var _isHandlingTap = false;
 
@@ -134,9 +147,9 @@ class _MapScreenState extends State<MapScreen> {
     final audio = TudloAudioScope.of(context);
     if (!identical(_audio, audio)) {
       _audio = audio;
-      audio..preloadSoundEffect(
-          TudloAudioAssets.mapLockedSoundEffect)..preloadSoundEffect(
-          TudloAudioAssets.mapUnlockedSoundEffect);
+      audio
+        ..preloadSoundEffect(TudloAudioAssets.mapLockedSoundEffect)
+        ..preloadSoundEffect(TudloAudioAssets.mapUnlockedSoundEffect);
     }
     if (_dependenciesResolved) return;
     _mapProgress = MapProgressScope.of(context);
@@ -238,20 +251,35 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Matrix4 _defaultFramingFor(Size viewport) {
+    final focus = widget.initialFocusLocation;
+    final focusCenter = focus == null ? null : _focusCenters[focus];
+    if (!_isFullscreen && focusCenter != null) {
+      return _framedOn(
+        viewport: viewport,
+        cropWidth: focus == MapLocation.house
+            ? _portraitCropWidth
+            : _lessonFocusCropWidth,
+        centerX: focusCenter.dx,
+        centerY: focusCenter.dy,
+        verticalAnchor: focus == MapLocation.house
+            ? _portraitVerticalAnchor
+            : _lessonFocusVerticalAnchor,
+      );
+    }
     return _isFullscreen
         ? _framedOn(
-      viewport: viewport,
-      cropWidth: _fullscreenCropWidth,
-      centerX: _fullscreenCenterX,
-      centerY: _fullscreenCenterY,
-    )
+            viewport: viewport,
+            cropWidth: _fullscreenCropWidth,
+            centerX: _fullscreenCenterX,
+            centerY: _fullscreenCenterY,
+          )
         : _framedOn(
-      viewport: viewport,
-      cropWidth: _portraitCropWidth,
-      centerX: _houseCenterX,
-      centerY: _houseCenterY,
-      verticalAnchor: _portraitVerticalAnchor,
-    );
+            viewport: viewport,
+            cropWidth: _portraitCropWidth,
+            centerX: _houseCenterX,
+            centerY: _houseCenterY,
+            verticalAnchor: _portraitVerticalAnchor,
+          );
   }
 
   // Rive detects the tap itself and fires `locationTapped` -- for every tap
@@ -335,15 +363,14 @@ class _MapScreenState extends State<MapScreen> {
     await showHouseDestinationChooser(
       context,
       onGoHome: () => Navigator.of(context).popUntil((route) => route.isFirst),
-      onOpenLessons: () =>
-          Navigator.of(context).push(
-            FadePageRoute<void>(
-              page: const LessonCatalogScreen(
-                location: MapLocation.house,
-                showBottomNavigation: false,
-              ),
-            ),
+      onOpenLessons: () => Navigator.of(context).push(
+        FadePageRoute<void>(
+          page: const LessonCatalogScreen(
+            location: MapLocation.house,
+            showBottomNavigation: false,
           ),
+        ),
+      ),
     );
   }
 
@@ -386,15 +413,13 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery
-        .paddingOf(context)
-        .top;
+    final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
       key: const Key('map-screen'),
       backgroundColor: const Color(0xFFB9DDA0),
       bottomNavigationBar:
-      _isFullscreen ? null : const AppBottomTabNavigation(currentIndex: 3),
+          _isFullscreen ? null : const AppBottomTabNavigation(currentIndex: 3),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final viewport = Size(constraints.maxWidth, constraints.maxHeight);
@@ -413,12 +438,17 @@ class _MapScreenState extends State<MapScreen> {
               viewport.height.isFinite &&
               viewport.width > 0 &&
               viewport.height > 0;
-          if (_viewportSize != viewport && hasValidViewport) {
+          if ((_viewportSize != viewport ||
+                  _appliedFocusLocation != widget.initialFocusLocation ||
+                  _appliedFullscreenState != _isFullscreen) &&
+              hasValidViewport) {
             _viewportSize = viewport;
+            _appliedFocusLocation = widget.initialFocusLocation;
+            _appliedFullscreenState = _isFullscreen;
             _transformationController.value = _defaultFramingFor(viewport);
           }
           final cropWidth =
-          _isFullscreen ? _fullscreenCropWidth : _portraitCropWidth;
+              _isFullscreen ? _fullscreenCropWidth : _portraitCropWidth;
           // Same invalid-viewport case as above would otherwise produce a
           // zero/non-finite minScale here, which InteractiveViewer asserts
           // must be > 0 -- fall back to a harmless placeholder for this one
@@ -431,10 +461,10 @@ class _MapScreenState extends State<MapScreen> {
           final minScale = !hasValidViewport
               ? 1.0
               : viewport.width / _mapWidth > viewport.height / _mapHeight
-              ? viewport.width / _mapWidth
-              : viewport.height / _mapHeight;
+                  ? viewport.width / _mapWidth
+                  : viewport.height / _mapHeight;
           final initialScale =
-          hasValidViewport ? viewport.width / cropWidth : 1.0;
+              hasValidViewport ? viewport.width / cropWidth : 1.0;
           // Normally initialScale * 3 comfortably exceeds minScale, but a
           // transient frame with a valid yet extreme aspect ratio (e.g. a
           // very narrow, nonzero width mid orientation-change) can push
@@ -471,7 +501,7 @@ class _MapScreenState extends State<MapScreen> {
                   child: SizedBox(
                     width: _isFullscreen ? _fullscreenLabelWidth : _labelWidth,
                     height:
-                    _isFullscreen ? _fullscreenLabelHeight : _labelHeight,
+                        _isFullscreen ? _fullscreenLabelHeight : _labelHeight,
                     child: SvgPicture.asset(
                       'assets/images/map_barangay_koka_label.svg',
                     ),
