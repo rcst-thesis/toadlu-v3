@@ -9,6 +9,7 @@ import 'package:tudlo/shared/widgets/tilt_thumbnail_tile.dart';
 class HomeStickerGrid extends StatelessWidget {
   const HomeStickerGrid({
     this.stickers = _defaultStickers,
+    this.earnedRewardAssets = const {},
     super.key,
   });
 
@@ -29,38 +30,51 @@ class HomeStickerGrid extends StatelessWidget {
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_dog.png',
       label: 'Dog sticker',
+      rewardAsset: 'assets/images/stickers/rewards/home/dog-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_house.png',
       label: 'House sticker',
+      rewardAsset: 'assets/images/stickers/rewards/home/house-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_mother.png',
       label: 'Mother sticker',
+      rewardAsset:
+          'assets/images/stickers/rewards/home/mother-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_cat.png',
       label: 'Cat sticker',
+      rewardAsset: 'assets/images/stickers/rewards/home/cat-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_school.png',
       label: 'School sticker',
+      rewardAsset:
+          'assets/images/stickers/rewards/home/school-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_church.png',
       label: 'Church sticker',
+      rewardAsset:
+          'assets/images/stickers/rewards/home/church-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_market.png',
       label: 'Market sticker',
+      rewardAsset:
+          'assets/images/stickers/rewards/home/market-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_park.png',
       label: 'Park sticker',
+      rewardAsset: 'assets/images/stickers/rewards/home/park-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_farm.png',
       label: 'Farm sticker',
+      rewardAsset: 'assets/images/stickers/rewards/home/farm-home-sticker.svg',
     ),
     HomeStickerThumbnail(
       assetPath: 'assets/images/home_sticker_beach.png',
@@ -69,6 +83,7 @@ class HomeStickerGrid extends StatelessWidget {
   ];
 
   final List<HomeStickerThumbnail> stickers;
+  final Set<String> earnedRewardAssets;
 
   @override
   Widget build(BuildContext context) {
@@ -98,10 +113,13 @@ class HomeStickerGrid extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final sticker = stickers[index];
+              final isEarned = sticker.isEarned ||
+                  (sticker.rewardAsset != null &&
+                      earnedRewardAssets.contains(sticker.rewardAsset));
               return TiltThumbnailTile(
                 child: Semantics(
                   image: true,
-                  label: sticker.isEarned
+                  label: isEarned
                       ? sticker.label
                       : '${sticker.label}, not earned yet',
                   child: ClipRRect(
@@ -116,7 +134,7 @@ class HomeStickerGrid extends StatelessWidget {
                           cacheHeight: cacheHeight,
                           excludeFromSemantics: true,
                         ),
-                        if (!sticker.isEarned)
+                        if (!isEarned)
                           const ColoredBox(
                             color: _unearnedOverlayColor,
                           ),
@@ -133,16 +151,17 @@ class HomeStickerGrid extends StatelessWidget {
   }
 }
 
-/// A presentation-level sticker record. Replace the default list with real
-/// learner collection data later without changing the Home layout.
+/// A Home thumbnail linked to the reward asset stored on lesson completion.
 class HomeStickerThumbnail {
   const HomeStickerThumbnail({
     required this.assetPath,
     required this.label,
+    this.rewardAsset,
     this.isEarned = false,
   });
 
   final String assetPath;
   final String label;
+  final String? rewardAsset;
   final bool isEarned;
 }

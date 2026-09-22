@@ -38,6 +38,7 @@ class HomeScene extends StatelessWidget {
     required this.wordOfTheDay,
     required this.isWordOfTheDayFavorited,
     required this.lessonPreviews,
+    required this.earnedRewardAssets,
     required this.lessonsCollapsed,
     required this.onOpenSettings,
     required this.onOpenMap,
@@ -59,6 +60,7 @@ class HomeScene extends StatelessWidget {
   final DictionaryEntry? wordOfTheDay;
   final bool isWordOfTheDayFavorited;
   final List<HomeLessonPreview> lessonPreviews;
+  final Set<String> earnedRewardAssets;
   final bool lessonsCollapsed;
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenMap;
@@ -95,7 +97,8 @@ class HomeScene extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 720),
                     child: SizedBox(
-                      height: math.max(viewport.maxHeight, contentEndSceneHeight),
+                      height:
+                          math.max(viewport.maxHeight, contentEndSceneHeight),
                       width: double.infinity,
                       child: LayoutBuilder(
                         builder: (context, scene) => _SceneCanvas(
@@ -105,6 +108,7 @@ class HomeScene extends StatelessWidget {
                           wordOfTheDay: wordOfTheDay,
                           isWordOfTheDayFavorited: isWordOfTheDayFavorited,
                           lessonPreviews: lessonPreviews,
+                          earnedRewardAssets: earnedRewardAssets,
                           energy: energy,
                           lessonsCollapsed: lessonsCollapsed,
                           onOpenMap: onOpenMap,
@@ -161,6 +165,7 @@ class _SceneCanvas extends StatelessWidget {
     required this.wordOfTheDay,
     required this.isWordOfTheDayFavorited,
     required this.lessonPreviews,
+    required this.earnedRewardAssets,
     required this.energy,
     required this.lessonsCollapsed,
     required this.onOpenMap,
@@ -178,6 +183,7 @@ class _SceneCanvas extends StatelessWidget {
   final DictionaryEntry? wordOfTheDay;
   final bool isWordOfTheDayFavorited;
   final List<HomeLessonPreview> lessonPreviews;
+  final Set<String> earnedRewardAssets;
   final int energy;
   final bool lessonsCollapsed;
   final VoidCallback onOpenMap;
@@ -191,7 +197,8 @@ class _SceneCanvas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = width / HomeSceneLayout.designWidth;
-    final stickerTop = HomeSceneLayout.stickerContainerTopFor(lessonPanelHeight);
+    final stickerTop =
+        HomeSceneLayout.stickerContainerTopFor(lessonPanelHeight);
     final labelTop = HomeSceneLayout.devPanelLabelTopFor(lessonPanelHeight);
     final panelTop = HomeSceneLayout.devPanelFrameTopFor(lessonPanelHeight);
     return Stack(
@@ -212,7 +219,8 @@ class _SceneCanvas extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          child: const ColoredBox(key: Key('home-floor'), color: Color(0xFFB88956)),
+          child: const ColoredBox(
+              key: Key('home-floor'), color: Color(0xFFB88956)),
         ),
         _item(HomeSceneLayout.lilyMat, scale, const HomeLilyMat()),
         const Positioned(
@@ -280,7 +288,10 @@ class _SceneCanvas extends StatelessWidget {
         _item(
           HomeSceneLayout.stickerContainer,
           scale,
-          HomeStickerContainer(onOpenStickers: onOpenStickers),
+          HomeStickerContainer(
+            onOpenStickers: onOpenStickers,
+            earnedRewardAssets: earnedRewardAssets,
+          ),
           top: stickerTop,
         ),
         _item(
@@ -369,10 +380,10 @@ class _UpperNavigationBar extends StatelessWidget {
         child: AnimatedBuilder(
           animation: scrollController,
           builder: (context, child) {
-            final floorScrollOffset =
-                HomeSceneLayout.floorTop * (canvasWidth / HomeSceneLayout.designWidth);
-            final revealStart =
-                floorScrollOffset * HomeScene._upperNavigationRevealStartFraction;
+            final floorScrollOffset = HomeSceneLayout.floorTop *
+                (canvasWidth / HomeSceneLayout.designWidth);
+            final revealStart = floorScrollOffset *
+                HomeScene._upperNavigationRevealStartFraction;
             final revealRange = floorScrollOffset - revealStart;
             final scrollOffset =
                 scrollController.hasClients ? scrollController.offset : 0.0;

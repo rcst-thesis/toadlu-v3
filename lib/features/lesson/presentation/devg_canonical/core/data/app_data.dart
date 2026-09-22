@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/models/grade_level.dart';
 import 'package:tudlo/features/lesson/presentation/devg_canonical/core/models/lesson_score.dart';
@@ -11,6 +12,7 @@ class AppData {
   static const maxEnergy = 100;
   static const minimumEnergyToStartUnit = 10;
   static final energyRevision = ValueNotifier<int>(0);
+  static bool _energyNotificationPending = false;
 
   static bool developerMode = false;
   static bool mapHelpDone = true;
@@ -53,7 +55,9 @@ class AppData {
       3 => GradeLevel.grade3,
       _ => GradeLevel.grade1,
     };
-    currentEnergy = energy.clamp(10, maxEnergy).toInt();
+    final nextEnergy = energy.clamp(10, maxEnergy).toInt();
+    final energyChanged = currentEnergy != nextEnergy;
+    currentEnergy = nextEnergy;
     _unlockedLevels = {...unlockedLevels};
     _catalogLevels = {
       for (final level in catalogLevels)
@@ -69,7 +73,20 @@ class AppData {
       ..clear()
       ..addAll(stickers);
     unlockedLevel = firstUnlockedIncompleteLevel;
-    energyRevision.value++;
+    if (energyChanged) {
+      if (SchedulerBinding.instance.schedulerPhase ==
+          SchedulerPhase.persistentCallbacks) {
+        if (!_energyNotificationPending) {
+          _energyNotificationPending = true;
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            _energyNotificationPending = false;
+            energyRevision.value++;
+          });
+        }
+      } else {
+        energyRevision.value++;
+      }
+    }
   }
 
   static bool isCatalogLevel(int level) => _catalogLevels.contains(level);

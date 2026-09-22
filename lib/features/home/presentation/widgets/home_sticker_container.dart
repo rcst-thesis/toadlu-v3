@@ -8,6 +8,7 @@ import 'package:tudlo/features/home/presentation/widgets/home_sticker_grid.dart'
 class HomeStickerContainer extends StatelessWidget {
   const HomeStickerContainer({
     required this.onOpenStickers,
+    this.earnedRewardAssets = const {},
     super.key,
   });
 
@@ -38,6 +39,7 @@ class HomeStickerContainer extends StatelessWidget {
       labelHeight + labelToFrameGap + frameHeight;
 
   final VoidCallback onOpenStickers;
+  final Set<String> earnedRewardAssets;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +113,7 @@ class HomeStickerContainer extends StatelessWidget {
                   (frameTop + stickerGridTopInset + stickerGridOffsetY) * scale,
               width: HomeStickerGrid.designWidth * scale,
               height: HomeStickerGrid.designHeight * scale,
-              child: const HomeStickerGrid(),
+              child: HomeStickerGrid(earnedRewardAssets: earnedRewardAssets),
             ),
             Positioned(
               left: buttonLeft * scale,

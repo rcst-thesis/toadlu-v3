@@ -14,6 +14,7 @@ import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/lesson/domain/lesson_definition.dart';
 import 'package:tudlo/features/lesson/domain/lesson_progress_controller.dart';
 import 'package:tudlo/features/lesson/presentation/lesson_intro_screen.dart';
+import 'package:tudlo/features/lesson/presentation/lesson_catalog_screen.dart';
 import 'package:tudlo/features/placeholder/presentation/placeholder_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 import 'package:tudlo/shared/audio/audio_assets.dart';
@@ -43,7 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _learnerName =>
       widget.learnerName ?? LearnerScope.of(context).profile?.name ?? '';
   int get _energy =>
-      widget.energy ?? LearnerScope.of(context).profile?.effectiveEnergy() ?? 60;
+      widget.energy ??
+      LearnerScope.of(context).profile?.effectiveEnergy() ??
+      60;
 
   @override
   void didChangeDependencies() {
@@ -92,40 +95,47 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openSettings() => Navigator.of(context).push(
-    FadePageRoute<void>(page: const SettingsScreen(insideLearnerProfile: true)),
-  );
+        FadePageRoute<void>(
+            page: const SettingsScreen(insideLearnerProfile: true)),
+      );
 
   void _openMap() => Navigator.of(context).push(
-    FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(3)),
-  );
+        FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(3)),
+      );
 
   void _openLessons() => Navigator.of(context).push(
-    FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(2)),
-  );
+        FadePageRoute<void>(page: AppBottomTabNavigation.destinationFor(2)),
+      );
 
   void _openLessonIntro(String lessonId) => Navigator.of(context).push(
-    FadePageRoute<void>(page: LessonIntroScreen(lessonId: lessonId)),
-  );
+        FadePageRoute<void>(page: LessonIntroScreen(lessonId: lessonId)),
+      );
+
+  void _openLessonStartPopup(String lessonId) => Navigator.of(context).push(
+        FadePageRoute<void>(
+          page: LessonCatalogScreen(initialLessonId: lessonId),
+        ),
+      );
 
   void _openStickerScreen() => Navigator.of(context).push(
-    FadePageRoute<void>(
-      page: const PlaceholderScreen(
-        title: 'Stickers',
-        description: 'Temporary sticker screen shell',
-        icon: Icons.style_rounded,
-      ),
-    ),
-  );
+        FadePageRoute<void>(
+          page: const PlaceholderScreen(
+            title: 'Stickers',
+            description: 'Temporary sticker screen shell',
+            icon: Icons.style_rounded,
+          ),
+        ),
+      );
 
   void _openAbout() => Navigator.of(context).push(
-    FadePageRoute<void>(
-      page: const PlaceholderScreen(
-        title: 'About',
-        description: 'Temporary About screen shell',
-        icon: Icons.info_outline_rounded,
-      ),
-    ),
-  );
+        FadePageRoute<void>(
+          page: const PlaceholderScreen(
+            title: 'About',
+            description: 'Temporary About screen shell',
+            icon: Icons.info_outline_rounded,
+          ),
+        ),
+      );
 
   List<HomeLessonPreview> _homeLessonPreviews() {
     final grade = LearnerScope.of(context).profile?.grade ?? 1;
@@ -147,8 +157,8 @@ class _HomeScreenState extends State<HomeScreen> {
             status: progress.isComplete(definition)
                 ? HomeLessonStatus.completed
                 : progress.isUnlocked(definition)
-                ? HomeLessonStatus.available
-                : HomeLessonStatus.locked,
+                    ? HomeLessonStatus.available
+                    : HomeLessonStatus.locked,
           ),
         )
         .toList(growable: false);
@@ -171,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.of(context).pop();
         final id = lesson.lessonId;
         if (id != null && lesson.status != HomeLessonStatus.locked) {
-          _openLessonIntro(id);
+          _openLessonStartPopup(id);
         } else {
           _openLessons();
         }
@@ -192,9 +202,15 @@ class _HomeScreenState extends State<HomeScreen> {
         learnerName: _learnerName,
         energy: _energy,
         wordOfTheDay: _wordOfTheDay,
-        isWordOfTheDayFavorited:
-            wordId != null && (profile?.favoritedWords.contains(wordId) ?? false),
+        isWordOfTheDayFavorited: wordId != null &&
+            (profile?.favoritedWords.contains(wordId) ?? false),
         lessonPreviews: _homeLessonPreviews(),
+        earnedRewardAssets: LessonProgressScope.of(context)
+            .progress
+            .completions
+            .values
+            .map((completion) => completion.rewardAsset)
+            .toSet(),
         lessonsCollapsed: _lessonsCollapsed,
         onOpenSettings: _openSettings,
         onOpenMap: _openMap,
@@ -202,7 +218,9 @@ class _HomeScreenState extends State<HomeScreen> {
         onOpenStickers: _openStickerScreen,
         onOpenAbout: _openAbout,
         onWordFavoriteChanged: (_) {
-          if (wordId != null) LearnerScope.of(context).toggleFavoriteWord(wordId);
+          if (wordId != null) {
+            LearnerScope.of(context).toggleFavoriteWord(wordId);
+          }
         },
         onLessonTap: _showLessonPreview,
         onLessonsCollapsedChanged: (isCollapsed) {

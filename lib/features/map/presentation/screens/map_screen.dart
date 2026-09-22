@@ -59,11 +59,14 @@ class MapScreen extends StatefulWidget {
   const MapScreen({
     this.eventOverrides,
     this.temporaryUnlockedLocations = const {},
+    this.startExpanded = false,
     super.key,
   });
 
   final MapEventOverrides? eventOverrides;
   final Set<MapLocation> temporaryUnlockedLocations;
+  /// Opens in the same landscape view as the expand button when requested.
+  final bool startExpanded;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -117,7 +120,7 @@ class _MapScreenState extends State<MapScreen> {
   TudloAudioController? _audio;
 
   Size? _viewportSize;
-  var _isFullscreen = false;
+  late bool _isFullscreen;
   var _isHandlingTap = false;
 
   // Rate-limits the locked-location toast per location -- without this,
@@ -127,6 +130,13 @@ class _MapScreenState extends State<MapScreen> {
   // instead of being suppressed by whichever location was tapped last.
   static const _lockedMessageCooldown = Duration(seconds: 5);
   final _lastLockedMessageAt = <MapLocation, DateTime>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _isFullscreen = widget.startExpanded;
+    if (_isFullscreen) _applyFullscreenSystemUi();
+  }
 
   @override
   void didChangeDependencies() {
@@ -367,10 +377,14 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _enterFullscreen() {
-    SystemChrome.setPreferredOrientations(_landscapeOrientations);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _applyFullscreenSystemUi();
     setState(() => _isFullscreen = true);
     _viewportSize = null;
+  }
+
+  void _applyFullscreenSystemUi() {
+    SystemChrome.setPreferredOrientations(_landscapeOrientations);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   void _restorePortrait() {
