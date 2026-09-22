@@ -1,6 +1,6 @@
 {
-    "name": "tudloapp",
-    "short_name": "tudloapp",
+    "name": "tudlo_prototype",
+    "short_name": "tudlo_prototype",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

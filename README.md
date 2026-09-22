@@ -1,26 +1,39 @@
-# tudloapp
+# Tudlo Flutter application
 
-A new Flutter project.
+This application implements the Tudlo startup, onboarding, and navigation flow:
 
-## Run Locally
+1. Maral MT splash — minimum 5 seconds.
+2. Tudlo splash — minimum 5 seconds while onboarding images are decoded and cached.
+3. Main menu — functional Start New Koka, Continue, Load, and Settings navigation.
+4. Onboarding — name, grade, energy, preparation, and learner-card screens.
+5. Load screen — functional load/delete confirmation dialogs.
 
-Use one of these instead of opening `localhost:8080` directly:
+The outlined animation panels are deliberate placeholders for future Rive widgets.
 
-- VS Code: open Run and Debug, choose `Tudlo App - Chrome`, then press F5.
-- Terminal: run `.\scripts\run_web.ps1`.
-- Double-click: `scripts\run_web.bat`.
+## Run
 
-The app will start Flutter for web on `http://localhost:8080`.
+```shell
+flutter pub get
+flutter run
+```
 
-## Getting Started
+## Project structure
 
-This project is a starting point for a Flutter application.
+```text
+lib/
+├── app/       # Application widget and app-wide setup
+├── core/      # Theme and navigation infrastructure
+├── features/  # Self-contained product features
+├── shared/    # Reusable widgets shared by multiple features
+├── tudlo.dart # Public library exports
+└── main.dart  # Application entry point only
+```
 
-A few resources to get you started if this is your first Flutter project:
+New feature-specific models and widgets should remain inside their feature.
+Only code reused by multiple features belongs in `core` or `shared`.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Replace a placeholder with Rive later
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Search `lib/features` for `RivePlaceholder`. Each occurrence marks an area
+intended for a future Rive widget. The surrounding responsive constraints and
+navigation can remain unchanged.

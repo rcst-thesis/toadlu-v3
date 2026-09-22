@@ -1,148 +1,89 @@
-name: tudloapp
-description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
-# of the product and file versions while build-number is used as the build suffix.
+name: tudlo
+description: Tudlo mobile learning application.
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.2
+  sdk: ">=3.3.0 <4.0.0"
 
-# Dependencies specify other packages that your package needs in order to work.
-# To automatically upgrade your package dependencies to the latest versions
-# consider running `flutter pub upgrade --major-versions`. Alternatively,
-# dependencies can be manually updated by changing the version numbers below to
-# the latest version available on pub.dev. To see which dependencies have newer
-# versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
     sdk: flutter
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
-  web: ^1.1.1
-  flutter_tts: ^4.2.5
-  audioplayers: ^6.7.1
-  dart_sentencepiece_tokenizer: ^1.3.2
-  flutter_onnxruntime: ^1.8.3
-  shared_preferences: ^2.5.5
-  path_provider: ^2.1.5
-  rive: ^0.14.10
-  safe_text: ^2.1.6
+  flutter_soloud: ^3.1.7
   flutter_svg: ^2.3.0
+  google_fonts: ^6.3.3
+  rive: ^0.14.10
+  sensors_plus: ^7.1.0
+  shared_preferences: ^2.5.5
   vector_graphics: ^1.2.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
-
-  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/data/
-    - assets/models/
     - assets/images/
+    - assets/audio/
+    - assets/audio/VO/
+    - assets/audio/VO-final/
+    - assets/audio/VO-final/grade1/
+    - assets/audio/VO-final/grade2/
+    - assets/audio/VO-final/grade3/
+    - assets/audio/VO-final/numbers1-10/
+    - assets/audio/effects/
     - assets/images/dialogue/
     - assets/images/game_map/
-    - assets/images/navbar/
-    - assets/images/onbaording/
-    - assets/images/profile/
+    - assets/images/lesson/
+    - assets/images/lesson/rewards/
+    - assets/images/lesson/rewards/home/
     - assets/images/level_game/
-    - assets/images/level_game/backgrounds/
     - assets/images/level_game/animals/
-    - assets/images/level_game/letters/
-    - assets/images/level_game/numbers/
-    - assets/images/level_game/people/
-    - assets/images/level_game/lesson-game-assets/
+    - assets/images/level_game/backgrounds/
+    - assets/images/level_game/backgrounds/grade3_landscape/
+    - assets/images/level_game/grade1/
     - assets/images/level_game/grade1/backgrounds/
     - assets/images/level_game/grade1/people/
+    - assets/images/level_game/grade2/
     - assets/images/level_game/grade2/backgrounds/
-    - assets/images/level_game/grade2/people/
     - assets/images/level_game/grade2/lesson-game-assets/
+    - assets/images/level_game/grade2/people/
     - assets/images/level_game/grade3/
-    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/animals/
-    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/people/
-    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/props/
-    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/clues/
-    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/map/
-    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/reward/
-    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/updated/
+    - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/
     - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/background/
     - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/counting_objects/
     - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/inventory/
     - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/people/
     - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/shells/
     - assets/images/level_game/grade3/G3_U1_L1.1_Numero_sa_Merkado_SVG_Assets/stalls/
+    - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/
     - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/background/
     - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/people/
     - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/products/
     - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/shopping_props/
     - assets/images/level_game/grade3/G3_U1_L1.3_Pagbakal_ni_Koka_sa_Merkado_SVG_Assets/stalls/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/animals/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/clues/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/map/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/people/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/props/
+    - assets/images/level_game/grade3/G3_U2_L2.1_Ang_Nadula_nga_Ido_SVG_Assets/reward/
     - assets/images/level_game/grade3/G3_U2_L2.2_Ang_Bag-o_nga_Estudyante/
-    - assets/images/level_game/backgrounds/grade3_landscape/
+    - assets/images/level_game/lesson-game-assets/
+    - assets/images/level_game/letters/
+    - assets/images/level_game/numbers/
+    - assets/images/level_game/people/
+    - assets/images/stickers/
+    - assets/images/stickers/rewards/
     - assets/images/stickers/rewards/home/
-    - assets/images/word-of-the-day/
-    - assets/audio/effects/
-    - assets/audio/VO/
-    - assets/audio/VO-final/grade1/
-    - assets/audio/VO-final/grade2/
-    - assets/audio/VO-final/grade3/
-    - assets/audio/VO-final/numbers1-10/
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+  fonts:
+    - family: ComicRelief
+      fonts:
+        - asset: assets/fonts/ComicRelief-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/ComicRelief-Bold.ttf
+          weight: 700
