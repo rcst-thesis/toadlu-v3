@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tudlo/tudlo.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_energy_indicator.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart';
+import 'package:tudlo/features/lesson/domain/lesson_definition.dart';
 
 void main() {
   testWidgets('Home content scrolls while bottom navigation remains fixed',
@@ -190,16 +191,27 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Home lesson availability is derived from Energy',
-      (tester) async {
+  testWidgets(
+      'Home lesson availability is derived from Energy, capped at the '
+      "grade's real lesson count (regression: it used to pad extra slots "
+      'with invented locked placeholders up to a flat cap of 6, even when '
+      'the grade only has fewer real lessons)', (tester) async {
+    final grade1LessonCount = LessonCatalog.forGrade(1).length;
+
     await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 10)));
     expect(find.text('1 lesson subong nga adlaw!'), findsOneWidget);
 
     await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 60)));
-    expect(find.text('6 lessons subong nga adlaw!'), findsOneWidget);
+    expect(
+      find.text('$grade1LessonCount lessons subong nga adlaw!'),
+      findsOneWidget,
+    );
 
     await tester.pumpWidget(const MaterialApp(home: HomeScreen(energy: 100)));
-    expect(find.text('6 lessons subong nga adlaw!'), findsOneWidget);
+    expect(
+      find.text('$grade1LessonCount lessons subong nga adlaw!'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -292,6 +304,38 @@ void main() {
     expect(find.byKey(const Key('home-lesson-card')), findsNothing);
     expect(find.byKey(const Key('home-lesson-availability')), findsOneWidget);
     expect(find.text('0 lessons subong nga adlaw!'), findsOneWidget);
+  });
+
+  testWidgets(
+      'High energy never shows more slots than the real configured lessons '
+      '(regression: a flat clamp(0, 6) used to pad the remainder with '
+      "invented locked placeholders instead of stopping at what's real)",
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 378,
+            child: HomeLessonPanel(
+              energy: 100,
+              additionalLessons: [
+                HomeLessonPreview(
+                  unitTitle: 'yunit 2',
+                  category: 'MGA KULAY',
+                  status: HomeLessonStatus.available,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('2 lessons subong nga adlaw!'), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-card-0')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-card-1')), findsOneWidget);
+    expect(find.byKey(const Key('home-lesson-card-2')), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('A single available lesson has no collapse control',
@@ -465,7 +509,7 @@ void main() {
     final lessonsTile = tester.widget<Material>(
       find.byKey(const Key('home-nav-tile-lessons')),
     );
-    expect(lessonsTile.color, const Color(0xFF966E42));
+    expect(lessonsTile.color, const Color(0xFF54D3EA));
     expect(tester.takeException(), isNull);
   });
 

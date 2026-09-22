@@ -143,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
             lessonId: definition.id,
             unitTitle: definition.unitLabel.toLowerCase(),
             category: definition.title.toUpperCase(),
+            unitNumber: definition.unit,
             status: progress.isComplete(definition)
                 ? HomeLessonStatus.completed
                 : progress.isUnlocked(definition)
