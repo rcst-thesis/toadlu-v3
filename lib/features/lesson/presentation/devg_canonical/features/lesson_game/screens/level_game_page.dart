@@ -562,17 +562,18 @@ class _LevelGamePageState extends State<LevelGamePage> {
     final durationLabel = _formatDuration(
       DateTime.now().difference(_levelStartedAt),
     );
-    final lessonOneResult = AppData.selectedGradeLevel == GradeLevel.grade1 &&
+    final galleryResult = AppData.selectedGradeLevel == GradeLevel.grade1 &&
         AppData.unitForLevel(widget.level).number == 1 &&
-        AppData.lessonNumberForLevel(widget.level) == 1;
+        (AppData.lessonNumberForLevel(widget.level) == 1 ||
+            AppData.lessonNumberForLevel(widget.level) == 7);
     showDialog(
       context: context,
-      useSafeArea: !lessonOneResult,
+      useSafeArea: !galleryResult,
       barrierDismissible: false,
       barrierColor: TudloColors.ink.withValues(alpha: .62),
       builder: (_) => _LessonCompleteDialog(
         level: widget.level,
-        fullscreenResult: lessonOneResult,
+        fullscreenResult: galleryResult,
         backgroundAsset: _lessonCompleteBackgroundAsset(widget.level),
         accuracy: accuracy,
         mistakes: scoreStats.mistakes,
@@ -581,15 +582,15 @@ class _LevelGamePageState extends State<LevelGamePage> {
         onBackToMap: () {
           _claimRewardsOnce();
           Navigator.pop(context);
-          unawaited(lessonOneResult
-              ? _finishLessonOneToGallery(openNextLesson: false)
+          unawaited(galleryResult
+              ? _finishLessonToGallery(openNextLesson: false)
               : _returnToMapAfterPortraitRestore());
         },
         onContinue: () async {
           _claimRewardsOnce();
           Navigator.pop(context);
-          if (lessonOneResult) {
-            await _finishLessonOneToGallery(openNextLesson: true);
+          if (galleryResult) {
+            await _finishLessonToGallery(openNextLesson: true);
           } else {
             await _returnToMapAfterPortraitRestore();
           }
@@ -639,7 +640,7 @@ class _LevelGamePageState extends State<LevelGamePage> {
     Navigator.of(context).pop();
   }
 
-  Future<void> _finishLessonOneToGallery({
+  Future<void> _finishLessonToGallery({
     required bool openNextLesson,
   }) async {
     await _restorePortraitBeforePortraitRoute();

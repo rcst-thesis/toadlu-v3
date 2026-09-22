@@ -308,6 +308,12 @@ class _BeachLessonChrome extends StatelessWidget {
 }
 
 class _BeachIntroStep extends StatelessWidget {
+  static const _mascotLeftFraction = .03;
+  static const _mascotTopFraction = .30;
+  static const _mascotWidthFraction = .50;
+  static const _mascotMinSize = 185.0;
+  static const _mascotMaxSize = 255.0;
+
   final double progress;
   final VoidCallback onExit;
   final VoidCallback onReplay;
@@ -331,10 +337,11 @@ class _BeachIntroStep extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            left: view.width * .03,
-            top: view.height * .39,
+            left: view.width * _mascotLeftFraction,
+            top: view.height * _mascotTopFraction,
             child: _LessonKokaMascot(
-              size: (view.width * .50).clamp(185.0, 255.0),
+              size: (view.width * _mascotWidthFraction)
+                  .clamp(_mascotMinSize, _mascotMaxSize),
               mood: KokaMood.idle,
             ),
           ),
@@ -408,6 +415,7 @@ class _BeachMapStepState extends State<_BeachMapStep> {
         page: tudlo_map.MapScreen(
           eventOverrides: _overrides,
           temporaryUnlockedLocations: const {tudlo_map.MapLocation.beach},
+          startExpanded: true,
         ),
       ),
     );
@@ -645,7 +653,7 @@ class _BeachArrangeStep extends StatelessWidget {
           Positioned(
             left: view.width * .025,
             right: view.width * .025,
-            top: view.height * .45,
+            top: view.height * .53,
             child: _BeachArrangeSlots(
               slots: slots,
               complete: complete,
@@ -692,6 +700,13 @@ class _BeachRewardStep extends StatelessWidget {
       child: _StickerUnlockRewardContent(
         fallback: const _FamilyReferenceBadge(label: 'NUMBER\nEXPLORER'),
         message: 'Yehey! Nakaabot kita sa payong!',
+        stickerAsset: 'assets/images/home_sticker_cat.png',
+        portraitStickerRatio: 248 / 472,
+        stickerScale: .82,
+        stickerAlignmentY: .13,
+        messageStickerGap: 30,
+        floatSticker: true,
+        showOkButton: false,
         onDone: onDone,
       ),
     );
