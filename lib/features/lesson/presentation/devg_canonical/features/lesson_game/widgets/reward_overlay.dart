@@ -25,21 +25,21 @@ class GradeThreeStickerRewardOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final view = MediaQuery.sizeOf(context);
     final hasSecondary = secondaryLabel != null && onSecondary != null;
-    final titleTop = (view.height * .045).clamp(18.0, 34.0).toDouble();
-    final titleHeight = (view.height * .16).clamp(54.0, 86.0).toDouble();
-    final buttonHeight = (view.height * .105).clamp(44.0, 58.0).toDouble();
-    final buttonBottom = (view.height * .055).clamp(18.0, 32.0).toDouble();
-    final middleTop = titleTop + titleHeight + 4;
+    final buttonHeight = (view.height * .075).clamp(36.0, 46.0).toDouble();
+    final buttonBottom = (view.height * .045).clamp(14.0, 26.0).toDouble();
+    final middleTop = (view.height * .075).clamp(22.0, 40.0).toDouble();
     final middleBottom = buttonBottom + buttonHeight + 10;
     final middleHeight =
         (view.height - middleTop - middleBottom).clamp(150.0, 380.0).toDouble();
-    final stickerHeight = middleHeight;
-    final stickerWidth = (view.width * .46)
-        .clamp(300.0, 430.0)
+    final messageHeight = (view.height * .12).clamp(42.0, 62.0).toDouble();
+    final stickerHeight =
+        (middleHeight - messageHeight - 6).clamp(110.0, 300.0).toDouble();
+    final stickerWidth = (view.width * .38)
+        .clamp(250.0, 360.0)
         .toDouble()
-        .clamp(0.0, view.width * .72)
+        .clamp(0.0, view.width * .62)
         .toDouble();
-    final starSize = (stickerHeight * .45).clamp(104.0, 158.0).toDouble();
+    final starSize = (stickerHeight * .5).clamp(92.0, 136.0).toDouble();
 
     return Stack(
       children: [
@@ -47,88 +47,93 @@ class GradeThreeStickerRewardOverlay extends StatelessWidget {
           child: ColoredBox(color: Colors.black.withValues(alpha: .50)),
         ),
         Positioned(
-          left: view.width * .08,
-          right: view.width * .08,
-          top: titleTop,
-          height: titleHeight,
-          child: Center(
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.nunito(
-                color: Colors.white,
-                fontSize: (view.width * .025).clamp(18.0, 25.0),
-                height: 1.05,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
-                shadows: const [
-                  Shadow(
-                    color: TudloColors.ink,
-                    offset: Offset(0, 3),
-                    blurRadius: 2,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
           top: middleTop,
           bottom: middleBottom,
           left: 0,
           right: 0,
           child: Center(
-            child: GestureDetector(
-              onTap: onPrimary,
-              child: SizedBox(
-                width: stickerWidth,
-                height: stickerHeight,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: starSize * 1.38,
-                      height: starSize * 1.38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFFFD33D).withValues(alpha: .12),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xFFFFD33D).withValues(alpha: .52),
-                            blurRadius: 24,
-                            spreadRadius: 3,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: messageHeight,
+                  child: Center(
+                    child: Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: (view.width * .018).clamp(14.0, 20.0),
+                        height: 1.04,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                        shadows: const [
+                          Shadow(
+                            color: TudloColors.ink,
+                            offset: Offset(0, 2),
+                            blurRadius: 2,
                           ),
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.star_rounded,
-                      size: starSize * 1.22,
-                      color: const Color(0xFFFFD941),
-                      shadows: [
-                        Shadow(
-                          color: const Color(0xFFFFA800).withValues(alpha: .9),
-                          blurRadius: 8,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: onPrimary,
+                  child: SizedBox(
+                    width: stickerWidth,
+                    height: stickerHeight,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: starSize * 1.38,
+                          height: starSize * 1.38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                const Color(0xFFFFD33D).withValues(alpha: .12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFD33D)
+                                    .withValues(alpha: .52),
+                                blurRadius: 22,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
                         ),
-                        Shadow(
-                          color: Colors.white.withValues(alpha: .75),
-                          blurRadius: 18,
+                        Icon(
+                          Icons.star_rounded,
+                          size: starSize * 1.22,
+                          color: const Color(0xFFFFD941),
+                          shadows: [
+                            Shadow(
+                              color:
+                                  const Color(0xFFFFA800).withValues(alpha: .9),
+                              blurRadius: 8,
+                            ),
+                            Shadow(
+                              color: Colors.white.withValues(alpha: .75),
+                              blurRadius: 16,
+                            ),
+                          ],
+                        ),
+                        SizedBox(
+                          width: stickerWidth,
+                          height: stickerHeight,
+                          child: _GradeThreeRewardSticker(
+                            asset: stickerAsset,
+                          ),
                         ),
                       ],
                     ),
-                    SizedBox(
-                      width: stickerWidth,
-                      height: stickerHeight,
-                      child: _GradeThreeRewardSticker(
-                        asset: stickerAsset,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -212,17 +217,17 @@ class _GradeThreeRewardButton extends StatelessWidget {
       onTap: onTap,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          minWidth: (view.width * .22).clamp(170.0, 230.0),
-          maxWidth: (view.width * .34).clamp(230.0, 320.0),
+          minWidth: (view.width * .18).clamp(135.0, 190.0),
+          maxWidth: (view.width * .28).clamp(185.0, 270.0),
         ),
         child: Container(
-          height: (view.height * .105).clamp(44.0, 58.0),
+          height: (view.height * .075).clamp(36.0, 46.0),
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: filled ? green : Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: green, width: 3),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: green, width: 2.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: .16),
@@ -238,7 +243,7 @@ class _GradeThreeRewardButton extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.nunito(
               color: filled ? Colors.white : green,
-              fontSize: (view.width * .018).clamp(16.0, 23.0),
+              fontSize: (view.width * .014).clamp(13.0, 18.0),
               height: 1,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
