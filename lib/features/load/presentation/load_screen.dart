@@ -11,6 +11,7 @@ import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/load/domain/save_preview.dart';
 import 'package:tudlo/features/load/presentation/widgets/load_confirmation_dialog.dart';
 import 'package:tudlo/features/load/presentation/widgets/save_card.dart';
+import 'package:tudlo/features/me/presentation/screens/daily_streak_flow.dart';
 import 'package:tudlo/shared/audio/audio_assets.dart';
 import 'package:tudlo/shared/audio/tudlo_audio_controller.dart';
 import 'package:tudlo/shared/audio/tudlo_audio_scope.dart';
@@ -179,14 +180,33 @@ class _LoadScreenState extends State<LoadScreen> {
     final profile =
         _profiles.where((profile) => profile.id == save.profileId).firstOrNull;
     if (profile == null) return;
-    await LearnerScope.of(context).switchTo(profile);
+    final scope = LearnerScope.of(context);
+    await scope.switchTo(profile);
     if (!mounted) return;
     // Same reasoning as the demo branch above.
     unawaited(_stopIntroVoiceOver());
     unawaited(TudloAudioScope.of(context).stopBackgroundMusic());
+    final active = scope.profile;
+    final needsStreakCheckIn =
+        active != null && active.needsStreakCheckInToday();
+    if (needsStreakCheckIn) unawaited(scope.recordStreakCheckIn());
+    // The check-in/streak screens show after the loading screen, not
+    // before it -- same spot HomeScreen itself would otherwise appear.
     Navigator.of(context).pushAndRemoveUntil(
-      FadePageRoute<void>(page: const FourthLoadingScreen()),
+      FadePageRoute<void>(
+        page: FourthLoadingScreen(
+          homeBuilder: needsStreakCheckIn ? _buildStreakThenHome : null,
+        ),
+      ),
       (route) => false,
+    );
+  }
+
+  Widget _buildStreakThenHome(BuildContext context) {
+    return DailyStreakFlow(
+      onFinished: (flowContext) => Navigator.of(flowContext).pushReplacement(
+        FadePageRoute<void>(page: const HomeScreen()),
+      ),
     );
   }
 

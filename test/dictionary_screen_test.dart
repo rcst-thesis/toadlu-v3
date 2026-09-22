@@ -766,7 +766,7 @@ void main() {
         definition: 'n. test entry.',
         example: 'test',
         category: 'test',
-        favThumbImage: 'assets/images/home_sticker_house.png',
+        frontCardImage: 'assets/images/home_sticker_house.png',
       ),
     ];
     await tester.pumpWidget(
@@ -802,7 +802,7 @@ void main() {
         definition: 'n. test entry one.',
         example: 'test',
         category: 'test',
-        favThumbImage: 'assets/images/home_sticker_house.png',
+        frontCardImage: 'assets/images/home_sticker_house.png',
       ),
       DictionaryEntry(
         id: 'two',
@@ -811,7 +811,7 @@ void main() {
         definition: 'n. test entry two.',
         example: 'test',
         category: 'test',
-        favThumbImage: 'assets/images/home_sticker_dog.png',
+        frontCardImage: 'assets/images/home_sticker_dog.png',
       ),
       DictionaryEntry(
         id: 'three',
@@ -820,7 +820,7 @@ void main() {
         definition: 'n. test entry three.',
         example: 'test',
         category: 'test',
-        favThumbImage: 'assets/images/home_sticker_cat.png',
+        frontCardImage: 'assets/images/home_sticker_cat.png',
       ),
     ];
     await tester.pumpWidget(

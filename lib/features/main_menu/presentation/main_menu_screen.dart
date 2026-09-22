@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:tudlo/core/navigation/fade_page_route.dart';
 import 'package:tudlo/core/theme/app_colors.dart';
 import 'package:tudlo/features/home/presentation/screens/fourth_loading_screen.dart';
+import 'package:tudlo/features/home/presentation/screens/home_screen.dart';
 import 'package:tudlo/features/learner/domain/learner_profile.dart';
 import 'package:tudlo/features/learner/domain/learner_scope.dart';
 import 'package:tudlo/features/load/presentation/load_screen.dart';
+import 'package:tudlo/features/me/presentation/screens/daily_streak_flow.dart';
 import 'package:tudlo/features/onboarding/presentation/screens/name_screen.dart';
 import 'package:tudlo/features/settings/presentation/settings_screen.dart';
 import 'package:tudlo/shared/audio/audio_assets.dart';
@@ -121,7 +123,26 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     // Goes silent through the loading transition; HomeScreen starts it
     // fresh again once it actually appears.
     unawaited(TudloAudioScope.of(context).stopBackgroundMusic());
-    _replaceWith(context, const FourthLoadingScreen());
+    final profile = scope.profile;
+    final needsStreakCheckIn =
+        profile != null && profile.needsStreakCheckInToday();
+    if (needsStreakCheckIn) unawaited(scope.recordStreakCheckIn());
+    // The check-in/streak screens show after the loading screen, not
+    // before it -- same spot HomeScreen itself would otherwise appear.
+    _replaceWith(
+      context,
+      FourthLoadingScreen(
+        homeBuilder: needsStreakCheckIn ? _buildStreakThenHome : null,
+      ),
+    );
+  }
+
+  Widget _buildStreakThenHome(BuildContext context) {
+    return DailyStreakFlow(
+      onFinished: (flowContext) => Navigator.of(flowContext).pushReplacement(
+        FadePageRoute<void>(page: const HomeScreen()),
+      ),
+    );
   }
 
   @override

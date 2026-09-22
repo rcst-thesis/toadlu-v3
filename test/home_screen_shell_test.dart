@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tudlo/tudlo.dart';
+import 'package:tudlo/features/dictionary/domain/dictionary_words.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_energy_indicator.dart';
 import 'package:tudlo/features/home/presentation/widgets/home_lesson_panel.dart';
 import 'package:tudlo/features/lesson/domain/lesson_definition.dart';
@@ -187,7 +188,20 @@ void main() {
     final card = find.byKey(const Key('home-word-of-the-day'));
     expect(tester.getSize(card), const Size(378, 216));
     expect(find.text('word of the day'), findsOneWidget);
-    expect(find.text('balay'), findsOneWidget);
+    // Any word with dedicated art is now eligible for rotation (not just
+    // 'balay'), so assert against that pool instead of one fixed word.
+    final eligibleWords = DictionaryWords.all
+        .where((entry) => entry.frontCardImage != null)
+        .map((entry) => entry.word)
+        .toSet();
+    final shown = tester
+        .widget<Semantics>(card)
+        .properties
+        .label!
+        .replaceFirst('Word of the day: ', '')
+        .split('.')
+        .first;
+    expect(eligibleWords, contains(shown));
     expect(tester.takeException(), isNull);
   });
 

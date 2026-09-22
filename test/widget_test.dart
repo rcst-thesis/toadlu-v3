@@ -10,11 +10,15 @@ import 'package:tudlo/tudlo.dart';
 
 /// Seeds a fresh [LearnerController] with [names] real, individually saved
 /// profiles (none of them left "current" -- the Load screen's real save
-/// list doesn't depend on which one is current).
+/// list doesn't depend on which one is current). Each is marked as already
+/// having seen today's day-streak check-in, so continuing/loading one in a
+/// test goes straight to the loading screen like before that flow existed,
+/// unless a test specifically wants to exercise it.
 Future<LearnerController> _controllerWithSaves(List<String> names) async {
   final controller = LearnerController();
   for (final name in names) {
     await controller.createAndSave(name: name, grade: 1, energy: 60);
+    await controller.recordStreakCheckIn();
   }
   return controller;
 }
