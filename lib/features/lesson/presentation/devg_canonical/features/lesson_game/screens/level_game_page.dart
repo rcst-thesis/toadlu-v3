@@ -2391,51 +2391,56 @@ class _LessonResultPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Maayo gid!',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.nunito(
-                            color: Colors.white,
-                            fontSize: (size.width * .03).clamp(17.0, 24.0),
-                            height: 1,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                            shadows: [
-                              Shadow(
-                                color: TudloColors.ink.withValues(alpha: .70),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                    child: Transform.translate(
+                      offset: Offset(0, -size.height * .045),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Maayo gid!',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.nunito(
+                              color: Colors.white,
+                              fontSize: (size.width * .03).clamp(17.0, 24.0),
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                              shadows: [
+                                Shadow(
+                                  color: TudloColors.ink.withValues(alpha: .70),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Natapos mo na ang Leksyon!',
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.nunito(
-                            color: Colors.white,
-                            fontSize: (size.width * .038).clamp(20.0, 30.0),
-                            height: 1,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                            shadows: [
-                              Shadow(
-                                color: TudloColors.ink.withValues(alpha: .70),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                          const SizedBox(height: 4),
+                          Text(
+                            'Natapos mo na ang Leksyon!',
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.nunito(
+                              color: Colors.white,
+                              fontSize: (size.width * .038).clamp(20.0, 30.0),
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                              shadows: [
+                                Shadow(
+                                  color: TudloColors.ink.withValues(alpha: .70),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        SizedBox(height: (size.height * .025).clamp(8.0, 16.0)),
-                        const _ResultGoldStar(),
-                      ],
+                          SizedBox(
+                            height: (size.height * .025).clamp(8.0, 16.0),
+                          ),
+                          const _ResultGoldStar(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -2602,7 +2607,7 @@ class _ResultGoldStar extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final height = MediaQuery.sizeOf(context).height;
-    final size = math.min(width * .62, height * .33).clamp(128.0, 230.0);
+    final size = math.min(width * .66, height * .44).clamp(170.0, 300.0);
     return SizedBox(
       width: size,
       height: size,

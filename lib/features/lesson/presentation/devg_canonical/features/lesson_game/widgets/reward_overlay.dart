@@ -31,15 +31,14 @@ class GradeThreeStickerRewardOverlay extends StatelessWidget {
     final middleBottom = buttonBottom + buttonHeight + 10;
     final middleHeight =
         (view.height - middleTop - middleBottom).clamp(150.0, 380.0).toDouble();
-    final messageHeight = (view.height * .12).clamp(42.0, 62.0).toDouble();
+    final messageHeight = (view.height * .14).clamp(48.0, 72.0).toDouble();
     final stickerHeight =
-        (middleHeight - messageHeight - 6).clamp(110.0, 300.0).toDouble();
-    final stickerWidth = (view.width * .38)
-        .clamp(250.0, 360.0)
+        (middleHeight - messageHeight - 4).clamp(170.0, 340.0).toDouble();
+    final stickerWidth = (view.width * .48)
+        .clamp(330.0, 470.0)
         .toDouble()
-        .clamp(0.0, view.width * .62)
+        .clamp(0.0, view.width * .72)
         .toDouble();
-    final starSize = (stickerHeight * .5).clamp(92.0, 136.0).toDouble();
 
     return Stack(
       children: [
@@ -65,7 +64,7 @@ class GradeThreeStickerRewardOverlay extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.nunito(
                         color: Colors.white,
-                        fontSize: (view.width * .018).clamp(14.0, 20.0),
+                        fontSize: (view.width * .024).clamp(17.0, 25.0),
                         height: 1.04,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
@@ -89,38 +88,33 @@ class GradeThreeStickerRewardOverlay extends StatelessWidget {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        Container(
-                          width: starSize * 1.38,
-                          height: starSize * 1.38,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color:
-                                const Color(0xFFFFD33D).withValues(alpha: .12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFFFD33D)
-                                    .withValues(alpha: .52),
-                                blurRadius: 22,
-                                spreadRadius: 2,
+                        Positioned.fill(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: stickerWidth * .17,
+                              vertical: stickerHeight * .05,
+                            ),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                color: const Color(0xFFFFD94A)
+                                    .withValues(alpha: .12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFFD33D)
+                                        .withValues(alpha: .74),
+                                    blurRadius: 42,
+                                    spreadRadius: 12,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white.withValues(alpha: .32),
+                                    blurRadius: 22,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                        Icon(
-                          Icons.star_rounded,
-                          size: starSize * 1.22,
-                          color: const Color(0xFFFFD941),
-                          shadows: [
-                            Shadow(
-                              color:
-                                  const Color(0xFFFFA800).withValues(alpha: .9),
-                              blurRadius: 8,
-                            ),
-                            Shadow(
-                              color: Colors.white.withValues(alpha: .75),
-                              blurRadius: 16,
-                            ),
-                          ],
                         ),
                         SizedBox(
                           width: stickerWidth,
