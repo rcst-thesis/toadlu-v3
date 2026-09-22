@@ -515,8 +515,20 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      const MaterialApp(home: GradeSelectionScreen(learnerName: 'Maya')),
+      MaterialApp(
+        home: GradeSelectionScreen(
+          learnerName: 'Maya',
+          // Fake, instant players -- the single dialogue box only shows
+          // the "Grade N kana subong?" prompt once the intro VO has been
+          // heard, so this keeps that transition deterministic instead of
+          // depending on real (and, in a test harness, possibly
+          // never-arriving) audio playback.
+          introVoiceOverPlayer: () async {},
+          gradeVoiceOverPlayer: (grade) async {},
+        ),
+      ),
     );
+    await tester.pump();
 
     expect(find.byKey(const Key('grade-selected-card-1')), findsOneWidget);
     expect(find.text('Grade one kana subong?'), findsOneWidget);
@@ -542,8 +554,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('grade speech bubbles expose intro and selected-grade VO',
-      (tester) async {
+  testWidgets(
+      'the single grade speech bubble narrates the intro once, then only '
+      'the selected grade', (tester) async {
     var introPlays = 0;
     int? spokenGrade;
     await tester.pumpWidget(
@@ -557,15 +570,26 @@ void main() {
     );
     await tester.pump();
     expect(introPlays, 1);
+    // Give the setState from the intro VO's completion its own frame, then
+    // let the AnimatedSwitcher's 250ms fade between the intro and grade
+    // lines finish -- otherwise the outgoing intro text can still be mid
+    // fade-out (or the switch itself not yet started) here.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(
       find.text('gusto ni koka ma bal an\nsa ano nga grade kana subong'),
       findsOneWidget,
     );
+    // The intro VO already finished (the fake player resolves instantly),
+    // so the one dialogue box has already switched from the intro line to
+    // prompting the selected grade -- there's no separate second box left
+    // to show it in.
     expect(
       find.text('nice to meet you, ano na imo nga\ngrade subong?'),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.text('Grade one kana subong?'), findsOneWidget);
     final headingBottom = tester
         .getBottomLeft(
           find.text(
@@ -576,15 +600,17 @@ void main() {
     final introBubbleTop =
         tester.getTopLeft(find.byKey(const Key('grade-intro-bubble'))).dy;
     expect(headingBottom, lessThan(introBubbleTop));
+
+    // From here on, the same box's one voice button always narrates the
+    // selected grade -- never a re-run of the intro.
     await tester.tap(find.byKey(const Key('grade-intro-voice-button')));
     await tester.pump();
-    expect(introPlays, 2);
+    expect(introPlays, 1);
+    expect(spokenGrade, 1);
 
     await tester.tap(find.byKey(const Key('grade-next-button')));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(spokenGrade, 2);
-    await tester.tap(find.byKey(const Key('grade-selection-voice-button')));
-    await tester.pump();
+    expect(find.text('Grade two kana subong?'), findsOneWidget);
     expect(spokenGrade, 2);
   });
 

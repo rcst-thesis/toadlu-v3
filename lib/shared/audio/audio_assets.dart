@@ -48,7 +48,7 @@ abstract final class TudloAudioAssets {
     energySetterVoiceOver => const Duration(milliseconds: 7273),
     learnerCardVoiceOver => const Duration(milliseconds: 4249),
     welcomeAboardVoiceOver => const Duration(milliseconds: 7668),
-    dailyStreakVoiceOver => const Duration(milliseconds: 38914),
+    dailyStreakVoiceOver => const Duration(milliseconds: 117190),
     _ => const Duration(seconds: 15),
   };
 }
